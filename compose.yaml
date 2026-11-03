@@ -35,6 +35,7 @@ services:
       APP_ENV: dev
       APP_DEBUG: "1"
       APP_SECRET: local-only-offer-service-secret
+      DEFAULT_URI: http://localhost:8081
       PRICING_SERVICE_URL: http://pricing-service:8080
       OTEL_SERVICE_NAME: autoflow-offer-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
@@ -71,6 +72,7 @@ services:
       APP_ENV: dev
       APP_DEBUG: "1"
       APP_SECRET: local-only-pricing-service-secret
+      DEFAULT_URI: http://localhost:8082
       OTEL_SERVICE_NAME: autoflow-pricing-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
       OTEL_PHP_AUTOLOAD_ENABLED: "true"
