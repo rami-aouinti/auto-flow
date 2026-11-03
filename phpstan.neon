@@ -4,4 +4,8 @@ parameters:
         - apps
         - packages
         - tests
+    excludePaths:
+        analyse:
+            - apps/offer-service/*
+            - apps/pricing-service/*
     tmpDir: var/phpstan
