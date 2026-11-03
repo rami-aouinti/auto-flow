@@ -14,11 +14,12 @@
     "symfony/framework-bundle": "7.4.*",
     "symfony/http-client": "7.4.*",
     "symfony/flex": "^2.7",
+    "symfony/string": "7.4.*",
     "symfony/yaml": "7.4.*"
   },
   "autoload": {
     "psr-4": {
-      "App\\": "src/"
+      "App\\\\": "src/"
     }
   },
   "config": {
