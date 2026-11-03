@@ -19,6 +19,10 @@ RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --no-
 
 COPY ${SERVICE_PATH}/ ./
 
+# Fail the image build if Symfony configuration or the kernel cannot boot.
+RUN APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret PRICING_SERVICE_URL=http://pricing-service:8080 \
+    php -r 'require "vendor/autoload.php"; $kernel = new \App\Kernel("prod", false); $kernel->boot(); $kernel->shutdown();'
+
 ENV APP_ENV=dev
 ENV APP_DEBUG=1
 
