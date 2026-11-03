@@ -11,10 +11,10 @@ use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 
-#[AsController]
 /**
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
+#[AsController]
 final class PricingController
 {
     #[Route('/health', name: 'pricing_health', methods: ['GET'])]
