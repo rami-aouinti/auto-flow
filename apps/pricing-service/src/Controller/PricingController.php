@@ -34,9 +34,7 @@ final class PricingController
             ->spanBuilder('pricing.calculate')
             ->startSpan();
 
-        $scope = Context::storage()->attach(
-            $span->storeInContext(Context::getCurrent()),
-        );
+        $scope = $span->activate();
 
         try {
             $span->setAttribute('vehicle.id', $vehicleId);
@@ -49,6 +47,7 @@ final class PricingController
                 'calculation' => 'demo-only',
             ]);
         } catch (Throwable $exception) {
+            $span->setStatus(StatusCode::STATUS_ERROR);
             $span->recordException($exception);
 
             throw $exception;
