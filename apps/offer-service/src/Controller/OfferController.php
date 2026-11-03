@@ -8,11 +8,14 @@ use OpenTelemetry\API\Globals;
 use OpenTelemetry\Context\Context;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
 
 #[AsController]
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 final class OfferController
 {
     public function __construct(
