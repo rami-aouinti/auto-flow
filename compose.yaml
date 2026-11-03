@@ -8,6 +8,7 @@ services:
       - composer-cache:/tmp/composer/cache
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://autoflow:autoflow@postgres:5432/autoflow?serverVersion=16&charset=utf8}
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
       XDEBUG_CONFIG: client_host=host.docker.internal client_port=9003
     extra_hosts:
@@ -16,6 +17,7 @@ services:
       postgres: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
       redis: {condition: service_healthy}
+      elasticsearch: {condition: service_healthy}
     init: true
   postgres:
     image: postgres:16-alpine
@@ -51,6 +53,20 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.5
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports: ["9200:9200"]
+    volumes: [elasticsearch-data:/usr/share/elasticsearch/data]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
   mailpit:
     image: axllent/mailpit:latest
     ports: ["1025:1025","8025:8025"]
@@ -58,4 +74,5 @@ volumes:
   postgres-data:
   rabbitmq-data:
   redis-data:
+  elasticsearch-data:
   composer-cache:
