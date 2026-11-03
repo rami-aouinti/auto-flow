@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use OpenTelemetry\API\Globals;
-use OpenTelemetry\Context\Context;
+use OpenTelemetry\API\Trace\StatusCode;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
