@@ -2,8 +2,8 @@ FROM php:8.4-cli-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        libicu-dev libcurl4-openssl-dev \
-    && docker-php-ext-install -j"$(nproc)" intl curl opcache \
+        unzip zip libicu-dev libcurl4-openssl-dev libzip-dev \
+    && docker-php-ext-install -j"$(nproc)" intl curl opcache zip \
     && pecl install opentelemetry \
     && docker-php-ext-enable opentelemetry \
     && apt-get clean \
