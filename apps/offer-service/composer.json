@@ -1,0 +1,31 @@
+{
+  "name": "autoflow/offer-service",
+  "description": "AutoFlow offer microservice used to demonstrate distributed tracing.",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.4",
+    "ext-json": "*",
+    "ext-opentelemetry": "*",
+    "open-telemetry/exporter-otlp": "^1.4",
+    "open-telemetry/opentelemetry-auto-symfony": "^1.7",
+    "open-telemetry/sdk": "^1.8",
+    "php-http/guzzle7-adapter": "^1.0",
+    "symfony/framework-bundle": "7.4.*",
+    "symfony/http-client": "7.4.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {},
+    "platform": {
+      "php": "8.4.0"
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
