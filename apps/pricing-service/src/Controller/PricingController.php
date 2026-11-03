@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\\Controller;
+namespace App\Controller;
 
-use OpenTelemetry\\API\\Globals;
-use OpenTelemetry\\Context\\Context;
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
-use Symfony\\Component\\HttpKernel\\Attribute\\AsController;
-use Symfony\\Component\\Routing\\Attribute\\Route;
+use OpenTelemetry\API\Globals;
+use OpenTelemetry\Context\Context;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Attribute\AsController;
+use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 
 #[AsController]
