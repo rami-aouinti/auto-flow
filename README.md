@@ -41,7 +41,6 @@ docker compose exec php php -v
 | Elasticsearch | http://localhost:9200 | Search and indexing API |
 | Kibana | http://localhost:5601 | Elasticsearch indices, documents, queries and dashboards |
 | Mercure Hub | http://localhost:3001/.well-known/mercure | Real-time SSE hub |
-| Mercure health | http://localhost:3001/healthz | Hub health endpoint |
 | Grafana | http://localhost:3000 | Central dashboards (credentials from .env) |
 | Prometheus | http://localhost:9090 | Metrics, targets and PromQL |
 | Loki | http://localhost:3100 | Log aggregation API (explore through Grafana) |
