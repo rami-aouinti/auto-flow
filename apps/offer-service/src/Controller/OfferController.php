@@ -16,11 +16,11 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
 #[AsController]
-final class OfferController
+final readonly class OfferController
 {
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        private readonly string $pricingServiceUrl,
+        private HttpClientInterface $httpClient,
+        private string $pricingServiceUrl,
     ) {
     }
 
