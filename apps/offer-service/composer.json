@@ -12,7 +12,8 @@
     "open-telemetry/sdk": "^1.8",
     "php-http/guzzle7-adapter": "^1.0",
     "symfony/framework-bundle": "7.4.*",
-    "symfony/http-client": "7.4.*"
+    "symfony/http-client": "7.4.*",
+    "symfony/flex": "^2.7"
   },
   "autoload": {
     "psr-4": {
@@ -21,7 +22,10 @@
   },
   "config": {
     "sort-packages": true,
-    "allow-plugins": {},
+    "allow-plugins": {
+      "php-http/discovery": true,
+      "symfony/flex": true
+    },
     "platform": {
       "php": "8.4.0"
     }
