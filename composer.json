@@ -32,7 +32,7 @@
     "rector:fix": "rector process",
     "test": "phpunit --configuration=phpunit.xml",
     "coverage": "XDEBUG_MODE=coverage phpunit --configuration=phpunit.xml --coverage-text",
-    "audit": "composer audit",
-    "quality": ["@cs","@phpcs","@phpstan","@phpmd","@rector:check","@test","@audit"]
+    "security:audit": "composer audit",
+    "quality": ["@cs", "@phpcs", "@phpstan", "@phpmd", "@rector:check", "@test", "@security:audit"]
   }
 }
