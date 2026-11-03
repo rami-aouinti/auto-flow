@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use App\\Kernel;
-use Symfony\\Component\\HttpFoundation\\Request;
+use App\Kernel;
+use Symfony\Component\HttpFoundation\Request;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
