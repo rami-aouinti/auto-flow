@@ -19,6 +19,8 @@ jobs:
           tools: composer:v2
       - name: Validate Composer
         run: composer validate --strict
+      - name: Validate Docker Compose configuration
+        run: docker compose --env-file .env.example config --quiet
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
       - name: Run quality checks
