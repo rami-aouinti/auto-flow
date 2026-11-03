@@ -7,7 +7,8 @@ RUN apt-get update \
         intl opcache pcntl pdo_pgsql sockets zip \
     && pecl channel-update pecl.php.net \
     && pecl install xdebug \
-    && docker-php-ext-enable xdebug \
+    && pecl install opentelemetry \
+    && docker-php-ext-enable xdebug opentelemetry \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

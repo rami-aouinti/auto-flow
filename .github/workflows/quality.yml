@@ -19,9 +19,15 @@ jobs:
           tools: composer:v2
       - name: Validate Composer
         run: composer validate --strict
+      - name: Validate service Composer manifests
+        run: |
+          composer validate --strict --working-dir=apps/offer-service
+          composer validate --strict --working-dir=apps/pricing-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
       - name: Run quality checks
         run: composer quality
+      - name: Build instrumented Symfony services
+        run: docker compose --env-file .env.example build php offer-service pricing-service
