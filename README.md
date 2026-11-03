@@ -9,7 +9,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 
 - PHP 8.4 CLI and Xdebug 3
 - Docker Compose
-- PostgreSQL 16, RabbitMQ 4, Redis 7
+- PostgreSQL 16, RabbitMQ 4, Redis 7, Elasticsearch 8
 - Mailpit for local email testing
 - PHP-CS-Fixer, PHP_CodeSniffer, PHPStan, PHPMD, Rector and PHPUnit
 - GitHub Actions quality workflow
@@ -50,6 +50,10 @@ Run these from the repository root:
 - Mailpit: http://localhost:8025
 - PostgreSQL: localhost:5432
 - Redis: localhost:6379
+- Elasticsearch: http://localhost:9200
+
+Elasticsearch runs as a single local node with security disabled for development only.
+Do not expose this configuration to a public network or reuse it in production.
 
 Credentials are for local development only. Never reuse them outside your machine.
 
@@ -73,6 +77,9 @@ This repository will contain independently deployable Symfony services in a mono
 Each service owns its database and domain model. REST is used for synchronous interactions;
 RabbitMQ/Symfony Messenger for asynchronous messages; Temporal for durable long-running
 workflows. Transactional Outbox and idempotent consumers will protect event delivery.
+
+Elasticsearch will support vehicle search, filtering and indexing; PostgreSQL remains the
+source of truth for transactional data.
 
 The business microservices will be implemented incrementally. See
 [`docs/architecture/overview.md`](docs/architecture/overview.md).

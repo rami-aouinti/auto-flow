@@ -32,4 +32,4 @@ test:
 coverage:
 	docker compose exec php composer coverage
 audit:
-	docker compose exec php composer audit
+	docker compose exec php composer security:audit
