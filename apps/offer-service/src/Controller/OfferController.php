@@ -41,9 +41,7 @@ final readonly class OfferController
             ->spanBuilder('offer.compose')
             ->startSpan();
 
-        $scope = Context::storage()->attach(
-            $span->storeInContext(Context::getCurrent()),
-        );
+        $scope = $span->activate();
 
         try {
             $span->setAttribute('vehicle.id', $vehicleId);
@@ -66,6 +64,7 @@ final readonly class OfferController
                 'pricing' => $pricing,
             ]);
         } catch (Throwable $exception) {
+            $span->setStatus(StatusCode::STATUS_ERROR);
             $span->recordException($exception);
 
             throw $exception;
