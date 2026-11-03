@@ -9,6 +9,8 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://autoflow:autoflow@postgres:5432/autoflow?serverVersion=16&charset=utf8}
       ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
+      MERCURE_URL: ${MERCURE_URL:-http://mercure/.well-known/mercure}
+      MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL:-http://localhost:3001/.well-known/mercure}
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
       XDEBUG_CONFIG: client_host=host.docker.internal client_port=9003
     extra_hosts:
@@ -18,7 +20,9 @@ services:
       rabbitmq: {condition: service_healthy}
       redis: {condition: service_healthy}
       elasticsearch: {condition: service_healthy}
+      mercure: {condition: service_started}
     init: true
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -28,31 +32,35 @@ services:
     ports: ["5432:5432"]
     volumes: [postgres-data:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL","pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
       timeout: 3s
       retries: 10
+
   rabbitmq:
     image: rabbitmq:4-management-alpine
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-autoflow}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-autoflow}
-    ports: ["5672:5672","15672:15672"]
+    command: ["sh", "-c", "rabbitmq-plugins enable --offline rabbitmq_prometheus && rabbitmq-server"]
+    ports: ["5672:5672", "15672:15672", "15692:15692"]
     volumes: [rabbitmq-data:/var/lib/rabbitmq]
     healthcheck:
-      test: ["CMD","rabbitmq-diagnostics","-q","ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 10
+
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
     volumes: [redis-data:/data]
     healthcheck:
-      test: ["CMD","redis-cli","ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.5
     environment:
@@ -67,12 +75,138 @@ services:
       timeout: 5s
       retries: 30
       start_period: 30s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.5
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+      SERVER_NAME: autoflow-kibana
+      SERVER_PUBLICBASEURL: http://localhost:5601
+    ports: ["5601:5601"]
+    depends_on:
+      elasticsearch: {condition: service_healthy}
+
+  mercure:
+    image: dunglas/mercure:v1.1.5
+    environment:
+      SERVER_NAME: ":80"
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:-!ChangeThisMercurePublisherKeyForLocalDevelopmentOnly!}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:-!ChangeThisMercureSubscriberKeyForLocalDevelopmentOnly!}
+      MERCURE_EXTRA_DIRECTIVES: "cors_origins http://localhost:3000 http://localhost:8000"
+    ports: ["3001:80"]
+    volumes:
+      - mercure-data:/data
+      - mercure-config:/config
+
   mailpit:
-    image: axllent/mailpit:latest
-    ports: ["1025:1025","8025:8025"]
+    image: axllent/mailpit:v1.22.3
+    ports: ["1025:1025", "8025:8025"]
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    ports: ["9090:9090"]
+    volumes:
+      - ./infrastructure/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - rabbitmq
+      - postgres-exporter
+      - redis-exporter
+      - elasticsearch-exporter
+      - cadvisor
+      - node-exporter
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports: ["3000:3000"]
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infrastructure/observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  loki:
+    image: grafana/loki:3.4.2
+    command: ["-config.file=/etc/loki/loki.yml"]
+    ports: ["3100:3100"]
+    volumes:
+      - ./infrastructure/observability/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
+
+  alloy:
+    image: grafana/alloy:v1.6.1
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy"]
+    ports: ["12345:12345"]
+    volumes:
+      - ./infrastructure/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    ports: ["3200:3200", "4317:4317", "4318:4318"]
+    volumes:
+      - ./infrastructure/observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.17.1
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-autoflow}:${POSTGRES_PASSWORD:-autoflow}@postgres:5432/${POSTGRES_DB:-autoflow}?sslmode=disable
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      redis: {condition: service_healthy}
+
+  elasticsearch-exporter:
+    image: quay.io/prometheuscommunity/elasticsearch-exporter:v1.8.0
+    command: ["--es.uri=http://elasticsearch:9200"]
+    depends_on:
+      elasticsearch: {condition: service_healthy}
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    command: ["--path.rootfs=/host"]
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+
 volumes:
   postgres-data:
   rabbitmq-data:
   redis-data:
   elasticsearch-data:
   composer-cache:
+  mercure-data:
+  mercure-config:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  tempo-data:
