@@ -1,0 +1,14 @@
+parameters:
+    app.pricing_service_url: '%env(resolve:PRICING_SERVICE_URL)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\\:
+        resource: '../src/'
+
+    App\\Controller\\OfferController:
+        arguments:
+            $pricingServiceUrl: '%app.pricing_service_url%'
