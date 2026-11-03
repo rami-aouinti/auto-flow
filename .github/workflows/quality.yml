@@ -30,4 +30,4 @@ jobs:
       - name: Run quality checks
         run: composer quality
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build offer-service pricing-service
+        run: docker compose --env-file .env.example build php offer-service pricing-service
