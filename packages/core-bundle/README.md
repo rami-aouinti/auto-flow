@@ -117,7 +117,9 @@ public function calculate(...): JsonResponse
 
 The ScopeAuthorizationSubscriber returns HTTP 403 when the authenticated principal is missing or does not contain the required scope. Keycloak must issue the relevant scopes (for example `offers:read` and `pricing:quote`) to the corresponding clients/users.
 
-TenantContext reads the tenant only from the verified request principal; it never trusts a caller-supplied tenant header. Use `getTenantId()` for an optional tenant and `requireTenantId()` for operations that must be tenant-scoped. The latter throws MissingTenantContextException if there is no verified tenant.
+TenantContext reads the tenant from the authenticated request principal. Use `getTenantId()` for an optional tenant and `requireTenantId()` for operations that must be tenant-scoped. The latter throws MissingTenantContextException if there is no resolved tenant.
+
+For service-to-service delegation, TenantDelegationSubscriber accepts `X-Tenant-ID` only when the calling service's verified access token contains the dedicated `tenant:delegate` scope. A token that already contains a tenant claim cannot override it with a different header value. The Offer Service forwards its verified tenant context to Pricing; its Keycloak client-credentials request asks for `pricing:quote tenant:delegate`. Grant `tenant:delegate` only to explicitly trusted service accounts in Keycloak. Never grant it to ordinary user clients. The header is not an authentication mechanism: the bearer token is still signature-, issuer-, audience- and expiry-validated first.
 
 Tenant enforcement can be enabled for selected route prefixes:
 
@@ -128,7 +130,7 @@ core:
             - '/api/tenant/'
 ~~~
 
-The default list is empty to avoid breaking existing non-tenant endpoints. Add prefixes only after the identity provider issues tenant claims for those callers and tenant context is propagated securely across service boundaries. A service-to-service client-credentials token without a tenant claim must not be used for a tenant-required operation.
+The default list is empty to avoid breaking existing non-tenant endpoints. Configure it for business routes that must be tenant-scoped. User tokens must carry a valid `tenant_id` claim; trusted service tokens may delegate a tenant only with `tenant:delegate` and a valid `X-Tenant-ID` header.
 
 The bundle supplies the cross-cutting tenant context and scope gate, not tenant membership or resource-level business policy. Each service must still verify that the principal is entitled to access the specific tenant-owned resource.
 
