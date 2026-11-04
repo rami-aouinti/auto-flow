@@ -9,6 +9,11 @@ use App\Application\CalculateQuote\CalculateQuoteHandler;
 use App\Grpc\Generated\Pricing\V1\CalculateQuoteRequest;
 use App\Grpc\Generated\Pricing\V1\CalculateQuoteResponse;
 use App\Grpc\Generated\Pricing\V1\PricingServiceInterface;
+use AutoFlow\CoreBundle\Security\InvalidTokenException;
+use AutoFlow\CoreBundle\Security\JwksUnavailableException;
+use AutoFlow\CoreBundle\Security\MissingScopeException;
+use AutoFlow\CoreBundle\Security\TenantDelegationException;
+use AutoFlow\CoreBundle\Transport\Grpc\GrpcRequestAuthenticator;
 use InvalidArgumentException;
 use Spiral\RoadRunner\GRPC\ContextInterface;
 use Spiral\RoadRunner\GRPC\Exception\GRPCException;
@@ -20,14 +25,17 @@ use Throwable;
  */
 final readonly class PricingGrpcService implements PricingServiceInterface
 {
-    public function __construct(private CalculateQuoteHandler $handler)
-    {
+    public function __construct(
+        private CalculateQuoteHandler $handler,
+        private GrpcRequestAuthenticator $requestAuthenticator,
+    ) {
     }
 
     // phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps -- gRPC method name is defined by the .proto contract.
     public function CalculateQuote(ContextInterface $ctx, CalculateQuoteRequest $request): CalculateQuoteResponse
     {
         try {
+            $this->requestAuthenticator->authenticate($ctx, 'pricing:quote');
             $quote = ($this->handler)(new CalculateQuoteCommand(
                 vehicleId: trim($request->getVehicleId()),
                 vehiclePrice: trim($request->getVehiclePrice()),
@@ -37,6 +45,30 @@ final readonly class PricingGrpcService implements PricingServiceInterface
                 durationMonths: $request->getDurationMonths(),
                 annualRateBps: $request->getAnnualInterestRateBasisPoints(),
             ));
+        } catch (JwksUnavailableException $exception) {
+            throw GRPCException::create(
+                'The authentication service is temporarily unavailable.',
+                StatusCode::UNAVAILABLE,
+                $exception,
+            );
+        } catch (InvalidTokenException $exception) {
+            throw GRPCException::create(
+                'A valid bearer token is required.',
+                StatusCode::UNAUTHENTICATED,
+                $exception,
+            );
+        } catch (MissingScopeException $exception) {
+            throw GRPCException::create(
+                'The caller is not authorized for this pricing operation.',
+                StatusCode::PERMISSION_DENIED,
+                $exception,
+            );
+        } catch (TenantDelegationException $exception) {
+            throw GRPCException::create(
+                'The caller is not authorized for this pricing operation.',
+                StatusCode::PERMISSION_DENIED,
+                $exception,
+            );
         } catch (InvalidArgumentException $exception) {
             throw GRPCException::create(
                 'The pricing request contains invalid lease terms.',
