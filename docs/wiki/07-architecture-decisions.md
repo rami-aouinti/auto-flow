@@ -174,6 +174,24 @@ These records describe current direction and known implementation status. Revise
 
 ---
 
+## ADR-011 — Share technical cross-cutting capabilities through CoreBundle
+
+**Status:** Accepted
+
+**Context:** Offer and Pricing are independent Symfony applications. Reimplementing request correlation, HTTP propagation and common operational helpers in each service would create inconsistent behavior. Sharing business models, however, would couple bounded contexts and undermine independent evolution.
+
+**Decision:** Maintain a small Symfony bundle at `packages/core-bundle` for technical cross-cutting concerns only. Distribute it through Composer path repositories in the monorepo and copy it into each service image during the Docker build.
+
+**Alternatives:** Duplicate utilities in every service; merge all services into one application; create a shared domain package; publish a remote package before the API is stable.
+
+**Rationale:** A local Composer package gives reuse while preserving independent service containers and Composer projects. The Docker build copies the package into the build image, so runtime does not rely on host-mounted symlinks.
+
+**Consequences:** The package API needs semantic versioning and compatibility discipline. Services opt into capabilities such as Messenger middleware and readiness checks. Domain models, repositories, event semantics, Outbox persistence, Temporal workflows, authentication and business policies remain owned by their bounded contexts. A shared bundle must stay smaller than the sum of the service responsibilities it supports.
+
+**Revisit when:** A service needs a different runtime/framework, the bundle becomes a dependency bottleneck, or shared code starts expressing business concepts.
+
+---
+
 ## 2. ADR template
 
 ~~~markdown
