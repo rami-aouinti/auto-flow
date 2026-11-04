@@ -6,7 +6,7 @@ namespace AutoFlow\Tests\CoreBundle;
 
 final readonly class ExampleDto
 {
-    public function __construct(public string $id)
+    public function __construct(public string $identifier)
     {
     }
 }
