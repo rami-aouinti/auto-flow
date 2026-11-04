@@ -8,6 +8,7 @@ use AutoFlow\CoreBundle\Context\CorrelationContext;
 use AutoFlow\CoreBundle\Infrastructure\Messenger\CorrelationIdMiddleware;
 use AutoFlow\CoreBundle\Messaging\CorrelationIdStamp;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
@@ -25,7 +26,8 @@ final class CorrelationIdMiddlewareTest extends TestCase
             ->method('handle')
             ->with(
                 self::callback(
-                    static fn (Envelope $envelope): bool => $envelope->last(CorrelationIdStamp::class) instanceof CorrelationIdStamp,
+                    static fn (Envelope $envelope): bool =>
+                        $envelope->last(CorrelationIdStamp::class) instanceof CorrelationIdStamp,
                 ),
                 self::identicalTo($stack),
             )
@@ -36,7 +38,7 @@ final class CorrelationIdMiddlewareTest extends TestCase
         $stack->method('next')->willReturn($nextMiddleware);
 
         $middleware = new CorrelationIdMiddleware($context);
-        $result = $middleware->handle(Envelope::wrap(new \stdClass()), $stack);
+        $result = $middleware->handle(new Envelope(new stdClass()), $stack);
 
         self::assertInstanceOf(CorrelationIdStamp::class, $result->last(CorrelationIdStamp::class));
         self::assertNull($context->get());

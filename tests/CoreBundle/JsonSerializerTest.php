@@ -26,7 +26,7 @@ final class JsonSerializerTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        (new JsonSerializer())->decode('{"id":"123"}', ExampleDto::class);
+        (new JsonSerializer())->decode('{"id":"123"}', \stdClass::class);
     }
 
     public function testItRejectsMalformedJson(): void
