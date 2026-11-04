@@ -43,5 +43,19 @@ final class PricingPolicyRepositoryTest extends TestCase
         self::assertSame($draft->version, $loaded->version);
         self::assertSame('active', $loaded->status);
         self::assertNull($repository->findByVersion('tenant-other', $draft->version));
+
+        $pdo = (new PostgresConnection($this->databaseUrl))->get();
+        $pdo->beginTransaction();
+        try {
+            $tenant = $pdo->prepare("SELECT set_config('app.tenant_id', :tenant_id, true)");
+            $tenant->execute(['tenant_id' => 'tenant-policy-test']);
+            $update = $pdo->prepare('UPDATE pricing_policies SET maximum_annual_rate_bps = 1900 WHERE policy_id = :policy_id');
+            $this->expectException(PDOException::class);
+            $update->execute(['policy_id' => $policyId]);
+        } finally {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+        }
     }
 }
