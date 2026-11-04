@@ -42,6 +42,94 @@ final readonly class OfferController
         ]);
     }
 
+
+    #[RequiresScope('offers:quote')]
+    #[Route('/api/offers/{vehicleId}', name: 'offer_create', methods: ['POST'])]
+    public function create(string $vehicleId, Request $request): JsonResponse
+    {
+        $span = Globals::tracerProvider()
+            ->getTracer('autoflow.offer-service', '1.0.0')
+            ->spanBuilder('offer.create')
+            ->startSpan();
+        $scope = $span->activate();
+
+        try {
+            if ($this->offerValidityDays < 1 || $this->offerValidityDays > 365) {
+                throw new LogicException('Offer validity must be between 1 and 365 days.');
+            }
+
+            $payload = $request->toArray();
+            $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+            if (!$principal instanceof AuthenticatedPrincipal) {
+                throw new LogicException('A verified authenticated principal is required.');
+            }
+
+            $createdAt = new DateTimeImmutable();
+            $expiresAt = $createdAt->modify(sprintf('+%d days', $this->offerValidityDays));
+
+            if (!$expiresAt instanceof DateTimeImmutable) {
+                throw new LogicException('Could not calculate the offer expiration date.');
+            }
+
+            $offer = ($this->createOfferHandler)(new CreateOfferCommand(
+                tenantId: $this->tenantContext->requireTenantId(),
+                createdBy: $principal->subject,
+                subjectAccessToken: $this->requireBearerToken($request),
+                vehicleId: $vehicleId,
+                vehiclePrice: $this->requiredString($payload, 'vehiclePrice'),
+                downPayment: $this->requiredString($payload, 'downPayment'),
+                residualValue: $this->requiredString($payload, 'residualValue'),
+                currency: $this->requiredString($payload, 'currency'),
+                durationMonths: $this->requiredInteger($payload, 'durationMonths'),
+                annualInterestRateBasisPoints: $this->requiredInteger(
+                    $payload,
+                    'annualInterestRateBasisPoints',
+                ),
+                createdAt: $createdAt,
+                expiresAt: $expiresAt,
+            ));
+
+            $span->setAttribute('offer.id', (string) $offer->id());
+            $span->setAttribute('vehicle.id', $vehicleId);
+
+            $response = new JsonResponse([
+                'offerId' => (string) $offer->id(),
+                'vehicleId' => $offer->pricingSnapshot()->vehicleId,
+                'quoteId' => $offer->pricingSnapshot()->quoteId,
+                'status' => $offer->status()->value,
+                'pricing' => [
+                    'monthlyAmount' => $offer->pricingSnapshot()->monthlyAmount,
+                    'totalInstallmentsAmount' => $offer->pricingSnapshot()->totalInstallmentsAmount,
+                    'totalCostIncludingDownPayment' => $offer->pricingSnapshot()->totalCostIncludingDownPayment,
+                    'residualValue' => $offer->pricingSnapshot()->residualValue,
+                    'currency' => $offer->pricingSnapshot()->currency,
+                    'durationMonths' => $offer->pricingSnapshot()->durationMonths,
+                    'annualInterestRateBasisPoints' => $offer->pricingSnapshot()->annualInterestRateBasisPoints,
+                    'calculationVersion' => $offer->pricingSnapshot()->calculationVersion,
+                ],
+                'createdAt' => $offer->createdAt()->format(DATE_ATOM),
+                'expiresAt' => $offer->expiresAt()->format(DATE_ATOM),
+            ], JsonResponse::HTTP_CREATED);
+            $response->headers->set('Cache-Control', 'no-store');
+
+            return $response;
+        } catch (InvalidArgumentException $exception) {
+            return new JsonResponse([
+                'error' => 'invalid_offer_request',
+                'message' => $exception->getMessage(),
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (Throwable $exception) {
+            $span->setStatus(StatusCode::STATUS_ERROR);
+            $span->recordException($exception);
+
+            throw $exception;
+        } finally {
+            $scope->detach();
+            $span->end();
+        }
+    }
+
     #[RequiresScope('offers:read')]
     #[Route('/api/offers/{vehicleId}', name: 'offer_show', methods: ['GET'])]
     public function show(string $vehicleId, Request $request): JsonResponse
