@@ -105,7 +105,10 @@ final class PricingQuoteController
         $ownerId = $principal->hasScope('pricing:quote:delete:any') ? null : $principal->subject;
 
         if (!$handler($tenantContext->requireTenantId(), $quoteId, $ownerId)) {
-            return new JsonResponse(['error' => 'quote_not_found'], JsonResponse::HTTP_NOT_FOUND);
+            return new JsonResponse([
+                'error' => 'quote_not_found',
+                'message' => 'The requested quote does not exist or is not visible to this caller.',
+            ], JsonResponse::HTTP_NOT_FOUND);
         }
 
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
@@ -123,7 +126,7 @@ final class PricingQuoteController
     }
 
     /**
-     * @return array<string, int|string>
+     * @return array<string, int|string|bool|null>
      */
     private function quoteToArray(PricingQuote $quote): array
     {
