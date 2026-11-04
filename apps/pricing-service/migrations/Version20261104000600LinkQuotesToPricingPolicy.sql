@@ -4,7 +4,7 @@ ALTER TABLE pricing_quotes
 
 ALTER TABLE pricing_quotes
     ADD CONSTRAINT pricing_quotes_policy_pair
-        CHECK ((policy_id IS NULL AND policy_version IS NULL) OR (policy_id IS NOT NULL AND policy_version > 0));
+        CHECK ((policy_id IS NULL AND policy_version IS NULL) OR (policy_id IS NOT NULL AND policy_version IS NOT NULL AND policy_version > 0));
 
 ALTER TABLE pricing_quotes
     ADD CONSTRAINT pricing_quotes_policy_fk
