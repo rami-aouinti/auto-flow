@@ -15,6 +15,11 @@ AutoFlow is an independent portfolio and learning project inspired by publicly o
 | [05 — Data architecture](05-data-architecture.md) | PostgreSQL, Redis, Elasticsearch, ownership and consistency |
 | [06 — Quality, security and operations](06-quality-security-operations.md) | Tests, static analysis, Docker, CI/CD, security and observability |
 | [07 — Architecture decisions](07-architecture-decisions.md) | ADRs: context, alternatives, rationale and trade-offs |
+| [08 — Architecture diagrams](08-architecture-diagrams.md) | C4 views, deployment topology and sequence diagrams |
+| [09 — Offer and Pricing code walkthrough](09-code-walkthrough-offer-pricing.md) | Existing service boundaries, HTTP integration and tracing |
+| [10 — Domain and persistence model](10-domain-data-model.md) | Conceptual leasing model, ownership, money and lifecycle |
+| [11 — Events and workflows](11-event-catalogue-and-workflows.md) | Event catalogue, Outbox, Messenger, Temporal and idempotency |
+| [12 — Pricing Service domain](12-pricing-service-domain.md) | Money, lease invariants, annuity calculation, API contract and next steps |
 
 ## How to interpret this documentation
 
@@ -33,13 +38,15 @@ The repository currently contains:
 - A monorepo with independent Symfony applications for Offer and Pricing.
 - PHP 8.4 and Symfony 7.4 service containers.
 - PostgreSQL, RabbitMQ, Redis and Elasticsearch infrastructure in Docker Compose.
-- A synchronous Offer → Pricing HTTP call.
+- A synchronous Offer → Pricing HTTP call using the legacy demonstration endpoint.
+- A new Pricing quote-calculation API with a Domain and Application layer.
+- Integer-minor-unit Money values, lease-term invariants and a versioned annuity calculation.
+- Unit tests for calculation and invalid domain inputs.
 - OpenTelemetry distributed tracing exported to Grafana Tempo.
 - Grafana, Prometheus, Loki, Grafana Alloy and infrastructure exporters.
 - Mercure and Mailpit for local integration scenarios.
-- PHP quality tooling including PHPUnit, PHPStan, PHP-CS-Fixer, PHP_CodeSniffer, PHPMD and Rector.
 
-The Offer and Pricing applications are technical demonstrations. Pricing currently returns static demo data. Full production bounded contexts, isolated service-owned data stores, complete Messenger business workflows, Temporal orchestration, a Transactional Outbox implementation and Kubernetes deployment must not be assumed to exist simply because they are discussed here.
+The Pricing calculation is an illustrative fixed-rate annuity model, not a regulated financial offer. Pricing policy persistence, quote snapshots, taxes, fees, customer-specific rules, authentication and production validation are not implemented yet. The legacy GET endpoint still returns static demonstration data so the existing Offer tracing path remains compatible.
 
 ## Architecture principles
 
