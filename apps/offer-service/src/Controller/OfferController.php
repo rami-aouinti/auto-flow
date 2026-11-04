@@ -351,6 +351,10 @@ final readonly class OfferController
             'quoteId' => $snapshot->quoteId,
             'vehicleId' => $snapshot->vehicleId,
             'status' => $offer->status()->value,
+            'publishedAt' => $offer->publishedAt()?->format(DATE_ATOM),
+            'acceptedAt' => $offer->acceptedAt()?->format(DATE_ATOM),
+            'rejectedAt' => $offer->rejectedAt()?->format(DATE_ATOM),
+            'expiredAt' => $offer->expiredAt()?->format(DATE_ATOM),
             'pricing' => [
                 'monthlyAmount' => $snapshot->monthlyAmount,
                 'totalInstallmentsAmount' => $snapshot->totalInstallmentsAmount,
