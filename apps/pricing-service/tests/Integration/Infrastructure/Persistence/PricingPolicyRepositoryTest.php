@@ -51,7 +51,9 @@ final class PricingPolicyRepositoryTest extends TestCase
         try {
             $tenant = $pdo->prepare("SELECT set_config('app.tenant_id', :tenant_id, true)");
             $tenant->execute(['tenant_id' => $tenantId]);
-            $update = $pdo->prepare('UPDATE pricing_policies SET maximum_annual_rate_bps = 1900 WHERE policy_id = :policy_id');
+            $update = $pdo->prepare(
+                'UPDATE pricing_policies SET maximum_annual_rate_bps = 1900 WHERE policy_id = :policy_id',
+            );
             $this->expectException(PDOException::class);
             $update->execute(['policy_id' => $policyId]);
         } finally {
