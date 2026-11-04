@@ -9,10 +9,14 @@ INSERT INTO pricing_policies (
     minimum_annual_rate_bps, maximum_annual_rate_bps,
     quote_validity_days, calculation_version, created_by, published_at
 ) VALUES (
-    '123e4567-e89b-42d3-a456-426614174000', 'tenant-demo', 1, 'active',
-    12, 72, 0, 2000, 7, 'lease-annuity-v1', 'policy-admin-demo', CURRENT_TIMESTAMP
+    '123e4567-e89b-42d3-a456-426614174000', 'tenant-demo', 1, 'draft',
+    12, 72, 0, 2000, 7, 'lease-annuity-v1', 'policy-admin-demo', NULL
 )
 ON CONFLICT (policy_id) DO NOTHING;
+
+UPDATE pricing_policies
+SET status = 'active', published_at = CURRENT_TIMESTAMP
+WHERE policy_id = '123e4567-e89b-42d3-a456-426614174000' AND status = 'draft';
 
 INSERT INTO pricing_quotes (
     quote_id, tenant_id, created_by, vehicle_id,
