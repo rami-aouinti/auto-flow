@@ -16,7 +16,7 @@ final class GrpcMetadata
      * @param array<string, string|list<string>> $metadata
      * @return array<string, string|list<string>>
      */
-    public static function normalize(array $metadata): array
+    public function normalize(array $metadata): array
     {
         $normalized = [];
 
@@ -46,9 +46,9 @@ final class GrpcMetadata
      * @param list<string> $allowedKeys
      * @return array<string, string|list<string>>
      */
-    public static function allowListed(array $metadata, array $allowedKeys): array
+    public function allowListed(array $metadata, array $allowedKeys): array
     {
-        $normalized = self::normalize($metadata);
+        $normalized = $this->normalize($metadata);
         $allowed = array_fill_keys(array_map('strtolower', $allowedKeys), true);
 
         return array_intersect_key($normalized, $allowed);
