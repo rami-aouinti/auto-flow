@@ -63,7 +63,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             $tenantId,
             static function (PDO $connection) use ($quoteId): ?PricingQuote {
                 $statement = $connection->prepare(
-                    'SELECT * FROM pricing_quotes WHERE quote_id = :quote_id',
+                    'SELECT * FROM pricing_quotes WHERE quote_id = :quote_id AND deleted_at IS NULL',
                 );
                 $statement->execute(['quote_id' => $quoteId]);
                 $row = $statement->fetch();
@@ -86,7 +86,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             $tenantId,
             static function (PDO $connection) use ($limit, $offset): array {
                 $statement = $connection->prepare(
-                    'SELECT * FROM pricing_quotes ORDER BY created_at DESC, quote_id ASC LIMIT :limit OFFSET :offset',
+                    'SELECT * FROM pricing_quotes WHERE deleted_at IS NULL ORDER BY created_at DESC, quote_id ASC LIMIT :limit OFFSET :offset',
                 );
                 $statement->bindValue('limit', $limit, PDO::PARAM_INT);
                 $statement->bindValue('offset', $offset, PDO::PARAM_INT);
@@ -108,7 +108,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             $tenantId,
             static function (PDO $connection) use ($quoteId): bool {
                 $statement = $connection->prepare(
-                    'DELETE FROM pricing_quotes WHERE quote_id = :quote_id',
+                    'UPDATE pricing_quotes SET deleted_at = CURRENT_TIMESTAMP WHERE quote_id = :quote_id AND deleted_at IS NULL',
                 );
                 $statement->execute(['quote_id' => $quoteId]);
 
