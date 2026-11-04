@@ -63,7 +63,7 @@ The payload is not trusted until the signature and claims have been validated. N
 
 ## 4. Tenant isolation
 
-Tenant context is resolved from the verified `tenant_id` claim for user tokens. Offer forwards that tenant to Pricing using `X-Tenant-ID` alongside its own service token. Pricing accepts this delegation only when the verified service token has the dedicated `tenant:delegate` scope. A tenant already present in a token cannot be overwritten by a different header value. Tenant-required HTTP routes are configured explicitly and fail closed when no valid tenant context can be resolved. Tenant-scoped persistence and resource-level membership checks remain service-owned responsibilities.
+Tenant context is resolved from the verified `tenant_id` claim for user tokens. Offer forwards that tenant to Pricing using `X-Tenant-ID` alongside its own service token. Pricing accepts this delegation only when the verified service token has the dedicated `tenant:delegate` scope. A tenant already present in a token cannot be overwritten by a different header value. Tenant-required HTTP routes are configured explicitly and fail closed when no valid tenant context can be resolved. Pricing now persists quote snapshots with a mandatory `tenant_id`. PostgreSQL row-level security is enabled and forced on `pricing_quotes`; the policy uses the transaction-local `app.tenant_id` setting for both row visibility and write checks. The Pricing service connects with a dedicated `NOSUPERUSER NOBYPASSRLS` role rather than the database bootstrap administrator. The repository sets the tenant inside the same transaction as the insert, so the policy is enforced by PostgreSQL even if an application query forgets a tenant predicate. Resource-level membership checks and tenant-scoped read APIs remain service-owned responsibilities.
 
 The tenant identifier in the access token is the active tenant, not proof that the user belongs to every tenant. Tenant selection must be validated against membership before a token for that tenant is issued.
 
@@ -106,11 +106,35 @@ Pact verifies consumer/provider expectations for important REST interactions. Op
 | RS256/JWKS validation in CoreBundle | Implemented in JWT foundation branch; CI pending |
 | Principal and tenant request context | Implemented: verified HTTP principal, request-scoped TenantContext, and explicit tenant delegation |
 | REST scope enforcement | Implemented for Offer read and Pricing quote endpoints; resource-level policies remain service-owned |
-| Tenant delegation policy and negative tests | Implemented for HTTP delegation; tenant-scoped persistence and cross-tenant resource tests remain planned |
+| Tenant delegation policy and negative tests | Implemented for HTTP and gRPC; Pricing quote persistence now has PostgreSQL RLS and tenant-isolation integration tests |
 | Traefik edge gateway | Planned |
 | Redis-backed rate limiting | Planned |
 | REST `/api/v1` migration | Planned |
 | Pact REST contracts | Planned |
 | Buf Protobuf compatibility checks | Planned |
 
-The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Tenant membership, resource-level authorization, tenant-scoped persistence, and cross-tenant integration tests are still service-owned follow-up work. See ADR-016 for decisions and trade-offs.
+The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Pricing quote writes are now tenant-bound and protected by PostgreSQL row-level security. The next increments are tenant membership/resource authorization, tenant-scoped quote reads and update/delete operations, and equivalent isolation for other services. See ADR-016 for decisions and trade-offs.
+
+
+## 10. Pricing quote persistence and PostgreSQL RLS
+
+Pricing stores each calculated quote as an immutable snapshot in `pricing_quotes`. The application layer depends on `PricingQuoteRepositoryInterface`; the PostgreSQL adapter is an infrastructure implementation. `quote_id` is generated independently of the tenant and `tenant_id` is always taken from the verified HTTP/gRPC principal, never from the request body.
+
+PostgreSQL enforces tenant isolation with row-level security:
+- `ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY` are applied to `pricing_quotes`;
+- `USING` restricts visible rows to `current_setting('app.tenant_id', true)`;
+- `WITH CHECK` rejects writes for a different tenant;
+- the repository sets the tenant with `set_config(..., true)` inside the same transaction as the insert;
+- the Pricing runtime uses the dedicated `autoflow_pricing` role with `NOSUPERUSER` and `NOBYPASSRLS`. Never run the service as the PostgreSQL bootstrap/superuser account.
+
+For a fresh local database, Docker Compose initializes the restricted role and quote schema automatically. If the existing PostgreSQL volume was created before this migration, apply it once:
+
+```bash
+docker compose exec -T postgres psql -U autoflow -d autoflow < apps/pricing-service/migrations/00_create_pricing_database_role.sql
+docker compose exec -T postgres psql -U autoflow -d autoflow < apps/pricing-service/migrations/Version20261104000100CreatePricingQuotes.sql
+docker compose up -d --force-recreate pricing-service
+```
+
+The role password in the local initialization SQL is for development only. Production deployments must provision a dedicated non-superuser database role and secret through the deployment secret manager, then grant only the required schema/table privileges. Do not reuse the local password.
+
+The Pricing Service GitHub workflow starts a real PostgreSQL instance and verifies that tenant B cannot read tenant A's row and cannot insert a row owned by tenant A. Unit tests remain runnable without PostgreSQL; the integration tests are enabled explicitly in CI.
