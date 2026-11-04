@@ -179,7 +179,7 @@ JsonSerializer::decode() rejects a non-null target class instead of silently ign
 
 ## gRPC boundaries
 
-The bundle provides helpers for textual metadata validation/allow-listing, a deadline value object and HTTP/gRPC status mapping. These helpers do not implement a gRPC client, automatic cross-service metadata propagation, transport cancellation or a service-specific authorization policy. Never forward authorization metadata implicitly.
+The bundle provides metadata validation/allow-listing, deadline and status helpers, plus GrpcRequestAuthenticator for JWT, scope and tenant checks inside a business RPC. Each RPC must invoke the authenticator with its required scope. It does not implement a gRPC client or automatic metadata propagation. Never forward authorization metadata implicitly.
 
 The shared PlatformHealthService/Ping contract is a protocol smoke check only. Business RPCs, their .proto files and generated business adapters remain service-owned and must delegate to that service's Application handlers. Do not expose internal gRPC listeners publicly without an explicit network/security requirement.
 
