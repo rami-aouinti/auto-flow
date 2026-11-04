@@ -13,7 +13,7 @@ use InvalidArgumentException;
 final class GrpcMetadata
 {
     /**
-     * @param array<string, string|list<string>> $metadata
+     * @param array<array-key, mixed> $metadata
      * @return array<string, string|list<string>>
      */
     public function normalize(array $metadata): array
@@ -21,19 +21,13 @@ final class GrpcMetadata
         $normalized = [];
 
         foreach ($metadata as $key => $value) {
-            $key = strtolower(trim($key));
+            $normalizedKey = $this->normalizeKey($key);
 
-            if (preg_match('/^[0-9a-z_.-]+$/D', $key) !== 1 || str_ends_with($key, '-bin')) {
-                throw new InvalidArgumentException('Invalid or unsupported gRPC metadata key.');
+            if (array_key_exists($normalizedKey, $normalized)) {
+                throw new InvalidArgumentException('Duplicate gRPC metadata keys are not allowed.');
             }
 
-            foreach (is_string($value) ? [$value] : $value as $item) {
-                if (str_contains($item, "\r") || str_contains($item, "\n")) {
-                    throw new InvalidArgumentException('Invalid gRPC metadata value.');
-                }
-            }
-
-            $normalized[$key] = $value;
+            $normalized[$normalizedKey] = $this->normalizeValue($value);
         }
 
         return $normalized;
@@ -42,15 +36,60 @@ final class GrpcMetadata
     /**
      * Copy only explicitly allowed operational metadata.
      *
-     * @param array<string, string|list<string>> $metadata
+     * @param array<array-key, mixed> $metadata
      * @param list<string> $allowedKeys
      * @return array<string, string|list<string>>
      */
     public function allowListed(array $metadata, array $allowedKeys): array
     {
         $normalized = $this->normalize($metadata);
-        $allowed = array_fill_keys(array_map(strtolower(...), $allowedKeys), true);
+        $allowed = [];
+
+        foreach ($allowedKeys as $allowedKey) {
+            $allowed[$this->normalizeKey($allowedKey)] = true;
+        }
 
         return array_intersect_key($normalized, $allowed);
+    }
+
+    private function normalizeKey(mixed $key): string
+    {
+        if (!is_string($key)) {
+            throw new InvalidArgumentException('gRPC metadata keys must be strings.');
+        }
+
+        $key = strtolower($key);
+
+        if (
+            preg_match('/^[0-9a-z_.-]+$/D', $key) !== 1
+            || str_starts_with($key, 'grpc-')
+            || str_ends_with($key, '-bin')
+        ) {
+            throw new InvalidArgumentException('Invalid or unsupported gRPC metadata key.');
+        }
+
+        return $key;
+    }
+
+    /**
+     * @return string|list<string>
+     */
+    private function normalizeValue(mixed $value): string|array
+    {
+        if (is_string($value)) {
+            $values = [$value];
+        } elseif (is_array($value) && array_is_list($value)) {
+            $values = $value;
+        } else {
+            throw new InvalidArgumentException('gRPC metadata values must be strings or lists of strings.');
+        }
+
+        foreach ($values as $item) {
+            if (!is_string($item) || preg_match('/^[\x20-\x7E]*$/D', $item) !== 1) {
+                throw new InvalidArgumentException('gRPC metadata values must contain printable ASCII only.');
+            }
+        }
+
+        return $value;
     }
 }
