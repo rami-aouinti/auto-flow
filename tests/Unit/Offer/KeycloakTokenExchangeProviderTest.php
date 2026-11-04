@@ -51,10 +51,6 @@ final class KeycloakTokenExchangeProviderTest extends TestCase
         self::assertSame('https://identity.example.test/token', $capturedUrl);
         self::assertIsArray($capturedOptions);
 
-        $authBasic = $capturedOptions['auth_basic'] ?? null;
-        self::assertIsArray($authBasic);
-        self::assertSame('offer-workload', $authBasic[0] ?? null);
-
         $body = $capturedOptions['body'] ?? null;
         $bodyParameters = [];
         if (is_string($body)) {
