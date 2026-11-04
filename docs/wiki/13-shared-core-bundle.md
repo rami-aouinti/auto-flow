@@ -94,7 +94,7 @@ When the package is published or the monorepo moves to versioned artifacts, repl
 ## 9. Configuration
 
 ```yaml
-autoflow_core:
+core:
     correlation_id: true
     correlation_header: X-Correlation-ID
 ```
