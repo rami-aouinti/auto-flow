@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AutoFlow\Tests\Unit\CoreBundle\Security;
 
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
-use AutoFlow\CoreBundle\Security\RequiresScope;
 use AutoFlow\CoreBundle\Security\ScopeAuthorizationSubscriber;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
