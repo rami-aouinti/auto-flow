@@ -8,7 +8,7 @@ use App\Application\DTO\PricingQuoteRequest;
 use App\Application\Port\Out\PricingGatewayInterface;
 use App\Domain\ValueObject\PricingSnapshot;
 use App\Security\KeycloakTokenExchangeProvider;
-use InvalidArgumentException;
+use UnexpectedValueException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final readonly class HttpPricingGateway implements PricingGatewayInterface
@@ -66,7 +66,7 @@ final readonly class HttpPricingGateway implements PricingGatewayInterface
         $value = $payload[$field] ?? null;
 
         if (!is_string($value) || trim($value) === '') {
-            throw new InvalidArgumentException(sprintf('Pricing response field "%s" is missing or invalid.', $field));
+            throw new UnexpectedValueException(sprintf('Pricing response field "%s" is missing or invalid.', $field));
         }
 
         return trim($value);
@@ -78,7 +78,7 @@ final readonly class HttpPricingGateway implements PricingGatewayInterface
         $value = $payload[$field] ?? null;
 
         if (!is_int($value)) {
-            throw new InvalidArgumentException(sprintf('Pricing response field "%s" is missing or invalid.', $field));
+            throw new UnexpectedValueException(sprintf('Pricing response field "%s" is missing or invalid.', $field));
         }
 
         return $value;
