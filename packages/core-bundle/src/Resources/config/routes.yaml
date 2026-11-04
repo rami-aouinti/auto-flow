@@ -1,0 +1,9 @@
+autoflow_core_health_live:
+    path: /health/live
+    controller: AutoFlow\CoreBundle\Health\HealthController::live
+    methods: [GET]
+
+autoflow_core_health_ready:
+    path: /health/ready
+    controller: AutoFlow\CoreBundle\Health\HealthController::ready
+    methods: [GET]
