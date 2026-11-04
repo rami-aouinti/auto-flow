@@ -7,6 +7,7 @@ namespace App\Tests\Integration\Infrastructure\Persistence;
 use App\Infrastructure\Persistence\PostgresConnection;
 use App\Infrastructure\Persistence\PostgresPricingPolicyRepository;
 use App\Tests\Fixtures\PricingPolicyFixture;
+use PDOException;
 use PHPUnit\Framework\TestCase;
 
 final class PricingPolicyRepositoryTest extends TestCase
