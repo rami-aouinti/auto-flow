@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Application\CreateOffer\CreateOfferCommand;
+use App\Application\CreateOffer\CreateOfferHandler;
 use App\Security\KeycloakTokenExchangeProvider;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
+use DateTimeImmutable;
 use InvalidArgumentException;
 use LogicException;
 use OpenTelemetry\API\Globals;
@@ -30,6 +33,8 @@ final readonly class OfferController
         private string $pricingServiceUrl,
         private KeycloakTokenExchangeProvider $pricingTokenExchange,
         private TenantContext $tenantContext,
+        private CreateOfferHandler $createOfferHandler,
+        private int $offerValidityDays,
     ) {
     }
 
