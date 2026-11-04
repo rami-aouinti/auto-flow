@@ -15,24 +15,37 @@ final readonly class VehicleGeneration
         public string $name,
         public ?int $productionStartYear,
         public ?int $productionEndYear,
-    ) {}
+    ) {
+    }
 
-    public static function create(string $modelId, string $name, ?int $startYear, ?int $endYear): self
-    {
+    public static function create(
+        string $modelId,
+        string $name,
+        ?int $startYear,
+        ?int $endYear,
+    ): self {
         $name = trim($name);
-        $currentYear = 2100;
+
         if ($name === '' || mb_strlen($name) > 80) {
             throw new InvalidArgumentException('Generation name must contain 1-80 characters.');
         }
+
         foreach ([$startYear, $endYear] as $year) {
-            if ($year !== null && ($year < 1886 || $year > $currentYear)) {
+            if ($year !== null && ($year < 1886 || $year > 2100)) {
                 throw new InvalidArgumentException('Production years are outside the supported range.');
             }
         }
+
         if ($startYear !== null && $endYear !== null && $endYear < $startYear) {
             throw new InvalidArgumentException('Production end year cannot precede start year.');
         }
 
-        return new self(CatalogueId::generate(), CatalogueId::fromString($modelId), $name, $startYear, $endYear);
+        return new self(
+            CatalogueId::generate(),
+            CatalogueId::fromString($modelId),
+            $name,
+            $startYear,
+            $endYear,
+        );
     }
 }
