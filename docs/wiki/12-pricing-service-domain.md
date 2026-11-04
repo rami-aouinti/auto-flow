@@ -1,33 +1,66 @@
-# 12 — Pricing Service: domain model and calculation
+# 12 — Pricing Service: domain, persistence and delivery
 
-## 1. Scope of this implementation
+## 1. Responsibility and boundaries
 
-The Pricing Service now has a first executable business capability: calculate an illustrative fixed-rate lease instalment from explicit inputs.
+Pricing owns the calculation of lease instalments and the immutable quote record produced by that calculation. It is the authoritative owner of pricing calculations and quote history.
 
-Implemented in this branch:
-- A Money value object using integer minor units and an explicit currency.
-- A LeaseTerms value object enforcing the input invariants.
-- A domain LeasePaymentCalculator.
-- An application command and handler.
-- A POST /api/pricing/quotes HTTP endpoint.
-- Unit tests for the calculation and important invalid inputs.
-- The previous GET endpoint remains temporarily available for the Offer tracing demo and is explicitly marked as legacy demo data.
+Pricing does not own:
+- Vehicle identity or technical specifications (Vehicle Catalog).
+- Commercial offer lifecycle and customer-facing publication (Offer).
+- Customer profile, order, contract or delivery lifecycle.
+- Direct access to another service's database.
 
-Not implemented yet:
-- Pricing policy persistence or administrative configuration.
-- Vehicle catalogue lookup or validation against a source of truth.
-- Customer-specific or campaign-specific pricing.
-- Taxes, fees, mileage, insurance, maintenance or partner commissions.
-- Quote persistence, expiry, approval and audit history.
-- Production financial/legal validation.
+Other services integrate through Pricing's HTTP or gRPC contracts. They must not read Pricing tables directly.
 
-This is a first vertical slice, not a complete commercial leasing engine.
+The current calculation is an illustrative fixed-rate annuity with a residual/balloon amount. It is not a regulated APR disclosure, lender commitment or legally binding offer. Day-count conventions, taxes, fees, insurance, maintenance, mileage, commissions and partner-specific rules require explicit product and legal decisions before they can be represented as production financial terms.
 
-## 2. Request contract
+## 2. Current implementation
 
-POST /api/pricing/quotes
+The following capabilities exist in the repository:
 
-~~~json
+### Domain
+- `Money`: integer minor units and ISO-like three-letter currency code.
+- `LeaseTerms`: validates currency consistency, down-payment and residual-value bounds, duration and annual rate.
+- `LeasePaymentCalculator`: deterministic annuity calculation with a separate zero-interest path.
+- `PricingQuote`: immutable calculation result with tenant, creator, input-derived result and calculation version.
+
+### Application
+- `CalculateQuoteCommand` and `CalculateQuoteHandler`.
+- Quote identifier generation through an application output port.
+- Repository output port used to persist the quote after calculation.
+- Read, list and soft-delete use cases.
+
+### Infrastructure
+- PostgreSQL PDO connection factory and repository adapter.
+- Tenant context is applied transaction-locally with `set_config('app.tenant_id', ..., true)`.
+- Repository operations run within tenant-scoped transactions.
+- PostgreSQL row-level security is enabled and forced on `pricing_quotes`.
+- Quote ownership is represented by `created_by`; read/delete-all scopes can widen owner access inside the current tenant.
+
+### HTTP API
+All protected routes require a verified bearer token and tenant context.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/pricing/quotes` | Calculate and persist a quote |
+| GET | `/api/pricing/quotes/{quoteId}` | Retrieve a quote within tenant/owner boundary |
+| GET | `/api/pricing/quotes` | List quotes with limit/offset pagination |
+| DELETE | `/api/pricing/quotes/{quoteId}` | Soft-delete a quote within tenant/owner boundary |
+| GET | `/health` | Process liveness |
+| GET | `/api/pricing/{vehicleId}` | Deprecated static demo compatibility endpoint |
+
+Money values are decimal strings in JSON, never floating-point JSON numbers. Quote responses use `Cache-Control: no-store`.
+
+### gRPC
+The RoadRunner gRPC server exposes `PricingService.CalculateQuote` using the versioned protobuf contract under `pricing.v1`. The gRPC adapter authenticates the request, checks the `pricing:quote` scope and delegated tenant, maps validation failures to `INVALID_ARGUMENT`, authentication failures to `UNAUTHENTICATED`, authorization failures to `PERMISSION_DENIED`, and JWKS outages to `UNAVAILABLE`.
+
+Offer currently uses the HTTP adapter and delegated-token flow. Keep HTTP as the active Offer integration until a generated PHP gRPC client and runtime are explicitly selected, installed, tested and benchmarked.
+
+## 3. HTTP request and response
+
+`POST /api/pricing/quotes`
+
+```json
 {
   "vehicleId": "vehicle-001",
   "vehiclePrice": "30000.00",
@@ -37,139 +70,111 @@ POST /api/pricing/quotes
   "durationMonths": 36,
   "annualInterestRateBasisPoints": 500
 }
-~~~
+```
 
-Money values are decimal strings rather than JSON floating-point numbers. This avoids introducing binary floating-point rounding before the domain receives the amount.
+Money fields must be decimal strings with at most two fractional digits. The response contains `quoteId`, `vehicleId`, monthly and total amounts, residual value, currency, duration, annual rate in basis points and `calculationVersion`.
 
-The response uses decimal strings for money too:
+The current domain validation allows durations from 12 to 72 months and nominal annual rates from 0 to 2,000 basis points. These are demonstration guardrails, not approved commercial policy. Do not widen or present them as product rules without a business decision.
 
-~~~json
-{
-  "vehicleId": "vehicle-001",
-  "monthlyAmount": "576.98",
-  "totalInstallmentsAmount": "20771.28",
-  "totalCostIncludingDownPayment": "23771.28",
-  "residualValue": "9000.00",
-  "currency": "EUR",
-  "durationMonths": 36,
-  "annualInterestRateBasisPoints": 500,
-  "calculationVersion": "lease-annuity-v1"
-}
-~~~
+## 4. Calculation model and rounding
 
-The response is marked Cache-Control: no-store. Pricing results may depend on time-sensitive policy and should not accidentally be cached by an intermediary.
+Let P be vehicle price, D down payment, R residual value, n number of monthly instalments and r the nominal annual rate divided by 12.
 
-## 3. Domain invariants
+For zero interest:
 
-LeaseTerms rejects:
-- Different currencies between vehicle price, down payment and residual value.
-- A down payment greater than the vehicle price.
-- A residual value greater than the price remaining after down payment.
-- A duration outside the current demonstration range of 12–72 months.
-- An annual nominal rate outside 0–2,000 basis points.
+```text
+monthly = (P - D - R) / n
+```
 
-These ranges are explicit demo policy assumptions, not market rules. A real business must own and approve them.
+For positive interest:
 
-Money stores amounts as integer minor units. The API does not accept negative values or more than two decimal places. The current implementation assumes two minor-unit digits and therefore must be extended before supporting currencies with different exponents.
+```text
+monthly = (P - D - R / (1 + r)^n) * r / (1 - (1 + r)^(-n))
+```
 
-## 4. Calculation model
+Inputs are represented in integer minor units. The monthly amount is rounded once to the nearest minor unit using half-away-from-zero. Total instalments are derived from the rounded monthly amount, ensuring the displayed monthly amount multiplied by the number of instalments equals the displayed total.
 
-Let:
-- P = vehicle price in minor units
-- D = down payment in minor units
-- R = residual value in minor units
-- n = number of monthly instalments
-- i = annual nominal interest rate as a decimal
-- r = i / 12 = monthly rate
+The current `Money` implementation assumes two fractional digits for every currency. Before enabling currencies with zero or three minor-unit digits, introduce a currency-exponent policy and migrate parsing, formatting, persistence and tests together.
 
-For a zero-interest contract:
+## 5. Persistence and tenant isolation
 
-~~~text
-monthly payment = (P - D - R) / n
-~~~
+The service-owned table is `pricing_quotes`. It stores the calculated amounts in integer minor units, currency, duration, annual interest basis points, calculation version, tenant, creator, creation time and soft-delete timestamp.
 
-For a positive monthly rate:
+The database role is `autoflow_pricing`. It must not be a superuser and must not have `BYPASSRLS`. RLS is both enabled and forced. The tenant policy compares `tenant_id` with transaction-local `current_setting('app.tenant_id', true)`.
 
-~~~text
-monthly payment =
-  (P - D - R / (1 + r)^n)
-  * r
-  / (1 - (1 + r)^(-n))
-~~~
+The application repository sets the tenant context within the same transaction as each query. Never set a session-wide tenant variable on a pooled or long-lived connection. A missing tenant context must expose zero rows and reject writes.
 
-The result is rounded once to the nearest minor unit using half-up rounding. The total instalments are calculated from the rounded monthly amount, so the displayed monthly amount multiplied by the number of instalments equals the displayed total instalments.
+The following checks have been executed against the local Docker database:
+- A quote created through Offer → Pricing returned HTTP 200 and was persisted with tenant `tenant-demo`.
+- The quote was visible to the `autoflow_pricing` role with tenant context `tenant-demo`.
+- The same role saw zero rows for that quote with tenant context `tenant-other`.
+- PostgreSQL reported both `relrowsecurity` and `relforcerowsecurity` as true.
 
-This is a simplified annuity model with a balloon/residual amount at the end. It is not a bank offer, APR disclosure or regulated financial quote. Real leasing calculations may use different day-count conventions, payment timing, fees, tax treatment, rate conventions, rounding and residual-value rules.
+These are local verification results, not a substitute for repeatable CI integration tests.
 
-## 5. Why these layers exist
+### Existing PostgreSQL volumes
 
-~~~text
-Presentation
-  Controller / HTTP
-      |
-      v
-Application
-  CalculateQuoteCommand
-  CalculateQuoteHandler
-      |
-      v
-Domain
-  Money
-  LeaseTerms
-  LeasePaymentCalculator
-  PricingQuote
-~~~
+Docker's `docker-entrypoint-initdb.d` scripts run only when the data directory is initialized for the first time. Adding a migration file later does not cause an existing volume to apply it. Apply new migrations explicitly and safely; do not delete the PostgreSQL volume to force initialization.
 
-- Presentation translates JSON and HTTP status codes. It does not calculate money.
-- Application coordinates the use case and turns external input into domain values.
-- Domain owns invariants and the calculation. It has no Symfony, HTTP, database or broker dependency.
-- Infrastructure is intentionally small at this stage because the calculation is deterministic and has no persistence requirement yet.
+The current SQL migrations are:
+- `Version20261104000100CreatePricingQuotes.sql`
+- `Version20261104000200AddPricingQuoteSoftDelete.sql`
+- `Version20261104000300AddPricingQuoteOwner.sql`
 
-The important dependency direction is inward. Symfony calls the application; the application calls the domain. The domain does not know that it is running inside a Symfony service.
+The role password in the role-creation SQL and `PRICING_DATABASE_URL` must remain aligned. Keep local credentials out of production configuration and inject production secrets through the deployment secret manager.
 
-## 6. Why no repository or PostgreSQL table yet?
+## 6. Security requirements
 
-A repository is justified when the use case needs to load or save a business object. The current calculation receives all required inputs and deterministically returns a result. Adding a repository now would create an abstraction with no real responsibility.
+- Validate JWT issuer, signature, expiry and audience according to the shared CoreBundle contract.
+- Require `pricing:quote` for quote calculation and access.
+- Require a tenant delegated by the authenticated principal; never trust an arbitrary tenant header without CoreBundle validation.
+- Default read/delete operations to the authenticated subject. Only explicit privileged scopes may widen access within the same tenant.
+- Keep RLS enabled and forced; application checks are additional controls, not replacements for RLS.
+- Never log bearer tokens, customer payloads or database credentials.
+- Quote endpoints must remain non-cacheable.
+- Return generic server errors; do not expose SQL, stack traces or internal infrastructure details.
 
-The next persistence increment should introduce a versioned PricingPolicy owned by Pricing, loaded through a repository. A later quote snapshot can preserve:
-- The exact input values used.
-- The policy/calculation version.
-- The calculated amounts and currency.
-- The creation time and validity deadline.
-- The identity of the requesting business operation, without copying unnecessary customer data.
+## 7. Pricing policy and quote lifecycle — next implementation increment
 
-PostgreSQL should persist policy versions and quote snapshots when those lifecycle requirements are agreed. It should not be used merely because the Compose stack already contains PostgreSQL.
+The current quote stores the calculation version but does not yet persist a separately managed commercial Pricing Policy or an expiry lifecycle. These are the next business capabilities; they must not be described as already implemented.
 
-## 7. Compatibility endpoint
+The intended design is:
 
-GET /api/pricing/{vehicleId} is retained only so the existing Offer → Pricing tracing demonstration continues to work. Its 329.00 EUR amount and response body remain unchanged for compatibility; the endpoint sends a deprecation header and remains static demonstration data.
+- A tenant-scoped, versioned `PricingPolicy` aggregate with immutable published versions.
+- Policy attributes initially limited to explicitly approved calculation inputs and guardrails: supported currencies, allowed durations, minimum/maximum annual nominal rate, default quote validity and calculation algorithm version.
+- Draft → published → retired lifecycle. Published versions are immutable; changes create a new version.
+- Policy selection is explicit and deterministic. The chosen policy version is copied into the quote snapshot.
+- Quote validity defaults to seven days, configurable by the selected policy. Store `expires_at` at creation; do not recompute old quote expiry from a later policy.
+- Expiration is evaluated at read/use boundaries and may be materialized asynchronously for operational reporting. Expiration must never rewrite the calculated amounts.
+- Existing API response fields remain backward compatible; additive metadata such as `policyVersion`, `createdAt` and `expiresAt` is introduced deliberately and documented in OpenAPI.
 
-New integrations must call POST /api/pricing/quotes and supply explicit lease terms. The Offer service has not yet been migrated to the new contract.
+A quote is a historical calculation snapshot. Updating or retiring a policy must never change an existing quote.
 
-## 8. Next engineering increments
+## 8. Quality and operational acceptance criteria
 
-1. Add API-level tests for valid requests, malformed JSON and domain validation responses.
-2. Define the business owner and lifecycle of pricing policies.
-3. Persist immutable, versioned pricing policies in a Pricing-owned PostgreSQL schema.
-4. Add quote snapshots and validity/expiry semantics.
-5. Migrate Offer to a typed Pricing API contract and explicit input source.
-6. Add OpenAPI documentation, authentication/authorization and rate/timeout policies.
-7. Add metrics for calculation volume, validation failures and latency.
+Before calling Pricing production-ready, CI must verify:
 
-Do not add RabbitMQ or Temporal to this calculation path without an asynchronous business requirement. A deterministic calculation needed immediately by Offer is a reasonable synchronous HTTP use case.
+1. Unit tests for Money, LeaseTerms and LeasePaymentCalculator, including boundaries, overflow and rounding.
+2. Application tests for quote creation and repository failures.
+3. HTTP functional tests for success, malformed JSON, missing/wrongly typed fields, invalid domain terms, authentication, scope and tenant errors.
+4. PostgreSQL integration tests using the non-owner application role, covering tenant read isolation, cross-tenant insert rejection, owner isolation, soft-delete and transaction-local tenant context.
+5. gRPC tests for successful calculation and status-code mapping.
+6. OpenAPI and protobuf compatibility checks.
+7. Static analysis, coding standards, dependency audit and container build.
+8. Readiness checks for PostgreSQL separately from process liveness.
+9. Metrics for calculation count, latency and error class, without high-cardinality tenant/user labels.
+10. Backup/restore and load-test procedures.
 
+## 9. Explicit non-goals until requirements exist
 
-## 9. Running the unit tests
+Do not invent customer-specific discounts, campaign stacking, VAT/tax calculation, insurance, maintenance, mileage charges, lender fees, residual-value prediction or credit scoring. These require product, legal and data-source decisions and should be introduced as separate policy/rule capabilities with documented ownership.
 
-The normal service image installs production dependencies only. To build a temporary test image with PHPUnit, run from the repository root:
+## 10. Implementation sequence
 
-~~~bash
-docker build -f docker/php/service.Dockerfile \
-  --build-arg SERVICE_PATH=apps/pricing-service \
-  --build-arg COMPOSER_NO_DEV= \
-  -t autoflow-pricing-test .
+1. Close API validation, error contract, health/readiness and automated test gaps.
+2. Implement versioned PricingPolicy persistence and administration use cases.
+3. Add immutable quote snapshots, validity metadata and expiry semantics.
+4. Complete REST/OpenAPI and gRPC contract tests.
+5. Add operational metrics, deployment checks, migration automation and load/restore verification.
 
-docker run --rm --entrypoint vendor/bin/phpunit autoflow-pricing-test
-~~~
-
-The build uses the same PHP 8.4 service image and Composer manifest, but includes development dependencies. The normal Compose Pricing image remains free of PHPUnit.
+The wiki status must be updated only after the relevant code is merged and its CI/integration evidence is available.
