@@ -99,15 +99,15 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
         ));
     }
 
-    public function findExpiredForTenant(string $tenantId, DateTimeImmutable $now, int $limit): array
+    public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
     {
         if ($limit < 1 || $limit > 1000) {
-            throw new \InvalidArgumentException('Expired offer query limit must be between 1 and 1000.');
+            throw new \\InvalidArgumentException('Expired offer query limit must be between 1 and 1000.');
         }
 
         return $this->withinTenantTransaction(
             $tenantId,
-            static function (PDO $connection) use ($now, $limit): array {
+            static function (PDO $connection) use ($now, $limit): int {
                 $statement = $connection->prepare(<<<'SQL'
                     SELECT *
                     FROM offers
@@ -115,15 +115,32 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                       AND expires_at <= :now
                     ORDER BY expires_at ASC
                     LIMIT :batch_size
+                    FOR UPDATE SKIP LOCKED
                     SQL);
                 $statement->bindValue('now', $now->format(DATE_ATOM));
                 $statement->bindValue('batch_size', $limit, PDO::PARAM_INT);
                 $statement->execute();
-
-                return array_map(
+                $offers = array_map(
                     static fn (array $row): Offer => self::hydrate($row),
                     $statement->fetchAll(),
                 );
+
+                $update = $connection->prepare(
+                    'UPDATE offers SET status = :status WHERE tenant_id = :tenant_id AND offer_id = :offer_id',
+                );
+
+                foreach ($offers as $offer) {
+                    $offer->expire($now);
+                    $update->execute([
+                        'status' => $offer->status()->value,
+                        'tenant_id' => $tenantId,
+                        'offer_id' => (string) $offer->id(),
+                    ]);
+                    self::appendOutboxEvents($connection, $offer->domainEvents());
+                    $offer->clearDomainEvents();
+                }
+
+                return count($offers);
             },
         );
     }
