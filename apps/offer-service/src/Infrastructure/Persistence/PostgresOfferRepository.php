@@ -60,7 +60,7 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                 'expires_at' => $offer->expiresAt()->format(DATE_ATOM),
             ]);
 
-            $this->appendOutboxEvents($connection, $events);
+            self::appendOutboxEvents($connection, $events);
         });
 
         $offer->clearDomainEvents();
@@ -177,7 +177,7 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
     }
 
     /** @param list<DomainEvent> $events */
-    private function appendOutboxEvents(PDO $connection, array $events): void
+    private static function appendOutboxEvents(PDO $connection, array $events): void
     {
         if ($events === []) {
             return;
