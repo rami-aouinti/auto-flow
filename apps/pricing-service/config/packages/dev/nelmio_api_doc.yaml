@@ -142,4 +142,4 @@ nelmio_api_doc:
                                                 example: demo-only
     areas:
         path_patterns:
-            - ^/api(?!/doc(?:\\.|$))
+            - ^/api(?!/doc)
