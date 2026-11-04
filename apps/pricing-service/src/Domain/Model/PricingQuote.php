@@ -43,7 +43,10 @@ final readonly class PricingQuote
             throw new InvalidArgumentException('Quote validity must be between 1 and 90 days.');
         }
         $this->expiresAt = $expiresAt ?? $this->createdAt->modify(sprintf('+%d days', $validityDays));
-        if (($this->policyId === null) !== ($this->policyVersion === null) || ($this->policyVersion !== null && $this->policyVersion < 1)) {
+        if (
+            ($this->policyId === null) !== ($this->policyVersion === null)
+            || ($this->policyVersion !== null && $this->policyVersion < 1)
+        ) {
             throw new InvalidArgumentException('Quote policy ID and version must be provided together.');
         }
 
