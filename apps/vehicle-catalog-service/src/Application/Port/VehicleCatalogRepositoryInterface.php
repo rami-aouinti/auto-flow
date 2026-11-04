@@ -11,15 +11,25 @@ use App\Domain\Entity\VehicleVariant;
 
 interface VehicleCatalogRepositoryInterface
 {
-    /** @return array{items:list<array<string,mixed>>,total:int} */
+    /**
+     * @param array<string, scalar|null> $filters
+     * @return array{items: list<array<string, mixed>>, total: int}
+     */
     public function listVehicles(array $filters, int $limit, int $offset): array;
-    /** @return array<string,mixed>|null */
+
+    /** @return array<string, mixed>|null */
     public function getVehicle(string $variantId, bool $publishedOnly = true): ?array;
-    /** @return list<array<string,mixed>> */
+
+    /** @return list<array<string, mixed>> */
     public function listManufacturers(bool $publishedOnly = true): array;
+
     public function createManufacturer(Manufacturer $manufacturer): void;
+
     public function createModel(VehicleModel $model): void;
+
     public function createGeneration(VehicleGeneration $generation): void;
+
     public function createVariant(VehicleVariant $variant): void;
+
     public function publishVariant(string $variantId): bool;
 }
