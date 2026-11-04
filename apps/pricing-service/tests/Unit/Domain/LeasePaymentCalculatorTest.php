@@ -30,12 +30,14 @@ final class LeasePaymentCalculatorTest extends TestCase
         $quote = (new LeasePaymentCalculator())->calculate(
             '0123456789abcdef0123456789abcdef',
             'tenant-a',
+            'user-a',
             'vehicle-001',
             $terms,
         );
 
         self::assertSame('0123456789abcdef0123456789abcdef', $quote->quoteId);
         self::assertSame('tenant-a', $quote->tenantId);
+        self::assertSame('user-a', $quote->createdBy);
         self::assertSame('vehicle-001', $quote->vehicleId);
         self::assertSame('500.00', $quote->monthlyAmount->toDecimal());
         self::assertSame('18000.00', $quote->totalInstallmentsAmount->toDecimal());
@@ -56,6 +58,7 @@ final class LeasePaymentCalculatorTest extends TestCase
         $quote = (new LeasePaymentCalculator())->calculate(
             '0123456789abcdef0123456789abcdef',
             'tenant-a',
+            'user-a',
             'vehicle-001',
             $terms,
         );
@@ -96,7 +99,7 @@ final class LeasePaymentCalculatorTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
 
-        (new LeasePaymentCalculator())->calculate('invalid-id', 'tenant-a', 'vehicle-001', $terms);
+        (new LeasePaymentCalculator())->calculate('invalid-id', 'tenant-a', 'user-a', 'vehicle-001', $terms);
     }
 
     public function testRejectsDownPaymentGreaterThanVehiclePrice(): void
