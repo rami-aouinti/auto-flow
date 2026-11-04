@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AutoFlow\Tests\Integration\Offer;
 
 use App\Domain\Entity\Offer;
+use App\Domain\Exception\ConcurrentOfferModification;
 use App\Domain\ValueObject\OfferId;
 use App\Domain\ValueObject\PricingSnapshot;
 use App\Infrastructure\Persistence\PostgresConnection;
@@ -74,6 +75,26 @@ final class PostgresOfferRepositoryIntegrationTest extends TestCase
         );
         $event->execute(['tenant_id' => $tenantId, 'offer_id' => (string) $offer->id()]);
         self::assertSame(1, (int) $event->fetchColumn());
+    }
+
+    public function testConcurrentLifecycleUpdateCannotOverwriteNewerStatus(): void
+    {
+        $tenantId = 'it-' . bin2hex(random_bytes(8));
+        $ownerId = 'it-owner-' . bin2hex(random_bytes(6));
+        $offer = $this->createOffer($tenantId, $ownerId, new DateTimeImmutable('+2 days'));
+        $this->repository->save($offer);
+
+        $firstRead = $this->repository->findById($offer->id(), $tenantId, $ownerId);
+        $staleRead = $this->repository->findById($offer->id(), $tenantId, $ownerId);
+        self::assertNotNull($firstRead);
+        self::assertNotNull($staleRead);
+
+        $firstRead->publish(new DateTimeImmutable('+1 minute'));
+        $this->repository->save($firstRead);
+
+        $staleRead->publish(new DateTimeImmutable('+2 minutes'));
+        $this->expectException(ConcurrentOfferModification::class);
+        $this->repository->save($staleRead);
     }
 
     private function createOffer(
