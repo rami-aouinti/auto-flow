@@ -15,12 +15,14 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
     /**
      * @param list<string> $protectedPrefixes
      * @param list<string> $excludedPaths
+     * @param list<string> $tenantRequiredPrefixes
      */
     public function __construct(
         private JwtTokenVerifier $tokenVerifier,
         private bool $enabled,
         private array $protectedPrefixes,
         private array $excludedPaths,
+        private array $tenantRequiredPrefixes = [],
     ) {
     }
 
@@ -89,6 +91,19 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
     {
         try {
             $principal = $this->tokenVerifier->verify($token);
+            if ($this->requiresTenant($request->getPathInfo()) && $principal->tenantId === null) {
+                $event->setResponse(new JsonResponse([
+                    'type' => 'about:blank',
+                    'title' => 'Tenant context required',
+                    'status' => 403,
+                    'detail' => 'This endpoint requires a tenant-scoped access token.',
+                ], JsonResponse::HTTP_FORBIDDEN, [
+                    'Cache-Control' => 'no-store',
+                ]));
+
+                return;
+            }
+
             $request->attributes->set(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal);
         } catch (JwksUnavailableException) {
             $event->setResponse(new JsonResponse([
@@ -102,6 +117,18 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
         } catch (InvalidTokenException) {
             $event->setResponse($this->unauthorized());
         }
+    }
+
+    private function requiresTenant(string $path): bool
+    {
+        foreach ($this->tenantRequiredPrefixes as $prefix) {
+            $normalizedPrefix = rtrim($prefix, '/');
+            if ($path === $normalizedPrefix || str_starts_with($path, $normalizedPrefix . '/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function unauthorized(): JsonResponse
