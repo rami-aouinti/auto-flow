@@ -27,8 +27,8 @@ jobs:
         run: docker compose --env-file .env.example config --quiet
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
-      - name: Run quality checks
-        run: composer quality
+      - name: Run Offer unit tests
+        run: vendor/bin/phpunit --configuration phpunit.xml tests/Unit/Offer
       - name: Start PostgreSQL and apply Offer migrations
         run: |
           docker compose --env-file .env.example up -d postgres
@@ -43,6 +43,8 @@ jobs:
         env:
           OFFER_TEST_DATABASE_URL: postgresql://autoflow_offer:local-only-offer-password@127.0.0.1:5432/autoflow
         run: vendor/bin/phpunit --configuration phpunit.xml tests/Integration/Offer
+      - name: Run quality checks
+        run: composer quality
       - name: Build instrumented Symfony services
         run: docker compose --env-file .env.example build php offer-service offer-expiration-worker offer-outbox-publisher pricing-service
       - name: Validate development OpenAPI generation
