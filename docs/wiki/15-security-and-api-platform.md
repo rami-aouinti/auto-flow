@@ -35,7 +35,7 @@ A valid JWT only establishes a verified identity and claims. Pricing still owns 
 
 ## 3. JWT contract
 
-**Implemented first slice:** both Symfony services protect `/api/*`, while `/health` and development-only Swagger endpoints remain public. Offer accepts audience `autoflow-offer`; Pricing accepts `autoflow-pricing`. The CoreBundle verifies RS256/JWKS and attaches an `AuthenticatedPrincipal` to the request. Offer performs standard OAuth 2.0 Token Exchange with the confidential `autoflow-offer-to-pricing` client, using the verified incoming access token as `subject_token` and `autoflow-pricing` as the target audience. Pricing receives a token for its own audience while retaining the end-user `sub`; it stores that subject as quote owner. The CoreBundle resolves authorization scopes from the JWT `scope` claim and Keycloak `realm_access.roles`. The local Keycloak realm configures the requester client audience and grants the demo user `offers:read` and `pricing:quote` realm roles. The password-grant client is strictly for local smoke testing; browser applications must use Authorization Code + PKCE.
+**Implemented first slice:** both Symfony services protect `/api/*`, while `/health` and development-only Swagger endpoints remain public. Offer accepts audience `autoflow-offer`; Pricing accepts `autoflow-pricing`. The CoreBundle verifies RS256/JWKS and attaches an `AuthenticatedPrincipal` to the request. Offer performs standard OAuth 2.0 Token Exchange with the confidential `autoflow-offer-to-pricing` client, using the verified incoming access token as `subject_token` and `autoflow-pricing` as the target audience. Pricing receives a token for its own audience while retaining the end-user `sub`; it stores that subject as quote owner. The CoreBundle resolves authorization scopes from the JWT `scope` claim and Keycloak `realm_access.roles`. The local Keycloak realm configures the requester client audience, maps the user's `tenant_id` attribute into both the incoming and exchanged tokens, and grants the demo user `offers:read` and `pricing:quote` realm roles. The password-grant client is strictly for local smoke testing; browser applications must use Authorization Code + PKCE.
 
 The resource services accept bearer access tokens and validate:
 - signature against the issuer's JWKS;
@@ -168,6 +168,7 @@ Keycloak configuration requirements:
 
 - Enable **Standard Token Exchange** for the confidential `autoflow-offer-to-pricing` requester client.
 - Ensure the original user token includes `autoflow-offer-to-pricing` in its `aud` claim. The local realm adds this audience mapper to `autoflow-local-client`.
+- Map a trusted user tenant attribute to the `tenant_id` claim on both the initial and exchanged token. The local demo user is assigned `tenant-demo`.
 - Allow the requester client to exchange to the `autoflow-pricing` audience.
 - Assign the required permissions to users through realm roles (for example, `offers:read` and `pricing:quote`). The CoreBundle maps these realm roles into its authorization scope list.
 - Keep the client secret in a secret manager/environment injection; never commit production credentials.
