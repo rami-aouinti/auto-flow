@@ -32,26 +32,75 @@ final class PostgresConnectionFactory
     {
         $parts = parse_url($databaseUrl);
 
-        if (!is_array($parts) || !in_array($parts['scheme'] ?? null, ['postgres', 'postgresql'], true)) {
-            throw new InvalidArgumentException('DATABASE_URL must use the postgres or postgresql scheme.');
+        if (!is_array($parts)) {
+            throw new InvalidArgumentException('DATABASE_URL is not a valid URL.');
         }
 
-        $host = $parts['host'] ?? null;
-        $database = isset($parts['path']) ? ltrim($parts['path'], '/') : '';
-        $username = $parts['user'] ?? null;
-
-        if (!is_string($host) || $host === '' || $database === '' || !is_string($username) || $username === '') {
-            throw new InvalidArgumentException('DATABASE_URL must define host, database and username.');
-        }
+        self::assertSupportedScheme($parts['scheme'] ?? null);
 
         return [
-            'host' => $host,
-            'port' => is_int($parts['port'] ?? null) ? $parts['port'] : 5432,
-            'database' => rawurldecode($database),
-            'username' => rawurldecode($username),
-            'password' => is_string($parts['pass'] ?? null) ? rawurldecode($parts['pass']) : '',
-            'query' => is_string($parts['query'] ?? null) ? $parts['query'] : '',
+            'host' => self::requiredPart($parts, 'host'),
+            'port' => self::port($parts),
+            'database' => self::database($parts),
+            'username' => rawurldecode(self::requiredPart($parts, 'user')),
+            'password' => rawurldecode(self::optionalPart($parts, 'pass')),
+            'query' => self::optionalPart($parts, 'query'),
         ];
+    }
+
+    private static function assertSupportedScheme(mixed $scheme): void
+    {
+        if (!in_array($scheme, ['postgres', 'postgresql'], true)) {
+            throw new InvalidArgumentException('DATABASE_URL must use the postgres or postgresql scheme.');
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $parts
+     */
+    private static function requiredPart(array $parts, string $key): string
+    {
+        $value = $parts[$key] ?? null;
+
+        if (!is_string($value) || $value === '') {
+            throw new InvalidArgumentException(sprintf('DATABASE_URL must define a non-empty "%s".', $key));
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<string, mixed> $parts
+     */
+    private static function optionalPart(array $parts, string $key): string
+    {
+        $value = $parts[$key] ?? '';
+
+        return is_string($value) ? $value : '';
+    }
+
+    /**
+     * @param array<string, mixed> $parts
+     */
+    private static function port(array $parts): int
+    {
+        $port = $parts['port'] ?? null;
+
+        return is_int($port) ? $port : 5432;
+    }
+
+    /**
+     * @param array<string, mixed> $parts
+     */
+    private static function database(array $parts): string
+    {
+        $database = ltrim(self::requiredPart($parts, 'path'), '/');
+
+        if ($database === '') {
+            throw new InvalidArgumentException('DATABASE_URL must define a database name.');
+        }
+
+        return rawurldecode($database);
     }
 
     /**
