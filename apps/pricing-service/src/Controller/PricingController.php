@@ -49,7 +49,7 @@ final class PricingController
                 residualValue: $this->requiredString($payload, 'residualValue'),
                 currency: $this->requiredString($payload, 'currency'),
                 durationMonths: $this->requiredInteger($payload, 'durationMonths'),
-                annualInterestRateBasisPoints: $this->requiredInteger($payload, 'annualInterestRateBasisPoints'),
+                annualRateBps: $this->requiredInteger($payload, 'annualInterestRateBasisPoints'),
             );
 
             $quote = $handler($command);

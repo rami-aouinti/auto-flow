@@ -12,6 +12,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(LeasePaymentCalculator::class)]
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 final class LeasePaymentCalculatorTest extends TestCase
 {
     public function testZeroInterestRateCalculatesStraightLineDepreciation(): void
@@ -24,7 +27,8 @@ final class LeasePaymentCalculatorTest extends TestCase
             annualInterestRateBasisPoints: 0,
         );
 
-        $quote = (new LeasePaymentCalculator())->calculate('vehicle-001', $terms);
+        $calculator = new LeasePaymentCalculator();
+        $quote = $calculator->calculate('vehicle-001', $terms);
 
         self::assertSame('500.00', $quote->monthlyAmount->toDecimal());
         self::assertSame('18000.00', $quote->totalInstallmentsAmount->toDecimal());
@@ -42,7 +46,8 @@ final class LeasePaymentCalculatorTest extends TestCase
             annualInterestRateBasisPoints: 500,
         );
 
-        $quote = (new LeasePaymentCalculator())->calculate('vehicle-001', $terms);
+        $calculator = new LeasePaymentCalculator();
+        $quote = $calculator->calculate('vehicle-001', $terms);
 
         self::assertGreaterThan(50000, $quote->monthlyAmount->minorUnits);
         self::assertSame('EUR', $quote->monthlyAmount->currency);

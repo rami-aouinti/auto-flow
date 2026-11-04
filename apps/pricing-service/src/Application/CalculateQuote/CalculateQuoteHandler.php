@@ -9,6 +9,9 @@ use App\Domain\Service\LeasePaymentCalculator;
 use App\Domain\ValueObject\LeaseTerms;
 use App\Domain\ValueObject\Money;
 
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 final readonly class CalculateQuoteHandler
 {
     public function __construct(
@@ -25,7 +28,7 @@ final readonly class CalculateQuoteHandler
             downPayment: Money::fromDecimal($command->downPayment, $currency),
             residualValue: Money::fromDecimal($command->residualValue, $currency),
             durationMonths: $command->durationMonths,
-            annualInterestRateBasisPoints: $command->annualInterestRateBasisPoints,
+            annualInterestRateBasisPoints: $command->annualRateBps,
         );
 
         return $this->calculator->calculate($command->vehicleId, $terms);

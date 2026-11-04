@@ -15,6 +15,9 @@ ARG SERVICE_PATH
 ARG COMPOSER_NO_DEV=--no-dev
 WORKDIR /app
 
+# The build context is the repository root. Copy the local Composer path repository
+# into the image so ../../packages/core-bundle resolves from /app.
+COPY packages/core-bundle/ /packages/core-bundle/
 COPY ${SERVICE_PATH}/composer.json ./composer.json
 RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-progress --no-scripts
 

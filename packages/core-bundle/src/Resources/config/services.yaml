@@ -1,0 +1,26 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    AutoFlow\CoreBundle\:
+        resource: '../../'
+        exclude:
+            - '../../DependencyInjection/'
+            - '../../Resources/'
+            - '../../Tests/'
+            - '../../CoreBundle.php'
+
+    AutoFlow\CoreBundle\Http\Correlation\CorrelationIdSubscriber:
+        arguments:
+            $headerName: '%autoflow_core.correlation_header%'
+
+    AutoFlow\CoreBundle\Http\Client\CorrelationIdHttpClient:
+        decorates: http_client
+        arguments:
+            $inner: '@.inner'
+            $headerName: '%autoflow_core.correlation_header%'
+
+    AutoFlow\CoreBundle\Health\HealthController:
+        arguments:
+            $checks: !tagged_iterator autoflow_core.health_check

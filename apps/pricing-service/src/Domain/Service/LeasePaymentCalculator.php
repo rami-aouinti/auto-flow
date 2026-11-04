@@ -9,6 +9,10 @@ use App\Domain\ValueObject\LeaseTerms;
 use App\Domain\ValueObject\Money;
 use InvalidArgumentException;
 
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ */
 final class LeasePaymentCalculator
 {
     public function calculate(string $vehicleId, LeaseTerms $terms): PricingQuote
@@ -28,7 +32,7 @@ final class LeasePaymentCalculator
             $monthlyAmount = ($presentValue * $monthlyRate) / (1 - $discountFactor);
         }
 
-        $monthlyMinorUnits = (int) round($monthlyAmount, 0, PHP_ROUND_HALF_UP);
+        $monthlyMinorUnits = (int) round($monthlyAmount, 0, \RoundingMode::HalfAwayFromZero);
 
         if ($monthlyMinorUnits > intdiv(PHP_INT_MAX, $terms->durationMonths)) {
             throw new InvalidArgumentException('Calculated total exceeds the supported monetary range.');

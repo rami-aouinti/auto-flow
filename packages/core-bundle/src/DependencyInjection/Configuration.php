@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AutoFlow\CoreBundle\DependencyInjection;
+
+use Symfony\Component\Config\Definition\Builder\TreeBuilder;
+use Symfony\Component\Config\Definition\ConfigurationInterface;
+
+final class Configuration implements ConfigurationInterface
+{
+    public function getConfigTreeBuilder(): TreeBuilder
+    {
+        $treeBuilder = new TreeBuilder('core');
+        $root = $treeBuilder->getRootNode();
+
+        $root
+            ->children()
+                ->booleanNode('correlation_id')->defaultTrue()->end()
+                ->scalarNode('correlation_header')->defaultValue('X-Correlation-ID')->end()
+            ->end();
+
+        return $treeBuilder;
+    }
+}

@@ -57,6 +57,25 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Redis | localhost:6379 | Cache and ephemeral data |
 | OTLP gRPC / HTTP | localhost:4317 / 4318 | OpenTelemetry trace ingestion |
 
+## CoreBundle quick check
+
+Every HTTP request handled by Offer or Pricing receives a validated or generated `X-Correlation-ID`. The ID is returned in the response and propagated by the Symfony HttpClient decorator to downstream HTTP calls.
+
+```bash
+curl -i http://localhost:8081/api/offers/demo-vehicle-001
+```
+
+Inspect the `X-Correlation-ID` response header. The outgoing Offer → Pricing request carries the same value.
+
+The bundle also adds:
+- `GET /health/live` — liveness endpoint.
+- `GET /health/ready` — readiness endpoint aggregating registered health checks.
+- Messenger correlation stamp/middleware for services that configure Messenger.
+- A transport-neutral integration-event envelope.
+- A Problem Details response factory for explicit HTTP error mapping.
+
+Existing `/health` routes remain unchanged for current Docker Compose health checks. See [CoreBundle documentation](packages/core-bundle/README.md) and [Wiki chapter 13](docs/wiki/13-shared-core-bundle.md). Readiness checks for real dependencies must be registered by each service.
+
 ## Distributed tracing quick start
 
 The Offer and Pricing services are Symfony 7.4 applications with independent Composer projects.

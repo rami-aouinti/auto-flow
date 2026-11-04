@@ -1,0 +1,2 @@
+autoflow_core:
+    resource: '@CoreBundle/Resources/config/routes.yaml'

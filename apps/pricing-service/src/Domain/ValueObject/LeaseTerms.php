@@ -6,6 +6,9 @@ namespace App\Domain\ValueObject;
 
 use InvalidArgumentException;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 final readonly class LeaseTerms
 {
     public function __construct(
