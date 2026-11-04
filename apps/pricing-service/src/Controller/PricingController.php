@@ -107,12 +107,10 @@ final class PricingController
 
             $response = new JsonResponse([
                 'vehicleId' => $vehicleId,
-                'monthlyAmount' => '329.00',
+                'monthlyAmount' => 329.00,
                 'currency' => 'EUR',
                 'durationMonths' => 48,
-                'calculation' => 'legacy-demo-only',
-                'deprecated' => true,
-                'message' => 'Use POST /api/pricing/quotes to calculate a quote from explicit lease terms.',
+                'calculation' => 'demo-only',
             ]);
             $response->headers->set('Deprecation', 'true');
             $response->headers->set('Cache-Control', 'no-store');
