@@ -36,6 +36,10 @@ final class Offer
         private readonly PricingSnapshot $pricingSnapshot,
         private readonly DateTimeImmutable $createdAt,
         private readonly DateTimeImmutable $expiresAt,
+        private ?DateTimeImmutable $publishedAt = null,
+        private ?DateTimeImmutable $acceptedAt = null,
+        private ?DateTimeImmutable $rejectedAt = null,
+        private ?DateTimeImmutable $expiredAt = null,
     ) {
         $this->status = OfferStatus::Draft;
     }
@@ -83,9 +87,17 @@ final class Offer
         DateTimeImmutable $createdAt,
         DateTimeImmutable $expiresAt,
         OfferStatus $status,
+        ?DateTimeImmutable $publishedAt = null,
+        ?DateTimeImmutable $acceptedAt = null,
+        ?DateTimeImmutable $rejectedAt = null,
+        ?DateTimeImmutable $expiredAt = null,
     ): self {
         $offer = self::create($id, $tenantId, $createdBy, $pricingSnapshot, $createdAt, $expiresAt);
         $offer->status = $status;
+        $offer->publishedAt = $publishedAt;
+        $offer->acceptedAt = $acceptedAt;
+        $offer->rejectedAt = $rejectedAt;
+        $offer->expiredAt = $expiredAt;
         $offer->persistedStatus = $status;
         $offer->clearDomainEvents();
 
@@ -105,6 +117,7 @@ final class Offer
         }
 
         $this->status = OfferStatus::Published;
+        $this->publishedAt = $publishedAt;
         $this->record(new OfferPublished(
             eventId: (string) OfferId::generate(),
             tenantId: $this->tenantId,
@@ -130,6 +143,7 @@ final class Offer
         }
 
         $this->status = OfferStatus::Accepted;
+        $this->acceptedAt = $acceptedAt;
     }
 
     public function reject(DateTimeImmutable $rejectedAt): void
@@ -141,6 +155,7 @@ final class Offer
         }
 
         $this->status = OfferStatus::Rejected;
+        $this->rejectedAt = $rejectedAt;
     }
 
     public function expire(DateTimeImmutable $expiredAt): void
@@ -154,6 +169,7 @@ final class Offer
         }
 
         $this->status = OfferStatus::Expired;
+        $this->expiredAt = $expiredAt;
         $this->record(new OfferExpired(
             eventId: (string) OfferId::generate(),
             tenantId: $this->tenantId,
@@ -230,6 +246,26 @@ final class Offer
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function publishedAt(): ?DateTimeImmutable
+    {
+        return $this->publishedAt;
+    }
+
+    public function acceptedAt(): ?DateTimeImmutable
+    {
+        return $this->acceptedAt;
+    }
+
+    public function rejectedAt(): ?DateTimeImmutable
+    {
+        return $this->rejectedAt;
+    }
+
+    public function expiredAt(): ?DateTimeImmutable
+    {
+        return $this->expiredAt;
     }
 
     public function expiresAt(): DateTimeImmutable
