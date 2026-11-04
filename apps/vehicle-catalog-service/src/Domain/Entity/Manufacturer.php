@@ -15,15 +15,20 @@ final readonly class Manufacturer
         public string $code,
         public string $name,
         public CatalogStatus $status,
-    ) {}
+    ) {
+    }
 
     public static function register(string $code, string $name): self
     {
         $code = strtoupper(trim($code));
         $name = trim($name);
+
         if (preg_match('/^[A-Z0-9][A-Z0-9_-]{1,39}$/D', $code) !== 1) {
-            throw new InvalidArgumentException('Manufacturer code must contain 2-40 uppercase letters, digits, underscores or hyphens.');
+            throw new InvalidArgumentException(
+                'Manufacturer code must contain 2-40 uppercase letters, digits, underscores or hyphens.',
+            );
         }
+
         if ($name === '' || mb_strlen($name) > 120) {
             throw new InvalidArgumentException('Manufacturer name must contain 1-120 characters.');
         }
