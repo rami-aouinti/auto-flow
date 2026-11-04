@@ -59,15 +59,15 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
         });
     }
 
-    public function findById(OfferId $id, string $tenantId): ?Offer
+    public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
     {
         return $this->withinTenantTransaction(
             $tenantId,
-            static function (PDO $connection) use ($id): ?Offer {
+            static function (PDO $connection) use ($id, $ownerId): ?Offer {
                 $statement = $connection->prepare(
-                    'SELECT * FROM offers WHERE offer_id = :offer_id LIMIT 1',
+                    'SELECT * FROM offers WHERE offer_id = :offer_id AND created_by = :created_by LIMIT 1',
                 );
-                $statement->execute(['offer_id' => (string) $id]);
+                $statement->execute(['offer_id' => (string) $id, 'created_by' => $ownerId]);
                 $row = $statement->fetch();
 
                 if (!is_array($row)) {
