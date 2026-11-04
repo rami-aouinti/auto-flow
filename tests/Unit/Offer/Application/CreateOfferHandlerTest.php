@@ -61,6 +61,16 @@ final class CreateOfferHandlerTest extends TestCase
             {
                 return null;
             }
+
+            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+            {
+                return [];
+            }
+
+            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
+            {
+                return 0;
+            }
         };
 
         $handler = new CreateOfferHandler($gateway, $repository);
