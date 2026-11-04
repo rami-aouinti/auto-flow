@@ -9,5 +9,19 @@ services:
             - '../src/Kernel.php'
             - '../src/App/Grpc/Generated/'
 
+    PDO:
+        factory: ['App\Infrastructure\Persistence\PostgresConnectionFactory', 'create']
+        arguments:
+            - '%env(resolve:DATABASE_URL)%'
+
+    App\Application\Port\Out\PricingQuoteRepositoryInterface:
+        alias: App\Infrastructure\Persistence\PostgresPricingQuoteRepository
+
+    App\Infrastructure\Persistence\PostgresPricingQuoteRepository:
+        lazy: true
+
+    App\Application\Port\Out\QuoteIdGeneratorInterface:
+        alias: App\Infrastructure\Persistence\RandomQuoteIdGenerator
+
     App\Grpc\PricingGrpcService:
         public: true
