@@ -27,6 +27,22 @@ services:
             $inner: '@.inner'
             $headerName: '%autoflow_core.correlation_header%'
 
+    AutoFlow\CoreBundle\Security\JwksKeyProvider:
+        arguments:
+            $jwksUri: '%autoflow_core.jwt.jwks_uri%'
+            $cacheTtlSeconds: '%autoflow_core.jwt.jwks_cache_ttl%'
+
+    AutoFlow\CoreBundle\Security\JwtTokenVerifier:
+        arguments:
+            $issuer: '%autoflow_core.jwt.issuer%'
+            $audience: '%autoflow_core.jwt.audience%'
+
+    AutoFlow\CoreBundle\Security\JwtAuthenticationSubscriber:
+        arguments:
+            $enabled: '%autoflow_core.jwt.enabled%'
+            $protectedPrefixes: '%autoflow_core.jwt.protected_path_prefixes%'
+            $excludedPaths: '%autoflow_core.jwt.excluded_paths%'
+
     AutoFlow\CoreBundle\Health\HealthController:
         arguments:
             $checks: !tagged_iterator autoflow_core.health_check

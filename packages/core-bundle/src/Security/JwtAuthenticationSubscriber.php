@@ -1,0 +1,101 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AutoFlow\CoreBundle\Security;
+
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
+
+final readonly class JwtAuthenticationSubscriber implements EventSubscriberInterface
+{
+    /**
+     * @param list<string> $protectedPrefixes
+     * @param list<string> $excludedPaths
+     */
+    public function __construct(
+        private JwtTokenVerifier $tokenVerifier,
+        private bool $enabled,
+        private array $protectedPrefixes,
+        private array $excludedPaths,
+    ) {
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [KernelEvents::REQUEST => ['onKernelRequest', 8]];
+    }
+
+    public function onKernelRequest(RequestEvent $event): void
+    {
+        if (!$this->enabled || !$event->isMainRequest()) {
+            return;
+        }
+
+        $request = $event->getRequest();
+        if (!$this->isProtectedPath($request->getPathInfo())) {
+            return;
+        }
+
+        $token = $this->extractBearerToken($request);
+        if ($token === null) {
+            $event->setResponse($this->unauthorized());
+
+            return;
+        }
+
+        $this->authenticate($event, $request, $token);
+    }
+
+    private function isProtectedPath(string $path): bool
+    {
+        if (in_array($path, $this->excludedPaths, true)) {
+            return false;
+        }
+
+        return array_any($this->protectedPrefixes, fn (string $prefix): bool => str_starts_with($path, $prefix));
+    }
+
+    private function extractBearerToken(Request $request): ?string
+    {
+        $authorization = $request->headers->get('Authorization', '');
+        if (!is_string($authorization) || preg_match('/^Bearer\s+(.+)$/i', $authorization, $matches) !== 1) {
+            return null;
+        }
+
+        return trim($matches[1]);
+    }
+
+    private function authenticate(RequestEvent $event, Request $request, string $token): void
+    {
+        try {
+            $principal = $this->tokenVerifier->verify($token);
+            $request->attributes->set(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal);
+        } catch (JwksUnavailableException) {
+            $event->setResponse(new JsonResponse([
+                'type' => 'about:blank',
+                'title' => 'Authentication service unavailable',
+                'status' => 503,
+                'detail' => 'The signing keys cannot currently be retrieved.',
+            ], JsonResponse::HTTP_SERVICE_UNAVAILABLE));
+        } catch (InvalidTokenException) {
+            $event->setResponse($this->unauthorized());
+        }
+    }
+
+    private function unauthorized(): JsonResponse
+    {
+        return new JsonResponse([
+            'type' => 'about:blank',
+            'title' => 'Unauthorized',
+            'status' => 401,
+            'detail' => 'A valid bearer access token is required.',
+        ], JsonResponse::HTTP_UNAUTHORIZED, [
+            'WWW-Authenticate' => 'Bearer',
+            'Cache-Control' => 'no-store',
+        ]);
+    }
+}

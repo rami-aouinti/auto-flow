@@ -9,3 +9,12 @@ parameters:
             - apps/offer-service/*
             - apps/pricing-service/*
     tmpDir: var/phpstan
+
+    ignoreErrors:
+        # PHPMD's documented suppression annotation is not standard PHPDoc syntax.
+        - identifier: phpDoc.parseError
+          path: packages/core-bundle/src/Security/JwksKeyProvider.php
+        - identifier: phpDoc.parseError
+          path: packages/core-bundle/src/Security/JwtTokenVerifier.php
+        - identifier: phpDoc.parseError
+          path: tests/Unit/CoreBundle/Security/JwtTokenVerifierTest.php

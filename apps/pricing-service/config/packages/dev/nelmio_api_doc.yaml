@@ -7,6 +7,14 @@ nelmio_api_doc:
         servers:
             - url: http://localhost:8082
               description: Local development
+        components:
+            securitySchemes:
+                bearerAuth:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+        security:
+            - bearerAuth: []
         paths:
             /api/pricing/quotes:
                 post:

@@ -35,6 +35,8 @@ A valid JWT only establishes a verified identity and claims. Pricing still owns 
 
 ## 3. JWT contract
 
+**Implemented first slice:** both Symfony services protect `/api/*`, while `/health` and development-only Swagger endpoints remain public. Offer accepts audience `autoflow-offer`; Pricing accepts `autoflow-pricing`. The CoreBundle verifies RS256/JWKS and attaches an `AuthenticatedPrincipal` to the request. Offer obtains its own Pricing-audience token using Client Credentials. The local Keycloak realm contains a demo user and a password-grant client strictly for local smoke testing; browser applications must use Authorization Code + PKCE.
+
 The resource services accept bearer access tokens and validate:
 - signature against the issuer's JWKS;
 - explicitly allowed algorithm (RS256);
@@ -96,9 +98,9 @@ Pact verifies consumer/provider expectations for important REST interactions. Op
 
 | Capability | Status |
 | --- | --- |
-| Keycloak local identity provider | Planned |
-| RS256/JWKS validation in CoreBundle | Planned |
-| Principal and tenant request context | Planned |
+| Keycloak local identity provider | Implemented in JWT foundation branch (local realm) |
+| RS256/JWKS validation in CoreBundle | Implemented in JWT foundation branch; CI pending |
+| Principal and tenant request context | Verified principal attached to HTTP request; tenant claim exposed when present |
 | Service-specific permission policies | Planned |
 | Tenant-scoped persistence and negative tests | Planned |
 | Traefik edge gateway | Planned |
@@ -107,4 +109,4 @@ Pact verifies consumer/provider expectations for important REST interactions. Op
 | Pact REST contracts | Planned |
 | Buf Protobuf compatibility checks | Planned |
 
-Implementation is split into small pull requests, starting with JWT authentication and the tenant/principal context. See ADR-016 for decisions and trade-offs.
+The first implementation slice adds Keycloak for local token issuance, RS256/JWKS verification in CoreBundle, audience isolation for Offer and Pricing, and a dedicated client-credentials token for Offer → Pricing. It does not yet enforce scopes, tenant membership, or tenant-scoped persistence; those remain the next security increment. See ADR-016 for decisions and trade-offs.
