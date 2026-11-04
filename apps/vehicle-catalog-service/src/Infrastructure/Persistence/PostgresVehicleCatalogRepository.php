@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\\Infrastructure\\Persistence;
+namespace App\Infrastructure\Persistence;
 
-use App\\Application\\Port\\VehicleCatalogRepositoryInterface;
-use App\\Domain\\Entity\\Manufacturer;
-use App\\Domain\\Entity\\VehicleGeneration;
-use App\\Domain\\Entity\\VehicleModel;
-use App\\Domain\\Entity\\VehicleVariant;
+use App\Application\Port\VehicleCatalogRepositoryInterface;
+use App\Domain\Entity\Manufacturer;
+use App\Domain\Entity\VehicleGeneration;
+use App\Domain\Entity\VehicleModel;
+use App\Domain\Entity\VehicleVariant;
 use PDO;
 use Throwable;
 
@@ -19,7 +19,7 @@ final readonly class PostgresVehicleCatalogRepository implements VehicleCatalogR
     public function listVehicles(array $filters, int $limit, int $offset): array
     {
         if ($limit < 1 || $limit > 100 || $offset < 0) {
-            throw new \\InvalidArgumentException('Limit must be 1-100 and offset must be non-negative.');
+            throw new \InvalidArgumentException('Limit must be 1-100 and offset must be non-negative.');
         }
         $where = ["v.status = 'published'", "g.status = 'published'", "m.status = 'published'", "mf.status = 'published'"];
         $params = [];
@@ -168,7 +168,7 @@ final readonly class PostgresVehicleCatalogRepository implements VehicleCatalogR
             $operation($db);
             $eventId=bin2hex(random_bytes(16));
             $event=['eventId'=>$eventId,'eventType'=>$type,'schemaVersion'=>1,'aggregateId'=>$aggregateId,
-                'occurredAt'=>(new \\DateTimeImmutable())->format(DATE_ATOM),'payload'=>$payload];
+                'occurredAt'=>(new \DateTimeImmutable())->format(DATE_ATOM),'payload'=>$payload];
             $s=$db->prepare('INSERT INTO catalog_outbox(event_id,aggregate_id,event_type,schema_version,payload) VALUES(:id,:aggregate,:type,1,:payload)');
             $s->execute(['id'=>$eventId,'aggregate'=>$aggregateId,'type'=>$type,'payload'=>json_encode($event,JSON_THROW_ON_ERROR)]);
             $db->commit();
