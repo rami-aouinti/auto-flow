@@ -56,7 +56,23 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
             return false;
         }
 
-        return array_any($this->protectedPrefixes, fn (string $prefix): bool => str_starts_with($path, $prefix));
+        foreach ($this->protectedPrefixes as $prefix) {
+            $normalizedPrefix = rtrim($prefix, '/');
+
+            if ($normalizedPrefix === '') {
+                if (str_starts_with($path, '/')) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if ($path === $normalizedPrefix || str_starts_with($path, $normalizedPrefix . '/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function extractBearerToken(Request $request): ?string
