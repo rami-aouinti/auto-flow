@@ -15,7 +15,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\HttpKernel\TerminableInterface;
-use Symfony\Contracts\Service\ResetInterface;
 use Throwable;
 
 /**
@@ -26,7 +25,7 @@ use Throwable;
  */
 final readonly class SymfonyHttpWorker
 {
-    public function run(KernelInterface&TerminableInterface&ResetInterface $kernel): void
+    public function run(KernelInterface&TerminableInterface $kernel): void
     {
         $factory = new Psr17Factory();
         $worker = new PSR7Worker(Worker::create(), $factory, $factory, $factory);
@@ -84,8 +83,6 @@ final readonly class SymfonyHttpWorker
                         if ($request instanceof Request) {
                             $kernel->terminate($request, $response);
                         }
-                    } finally {
-                        $kernel->reset();
                     }
                 }
             }
