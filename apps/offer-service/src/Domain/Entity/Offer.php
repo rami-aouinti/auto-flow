@@ -129,9 +129,14 @@ final class Offer
         $this->status = OfferStatus::Accepted;
     }
 
-    public function reject(): void
+    public function reject(DateTimeImmutable $rejectedAt): void
     {
         $this->assertStatus(OfferStatus::Published);
+
+        if ($rejectedAt < $this->createdAt || $rejectedAt >= $this->expiresAt) {
+            throw new InvalidOfferTransition('An offer can only be rejected during its validity period.');
+        }
+
         $this->status = OfferStatus::Rejected;
     }
 
