@@ -53,6 +53,9 @@ final readonly class PricingPolicy
         if (trim($calculationVersion) === '' || trim($createdBy) === '') {
             throw new InvalidArgumentException('Pricing policy version and creator are required.');
         }
+        if ($calculationVersion !== 'lease-annuity-v1') {
+            throw new InvalidArgumentException('The selected pricing calculation algorithm is not supported.');
+        }
         if (($status !== 'draft') !== ($publishedAt !== null)) {
             throw new InvalidArgumentException('Active and retired policies must retain their publication timestamp.');
         }
