@@ -173,7 +173,7 @@ final class PostgresTenantIsolationTest extends TestCase
         self::assertContainsEquals($found, $tenantQuotes);
 
         self::assertTrue($repository->delete('tenant-a', $quoteId, 'user-a'));
-        self::assertNull($repository->findById('tenant-a', $quoteId));
+        self::assertNull($repository->findById('tenant-a', $quoteId, 'user-a'));
 
         $this->connection->beginTransaction();
 
