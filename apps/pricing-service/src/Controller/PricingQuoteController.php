@@ -32,7 +32,10 @@ final class PricingQuoteController
             return new JsonResponse(['error' => 'quote_not_found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
-        return new JsonResponse($this->quoteToArray($quote));
+        $response = new JsonResponse($this->quoteToArray($quote));
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     #[RequiresScope('pricing:quote')]
@@ -61,11 +64,14 @@ final class PricingQuoteController
             ], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        return new JsonResponse([
+        $response = new JsonResponse([
             'items' => array_map($this->quoteToArray(...), $quotes),
             'limit' => $limit,
             'offset' => $offset,
         ]);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     #[RequiresScope('pricing:quote')]
