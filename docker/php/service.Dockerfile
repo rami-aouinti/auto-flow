@@ -12,10 +12,11 @@ RUN apt-get update \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 ARG SERVICE_PATH
+ARG COMPOSER_NO_DEV=--no-dev
 WORKDIR /app
 
 COPY ${SERVICE_PATH}/composer.json ./composer.json
-RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts
+RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-progress --no-scripts
 
 COPY ${SERVICE_PATH}/ ./
 
