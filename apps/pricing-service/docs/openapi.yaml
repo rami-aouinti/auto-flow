@@ -59,6 +59,8 @@ paths:
           description: Missing or invalid bearer token
         '403':
           description: Missing pricing scope or tenant authorization
+        '400':
+          description: Malformed JSON request body
         '422':
           description: Invalid lease terms or request payload
         '500':
@@ -122,6 +124,14 @@ paths:
           description: Missing or invalid bearer token
         '403':
           description: Missing pricing scope
+  /ready:
+    get:
+      summary: PostgreSQL readiness probe
+      responses:
+        '200':
+          description: PostgreSQL is reachable
+        '503':
+          description: PostgreSQL is unavailable
   /health:
     get:
       summary: Liveness probe
@@ -165,3 +175,6 @@ components:
         calculationVersion: { type: string }
         createdAt: { type: string, format: date-time }
         expiresAt: { type: string, format: date-time }
+        policyId: { type: string, nullable: true, format: uuid }
+        policyVersion: { type: integer, nullable: true, minimum: 1 }
+        expired: { type: boolean }
