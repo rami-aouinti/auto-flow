@@ -33,6 +33,12 @@ final class PricingPolicyTest extends TestCase
         self::assertSame($publishedAt, $retired->publishedAt);
     }
 
+    public function testPolicyRejectsAnAlgorithmVersionWithoutAnImplementedCalculator(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        PricingPolicyFixture::draft(calculationVersion: 'lease-annuity-v2');
+    }
+
     public function testActivePolicyCannotBePublishedTwice(): void
     {
         $active = PricingPolicyFixture::draft()->activate(new DateTimeImmutable('2026-11-04T13:00:00+00:00'));
