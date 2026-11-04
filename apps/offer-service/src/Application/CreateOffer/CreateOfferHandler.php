@@ -9,6 +9,7 @@ use App\Application\Port\Out\PricingGatewayInterface;
 use App\Domain\Entity\Offer;
 use App\Domain\Repository\OfferRepositoryInterface;
 use App\Domain\ValueObject\OfferId;
+use UnexpectedValueException;
 
 final readonly class CreateOfferHandler
 {
