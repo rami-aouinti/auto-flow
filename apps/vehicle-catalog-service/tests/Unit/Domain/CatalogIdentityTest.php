@@ -15,6 +15,7 @@ final class CatalogIdentityTest extends TestCase
     public function testManufacturerCodeIsNormalized(): void
     {
         $manufacturer = Manufacturer::register('bmw', 'BMW');
+
         self::assertSame('BMW', $manufacturer->code);
         self::assertSame(32, strlen($manufacturer->id->value));
     }
@@ -22,13 +23,16 @@ final class CatalogIdentityTest extends TestCase
     public function testBlankManufacturerNameIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
+
         Manufacturer::register('BMW', ' ');
     }
 
     public function testGenerationCannotEndBeforeItStarts(): void
     {
         $model = VehicleModel::create(str_repeat('a', 32), '3 Series');
+
         $this->expectException(InvalidArgumentException::class);
+
         VehicleGeneration::create($model->id->value, 'G20', 2024, 2018);
     }
 }
