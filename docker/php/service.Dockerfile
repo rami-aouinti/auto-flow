@@ -6,7 +6,7 @@ COPY --from=roadrunner /usr/bin/rr /usr/local/bin/rr
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        unzip zip libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev \
+        unzip zip protobuf-compiler libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev \
     && docker-php-ext-install -j"$(nproc)" intl curl mbstring opcache sockets zip \
     && pecl install opentelemetry \
     && docker-php-ext-enable opentelemetry \
@@ -26,9 +26,23 @@ RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-prog
 
 COPY ${SERVICE_PATH}/ ./
 
+# Generate service-owned PHP Protobuf message classes from the service contracts.
+# The RoadRunner ServiceInterface is kept explicit in source so its method names remain reviewable.
+RUN if [ -d proto ]; then \
+        find proto -name '*.proto' -print0 | xargs -0 -r protoc -I proto -I /usr/include --php_out=src; \
+    fi \
+    && apt-get purge -y protobuf-compiler \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
 # Fail the image build if Symfony configuration or the kernel cannot boot.
 RUN APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret PRICING_SERVICE_URL=http://pricing-service:8080 \
     php -r 'require "vendor/autoload.php"; $kernel = new \App\Kernel("prod", false); $kernel->boot(); $kernel->shutdown();'
+
+# Resolve the generated Pricing gRPC adapter through Symfony DI during the image build.
+RUN if [ -f src/Grpc/PricingGrpcService.php ]; then \
+    APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret php -r 'require "vendor/autoload.php"; $kernel = new \App\Kernel("prod", false); $kernel->boot(); $kernel->getContainer()->get(\App\Grpc\PricingGrpcService::class); $kernel->shutdown();'; \
+    fi
 
 # Boot both RoadRunner worker pools during the image build and verify the server config.
 # A clean timeout is expected because the server is intentionally long-running.

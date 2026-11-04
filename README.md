@@ -45,7 +45,7 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
 | Pricing Service | http://localhost:8082 | Demo pricing API |
 | Offer Service gRPC | localhost:9001 | Internal gRPC listener (platform Ping smoke check) |
-| Pricing Service gRPC | localhost:9002 | Internal gRPC listener (platform Ping smoke check) |
+| Pricing Service gRPC | localhost:9002 | `PricingService.CalculateQuote` plus platform Ping |
 | RabbitMQ Management | http://localhost:15672 | Exchanges, queues, consumers, message rates and connections |
 | Elasticsearch | http://localhost:9200 | Search and indexing API |
 | Kibana | http://localhost:5601 | Elasticsearch indices, documents, queries and dashboards |
@@ -79,7 +79,21 @@ grpcurl -plaintext \
   localhost:9002 autoflow.core.v1.PlatformHealthService/Ping
 ~~~
 
-This Ping verifies the gRPC listener and worker registration. It is not a business API; Pricing and Offer business RPCs will have their own versioned service contracts.
+This Ping verifies the gRPC listener and worker registration. The Pricing service also exposes a versioned business RPC, shown below. Offer business RPCs and the Offer → Pricing gRPC client are still pending.
+
+Call the Pricing business RPC (same Application handler as the REST endpoint):
+
+~~~bash
+grpcurl -plaintext \
+  -import-path packages/core-bundle/proto \
+  -import-path apps/pricing-service/proto \
+  -proto core/v1/health.proto \
+  -proto pricing/v1/pricing.proto \
+  -d '{"vehicleId":"vehicle-001","vehiclePrice":"30000.00","downPayment":"3000.00","residualValue":"9000.00","currency":"EUR","durationMonths":36,"annualInterestRateBasisPoints":500}' \
+  localhost:9002 autoflow.pricing.v1.PricingService/CalculateQuote
+~~~
+
+The gRPC adapter maps the Protobuf request into `CalculateQuoteCommand` and delegates to the same `CalculateQuoteHandler` as REST. Money values stay decimal strings; no floating-point conversion is introduced.
 
 The bundle also adds:
 - `GET /health/live` — liveness endpoint.
