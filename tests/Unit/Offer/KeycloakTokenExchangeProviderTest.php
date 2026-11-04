@@ -18,7 +18,11 @@ final class KeycloakTokenExchangeProviderTest extends TestCase
         $capturedUrl = '';
         $capturedOptions = null;
         $client = new MockHttpClient(
-            static function (string $requestMethod, string $url, array|string $options) use (
+            static function (
+                string $requestMethod,
+                string $url,
+                array|string $options,
+            ) use (
                 &$method,
                 &$capturedUrl,
                 &$capturedOptions,
