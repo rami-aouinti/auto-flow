@@ -27,9 +27,14 @@ final class LeasePaymentCalculatorTest extends TestCase
             annualInterestRateBasisPoints: 0,
         );
 
-        $calculator = new LeasePaymentCalculator();
-        $quote = $calculator->calculate('tenant-a', 'vehicle-001', $terms);
+        $quote = (new LeasePaymentCalculator())->calculate(
+            '0123456789abcdef0123456789abcdef',
+            'tenant-a',
+            'vehicle-001',
+            $terms,
+        );
 
+        self::assertSame('0123456789abcdef0123456789abcdef', $quote->quoteId);
         self::assertSame('tenant-a', $quote->tenantId);
         self::assertSame('vehicle-001', $quote->vehicleId);
         self::assertSame('500.00', $quote->monthlyAmount->toDecimal());
@@ -48,8 +53,12 @@ final class LeasePaymentCalculatorTest extends TestCase
             annualInterestRateBasisPoints: 500,
         );
 
-        $calculator = new LeasePaymentCalculator();
-        $quote = $calculator->calculate('tenant-a', 'vehicle-001', $terms);
+        $quote = (new LeasePaymentCalculator())->calculate(
+            '0123456789abcdef0123456789abcdef',
+            'tenant-a',
+            'vehicle-001',
+            $terms,
+        );
 
         self::assertGreaterThan(50000, $quote->monthlyAmount->minorUnits);
         self::assertSame('EUR', $quote->monthlyAmount->currency);
@@ -67,7 +76,27 @@ final class LeasePaymentCalculatorTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
 
-        (new LeasePaymentCalculator())->calculate('../tenant-b', 'vehicle-001', $terms);
+        (new LeasePaymentCalculator())->calculate(
+            '0123456789abcdef0123456789abcdef',
+            '../tenant-b',
+            'vehicle-001',
+            $terms,
+        );
+    }
+
+    public function testRejectsInvalidQuoteIdentifier(): void
+    {
+        $terms = new LeaseTerms(
+            vehiclePrice: Money::fromDecimal('30000.00', 'EUR'),
+            downPayment: Money::fromDecimal('3000.00', 'EUR'),
+            residualValue: Money::fromDecimal('9000.00', 'EUR'),
+            durationMonths: 36,
+            annualInterestRateBasisPoints: 500,
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+
+        (new LeasePaymentCalculator())->calculate('invalid-id', 'tenant-a', 'vehicle-001', $terms);
     }
 
     public function testRejectsDownPaymentGreaterThanVehiclePrice(): void
