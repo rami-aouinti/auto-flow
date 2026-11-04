@@ -8,8 +8,8 @@ use App\Application\DTO\PricingQuoteRequest;
 use App\Application\Port\Out\PricingGatewayInterface;
 use App\Domain\ValueObject\PricingSnapshot;
 use App\Security\KeycloakTokenExchangeProvider;
-use UnexpectedValueException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use UnexpectedValueException;
 
 final readonly class HttpPricingGateway implements PricingGatewayInterface
 {

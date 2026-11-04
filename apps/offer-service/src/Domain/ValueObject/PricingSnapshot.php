@@ -25,24 +25,31 @@ final readonly class PricingSnapshot
         public int $annualInterestRateBasisPoints,
         public string $calculationVersion,
     ) {
-        foreach ([
+        $requiredStrings = [
             'quoteId' => $quoteId,
             'vehicleId' => $vehicleId,
             'calculationVersion' => $calculationVersion,
-        ] as $field => $value) {
+        ];
+
+        foreach ($requiredStrings as $field => $value) {
             if (trim($value) === '') {
                 throw new InvalidArgumentException(sprintf('%s must not be empty.', $field));
             }
         }
 
-        foreach ([
+        $amounts = [
             'monthlyAmount' => $monthlyAmount,
             'totalInstallmentsAmount' => $totalInstallmentsAmount,
             'totalCostIncludingDownPayment' => $totalCostIncludingDownPayment,
             'residualValue' => $residualValue,
-        ] as $field => $amount) {
+        ];
+
+        foreach ($amounts as $field => $amount) {
             if (preg_match('/^(0|[1-9][0-9]*)\.[0-9]{2}$/D', $amount) !== 1) {
-                throw new InvalidArgumentException(sprintf('%s must be a non-negative decimal with two fractional digits.', $field));
+                throw new InvalidArgumentException(sprintf(
+                    '%s must be a non-negative decimal with two fractional digits.',
+                    $field,
+                ));
             }
         }
 

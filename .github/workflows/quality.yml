@@ -27,12 +27,49 @@ jobs:
         run: docker compose --env-file .env.example config --quiet
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
-      - name: Run quality checks
-        run: composer quality
+      - name: Run Offer unit tests
+        run: vendor/bin/phpunit --configuration phpunit.xml tests/Unit/Offer
+      - name: Start PostgreSQL and apply Offer migrations
+        run: |
+          docker compose --env-file .env.example up -d postgres rabbitmq
+          for attempt in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -U autoflow -d autoflow; then
+              break
+            fi
+            sleep 2
+          done
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.offer_outbox_events') IS NOT NULL AS outbox_ready"
+          for attempt in $(seq 1 30); do
+            if docker compose exec -T rabbitmq rabbitmq-diagnostics -q listeners >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+          docker compose exec -T rabbitmq rabbitmq-diagnostics listeners
+          docker compose exec -T rabbitmq rabbitmqctl list_users
+          timeout 2 bash -c '</dev/tcp/127.0.0.1/5672'
+      - name: Run Offer PostgreSQL and RabbitMQ integration tests
+        env:
+          OFFER_TEST_DATABASE_URL: postgresql://autoflow_offer:local-only-offer-password@127.0.0.1:5432/autoflow
+          RABBITMQ_TEST_HOST: 127.0.0.1
+          RABBITMQ_TEST_PORT: 5672
+          RABBITMQ_TEST_USER: autoflow
+          RABBITMQ_TEST_PASSWORD: autoflow
+        run: vendor/bin/phpunit --configuration phpunit.xml tests/Integration/Offer
+      - name: Collect RabbitMQ diagnostics on failure
+        if: failure()
+        run: |
+          docker compose logs rabbitmq
+          docker compose exec -T rabbitmq rabbitmq-diagnostics listeners || true
+          docker compose exec -T rabbitmq rabbitmqctl list_users || true
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service pricing-service
+        run: docker compose --env-file .env.example build php offer-service offer-expiration-worker offer-outbox-publisher pricing-service
       - name: Validate development OpenAPI generation
         run: |
-          docker compose --env-file .env.example run --rm --no-deps offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
-          docker compose --env-file .env.example run --rm --no-deps pricing-service php bin/console nelmio:apidoc:dump --format=json > /tmp/pricing-openapi.json
-          php -r '$offer = json_decode(file_get_contents("/tmp/offer-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $pricing = json_decode(file_get_contents("/tmp/pricing-openapi.json"), true, flags: JSON_THROW_ON_ERROR); if (!isset($offer["paths"]["/api/offers/{vehicleId}"]["get"]) || !isset($pricing["paths"]["/api/pricing/quotes"]["post"])) { fwrite(STDERR, "Expected REST paths are missing from the generated OpenAPI documents.\n"); exit(1); }'
+          docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
+          docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev pricing-service php bin/console nelmio:apidoc:dump --format=json > /tmp/pricing-openapi.json
+          php -r '$offer = json_decode(file_get_contents("/tmp/offer-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $pricing = json_decode(file_get_contents("/tmp/pricing-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $offerPaths = $offer["paths"] ?? []; if (!isset($offerPaths["/api/offers/{vehicleId}"]["post"], $offerPaths["/api/offers/{offerId}"]["get"], $offerPaths["/api/offers/{offerId}/publish"]["post"], $offerPaths["/api/offers/{offerId}/accept"]["post"], $offerPaths["/api/offers/{offerId}/reject"]["post"], $pricing["paths"]["/api/pricing/quotes"]["post"])) { fwrite(STDERR, "Expected Offer lifecycle or Pricing REST paths are missing from the generated OpenAPI documents.\n"); exit(1); }'
+      - name: Run PHPStan analysis
+        run: composer phpstan
+      - name: Run quality checks
+        run: composer quality

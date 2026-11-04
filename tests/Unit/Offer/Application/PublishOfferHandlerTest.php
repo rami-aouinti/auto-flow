@@ -40,6 +40,16 @@ final class PublishOfferHandlerTest extends TestCase
                     ? $this->offer
                     : null;
             }
+
+            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+            {
+                return [];
+            }
+
+            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
+            {
+                return 0;
+            }
         };
 
         $handler = new PublishOfferHandler($repository);
@@ -71,6 +81,16 @@ final class PublishOfferHandlerTest extends TestCase
             {
                 return $this->offer->createdBy() === $ownerId ? $this->offer : null;
             }
+
+            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+            {
+                return [];
+            }
+
+            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
+            {
+                return 0;
+            }
         };
 
         $handler = new PublishOfferHandler($repository);
@@ -98,9 +118,19 @@ final class PublishOfferHandlerTest extends TestCase
                 $this->offer = $offer;
             }
 
-            public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
+            public function findById(OfferId $id, string $tenantId, string $ownerId): Offer
             {
                 return $this->offer;
+            }
+
+            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+            {
+                return [];
+            }
+
+            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
+            {
+                return 0;
             }
         };
 

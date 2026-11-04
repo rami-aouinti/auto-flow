@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AutoFlow\Tests\Unit\Offer\Domain;
 
 use App\Domain\Entity\Offer;
+use App\Domain\Event\OfferCreated;
+use App\Domain\Event\OfferExpired;
+use App\Domain\Event\OfferPublished;
 use App\Domain\Exception\InvalidOfferTransition;
 use App\Domain\ValueObject\OfferId;
 use App\Domain\ValueObject\OfferStatus;
@@ -25,6 +28,47 @@ final class OfferTest extends TestCase
         self::assertSame('tenant-1', $offer->tenantId());
     }
 
+    public function testCreationRecordsOfferCreatedDomainEvent(): void
+    {
+        $offer = $this->createOffer();
+
+        self::assertCount(1, $offer->domainEvents());
+        self::assertInstanceOf(OfferCreated::class, $offer->domainEvents()[0]);
+    }
+
+    public function testPublishAndExpireRecordTheirDomainEvents(): void
+    {
+        $offer = $this->createOffer();
+        $publishedAt = new DateTimeImmutable('2026-11-05T10:00:00+00:00');
+        $offer->publish($publishedAt);
+
+        self::assertInstanceOf(OfferPublished::class, $offer->domainEvents()[1]);
+        self::assertEquals($publishedAt, $offer->publishedAt());
+
+        $expiredAt = new DateTimeImmutable('2026-11-12T00:00:00+00:00');
+        $offer->expire($expiredAt);
+
+        self::assertCount(3, $offer->domainEvents());
+        self::assertInstanceOf(OfferExpired::class, $offer->domainEvents()[2]);
+        self::assertEquals($expiredAt, $offer->expiredAt());
+    }
+
+    public function testReconstitutedOfferDoesNotEmitCreationEvent(): void
+    {
+        $offer = $this->createOffer();
+        $reconstituted = Offer::reconstitute(
+            $offer->id(),
+            $offer->tenantId(),
+            $offer->createdBy(),
+            $offer->pricingSnapshot(),
+            $offer->createdAt(),
+            $offer->expiresAt(),
+            OfferStatus::Draft,
+        );
+
+        self::assertSame([], $reconstituted->domainEvents());
+    }
+
     public function testPublishedOfferCanBeAccepted(): void
     {
         $offer = $this->createOffer();
@@ -32,9 +76,41 @@ final class OfferTest extends TestCase
 
         self::assertSame(OfferStatus::Published, $offer->status());
 
-        $offer->accept(new DateTimeImmutable('2026-11-05T12:00:00+00:00'));
+        $acceptedAt = new DateTimeImmutable('2026-11-05T12:00:00+00:00');
+        $offer->accept($acceptedAt);
 
         self::assertSame(OfferStatus::Accepted, $offer->status());
+        self::assertEquals($acceptedAt, $offer->acceptedAt());
+    }
+
+    public function testPublishedOfferCanBeRejectedAndRecordsTimestamp(): void
+    {
+        $offer = $this->createOffer();
+        $offer->publish(new DateTimeImmutable('2026-11-04T12:00:00+00:00'));
+        $rejectedAt = new DateTimeImmutable('2026-11-05T12:00:00+00:00');
+
+        $offer->reject($rejectedAt);
+
+        self::assertSame(OfferStatus::Rejected, $offer->status());
+        self::assertEquals($rejectedAt, $offer->rejectedAt());
+    }
+
+    public function testOfferCannotBeAcceptedBeforePublicationTime(): void
+    {
+        $offer = $this->createOffer();
+        $offer->publish(new DateTimeImmutable('2026-11-06T12:00:00+00:00'));
+
+        $this->expectException(InvalidOfferTransition::class);
+        $offer->accept(new DateTimeImmutable('2026-11-05T12:00:00+00:00'));
+    }
+
+    public function testOfferCannotBeRejectedBeforePublicationTime(): void
+    {
+        $offer = $this->createOffer();
+        $offer->publish(new DateTimeImmutable('2026-11-06T12:00:00+00:00'));
+
+        $this->expectException(InvalidOfferTransition::class);
+        $offer->reject(new DateTimeImmutable('2026-11-05T12:00:00+00:00'));
     }
 
     public function testDraftOfferCannotBeAccepted(): void
@@ -53,6 +129,15 @@ final class OfferTest extends TestCase
         $offer->publish(new DateTimeImmutable('2026-12-01T00:00:00+00:00'));
     }
 
+    public function testPublishedOfferCannotBeRejectedAfterExpiration(): void
+    {
+        $offer = $this->createOffer();
+        $offer->publish(new DateTimeImmutable('2026-11-05T10:00:00+00:00'));
+
+        $this->expectException(InvalidOfferTransition::class);
+        $offer->reject(new DateTimeImmutable('2026-11-12T00:00:00+00:00'));
+    }
+
     public function testOfferCanExpireOnlyAtOrAfterItsExpirationTime(): void
     {
         $offer = $this->createOffer();
@@ -67,6 +152,7 @@ final class OfferTest extends TestCase
         $offer->expire(new DateTimeImmutable('2026-11-11T00:00:00+00:00'));
 
         self::assertSame(OfferStatus::Expired, $offer->status());
+        self::assertEquals(new DateTimeImmutable('2026-11-11T00:00:00+00:00'), $offer->expiredAt());
     }
 
     public function testCreationRejectsExpirationBeforeCreation(): void

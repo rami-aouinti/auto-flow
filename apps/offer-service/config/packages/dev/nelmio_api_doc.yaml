@@ -2,7 +2,7 @@ nelmio_api_doc:
     documentation:
         info:
             title: AutoFlow Offer Service API
-            description: REST API for composing vehicle offers from downstream pricing data.
+            description: REST API for creating and managing vehicle offers.
             version: 1.0.0
         servers:
             - url: http://localhost:8081
@@ -17,41 +17,116 @@ nelmio_api_doc:
             - bearerAuth: []
         paths:
             /api/offers/{vehicleId}:
-                get:
+                post:
                     tags: [Offers]
-                    summary: Retrieve a composed vehicle offer
-                    description: Calls the Pricing Service and combines its pricing response with offer metadata.
+                    summary: Create an offer from a Pricing quote
                     parameters:
                         - name: vehicleId
                           in: path
                           required: true
-                          description: Identifier of the vehicle.
+                          schema:
+                              type: string
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints]
+                                    properties:
+                                        vehiclePrice:
+                                            type: string
+                                            example: "42000.00"
+                                        downPayment:
+                                            type: string
+                                            example: "5000.00"
+                                        residualValue:
+                                            type: string
+                                            example: "8000.00"
+                                        currency:
+                                            type: string
+                                            example: EUR
+                                        durationMonths:
+                                            type: integer
+                                            example: 48
+                                        annualInterestRateBasisPoints:
+                                            type: integer
+                                            example: 425
+                    responses:
+                        '201':
+                            description: Offer created in draft status with an immutable Pricing snapshot.
+                        '401':
+                            description: Missing or invalid access token.
+                        '403':
+                            description: Required scope or tenant context is missing.
+                        '422':
+                            description: Invalid offer request or Pricing quote.
+            /api/offers/{offerId}:
+                get:
+                    tags: [Offers]
+                    summary: Retrieve an offer belonging to the authenticated tenant and creator
+                    parameters:
+                        - name: offerId
+                          in: path
+                          required: true
                           schema:
                               type: string
                     responses:
                         '200':
-                            description: Offer composed successfully.
-                            content:
-                                application/json:
-                                    schema:
-                                        type: object
-                                        required: [offerId, vehicleId, status, pricing]
-                                        properties:
-                                            offerId:
-                                                type: string
-                                                example: demo-vehicle-001
-                                            vehicleId:
-                                                type: string
-                                                example: vehicle-001
-                                            status:
-                                                type: string
-                                                example: calculated
-                                            pricing:
-                                                type: object
-                                                description: Response returned by the Pricing Service.
-                                                additionalProperties: true
-                        '500':
-                            description: Unexpected error while composing the offer.
+                            description: Offer and immutable Pricing snapshot.
+                        '404':
+                            description: Offer not found.
+            /api/offers/{offerId}/publish:
+                post:
+                    tags: [Offers]
+                    summary: Publish a draft offer
+                    parameters:
+                        - name: offerId
+                          in: path
+                          required: true
+                          schema:
+                              type: string
+                    responses:
+                        '200':
+                            description: Offer published.
+                        '404':
+                            description: Offer not found.
+                        '409':
+                            description: Invalid or concurrent lifecycle transition.
+            /api/offers/{offerId}/accept:
+                post:
+                    tags: [Offers]
+                    summary: Accept a published offer
+                    parameters:
+                        - name: offerId
+                          in: path
+                          required: true
+                          schema:
+                              type: string
+                    responses:
+                        '200':
+                            description: Offer accepted.
+                        '404':
+                            description: Offer not found.
+                        '409':
+                            description: Offer is not published, is expired, or was concurrently modified.
+            /api/offers/{offerId}/reject:
+                post:
+                    tags: [Offers]
+                    summary: Reject a published offer
+                    parameters:
+                        - name: offerId
+                          in: path
+                          required: true
+                          schema:
+                              type: string
+                    responses:
+                        '200':
+                            description: Offer rejected.
+                        '404':
+                            description: Offer not found.
+                        '409':
+                            description: Offer is not published, is expired, or was concurrently modified.
     areas:
         path_patterns:
             - ^/api(?!/doc)

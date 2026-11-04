@@ -49,7 +49,7 @@ final class CreateOfferHandlerTest extends TestCase
             }
         };
 
-        $repository = new class implements OfferRepositoryInterface {
+        $repository = new class () implements OfferRepositoryInterface {
             public ?Offer $savedOffer = null;
 
             public function save(Offer $offer): void
@@ -60,6 +60,16 @@ final class CreateOfferHandlerTest extends TestCase
             public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
             {
                 return null;
+            }
+
+            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+            {
+                return [];
+            }
+
+            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
+            {
+                return 0;
             }
         };
 

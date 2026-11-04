@@ -72,6 +72,45 @@ services:
       start_period: 60s
     restart: unless-stopped
 
+  offer-expiration-worker:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/offer-service
+        COMPOSER_NO_DEV: ""
+    command: ["php", "bin/expire-offers.php"]
+    environment:
+      APP_ENV: prod
+      OFFER_DATABASE_URL: ${OFFER_DATABASE_URL:-postgresql://autoflow_offer:local-only-offer-password@postgres:5432/autoflow}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  offer-outbox-publisher:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/offer-service
+        COMPOSER_NO_DEV: ""
+    command: ["php", "bin/outbox-publisher.php"]
+    environment:
+      APP_ENV: prod
+      OFFER_DATABASE_URL: ${OFFER_DATABASE_URL:-postgresql://autoflow_offer:local-only-offer-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
   pricing-service:
     build:
       context: .
@@ -157,6 +196,8 @@ services:
       - ./apps/pricing-service/migrations/Version20261104000300AddPricingQuoteOwner.sql:/docker-entrypoint-initdb.d/40-pricing-quote-owner.sql:ro
       - ./apps/offer-service/migrations/00_create_offer_database_role.sql:/docker-entrypoint-initdb.d/50-offer-role.sql:ro
       - ./apps/offer-service/migrations/Version20261104000400CreateOffers.sql:/docker-entrypoint-initdb.d/60-offers.sql:ro
+      - ./apps/offer-service/migrations/Version20261104000500CreateOfferOutbox.sql:/docker-entrypoint-initdb.d/70-offer-outbox.sql:ro
+      - ./apps/offer-service/migrations/Version20261104000600AddOfferLifecycleTimestamps.sql:/docker-entrypoint-initdb.d/80-offer-lifecycle-timestamps.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
@@ -172,7 +213,7 @@ services:
     ports: ["5672:5672", "15672:15672", "15692:15692"]
     volumes: [rabbitmq-data:/var/lib/rabbitmq]
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "listeners"]
       interval: 10s
       timeout: 5s
       retries: 10

@@ -41,7 +41,9 @@ final readonly class CreateOfferHandler
             || $snapshot->durationMonths !== $command->durationMonths
             || $snapshot->annualInterestRateBasisPoints !== $command->annualInterestRateBasisPoints
         ) {
-            throw new UnexpectedValueException('Pricing returned a quote that does not match the requested vehicle or terms.');
+            throw new UnexpectedValueException(
+                'Pricing returned a quote that does not match the requested vehicle or terms.',
+            );
         }
 
         $offer = Offer::create(
