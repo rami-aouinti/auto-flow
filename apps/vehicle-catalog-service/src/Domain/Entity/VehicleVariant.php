@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Entity;
 
 use App\Domain\ValueObject\CatalogueId;
+use App\Domain\ValueObject\CatalogStatus;
 use InvalidArgumentException;
 
 final readonly class VehicleVariant
@@ -59,6 +60,7 @@ final readonly class VehicleVariant
         public ?int $heightMm,
         public ?int $co2EmissionGPerKm,
         public array $mediaReferences,
+        public CatalogStatus $status,
     ) {
     }
 
@@ -151,6 +153,7 @@ final readonly class VehicleVariant
             self::positiveInt($data, 'heightMm', 5000),
             self::nonNegativeInt($data, 'co2EmissionGPerKm', 2000),
             $mediaReferences,
+            CatalogStatus::DRAFT,
         );
     }
 
