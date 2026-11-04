@@ -26,6 +26,12 @@ RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-prog
 
 COPY ${SERVICE_PATH}/ ./
 
+# TwigBundle is a development-only bundle for the local Swagger UI. Symfony Flex
+# installs its recipe during dev dependency installation, so keep that config dev-only.
+RUN if [ -f config/packages/twig.yaml ]; then \
+        mkdir -p config/packages/dev && mv config/packages/twig.yaml config/packages/dev/twig.yaml; \
+    fi
+
 # Generate service-owned PHP Protobuf message classes from the service contracts.
 # The RoadRunner ServiceInterface is kept explicit in source so its method names remain reviewable.
 RUN if [ -d proto ]; then \
