@@ -110,7 +110,7 @@ jobs:
               || $postSchema !== "#/components/schemas/PricingQuoteRequest"
               || $healthSecurity !== []
               || $readySecurity !== []) {
-              fwrite(STDERR, "Generated OpenAPI is missing required Offer/Pricing operations, Pricing schemas, JWT bearer auth, or public health/readiness definitions.\\n");
+              fwrite(STDERR, "Generated OpenAPI is missing required Offer/Pricing operations, Pricing schemas, JWT bearer auth, or public health/readiness definitions.\n");
               exit(1);
           }
           '
