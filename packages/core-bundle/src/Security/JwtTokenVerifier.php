@@ -121,9 +121,19 @@ final readonly class JwtTokenVerifier
 
     private function extractTenantId(stdClass $claims): ?string
     {
-        return isset($claims->tenant_id) && is_string($claims->tenant_id)
-            ? $claims->tenant_id
-            : null;
+        if (!property_exists($claims, 'tenant_id')) {
+            return null;
+        }
+
+        if (
+            !is_string($claims->tenant_id)
+            || trim($claims->tenant_id) === ''
+            || trim($claims->tenant_id) !== $claims->tenant_id
+        ) {
+            throw new InvalidTokenException('The token contains an invalid tenant identifier.');
+        }
+
+        return $claims->tenant_id;
     }
 
     /**
