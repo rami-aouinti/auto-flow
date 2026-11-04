@@ -59,7 +59,7 @@ try {
                 'message_id' => trim((string) $event['event_id']),
                 'type' => (string) $event['event_type'],
             ]);
-            $channel->basic_publish($message, 'autoflow.catalog.events', (string) $event['event_type']);
+            $channel->basic_publish($message, 'autoflow.catalog.events', (string) $event['event_type'], true);
             $channel->wait_for_pending_acks_returns(5);
             $done = $db->prepare('UPDATE catalog_outbox SET published_at=CURRENT_TIMESTAMP,locked_until=NULL,last_error=NULL WHERE event_id=:id');
             $done->execute(['id' => $event['event_id']]);
