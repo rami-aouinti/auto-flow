@@ -1,3 +1,11 @@
+CREATE INDEX IF NOT EXISTS idx_offers_expiration_by_tenant
+    ON offers (tenant_id, expires_at)
+    WHERE status IN ('draft', 'published');
+
+CREATE INDEX IF NOT EXISTS idx_offers_expiration_scan
+    ON offers (expires_at, tenant_id)
+    WHERE status IN ('draft', 'published');
+
 CREATE TABLE IF NOT EXISTS offer_outbox_events (
     event_id VARCHAR(64) PRIMARY KEY,
     tenant_id VARCHAR(128) NOT NULL,
