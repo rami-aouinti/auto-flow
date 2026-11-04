@@ -10,7 +10,7 @@ use InvalidArgumentException;
 final readonly class IntegrationEvent
 {
     /**
-     * @param array<string, scalar|array|null> $payload
+     * @param array<string, mixed> $payload
      */
     public function __construct(
         public string $eventId,
@@ -28,7 +28,7 @@ final readonly class IntegrationEvent
     }
 
     /**
-     * @param array<string, scalar|array|null> $payload
+     * @param array<string, mixed> $payload
      */
     public static function create(
         string $eventName,
