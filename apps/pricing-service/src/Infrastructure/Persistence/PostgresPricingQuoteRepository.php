@@ -76,7 +76,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
     public function findAll(string $tenantId, int $limit = 50, int $offset = 0): array
     {
         if ($limit < 1 || $limit > 100 || $offset < 0) {
-            throw new \InvalidArgumentException('Quote pagination must use limit 1-100 and a non-negative offset.');
+            throw new InvalidArgumentException('Quote pagination must use limit 1-100 and a non-negative offset.');
         }
 
         return $this->withinTenantTransaction(
@@ -120,7 +120,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
     private function withinTenantTransaction(string $tenantId, callable $operation): mixed
     {
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenantId)) {
-            throw new \InvalidArgumentException('Tenant identifier has an invalid format.');
+            throw new InvalidArgumentException('Tenant identifier has an invalid format.');
         }
 
         $connection = $this->connection->get();
