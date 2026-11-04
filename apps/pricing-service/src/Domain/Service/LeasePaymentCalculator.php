@@ -9,6 +9,10 @@ use App\Domain\ValueObject\LeaseTerms;
 use App\Domain\ValueObject\Money;
 use InvalidArgumentException;
 
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ */
 final class LeasePaymentCalculator
 {
     public function calculate(string $vehicleId, LeaseTerms $terms): PricingQuote
