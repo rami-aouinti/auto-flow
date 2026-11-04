@@ -92,17 +92,44 @@ final readonly class VehicleVariant
             throw new InvalidArgumentException('A variant can reference at most 20 media assets.');
         }
 
+        /** @var list<array{mediaId: string, usage: string, sortOrder?: int, altText?: string}> $mediaReferences */
+        $mediaReferences = [];
+
         foreach ($media as $reference) {
             if (!is_array($reference) || !isset($reference['mediaId'], $reference['usage'])) {
                 throw new InvalidArgumentException('Each media reference requires mediaId and usage.');
             }
 
-            if (
-                trim((string) $reference['mediaId']) === ''
-                || trim((string) $reference['usage']) === ''
-            ) {
-                throw new InvalidArgumentException('Media reference fields cannot be blank.');
+            $mediaId = trim((string) $reference['mediaId']);
+            $usage = trim((string) $reference['usage']);
+
+            if ($mediaId === '' || mb_strlen($mediaId) > 128 || $usage === '' || mb_strlen($usage) > 40) {
+                throw new InvalidArgumentException('Media reference fields must be non-empty and within their length limits.');
             }
+
+            $mediaReference = ['mediaId' => $mediaId, 'usage' => $usage];
+
+            if (isset($reference['sortOrder'])) {
+                $sortOrder = filter_var($reference['sortOrder'], FILTER_VALIDATE_INT);
+
+                if (!is_int($sortOrder) || $sortOrder < 0) {
+                    throw new InvalidArgumentException('Media reference sortOrder must be a non-negative integer.');
+                }
+
+                $mediaReference['sortOrder'] = $sortOrder;
+            }
+
+            if (isset($reference['altText'])) {
+                $altText = trim((string) $reference['altText']);
+
+                if (mb_strlen($altText) > 255) {
+                    throw new InvalidArgumentException('Media reference altText cannot exceed 255 characters.');
+                }
+
+                $mediaReference['altText'] = $altText;
+            }
+
+            $mediaReferences[] = $mediaReference;
         }
 
         return new self(
@@ -123,7 +150,7 @@ final readonly class VehicleVariant
             self::positiveInt($data, 'widthMm', 5000),
             self::positiveInt($data, 'heightMm', 5000),
             self::nonNegativeInt($data, 'co2EmissionGPerKm', 2000),
-            array_values($media),
+            $mediaReferences,
         );
     }
 
