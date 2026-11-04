@@ -29,15 +29,16 @@ flowchart TB
     subgraph Platform[AutoFlow platform]
       Offer[Offer Service\nSymfony application]
       Pricing[Pricing Service\nSymfony application]
+      Catalog[Vehicle Catalog Service\nSymfony application]
       Broker[RabbitMQ]
-      DB[(PostgreSQL)]
+      DB[(PostgreSQL)]\n      CatalogDB[(Catalogue-owned PostgreSQL tables)]
       Cache[(Redis)]
       Search[(Elasticsearch)]
       Hub[Mercure Hub]
       Temporal[Temporal Server\nTarget]
     end
     Browser -->|HTTP| Offer
-    Offer -->|Synchronous HTTP| Pricing
+    Offer -->|Synchronous HTTP| Pricing\n    Catalog -->|Owns catalogue records| CatalogDB\n    Catalog -.->|Transactional Outbox events| Broker
     Offer -.->|Future async commands/events| Broker
     Pricing -.->|Future persistence| DB
     Offer -.->|Future cache use| Cache
