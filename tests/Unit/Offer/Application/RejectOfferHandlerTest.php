@@ -43,6 +43,7 @@ final class RejectOfferHandlerTest extends TestCase
             OfferId::fromString('offer-123'),
             'tenant-1',
             'user-1',
+            new DateTimeImmutable('2026-11-06T10:00:00+00:00'),
         );
 
         self::assertSame('rejected', $rejected->status()->value);
@@ -63,6 +64,7 @@ final class RejectOfferHandlerTest extends TestCase
             OfferId::fromString('offer-123'),
             'tenant-1',
             'other-user',
+            new DateTimeImmutable('2026-11-06T10:00:00+00:00'),
         );
     }
 }
