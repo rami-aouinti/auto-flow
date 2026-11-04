@@ -197,6 +197,7 @@ services:
       - ./apps/offer-service/migrations/00_create_offer_database_role.sql:/docker-entrypoint-initdb.d/50-offer-role.sql:ro
       - ./apps/offer-service/migrations/Version20261104000400CreateOffers.sql:/docker-entrypoint-initdb.d/60-offers.sql:ro
       - ./apps/offer-service/migrations/Version20261104000500CreateOfferOutbox.sql:/docker-entrypoint-initdb.d/70-offer-outbox.sql:ro
+      - ./apps/offer-service/migrations/Version20261104000600AddOfferLifecycleTimestamps.sql:/docker-entrypoint-initdb.d/80-offer-lifecycle-timestamps.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
