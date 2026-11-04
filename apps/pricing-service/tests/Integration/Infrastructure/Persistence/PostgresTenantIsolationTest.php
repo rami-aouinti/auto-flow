@@ -86,6 +86,48 @@ final class PostgresTenantIsolationTest extends TestCase
         }
     }
 
+
+    /**
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     */
+    public function testRepositoryPersistsQuotesWithinTheSuppliedTenantBoundary(): void
+    {
+        $quoteId = bin2hex(random_bytes(16));
+        $quote = new PricingQuote(
+            quoteId: $quoteId,
+            tenantId: 'tenant-a',
+            vehicleId: 'vehicle-001',
+            monthlyAmount: Money::fromMinorUnits(50000, 'EUR'),
+            totalInstallmentsAmount: Money::fromMinorUnits(1800000, 'EUR'),
+            totalCostIncludingDownPayment: Money::fromMinorUnits(2100000, 'EUR'),
+            residualValue: Money::fromMinorUnits(900000, 'EUR'),
+            durationMonths: 36,
+            annualInterestRateBasisPoints: 0,
+            calculationVersion: 'lease-annuity-v1',
+        );
+
+        (new PostgresPricingQuoteRepository($this->connection))->save($quote);
+
+        $this->connection->beginTransaction();
+
+        try {
+            $this->setTenant('tenant-b');
+            $select = $this->connection->prepare(
+                'SELECT COUNT(*) FROM pricing_quotes WHERE quote_id = :quote_id',
+            );
+            $select->execute(['quote_id' => $quoteId]);
+            self::assertSame(0, (int) $select->fetchColumn());
+
+            $this->setTenant('tenant-a');
+            $select->execute(['quote_id' => $quoteId]);
+            self::assertSame(1, (int) $select->fetchColumn());
+        } finally {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+        }
+    }
+
     private function setTenant(string $tenantId): void
     {
         $statement = $this->connection->prepare(
