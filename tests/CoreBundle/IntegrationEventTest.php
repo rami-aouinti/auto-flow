@@ -7,6 +7,9 @@ namespace AutoFlow\Tests\CoreBundle;
 use AutoFlow\CoreBundle\Messaging\IntegrationEvent;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 final class IntegrationEventTest extends TestCase
 {
     public function testFactoryCreatesVersionedSerializableEventMetadata(): void
