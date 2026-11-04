@@ -56,13 +56,18 @@ final class KeycloakTokenExchangeProviderTest extends TestCase
         self::assertSame('offer-workload', $authBasic[0] ?? null);
 
         $body = $capturedOptions['body'] ?? null;
-        self::assertIsArray($body);
+        if (is_string($body)) {
+            parse_str($body, $bodyParameters);
+        } else {
+            self::assertIsArray($body);
+            $bodyParameters = $body;
+        }
         self::assertSame(
             'urn:ietf:params:oauth:grant-type:token-exchange',
-            $body['grant_type'] ?? null,
+            $bodyParameters['grant_type'] ?? null,
         );
-        self::assertSame('header.payload.signature', $body['subject_token'] ?? null);
-        self::assertSame('autoflow-pricing', $body['audience'] ?? null);
+        self::assertSame('header.payload.signature', $bodyParameters['subject_token'] ?? null);
+        self::assertSame('autoflow-pricing', $bodyParameters['audience'] ?? null);
         self::assertSame(0, $capturedOptions['max_redirects'] ?? null);
     }
 
