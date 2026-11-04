@@ -7,6 +7,7 @@ namespace App\Application\CalculateQuote;
 final readonly class CalculateQuoteCommand
 {
     public function __construct(
+        public string $tenantId,
         public string $vehicleId,
         public string $vehiclePrice,
         public string $downPayment,
