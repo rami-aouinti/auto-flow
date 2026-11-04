@@ -102,7 +102,7 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
     public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
     {
         if ($limit < 1 || $limit > 1000) {
-            throw new \\InvalidArgumentException('Expired offer query limit must be between 1 and 1000.');
+            throw new \InvalidArgumentException('Expired offer query limit must be between 1 and 1000.');
         }
 
         return $this->withinTenantTransaction(
