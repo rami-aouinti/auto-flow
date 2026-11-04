@@ -24,5 +24,3 @@ services:
     AutoFlow\CoreBundle\Health\HealthController:
         arguments:
             $checks: !tagged_iterator autoflow_core.health_check
-        tags:
-            - controller.service_arguments
