@@ -7,6 +7,7 @@ namespace App\Application\CreatePricingPolicy;
 use App\Application\Port\Out\PricingPolicyRepositoryInterface;
 use App\Domain\Model\PricingPolicy;
 use DateTimeImmutable;
+use DomainException;
 
 final readonly class CreatePricingPolicyHandler
 {
@@ -25,6 +26,11 @@ final readonly class CreatePricingPolicyHandler
         string $calculationVersion,
         string $createdBy,
     ): PricingPolicy {
+        $latest = $this->repository->findLatest($tenantId);
+        if ($latest !== null && $version <= $latest->version) {
+            throw new DomainException('A new pricing policy must use a version greater than the latest existing version.');
+        }
+
         $policy = new PricingPolicy(
             policyId: self::uuidV4(),
             tenantId: $tenantId,
