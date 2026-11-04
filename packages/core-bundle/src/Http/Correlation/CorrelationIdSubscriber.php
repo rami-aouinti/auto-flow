@@ -6,8 +6,8 @@ namespace AutoFlow\CoreBundle\Http\Correlation;
 
 use AutoFlow\CoreBundle\Context\CorrelationContext;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpKernel\EventRequestEvent;
-use Symfony\Component\HttpKernel\EventResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
