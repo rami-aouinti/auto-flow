@@ -35,7 +35,7 @@ A valid JWT only establishes a verified identity and claims. Pricing still owns 
 
 ## 3. JWT contract
 
-**Implemented first slice:** both Symfony services protect `/api/*`, while `/health` and development-only Swagger endpoints remain public. Offer accepts audience `autoflow-offer`; Pricing accepts `autoflow-pricing`. The CoreBundle verifies RS256/JWKS and attaches an `AuthenticatedPrincipal` to the request. Offer obtains a dedicated Pricing-audience token using Client Credentials and requests the `pricing:quote tenant:delegate` scopes. The local Keycloak realm contains a demo user and a password-grant client strictly for local smoke testing; browser applications must use Authorization Code + PKCE.
+**Implemented first slice:** both Symfony services protect `/api/*`, while `/health` and development-only Swagger endpoints remain public. Offer accepts audience `autoflow-offer`; Pricing accepts `autoflow-pricing`. The CoreBundle verifies RS256/JWKS and attaches an `AuthenticatedPrincipal` to the request. Offer performs standard OAuth 2.0 Token Exchange with the confidential `autoflow-offer-to-pricing` client, using the verified incoming access token as `subject_token` and `autoflow-pricing` as the target audience. Pricing receives a token for its own audience while retaining the end-user `sub`; it stores that subject as quote owner. The CoreBundle resolves authorization scopes from the JWT `scope` claim and Keycloak `realm_access.roles`. The local Keycloak realm configures the requester client audience and grants the demo user `offers:read` and `pricing:quote` realm roles. The password-grant client is strictly for local smoke testing; browser applications must use Authorization Code + PKCE.
 
 The resource services accept bearer access tokens and validate:
 - signature against the issuer's JWKS;
@@ -158,3 +158,18 @@ Every repository operation opens its own transaction, sets the transaction-local
 ### Quote ownership and privileged access
 
 The `created_by` column stores the JWT subject (`sub`) of the verified caller for both REST and gRPC quote creation. The Pricing application never accepts a creator ID from user-controlled input. Existing rows are migrated to the non-user owner `legacy:unassigned` and are therefore not visible to ordinary users; an explicitly provisioned tenant administrator can review them with the tenant-wide read scope. Grant `pricing:quote:read:any` and `pricing:quote:delete:any` only to trusted tenant-administrator roles in Keycloak. These scopes do not bypass PostgreSQL RLS or tenant context.
+
+
+### Delegated identity: Offer to Pricing
+
+The downstream call must not replace the end-user identity with a generic service-account subject. Offer first authenticates the original bearer token through the CoreBundle. It then exchanges that exact token at Keycloak's standard Token Exchange V2 endpoint using the confidential workload client. The request includes the RFC 8693 token-exchange grant, the incoming access token as `subject_token`, and the Pricing resource audience. Offer sends only the returned access token to Pricing. There is no fallback to client-credentials tokens: if exchange fails, the downstream operation fails closed.
+
+Keycloak configuration requirements:
+
+- Enable **Standard Token Exchange** for the confidential `autoflow-offer-to-pricing` requester client.
+- Ensure the original user token includes `autoflow-offer-to-pricing` in its `aud` claim. The local realm adds this audience mapper to `autoflow-local-client`.
+- Allow the requester client to exchange to the `autoflow-pricing` audience.
+- Assign the required permissions to users through realm roles (for example, `offers:read` and `pricing:quote`). The CoreBundle maps these realm roles into its authorization scope list.
+- Keep the client secret in a secret manager/environment injection; never commit production credentials.
+
+The implementation uses Keycloak's supported Standard Token Exchange V2, not the deprecated legacy exchange. The exchanged token is validated independently by Pricing against its issuer, signature and audience. The tenant still comes from the verified tenant claim; the `X-Tenant-ID` header cannot override it. Quote ownership comes from the exchanged token's verified `sub`, never from a user-controlled request field.
