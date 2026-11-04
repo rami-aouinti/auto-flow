@@ -21,18 +21,14 @@ See [ADR-014](../../docs/adr/ADR-014-core-bundle-v2-clean-architecture.md), [ADR
 | HTTP propagation | Adds the current correlation ID to outgoing Symfony HttpClient requests |
 | HTTP worker | Converts RoadRunner PSR-7 requests to Symfony HttpFoundation and back |
 | gRPC server runner | Registers service-owned generated gRPC adapters in RoadRunner |
-| gRPC metadata | Validates and allow-lists operational metadata; rejects implicit credential forwarding |
-| gRPC deadline | Transport-neutral positive RPC timeout value |
 | Serialization port | Application-facing `SerializerInterface` |
 | JSON / Protobuf | Safe JSON encode/decode and generated Protobuf message serialization |
-| Protocol error mapping | Maps HTTP status and gRPC status values |
 | Health endpoints | Liveness and readiness; readiness fails closed without registered checks |
 | Messenger propagation | Correlation ID stamp and middleware with scoped context restoration (must be enabled per bus) |
 | Event bus | Messenger adapter for publishing the shared integration-event envelope |
 | Clock | Injectable system clock for deterministic application tests |
 | Idempotency port | Atomic claim/replay contract; storage implementation remains service-owned |
 | Transaction port | Application transaction boundary without Doctrine coupling |
-| HTTP response factory | Small JSON success envelope helper |
 | Problem Details | RFC 9457-style response factory |
 | JWT verification | RS256 signature validation against cached JWKS, issuer/audience/expiry checks and normalized request principal |
 
