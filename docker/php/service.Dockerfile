@@ -52,7 +52,7 @@ RUN if [ -f src/Grpc/PricingGrpcService.php ]; then \
 
 # Boot both RoadRunner worker pools during the image build and verify the server config.
 # A clean timeout is expected because the server is intentionally long-running.
-RUN set +e; APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret DATABASE_URL=postgresql://autoflow_pricing:build-only@127.0.0.1:5432/autoflow PRICING_SERVICE_URL=http://pricing-service:8080 AUTOFLOW_JWT_ISSUER=https://identity-build.invalid/realms/autoflow AUTOFLOW_JWT_JWKS_URI=http://127.0.0.1:8080/realms/autoflow/protocol/openid-connect/certs KEYCLOAK_TOKEN_URL=http://127.0.0.1:8080/token PRICING_CLIENT_ID=build-only PRICING_CLIENT_SECRET=build-only \
+RUN set +e; APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret DATABASE_URL=postgresql://autoflow_pricing:build-only@127.0.0.1:5432/autoflow DATABASE_URL=postgresql://autoflow_pricing:build-only@127.0.0.1:5432/autoflow PRICING_SERVICE_URL=http://pricing-service:8080 AUTOFLOW_JWT_ISSUER=https://identity-build.invalid/realms/autoflow AUTOFLOW_JWT_JWKS_URI=http://127.0.0.1:8080/realms/autoflow/protocol/openid-connect/certs KEYCLOAK_TOKEN_URL=http://127.0.0.1:8080/token PRICING_CLIENT_ID=build-only PRICING_CLIENT_SECRET=build-only \
     timeout --signal=TERM --kill-after=3s 8s rr serve -c .rr.yaml; status=$?; \
     if [ "$status" -ne 124 ] && [ "$status" -ne 137 ]; then exit "$status"; fi
 
