@@ -141,9 +141,6 @@ final class JwtTokenVerifierTest extends TestCase
         $verifier->verify($token);
     }
 
-    /**
-     * @param array<string, mixed> $claims
-     */
     private function assertInvalidTenantIdentifier(string $tenantId): void
     {
         [$verifier, $token] = $this->createVerifier([
