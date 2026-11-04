@@ -57,7 +57,7 @@ The older `POST /api/offers/{vehicleId}/quotes` endpoint remains available as a 
 
 `draft -> expired` and `published -> expired` are automatic when `expiresAt <= now`.
 
-`published -> rejected` is allowed only before expiration. Accepted and rejected offers are terminal and are not expired later. Invalid transitions are rejected by the domain aggregate, not only by the controller.
+`published -> rejected` is allowed only before expiration. Accepted and rejected offers are terminal and are not expired later. Invalid transitions are rejected by the domain aggregate, not only by the controller. Lifecycle writes use optimistic status checks, so concurrent accept/reject/publish requests cannot overwrite a newer state; stale requests receive HTTP 409.
 
 The `offer-expiration-worker` checks for due tenants every 30 seconds. It locks due offer rows with `FOR UPDATE SKIP LOCKED`, updates their status and inserts `OfferExpired` events in the same PostgreSQL transaction. Multiple worker instances can safely share the workload.
 
