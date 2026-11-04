@@ -3,11 +3,11 @@ services:
         autowire: true
         autoconfigure: true
 
-    App\:
+    App\\:
         resource: '../src/'
         exclude:
             - '../src/Kernel.php'
-            - '../src/Grpc/Generated/'
+            - '../src/App/Grpc/Generated/'
 
-    App\Grpc\PricingGrpcService:
+    App\\Grpc\\PricingGrpcService:
         public: true
