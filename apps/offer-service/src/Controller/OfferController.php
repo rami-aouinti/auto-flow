@@ -21,6 +21,7 @@ use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use DateTimeImmutable;
 use InvalidArgumentException;
+use JsonException;
 use LogicException;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
@@ -315,10 +316,27 @@ final readonly class OfferController
                 ],
             );
 
-            $response = new JsonResponse(
-                $pricingResponse->toArray(false),
-                $pricingResponse->getStatusCode(),
-            );
+            $upstreamStatus = $pricingResponse->getStatusCode();
+            try {
+                $upstreamPayload = json_decode(
+                    $pricingResponse->getContent(false),
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR,
+                );
+                if (!is_array($upstreamPayload)) {
+                    throw new JsonException('Pricing Service response must be a JSON object.');
+                }
+                $response = new JsonResponse($upstreamPayload, $upstreamStatus);
+            } catch (JsonException) {
+                $safeStatus = $upstreamStatus >= 400 && $upstreamStatus <= 599
+                    ? $upstreamStatus
+                    : JsonResponse::HTTP_BAD_GATEWAY;
+                $response = new JsonResponse([
+                    'error' => 'pricing_service_invalid_response',
+                    'message' => 'Pricing Service returned an invalid response.',
+                ], $safeStatus);
+            }
             $response->headers->set('Cache-Control', 'no-store');
 
             return $response;
