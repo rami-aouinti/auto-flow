@@ -3,23 +3,34 @@ parameters:
     app.keycloak_token_url: '%env(resolve:KEYCLOAK_TOKEN_URL)%'
     app.pricing_client_id: '%env(PRICING_CLIENT_ID)%'
     app.pricing_client_secret: '%env(PRICING_CLIENT_SECRET)%'
-    app.pricing_audience: 'autoflow-pricing'\n    app.offer_database_url: '%env(resolve:OFFER_DATABASE_URL)%'\n    app.offer_validity_days: 30
+    app.pricing_audience: 'autoflow-pricing'
+    app.offer_database_url: '%env(resolve:OFFER_DATABASE_URL)%'
+    app.offer_validity_days: 30
 
 services:
     _defaults:
         autowire: true
         autoconfigure: true
 
-    App\:
+    App\\:
         resource: '../src/'
         exclude:
             - '../src/Kernel.php'
 
-    App\Controller\OfferController:
+    App\\Controller\\OfferController:
+        arguments:
+            $pricingServiceUrl: '%app.pricing_service_url%'
+            $offerValidityDays: '%app.offer_validity_days%'
+
+    App\\Infrastructure\\Pricing\\HttpPricingGateway:
         arguments:
             $pricingServiceUrl: '%app.pricing_service_url%'
 
-    App\Security\KeycloakTokenExchangeProvider:
+    App\\Infrastructure\\Persistence\\PostgresConnection:
+        arguments:
+            $databaseUrl: '%app.offer_database_url%'
+
+    App\\Security\\KeycloakTokenExchangeProvider:
         arguments:
             $tokenUrl: '%app.keycloak_token_url%'
             $clientId: '%app.pricing_client_id%'
