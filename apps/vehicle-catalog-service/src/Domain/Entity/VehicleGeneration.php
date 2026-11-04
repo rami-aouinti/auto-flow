@@ -20,7 +20,7 @@ final readonly class VehicleGeneration
     public static function create(string $modelId, string $name, ?int $startYear, ?int $endYear): self
     {
         $name = trim($name);
-        $currentYear = (int) date('Y') + 2;
+        $currentYear = 2100;
         if ($name === '' || mb_strlen($name) > 80) {
             throw new InvalidArgumentException('Generation name must contain 1-80 characters.');
         }
