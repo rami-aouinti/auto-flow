@@ -40,6 +40,7 @@ final readonly class PricingGrpcService implements PricingServiceInterface
 
             $quote = ($this->handler)(new CalculateQuoteCommand(
                 tenantId: $principal->tenantId,
+                createdBy: $principal->subject,
                 vehicleId: trim($request->getVehicleId()),
                 vehiclePrice: trim($request->getVehiclePrice()),
                 downPayment: trim($request->getDownPayment()),
