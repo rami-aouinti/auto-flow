@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package autoflow.pricing.v1;
+
+option php_namespace = "App\\Grpc\\Generated\\Pricing\\V1";
+option php_metadata_namespace = "App\\Grpc\\Generated\\GPBMetadata";
+
+message CalculateQuoteRequest {
+  string vehicle_id = 1;
+  string vehicle_price = 2;
+  string down_payment = 3;
+  string residual_value = 4;
+  string currency = 5;
+  int32 duration_months = 6;
+  int32 annual_interest_rate_basis_points = 7;
+}
+
+message CalculateQuoteResponse {
+  string vehicle_id = 1;
+  string monthly_amount = 2;
+  string total_installments_amount = 3;
+  string total_cost_including_down_payment = 4;
+  string residual_value = 5;
+  string currency = 6;
+  int32 duration_months = 7;
+  int32 annual_interest_rate_basis_points = 8;
+  string calculation_version = 9;
+}
+
+service PricingService {
+  rpc CalculateQuote(CalculateQuoteRequest) returns (CalculateQuoteResponse);
+}

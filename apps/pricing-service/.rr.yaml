@@ -19,6 +19,7 @@ grpc:
   listen: "tcp://0.0.0.0:9001"
   proto:
     - "../packages/core-bundle/proto/core/v1/health.proto"
+    - "proto/pricing/v1/pricing.proto"
   pool:
     command: "php bin/grpc-worker.php"
     num_workers: 2

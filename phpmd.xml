@@ -4,6 +4,7 @@
     <exclude-pattern>*/Infrastructure/RoadRunner/*</exclude-pattern>
     <exclude-pattern>*/Transport/Grpc/Generated/*</exclude-pattern>
     <exclude-pattern>*/Transport/Grpc/PlatformHealthGrpcService.php</exclude-pattern>
+    <exclude-pattern>*/Grpc/*</exclude-pattern>
     <exclude-pattern>*/bin/*worker.php</exclude-pattern>
     <rule ref="rulesets/cleancode.xml"/>
     <rule ref="rulesets/codesize.xml"/>
