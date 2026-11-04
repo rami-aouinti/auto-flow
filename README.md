@@ -86,13 +86,19 @@ TOKEN=$(curl -fsS -X POST http://localhost:8080/realms/autoflow/protocol/openid-
 curl -i http://localhost:8081/api/offers/demo-vehicle-001 \\
   -H "Authorization: Bearer $TOKEN"
 
+# Create a quote through Offer; the downstream Pricing request uses a Keycloak-exchanged token.
+curl -i -X POST http://localhost:8081/api/offers/vehicle-001/quotes \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H 'Content-Type: application/json' \\
+  -d '{"vehiclePrice":"30000.00","downPayment":"3000.00","residualValue":"9000.00","currency":"EUR","durationMonths":36,"annualInterestRateBasisPoints":500}'
+
 curl -i http://localhost:8082/api/pricing/quotes \\
   -H "Authorization: Bearer $TOKEN" \\
   -H 'Content-Type: application/json' \\
   -d '{"vehicleId":"vehicle-001","vehiclePrice":"30000.00","downPayment":"3000.00","residualValue":"9000.00","currency":"EUR","durationMonths":36,"annualInterestRateBasisPoints":500}'
 ~~~
 
-Offer validates the incoming user access token, then exchanges it with Keycloak using the confidential `autoflow-offer-to-pricing` client and the standard OAuth 2.0 Token Exchange grant. The exchanged token is downscoped to the `autoflow-pricing` audience and sent to Pricing. Pricing therefore validates its own audience while retaining the user's `sub`; quote ownership is based on that verified subject. The local realm gives the demo user the `offers:read` and `pricing:quote` realm roles, assigns the `tenant-demo` tenant attribute, and includes the Offer workload client in the original token audience. Both the original and exchanged token receive the `tenant_id` claim from the user's Keycloak attribute. For a production realm, enable Standard Token Exchange on the confidential requester client, allow that client to exchange to the Pricing audience, and map only the appropriate user roles/permissions. Do not use the deprecated legacy token-exchange feature.
+Offer validates the incoming user access token, then exchanges it with Keycloak using the confidential `autoflow-offer-to-pricing` client and the standard OAuth 2.0 Token Exchange grant. The exchanged token is downscoped to the `autoflow-pricing` audience and sent to Pricing. Pricing therefore validates its own audience while retaining the user's `sub`; quote ownership is based on that verified subject. The local realm gives the demo user the `offers:read`, `offers:quote` and `pricing:quote` realm roles, assigns the `tenant-demo` tenant attribute, and includes the Offer workload client in the original token audience. Both the original and exchanged token receive the `tenant_id` claim from the user's Keycloak attribute. For a production realm, enable Standard Token Exchange on the confidential requester client, allow that client to exchange to the Pricing audience, and map only the appropriate user roles/permissions. Do not use the deprecated legacy token-exchange feature.
 
 ## CoreBundle quick check
 
