@@ -63,18 +63,17 @@ The payload is not trusted until the signature and claims have been validated. N
 
 ## 4. Tenant isolation
 
-Tenant context is resolved from the verified `tenant_id` claim for user tokens. Offer forwards that tenant to Pricing using `X-Tenant-ID` alongside its own service token. Pricing accepts this delegation only when the verified service token has the dedicated `tenant:delegate` scope. A tenant already present in a token cannot be overwritten by a different header value. Tenant-required HTTP routes are configured explicitly and fail closed when no valid tenant context can be resolved. Pricing now persists quote snapshots with a mandatory `tenant_id`. PostgreSQL row-level security is enabled and forced on `pricing_quotes`; the policy uses the transaction-local `app.tenant_id` setting for both row visibility and write checks. The Pricing service connects with a dedicated `NOSUPERUSER NOBYPASSRLS` role rather than the database bootstrap administrator. The repository sets the tenant inside the same transaction as the insert, so the policy is enforced by PostgreSQL even if an application query forgets a tenant predicate. Resource-level membership checks and tenant-scoped read APIs remain service-owned responsibilities.
+Tenant context is resolved from the verified `tenant_id` claim for user tokens. Offer forwards that tenant to Pricing using `X-Tenant-ID` alongside its own service token. Pricing accepts this delegation only when the verified service token has the dedicated `tenant:delegate` scope. A tenant already present in a token cannot be overwritten by a different header value. Tenant-required HTTP routes are configured explicitly and fail closed when no valid tenant context can be resolved. Pricing persists quote snapshots with mandatory `tenant_id` and `created_by` values. The tenant is resolved from the verified principal; the creator is the verified JWT `sub`, never a body or header value. PostgreSQL row-level security is enabled and forced on `pricing_quotes`; the policy uses the transaction-local `app.tenant_id` setting for both row visibility and write checks. The Pricing service connects with a dedicated `NOSUPERUSER NOBYPASSRLS` role rather than the database bootstrap administrator. The repository sets the tenant inside the same transaction as each operation. Pricing also filters quote reads, lists and soft deletes by `created_by` inside the tenant. Tenant-wide read access requires `pricing:quote:read:any`; tenant-wide deletion requires `pricing:quote:delete:any`. Without those explicit scopes, a principal can only access quotes it created. Resource authorization remains service-owned.
 
 The tenant identifier in the access token is the active tenant, not proof that the user belongs to every tenant. Tenant selection must be validated against membership before a token for that tenant is issued.
 
 ## 5. Permissions
 
-Use coarse scopes/client roles in tokens and fine-grained policies inside the service. The CoreBundle provides the `RequiresScope` method attribute and `ScopeAuthorizationSubscriber`; the Offer and Pricing REST actions require `offers:read` and `pricing:quote` respectively. Example:
-- `offers:read`
-- `pricing:quote`
-- `contracts:write`
+Use coarse scopes/client roles in tokens and fine-grained policies inside the service. The CoreBundle provides the `RequiresScope` method attribute and `ScopeAuthorizationSubscriber`; the Offer and Pricing REST actions require `offers:read` and `pricing:quote` respectively. Pricing additionally recognizes:
+- `pricing:quote:read:any` — read any quote inside the active tenant;
+- `pricing:quote:delete:any` — soft-delete any quote inside the active tenant.
 
-A service must still check resource ownership and tenant context. Use deny-by-default and return 401 for invalid/missing authentication and 403 for an authenticated but forbidden request.
+Without these elevated scopes, quote read/list/delete operations are restricted to the verified JWT subject that created the quote. A quote owned by another user is returned as 404 to avoid resource enumeration. A service must still check resource ownership and tenant context. Use deny-by-default and return 401 for invalid/missing authentication and 403 for an authenticated but forbidden request.
 
 ## 6. Service-to-service authentication
 
@@ -105,20 +104,20 @@ Pact verifies consumer/provider expectations for important REST interactions. Op
 | Keycloak local identity provider | Implemented in JWT foundation branch (local realm) |
 | RS256/JWKS validation in CoreBundle | Implemented in JWT foundation branch; CI pending |
 | Principal and tenant request context | Implemented: verified HTTP principal, request-scoped TenantContext, and explicit tenant delegation |
-| REST scope enforcement | Implemented for Offer read and Pricing quote endpoints; resource-level policies remain service-owned |
-| Tenant delegation policy and negative tests | Implemented for HTTP and gRPC; Pricing quote persistence now has PostgreSQL RLS and tenant-isolation integration tests |
+| REST scope enforcement | Implemented for Offer and Pricing; Pricing enforces per-user quote ownership and explicit tenant-wide read/delete scopes |
+| Tenant delegation policy and negative tests | Implemented for HTTP and gRPC; Pricing enforces PostgreSQL tenant RLS and per-user quote ownership with integration tests |
 | Traefik edge gateway | Planned |
 | Redis-backed rate limiting | Planned |
 | REST `/api/v1` migration | Planned |
 | Pact REST contracts | Planned |
 | Buf Protobuf compatibility checks | Planned |
 
-The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Pricing quote writes, reads, pagination, and deletion are tenant-bound and protected by PostgreSQL row-level security. The next increments are tenant membership/resource authorization, update semantics for immutable quote snapshots, and equivalent isolation for other services. See ADR-016 for decisions and trade-offs.
+The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Pricing quote writes, reads, pagination, and deletion are tenant-bound and protected by PostgreSQL row-level security. The next increments are tenant membership validation at identity issuance, explicit ownership propagation for delegated user workflows, update semantics for immutable quote snapshots, and equivalent isolation for other services. See ADR-016 for decisions and trade-offs.
 
 
 ## 10. Pricing quote persistence and PostgreSQL RLS
 
-Pricing stores each calculated quote as an immutable snapshot in `pricing_quotes`. Deletion is a soft-delete operation (`deleted_at`) so the financial calculation snapshot remains available for audit and retention policies. The application layer depends on `PricingQuoteRepositoryInterface`; the PostgreSQL adapter is an infrastructure implementation. `quote_id` is generated independently of the tenant and `tenant_id` is always taken from the verified HTTP/gRPC principal, never from the request body.
+Pricing stores each calculated quote as an immutable snapshot in `pricing_quotes`. Deletion is a soft-delete operation (`deleted_at`) so the financial calculation snapshot remains available for audit and retention policies. The application layer depends on `PricingQuoteRepositoryInterface`; the PostgreSQL adapter is an infrastructure implementation. `quote_id` is generated independently of the tenant; `tenant_id` and `created_by` are always taken from the verified HTTP/gRPC principal, never from the request body.
 
 PostgreSQL enforces tenant isolation with row-level security:
 - `ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY` are applied to `pricing_quotes`;
@@ -133,12 +132,13 @@ For a fresh local database, Docker Compose initializes the restricted role and q
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/pricing-service/migrations/00_create_pricing_database_role.sql
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/pricing-service/migrations/Version20261104000100CreatePricingQuotes.sql
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/pricing-service/migrations/Version20261104000200AddPricingQuoteSoftDelete.sql
+docker compose exec -T postgres psql -U autoflow -d autoflow < apps/pricing-service/migrations/Version20261104000300AddPricingQuoteOwner.sql
 docker compose up -d --force-recreate pricing-service
 ```
 
 The role password in the local initialization SQL is for development only. Production deployments must provision a dedicated non-superuser database role and secret through the deployment secret manager, then grant only the required schema/table privileges. Do not reuse the local password.
 
-The Pricing Service GitHub workflow starts a real PostgreSQL instance and verifies that tenant B cannot read tenant A's row and cannot insert a row owned by tenant A. Unit tests remain runnable without PostgreSQL; the integration tests are enabled explicitly in CI.
+The Pricing Service GitHub workflow starts a real PostgreSQL instance and verifies tenant isolation plus same-tenant ownership: user B cannot read, list or delete user A's quote. Elevated read/delete scopes are translated to tenant-wide repository filters only after the HTTP controller has checked the verified principal. Unit tests remain runnable without PostgreSQL; the integration tests are enabled explicitly in CI.
 
 
 ### Tenant-scoped quote API
@@ -148,8 +148,13 @@ All routes below require the `pricing:quote` scope and an authenticated tenant c
 | Method | Path | Behavior |
 | --- | --- | --- |
 | `POST` | `/api/pricing/quotes` | Calculate and persist a quote; returns `quoteId` |
-| `GET` | `/api/pricing/quotes/{quoteId}` | Read one quote; another tenant receives the same 404 as a missing quote |
-| `GET` | `/api/pricing/quotes?limit=50&offset=0` | List only the current tenant's quotes; limit is 1-100 |
-| `DELETE` | `/api/pricing/quotes/{quoteId}` | Delete only within the current tenant; another tenant receives 404 |
+| `GET` | `/api/pricing/quotes/{quoteId}` | Read own quote; another user or tenant receives the same 404 as a missing quote. `pricing:quote:read:any` grants tenant-wide read access |
+| `GET` | `/api/pricing/quotes?limit=50&offset=0` | List only the caller's quotes; `pricing:quote:read:any` grants tenant-wide listing; limit is 1-100 |
+| `DELETE` | `/api/pricing/quotes/{quoteId}` | Soft-delete own quote; `pricing:quote:delete:any` grants tenant-wide deletion. Other users receive 404 |
 
 Every repository operation opens its own transaction, sets the transaction-local `app.tenant_id`, and relies on PostgreSQL RLS for row visibility and write enforcement. The adapter also validates tenant identifiers before opening a transaction. A missing tenant setting exposes no rows because the RLS policy compares against the absent/empty setting.
+
+
+### Quote ownership and privileged access
+
+The `created_by` column stores the JWT subject (`sub`) of the verified caller for both REST and gRPC quote creation. The Pricing application never accepts a creator ID from user-controlled input. Existing rows are migrated to the non-user owner `legacy:unassigned` and are therefore not visible to ordinary users; an explicitly provisioned tenant administrator can review them with the tenant-wide read scope. Grant `pricing:quote:read:any` and `pricing:quote:delete:any` only to trusted tenant-administrator roles in Keycloak. These scopes do not bypass PostgreSQL RLS or tenant context.
