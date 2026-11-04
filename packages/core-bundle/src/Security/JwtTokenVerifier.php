@@ -7,6 +7,9 @@ namespace AutoFlow\CoreBundle\Security;
 use Firebase\JWT\JWT;
 use Throwable;
 
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 final readonly class JwtTokenVerifier
 {
     public function __construct(

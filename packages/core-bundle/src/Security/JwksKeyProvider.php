@@ -9,6 +9,9 @@ use Firebase\JWT\Key;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
 
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 final class JwksKeyProvider
 {
     /** @var array<string, Key>|null */
