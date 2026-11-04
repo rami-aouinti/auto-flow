@@ -9,6 +9,7 @@ use App\Application\CreateOffer\CreateOfferHandler;
 use App\Application\GetOffer\GetOfferHandler;
 use App\Application\PublishOffer\PublishOfferHandler;
 use App\Domain\Entity\Offer;
+use App\Domain\Exception\InvalidOfferTransition;
 use App\Domain\Exception\OfferNotFound;
 use App\Domain\ValueObject\OfferId;
 use App\Security\KeycloakTokenExchangeProvider;
