@@ -6,12 +6,21 @@ COPY --from=roadrunner /usr/bin/rr /usr/local/bin/rr
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        unzip zip libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev \
+        unzip zip curl protobuf-compiler libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev \
     && docker-php-ext-install -j"$(nproc)" intl curl mbstring opcache sockets zip \
     && pecl install opentelemetry \
     && docker-php-ext-enable opentelemetry \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Pin and verify the RoadRunner PHP gRPC protoc plugin used to generate service stubs.
+RUN curl -fsSL \
+    https://github.com/roadrunner-server/roadrunner/releases/download/v3.0.1/protoc-gen-php-grpc-3.0.1-linux-amd64.tar.gz \
+    -o /tmp/protoc-gen-php-grpc.tar.gz \
+    && echo "8f60ad47f34a1627b37e488b6f496bb6afe82af47d46b3ac07d60ac5bd197b3a  /tmp/protoc-gen-php-grpc.tar.gz" | sha256sum -c - \
+    && tar -xzf /tmp/protoc-gen-php-grpc.tar.gz -C /usr/local/bin protoc-gen-php-grpc \
+    && chmod +x /usr/local/bin/protoc-gen-php-grpc \
+    && rm /tmp/protoc-gen-php-grpc.tar.gz
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -25,6 +34,18 @@ COPY ${SERVICE_PATH}/composer.json ./composer.json
 RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-progress --no-scripts
 
 COPY ${SERVICE_PATH}/ ./
+
+# Generate service-owned PHP messages and RoadRunner gRPC interfaces from .proto files.
+RUN if [ -d proto ]; then \
+        find proto -name '*.proto' -print0 | xargs -0 -r protoc -I proto -I /usr/include \
+            --php_out=src \
+            --plugin=protoc-gen-php-grpc=/usr/local/bin/protoc-gen-php-grpc \
+            --php-grpc_out=src; \
+    fi \
+    && rm -f /usr/local/bin/protoc-gen-php-grpc \
+    && apt-get purge -y protobuf-compiler curl \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
 # Fail the image build if Symfony configuration or the kernel cannot boot.
 RUN APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret PRICING_SERVICE_URL=http://pricing-service:8080 \
