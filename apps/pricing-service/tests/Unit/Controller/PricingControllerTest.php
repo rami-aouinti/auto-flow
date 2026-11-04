@@ -80,6 +80,13 @@ final class PricingControllerTest extends TestCase
         self::assertSame(422, $response->getStatusCode());
     }
 
+    public function testReadinessReturnsServiceUnavailableWhenPostgresIsUnavailable(): void
+    {
+        $response = (new PricingController())->readiness(new \\App\\Infrastructure\\Persistence\\PostgresConnection('invalid-database-url'));
+
+        self::assertSame(503, $response->getStatusCode());
+    }
+
     private function request(string $content): Request
     {
         $request = Request::create(
