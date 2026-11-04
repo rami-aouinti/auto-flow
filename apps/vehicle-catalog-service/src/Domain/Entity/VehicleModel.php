@@ -14,11 +14,13 @@ final readonly class VehicleModel
         public CatalogueId $manufacturerId,
         public string $name,
         public string $normalizedName,
-    ) {}
+    ) {
+    }
 
     public static function create(string $manufacturerId, string $name): self
     {
         $name = trim($name);
+
         if ($name === '' || mb_strlen($name) > 120) {
             throw new InvalidArgumentException('Model name must contain 1-120 characters.');
         }
