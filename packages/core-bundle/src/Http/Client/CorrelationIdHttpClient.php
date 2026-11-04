@@ -62,6 +62,9 @@ final readonly class CorrelationIdHttpClient implements HttpClientInterface
         return $this->inner->stream($responses, $timeout);
     }
 
+    /**
+     * @param array<string, mixed> $options
+     */
     public function withOptions(array $options): static
     {
         return new self($this->inner->withOptions($options), $this->context, $this->headerName);
