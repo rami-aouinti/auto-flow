@@ -7,6 +7,8 @@ core:
         jwks_cache_ttl: 300
         protected_path_prefixes:
             - '/api/'
+        tenant_required_path_prefixes:
+            - '/api/pricing/'
         excluded_paths:
             - '/api/doc'
             - '/api/doc.json'
