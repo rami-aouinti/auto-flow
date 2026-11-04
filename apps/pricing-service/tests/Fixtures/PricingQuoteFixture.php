@@ -16,6 +16,7 @@ final class PricingQuoteFixture
         string $tenantId = 'tenant-demo',
         string $ownerId = 'swagger-demo-user',
         string $vehicleId = 'vehicle-demo-001',
+        bool $useDefaultExpiry = false,
     ): PricingQuote {
         $createdAt = new DateTimeImmutable('2026-11-04T12:00:00+00:00');
 
@@ -34,7 +35,7 @@ final class PricingQuoteFixture
             vehiclePrice: Money::fromMinorUnits(3000000, 'EUR'),
             downPayment: Money::fromMinorUnits(500000, 'EUR'),
             createdAt: $createdAt,
-            expiresAt: $createdAt->modify('+7 days'),
+            expiresAt: $useDefaultExpiry ? null : $createdAt->modify('+7 days'),
         );
     }
 
