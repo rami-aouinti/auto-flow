@@ -27,7 +27,7 @@ See [ADR-014](../../docs/adr/ADR-014-core-bundle-v2-clean-architecture.md), [ADR
 | JSON / Protobuf | Safe JSON encode/decode and generated Protobuf message serialization |
 | Protocol error mapping | Maps HTTP status and gRPC status values |
 | Health endpoints | Liveness and readiness; readiness fails closed without registered checks |
-| Messenger propagation | Correlation ID stamp and middleware with `finally` restoration |
+| Messenger propagation | Correlation ID stamp and middleware with scoped context restoration (must be enabled per bus) |
 | Event bus | Messenger adapter for publishing the shared integration-event envelope |
 | Clock | Injectable system clock for deterministic application tests |
 | Idempotency port | Atomic claim/replay contract; storage implementation remains service-owned |
@@ -107,7 +107,7 @@ use AutoFlow\CoreBundle\Infrastructure\RoadRunner\GrpcServerRunner;
 
 The gRPC adapter maps Protobuf request messages to application commands and maps application results to Protobuf response messages. Never pass generated messages into Domain methods. Keep protocol errors safe and map them to native gRPC status codes.
 
-`(new GrpcMetadata())->allowListed()` is provided for explicit propagation of operational metadata such as correlation IDs. Do not forward authorization metadata by default. `GrpcDeadline` validates a positive finite timeout duration; the service-specific client adapter must translate it to the selected gRPC client's deadline API.
+Cross-service gRPC metadata allow-listing, deadlines, cancellation and HTTP-to-gRPC status mapping are not yet shared CoreBundle APIs. Keep those policies in the service-owned gRPC adapter until a tested common contract is introduced. Never forward authorization metadata implicitly.
 
 A typical RoadRunner configuration has independent HTTP and gRPC listeners and worker pools:
 
