@@ -70,16 +70,15 @@ final readonly class SymfonyHttpWorker
                         break;
                     }
                 } catch (Throwable $exception) {
-                    // Do not attempt a second response after a response conversion/write failure.
+                    // Never attempt a second response after conversion or transport failure.
                     error_log(sprintf('RoadRunner could not write an HTTP response (%s).', $exception::class));
                     break;
                 } finally {
                     try {
-                        if ($request instanceof Request && $response instanceof Response) {
+                        if ($request instanceof Request) {
                             $kernel->terminate($request, $response);
                         }
                     } finally {
-                        // Long-running workers must not retain request-scoped service state.
                         $kernel->reset();
                     }
                 }

@@ -12,9 +12,9 @@ use RuntimeException;
 /**
  * JSON wire-format serializer.
  *
- * JSON decoding returns native PHP values (arrays/scalars/null). Typed object
- * hydration belongs to an explicit DTO mapper or Symfony Serializer adapter;
- * silently ignoring the requested type would be unsafe and misleading.
+ * JSON decoding returns native PHP values. Typed object hydration belongs to
+ * an explicit DTO mapper or serializer adapter; the requested type is never
+ * silently ignored.
  */
 final readonly class JsonSerializer implements SerializerInterface
 {

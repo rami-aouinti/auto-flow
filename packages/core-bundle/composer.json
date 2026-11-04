@@ -1,6 +1,6 @@
 {
   "name": "autoflow/core-bundle",
-  "description": "Transport-neutral Clean Architecture foundation for AutoFlow Symfony microservices, with HTTP, serialization and RoadRunner gRPC adapters.",
+  "description": "Transport-neutral Clean Architecture foundation for AutoFlow Symfony microservices, with HTTP, serialization and optional RoadRunner gRPC adapters.",
   "type": "symfony-bundle",
   "license": "proprietary",
   "version": "2.0.0",
@@ -13,7 +13,8 @@
     "symfony/http-kernel": "7.4.*",
     "symfony/messenger": "7.4.*",
     "symfony/routing": "7.4.*",
-    "symfony/yaml": "7.4.*"
+    "symfony/yaml": "7.4.*",
+    "firebase/php-jwt": "^7.2.1"
   },
   "suggest": {
     "google/protobuf": "Required when using the ProtobufSerializer adapter.",
