@@ -15,11 +15,17 @@ final readonly class HealthCheckResult
     ) {
     }
 
+    /**
+     * @param array<string, scalar|null> $details
+     */
     public static function healthy(array $details = []): self
     {
         return new self(true, $details);
     }
 
+    /**
+     * @param array<string, scalar|null> $details
+     */
     public static function unhealthy(array $details = []): self
     {
         return new self(false, $details);
