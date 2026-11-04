@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 final readonly class ProblemDetailsFactory
 {
-    private const RESERVED_MEMBERS = ['type', 'title', 'status', 'detail', 'instance'];
+    private const array RESERVED_MEMBERS = ['type', 'title', 'status', 'detail', 'instance'];
 
     /**
      * @param array<array-key, mixed> $extensions
