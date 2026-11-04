@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AutoFlow\CoreBundle\Health;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Attribute\AsController;
 
+#[AsController]
 final readonly class HealthController
 {
     /**
