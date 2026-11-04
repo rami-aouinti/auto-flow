@@ -2,8 +2,21 @@ nelmio_api_doc:
     documentation:
         info:
             title: AutoFlow Pricing Service API
-            description: Tenant-scoped lease quote calculation and lifecycle.
-            version: 1.0.0
+            description: |
+                Tenant-scoped lease quote calculation and lifecycle.
+
+                Local browser testing:
+                1. Start the stack with the local development environment.
+                2. Obtain a JWT from the local Keycloak realm.
+                3. Click Authorize and paste the token (without the Bearer prefix).
+                4. Use the deterministic demo request below.
+
+                Protected quote operations require the pricing:quote scope and a tenant
+                delegated by the authenticated principal. The pricing:quote:read:any
+                and pricing:quote:delete:any scopes widen read/delete access only inside
+                the caller's authorized tenant. Never use local development credentials
+                outside the local environment.
+            version: 1.1.0
         servers:
             - url: http://localhost:8082
               description: Local development
@@ -13,6 +26,152 @@ nelmio_api_doc:
                     type: http
                     scheme: bearer
                     bearerFormat: JWT
+                    description: |
+                        Paste a valid local Keycloak access token. Swagger sends it as
+                        Authorization: Bearer <token>. The token must have the Pricing
+                        audience, an authorized tenant and the pricing:quote scope.
+            schemas:
+                PricingQuoteRequest:
+                    type: object
+                    additionalProperties: false
+                    required:
+                        - vehicleId
+                        - vehiclePrice
+                        - downPayment
+                        - residualValue
+                        - currency
+                        - durationMonths
+                        - annualInterestRateBasisPoints
+                    properties:
+                        vehicleId:
+                            type: string
+                            example: vehicle-demo-001
+                        vehiclePrice:
+                            type: string
+                            description: Decimal money amount; use a string to avoid floating-point ambiguity.
+                            pattern: '^\\d+(\\.\\d{1,2})?$'
+                            example: '30000.00'
+                        downPayment:
+                            type: string
+                            pattern: '^\\d+(\\.\\d{1,2})?$'
+                            example: '5000.00'
+                        residualValue:
+                            type: string
+                            pattern: '^\\d+(\\.\\d{1,2})?$'
+                            example: '12000.00'
+                        currency:
+                            type: string
+                            minLength: 3
+                            maxLength: 3
+                            example: EUR
+                        durationMonths:
+                            type: integer
+                            minimum: 12
+                            maximum: 72
+                            example: 48
+                        annualInterestRateBasisPoints:
+                            type: integer
+                            minimum: 0
+                            maximum: 2000
+                            example: 450
+                PricingQuote:
+                    type: object
+                    required:
+                        - quoteId
+                        - vehicleId
+                        - monthlyAmount
+                        - totalInstallmentsAmount
+                        - totalCostIncludingDownPayment
+                        - residualValue
+                        - currency
+                        - durationMonths
+                        - annualInterestRateBasisPoints
+                        - calculationVersion
+                        - createdAt
+                        - expiresAt
+                        - expired
+                    properties:
+                        quoteId:
+                            type: string
+                            example: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                        vehicleId:
+                            type: string
+                            example: vehicle-demo-001
+                        vehiclePrice:
+                            type: string
+                            nullable: true
+                            example: '30000.00'
+                        downPayment:
+                            type: string
+                            nullable: true
+                            example: '5000.00'
+                        monthlyAmount:
+                            type: string
+                            example: '455.46'
+                        totalInstallmentsAmount:
+                            type: string
+                            example: '21862.08'
+                        totalCostIncludingDownPayment:
+                            type: string
+                            example: '26862.08'
+                        residualValue:
+                            type: string
+                            example: '12000.00'
+                        currency:
+                            type: string
+                            example: EUR
+                        durationMonths:
+                            type: integer
+                            example: 48
+                        annualInterestRateBasisPoints:
+                            type: integer
+                            example: 450
+                        calculationVersion:
+                            type: string
+                            example: lease-annuity-v1
+                        createdAt:
+                            type: string
+                            format: date-time
+                            example: '2026-11-04T23:11:58+00:00'
+                        expiresAt:
+                            type: string
+                            format: date-time
+                            example: '2026-11-11T23:11:58+00:00'
+                        policyId:
+                            type: string
+                            format: uuid
+                            nullable: true
+                            example: '123e4567-e89b-42d3-a456-426614174000'
+                        policyVersion:
+                            type: integer
+                            nullable: true
+                            example: 1
+                        expired:
+                            type: boolean
+                            example: false
+                PricingQuoteCollection:
+                    type: object
+                    required: [items, limit, offset]
+                    properties:
+                        items:
+                            type: array
+                            items:
+                                $ref: '#/components/schemas/PricingQuote'
+                        limit:
+                            type: integer
+                            example: 50
+                        offset:
+                            type: integer
+                            example: 0
+                ApiError:
+                    type: object
+                    properties:
+                        error:
+                            type: string
+                            example: invalid_pricing_request
+                        message:
+                            type: string
+                            example: The requested pricing terms are invalid.
         security:
             - bearerAuth: []
         paths:
@@ -20,25 +179,18 @@ nelmio_api_doc:
                 post:
                     tags: [Pricing]
                     summary: Calculate and persist a lease quote
+                    description: |
+                        Calculates a quote using the active tenant Pricing Policy and persists
+                        an immutable financial snapshot. Requires pricing:quote.
                     requestBody:
                         required: true
                         content:
                             application/json:
                                 schema:
-                                    type: object
-                                    additionalProperties: false
-                                    required: [vehicleId, vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints]
-                                    properties:
-                                        vehicleId: { type: string, example: vehicle-demo-001 }
-                                        vehiclePrice: { type: string, example: '30000.00' }
-                                        downPayment: { type: string, example: '5000.00' }
-                                        residualValue: { type: string, example: '12000.00' }
-                                        currency: { type: string, example: EUR }
-                                        durationMonths: { type: integer, minimum: 12, maximum: 72, example: 48 }
-                                        annualInterestRateBasisPoints: { type: integer, minimum: 0, maximum: 2000, example: 450 }
+                                    $ref: '#/components/schemas/PricingQuoteRequest'
                                 examples:
                                     demo:
-                                        summary: Deterministic demo vehicle quote
+                                        summary: Demo vehicle quote (matches local SQL fixtures)
                                         value:
                                             vehicleId: vehicle-demo-001
                                             vehiclePrice: '30000.00'
@@ -49,9 +201,11 @@ nelmio_api_doc:
                                             annualInterestRateBasisPoints: 450
                     responses:
                         '200':
-                            description: Quote calculated and persisted
+                            description: Quote calculated and persisted.
                             content:
                                 application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/PricingQuote'
                                     example:
                                         quoteId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                                         vehicleId: vehicle-demo-001
@@ -65,27 +219,59 @@ nelmio_api_doc:
                                         durationMonths: 48
                                         annualInterestRateBasisPoints: 450
                                         calculationVersion: lease-annuity-v1
-                                        createdAt: '2026-11-04T12:00:00+00:00'
-                                        expiresAt: '2026-11-11T12:00:00+00:00'
+                                        createdAt: '2026-11-04T23:11:58+00:00'
+                                        expiresAt: '2026-11-11T23:11:58+00:00'
                                         policyId: '123e4567-e89b-42d3-a456-426614174000'
                                         policyVersion: 1
                                         expired: false
-                        '400': { description: Malformed JSON request body }
-                        '401': { description: Missing or invalid bearer token }
-                        '403': { description: Missing pricing scope or tenant authorization }
-                        '422': { description: Invalid request or lease terms }
-                        '500': { description: Unexpected pricing failure }
+                        '400':
+                            description: Malformed JSON request body.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/ApiError'
+                        '401':
+                            description: Missing or invalid bearer token.
+                        '403':
+                            description: Missing pricing:quote scope or authorized tenant delegation.
+                        '422':
+                            description: Invalid request fields or lease terms.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/ApiError'
+                        '500':
+                            description: Unexpected pricing failure.
                 get:
                     tags: [Pricing]
                     summary: List quotes visible to the caller
+                    description: |
+                        Returns quotes owned by the authenticated subject by default.
+                        The pricing:quote:read:any scope permits reading all quotes in the
+                        caller's authorized tenant.
                     parameters:
-                        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
-                        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+                        - name: limit
+                          in: query
+                          description: Maximum number of quotes to return.
+                          schema:
+                              type: integer
+                              minimum: 1
+                              maximum: 100
+                              default: 50
+                        - name: offset
+                          in: query
+                          description: Number of quotes to skip.
+                          schema:
+                              type: integer
+                              minimum: 0
+                              default: 0
                     responses:
                         '200':
-                            description: Paginated quote collection. Fixture rows are visible to the fixture owner or callers with the tenant read-any scope.
+                            description: Paginated quote collection.
                             content:
                                 application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/PricingQuoteCollection'
                                     example:
                                         items:
                                             - quoteId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -100,69 +286,120 @@ nelmio_api_doc:
                                               durationMonths: 48
                                               annualInterestRateBasisPoints: 450
                                               calculationVersion: lease-annuity-v1
-                                              createdAt: '2026-11-04T12:00:00+00:00'
-                                              expiresAt: '2026-11-11T12:00:00+00:00'
-                                              policyId: '123e4567-e89b-42d3-a456-426614174000'
-                                              policyVersion: 1
-                                              expired: false
-                                            - quoteId: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-                                              vehicleId: vehicle-demo-002
-                                              vehiclePrice: '25000.00'
-                                              downPayment: '4000.00'
-                                              monthlyAmount: '389.90'
-                                              totalInstallmentsAmount: '14036.40'
-                                              totalCostIncludingDownPayment: '18036.40'
-                                              residualValue: '7500.00'
-                                              currency: EUR
-                                              durationMonths: 36
-                                              annualInterestRateBasisPoints: 350
-                                              calculationVersion: lease-annuity-v1
-                                              createdAt: '2026-11-04T12:00:00+00:00'
-                                              expiresAt: '2026-11-11T12:00:00+00:00'
+                                              createdAt: '2026-11-04T23:11:58+00:00'
+                                              expiresAt: '2026-11-11T23:11:58+00:00'
                                               policyId: '123e4567-e89b-42d3-a456-426614174000'
                                               policyVersion: 1
                                               expired: false
                                         limit: 50
                                         offset: 0
-                        '400': { description: Invalid pagination }
+                        '400':
+                            description: Invalid pagination parameters.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/ApiError'
+                        '401':
+                            description: Missing or invalid bearer token.
+                        '403':
+                            description: Missing pricing:quote scope or authorized tenant delegation.
             /api/pricing/quotes/{quoteId}:
                 get:
                     tags: [Pricing]
                     summary: Retrieve a quote snapshot
+                    description: Requires pricing:quote. The caller can read their own quote; pricing:quote:read:any permits tenant-wide reads.
                     parameters:
-                        - { name: quoteId, in: path, required: true, schema: { type: string } }
+                        - name: quoteId
+                          in: path
+                          required: true
+                          schema:
+                              type: string
+                          example: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
                     responses:
-                        '200': { description: Quote snapshot and validity metadata }
-                        '404': { description: Quote not found or not visible to caller }
-                        '410': { description: Quote expired }
+                        '200':
+                            description: Quote snapshot and validity metadata.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/PricingQuote'
+                        '401':
+                            description: Missing or invalid bearer token.
+                        '403':
+                            description: Missing pricing:quote scope or authorized tenant delegation.
+                        '404':
+                            description: Quote not found or not visible to caller.
+                        '410':
+                            description: Quote validity period has ended.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/ApiError'
                 delete:
                     tags: [Pricing]
                     summary: Soft-delete a quote
+                    description: Requires pricing:quote. The caller can delete their own quote; pricing:quote:delete:any permits tenant-wide deletion.
                     parameters:
-                        - { name: quoteId, in: path, required: true, schema: { type: string } }
+                        - name: quoteId
+                          in: path
+                          required: true
+                          schema:
+                              type: string
+                          example: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
                     responses:
-                        '204': { description: Quote soft-deleted }
-                        '404': { description: Quote not found or not visible to caller }
+                        '204':
+                            description: Quote soft-deleted. No response body.
+                        '401':
+                            description: Missing or invalid bearer token.
+                        '403':
+                            description: Missing pricing:quote scope or authorized tenant delegation.
+                        '404':
+                            description: Quote not found or not visible to caller.
             /api/pricing/{vehicleId}:
                 get:
                     tags: [Pricing]
                     summary: Legacy static demonstration quote
+                    description: Deprecated compatibility endpoint. New integrations must use POST /api/pricing/quotes.
                     deprecated: true
                     parameters:
-                        - { name: vehicleId, in: path, required: true, schema: { type: string } }
+                        - name: vehicleId
+                          in: path
+                          required: true
+                          schema:
+                              type: string
+                          example: vehicle-demo-001
                     responses:
-                        '200': { description: Static demonstration response }
+                        '200':
+                            description: Static demonstration response.
+                            content:
+                                application/json:
+                                    example:
+                                        vehicleId: vehicle-demo-001
+                                        monthlyAmount: 329.00
+                                        currency: EUR
+                                        durationMonths: 48
+                                        calculation: demo-only
+                        '401':
+                            description: Missing or invalid bearer token.
+                        '403':
+                            description: Missing pricing:quote scope.
             /health:
                 get:
+                    tags: [Operations]
                     summary: Liveness probe
+                    security: []
                     responses:
-                        '200': { description: Process is alive }
+                        '200':
+                            description: Process is alive.
             /ready:
                 get:
+                    tags: [Operations]
                     summary: PostgreSQL readiness probe
+                    security: []
                     responses:
-                        '200': { description: PostgreSQL is reachable }
-                        '503': { description: PostgreSQL is unavailable }
+                        '200':
+                            description: PostgreSQL is reachable.
+                        '503':
+                            description: PostgreSQL is unavailable.
     areas:
         default:
             path_patterns:
