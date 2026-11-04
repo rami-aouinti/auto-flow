@@ -41,7 +41,7 @@ All `/api/*` endpoints require a Keycloak RS256 bearer token validated by CoreBu
 - `catalog:manage`: register manufacturers, models, generations and variants.
 - `catalog:manage`: publish a draft variant.
 
-The local Keycloak demo user receives read access only. Grant `catalog:manage` to a trusted catalogue administrator role in the local realm or your environment. Do not grant it to ordinary customer clients. Health and development documentation routes are excluded from JWT authentication. This global catalogue is not tenant-owned; tenant-specific pricing and offers remain in their respective contexts.
+The local Keycloak `demo` user receives read access only. For local catalogue administration, the imported development realm also provides `catalog-admin` / `catalog-admin` with both scopes. These are development-only credentials; replace them before any shared or deployed environment. Do not grant `catalog:manage` to ordinary customer clients. Health and development documentation routes are excluded from JWT authentication. This global catalogue is not tenant-owned; tenant-specific pricing and offers remain in their respective contexts.
 
 ## REST API v1
 
@@ -74,7 +74,7 @@ Fresh Docker volumes execute the role, schema and fixture SQL through the Postgr
 
 ## Integration events and Outbox
 
-Every catalogue write and its versioned integration event are committed in one PostgreSQL transaction. The Outbox publisher claims rows with `FOR UPDATE SKIP LOCKED`, publishes persistent RabbitMQ messages with publisher confirms to the durable `autoflow.catalog.events` topic exchange, then marks the event published. Failed publication is unlocked and retried with bounded exponential backoff. Events contain stable event/aggregate IDs, type, schema version, occurrence time and a minimal payload.
+Every catalogue write and its versioned integration event are committed in one PostgreSQL transaction. The Outbox publisher claims rows with `FOR UPDATE SKIP LOCKED`, publishes persistent RabbitMQ messages with publisher confirms and mandatory routing to the durable `autoflow.catalog.events` topic exchange, then marks the event published. If no consumer queue is bound, the broker return keeps the event pending for retry instead of silently dropping it. Failed publication is unlocked and retried with bounded exponential backoff. Events contain stable event/aggregate IDs, type, schema version, occurrence time and a minimal payload.
 
 Vehicle Search will own its Elasticsearch projection and consume these events idempotently. This service does not write to Elasticsearch and does not claim that the future Search consumer already exists.
 
