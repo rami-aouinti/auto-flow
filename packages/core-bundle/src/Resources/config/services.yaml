@@ -9,6 +9,7 @@ services:
             - '../../DependencyInjection/'
             - '../../Resources/'
             - '../../Tests/'
+            - '../../CoreBundle.php'
 
     AutoFlow\CoreBundle\Http\Correlation\CorrelationIdSubscriber:
         arguments:
