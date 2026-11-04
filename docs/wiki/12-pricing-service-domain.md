@@ -154,6 +154,7 @@ The production-readiness branch now contains the first implementation slice:
 - Quote calculation loads the active tenant policy when one exists and checks the duration/rate guardrails. Existing tenants without a policy retain the legacy 7-day default while policy rollout is completed.
 - Quotes persist original vehicle price/down payment, creation and expiry timestamps, and the exact policy ID/version used. The database trigger rejects mutation of snapshot fields while allowing soft deletion.
 - The gRPC response adds fields for creation/expiry timestamps and policy ID/version without renumbering or changing existing protobuf fields; a serialization contract test covers the additive metadata.
+- `/health` is the liveness endpoint; `/ready` checks PostgreSQL. The Pricing container healthcheck uses `/ready`, so dependent services wait for database readiness.
 - Quote validity defaults to seven days and may be configured by policy (1–90 days). The API returns HTTP 410 for an expired quote lookup.
 - REST calculation records low-cardinality outcome counters and request-duration histograms through OpenTelemetry; the runtime still needs an OTLP metrics reader/exporter configured to export them. The quote stores `policy_id` and `policy_version`, and the database enforces a tenant-consistent policy reference.
 
