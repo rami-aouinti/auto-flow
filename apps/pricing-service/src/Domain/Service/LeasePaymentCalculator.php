@@ -73,6 +73,8 @@ final class LeasePaymentCalculator
             annualInterestRateBasisPoints: $terms->annualInterestRateBasisPoints,
             calculationVersion: 'lease-annuity-v1',
             createdBy: $createdBy,
+            vehiclePrice: $terms->vehiclePrice,
+            downPayment: $terms->downPayment,
         );
     }
 }
