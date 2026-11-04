@@ -52,11 +52,3 @@ final class ScopeAuthorizationSubscriberTest extends TestCase
         );
     }
 }
-
-final class ScopeProtectedController
-{
-    #[RequiresScope('pricing:quote')]
-    public function execute(): void
-    {
-    }
-}
