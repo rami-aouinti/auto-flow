@@ -34,9 +34,7 @@ final class CorrelationIdMiddlewareTest extends TestCase
                 }),
                 self::isInstanceOf(StackInterface::class),
             )
-            ->willReturnCallback(static function (Envelope $envelope, StackInterface $stack): Envelope {
-                return $envelope;
-            });
+            ->willReturnCallback(static fn (Envelope $envelope, StackInterface $stack): Envelope => $envelope);
 
         $stack = $this->createMock(StackInterface::class);
         $stack->expects(self::once())->method('next')->willReturn($next);
