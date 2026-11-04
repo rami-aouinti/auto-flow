@@ -120,6 +120,16 @@ final readonly class JwtTokenVerifier
     private function extractSubject(stdClass $claims): string
     {
         if (!isset($claims->sub) || !is_string($claims->sub) || trim($claims->sub) === '') {
+            // Keycloak access tokens should always carry the standard OIDC "sub"
+            // claim. Log only claim names and the subject value's shape so the
+            // token itself and all personal claim values remain private.
+            error_log(sprintf(
+                '[AutoFlow JWT] Invalid subject claim; claim_keys=%s; sub_type=%s; sub_empty=%s',
+                json_encode(array_keys(get_object_vars($claims)), JSON_UNESCAPED_SLASHES) ?: '[]',
+                get_debug_type($claims->sub ?? null),
+                !isset($claims->sub) || $claims->sub === '',
+            ));
+
             throw new InvalidTokenException('The token does not contain a valid subject.');
         }
 
