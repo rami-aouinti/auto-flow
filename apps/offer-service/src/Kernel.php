@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App;
 
-use Symfony\\Bundle\\FrameworkBundle\\Kernel\\MicroKernelTrait;
-use Symfony\\Component\\HttpKernel\\Kernel as BaseKernel;
-use Symfony\\Contracts\\Service\\ResetInterface;
+use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
+use Symfony\Component\HttpKernel\Kernel as BaseKernel;
+use Symfony\Contracts\Service\ResetInterface;
 
 final class Kernel extends BaseKernel implements ResetInterface
 {
