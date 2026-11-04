@@ -19,6 +19,7 @@ final class KeycloakClientCredentialsTokenProvider
         private readonly string $tokenUrl,
         private readonly string $clientId,
         private readonly string $clientSecret,
+        private readonly string $scope,
     ) {
     }
 
@@ -34,6 +35,7 @@ final class KeycloakClientCredentialsTokenProvider
                     'grant_type' => 'client_credentials',
                     'client_id' => $this->clientId,
                     'client_secret' => $this->clientSecret,
+                    'scope' => $this->scope,
                 ],
                 'headers' => ['Accept' => 'application/json'],
                 'timeout' => 3.0,
