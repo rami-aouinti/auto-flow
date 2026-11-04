@@ -9,7 +9,12 @@ use DateTimeImmutable;
 
 final class PricingPolicyFixture
 {
-    public static function draft(string $tenantId = 'tenant-demo', int $version = 1, string $policyId = '123e4567-e89b-42d3-a456-426614174000', int $validityDays = 7): PricingPolicy
+    public static function draft(
+        string $tenantId = 'tenant-demo',
+        int $version = 1,
+        string $policyId = '123e4567-e89b-42d3-a456-426614174000',
+        int $validityDays = 7,
+    ): PricingPolicy
     {
         return new PricingPolicy(
             policyId: $policyId,
