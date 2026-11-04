@@ -227,7 +227,7 @@ final readonly class OfferController
                 $principal->subject,
                 new DateTimeImmutable(),
             );
-        } catch (InvalidOfferTransition $exception) {
+        } catch (InvalidOfferTransition | ConcurrentOfferModification $exception) {
             return new JsonResponse([
                 'error' => 'invalid_offer_transition',
                 'message' => $exception->getMessage(),
@@ -259,7 +259,7 @@ final readonly class OfferController
                 $principal->subject,
                 new DateTimeImmutable(),
             );
-        } catch (InvalidOfferTransition $exception) {
+        } catch (InvalidOfferTransition | ConcurrentOfferModification $exception) {
             return new JsonResponse([
                 'error' => 'invalid_offer_transition',
                 'message' => $exception->getMessage(),
