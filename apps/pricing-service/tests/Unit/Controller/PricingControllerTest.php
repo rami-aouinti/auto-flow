@@ -32,14 +32,16 @@ final class PricingControllerTest extends TestCase
             'durationMonths' => 48,
             'annualInterestRateBasisPoints' => 450,
         ], JSON_THROW_ON_ERROR));
-        $response = $controller->calculate($request, $this->handler(), $this->tenantContext($request), new PricingMetrics());
+        $response = $controller->calculate($request, $this->handler(true), $this->tenantContext($request), new PricingMetrics());
         $payload = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('vehicle-demo-001', $payload['vehicleId']);
         self::assertSame('30000.00', $payload['vehiclePrice']);
         self::assertSame('5000.00', $payload['downPayment']);
-        self::assertSame('2026-11-11', substr($payload['expiresAt'], 0, 10));
+        $createdAt = new DateTimeImmutable($payload['createdAt']);
+        $expiresAt = new DateTimeImmutable($payload['expiresAt']);
+        self::assertSame(7, (int) $createdAt->diff($expiresAt)->format('%a'));
         self::assertSame('lease-annuity-v1', $payload['calculationVersion']);
     }
 
@@ -47,7 +49,7 @@ final class PricingControllerTest extends TestCase
     {
         $controller = new PricingController();
         $request = $this->request('{invalid');
-        $response = $controller->calculate($request, $this->handler(), $this->tenantContext($request), new PricingMetrics());
+        $response = $controller->calculate($request, $this->handler(false), $this->tenantContext($request), new PricingMetrics());
         $payload = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
 
         self::assertSame(400, $response->getStatusCode());
@@ -80,10 +82,10 @@ final class PricingControllerTest extends TestCase
         return new TenantContext($stack);
     }
 
-    private function handler(): CalculateQuoteHandler
+    private function handler(bool $expectSave): CalculateQuoteHandler
     {
         $quotes = $this->createMock(PricingQuoteRepositoryInterface::class);
-        $quotes->expects(self::once())->method('save');
+        $quotes->expects($expectSave ? self::once() : self::never())->method('save');
         $ids = $this->createMock(QuoteIdGeneratorInterface::class);
         $ids->method('generate')->willReturn('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
         $policies = $this->createMock(PricingPolicyRepositoryInterface::class);
