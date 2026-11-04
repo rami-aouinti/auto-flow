@@ -17,6 +17,5 @@ interface OfferRepositoryInterface
     /** @return list<string> */
     public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array;
 
-    /** @return list<Offer> */
-    public function findExpiredForTenant(string $tenantId, DateTimeImmutable $now, int $limit): array;
+    public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int;
 }
