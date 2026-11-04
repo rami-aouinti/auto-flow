@@ -21,10 +21,14 @@ final class CoreExtension extends Extension
 
         $container->setParameter('autoflow_core.correlation_id_enabled', $config['correlation_id']);
         $container->setParameter('autoflow_core.correlation_header', $config['correlation_header']);
-        $container->setParameter('autoflow_core.health_endpoints_enabled', $config['health_endpoints']);
 
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yaml');
+
+        if (!$config['correlation_id']) {
+            $container->removeDefinition(\\AutoFlow\\CoreBundle\\Http\\Correlation\\CorrelationIdSubscriber::class);
+            $container->removeDefinition(\\AutoFlow\\CoreBundle\\Http\\Client\\CorrelationIdHttpClient::class);
+        }
     }
 
     public function getAlias(): string
