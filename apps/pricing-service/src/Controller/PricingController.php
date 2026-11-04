@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Application\CalculateQuote\CalculateQuoteCommand;
 use App\Application\CalculateQuote\CalculateQuoteHandler;
+use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
 use OpenTelemetry\API\Globals;
@@ -33,8 +34,11 @@ final class PricingController
 
     #[RequiresScope('pricing:quote')]
     #[Route('/api/pricing/quotes', name: 'pricing_calculate_quote', methods: ['POST'])]
-    public function calculate(Request $request, CalculateQuoteHandler $handler): JsonResponse
-    {
+    public function calculate(
+        Request $request,
+        CalculateQuoteHandler $handler,
+        TenantContext $tenantContext,
+    ): JsonResponse {
         $span = Globals::tracerProvider()
             ->getTracer('autoflow.pricing-service', '1.0.0')
             ->spanBuilder('pricing.calculate')
@@ -45,6 +49,7 @@ final class PricingController
         try {
             $payload = $request->toArray();
             $command = new CalculateQuoteCommand(
+                tenantId: $tenantContext->requireTenantId(),
                 vehicleId: $this->requiredString($payload, 'vehicleId'),
                 vehiclePrice: $this->requiredString($payload, 'vehiclePrice'),
                 downPayment: $this->requiredString($payload, 'downPayment'),
