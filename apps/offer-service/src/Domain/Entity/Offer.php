@@ -134,8 +134,9 @@ final class Offer
     {
         $this->assertStatus(OfferStatus::Published);
 
-        if ($acceptedAt < $this->createdAt) {
-            throw new InvalidOfferTransition('An offer cannot be accepted before it was created.');
+        $acceptanceWindowStart = $this->publishedAt ?? $this->createdAt;
+        if ($acceptedAt < $acceptanceWindowStart) {
+            throw new InvalidOfferTransition('An offer cannot be accepted before it was published.');
         }
 
         if ($acceptedAt >= $this->expiresAt) {
@@ -150,7 +151,8 @@ final class Offer
     {
         $this->assertStatus(OfferStatus::Published);
 
-        if ($rejectedAt < $this->createdAt || $rejectedAt >= $this->expiresAt) {
+        $rejectionWindowStart = $this->publishedAt ?? $this->createdAt;
+        if ($rejectedAt < $rejectionWindowStart || $rejectedAt >= $this->expiresAt) {
             throw new InvalidOfferTransition('An offer can only be rejected during its validity period.');
         }
 
