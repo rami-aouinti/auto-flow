@@ -94,6 +94,7 @@ final class PricingController
      *
      * @deprecated Use POST /api/pricing/quotes with explicit lease terms.
      */
+    #[RequiresScope('pricing:quote')]
     #[Route('/api/pricing/{vehicleId}', name: 'pricing_quote_legacy', methods: ['GET'])]
     public function legacyQuote(string $vehicleId): JsonResponse
     {
