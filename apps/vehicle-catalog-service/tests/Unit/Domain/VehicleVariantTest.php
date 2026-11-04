@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\\Tests\\Unit\\Domain;
+namespace App\Tests\Unit\Domain;
 
-use App\\Domain\\Entity\\VehicleVariant;
+use App\Domain\Entity\VehicleVariant;
 use InvalidArgumentException;
-use PHPUnit\\Framework\\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class VehicleVariantTest extends TestCase
 {
