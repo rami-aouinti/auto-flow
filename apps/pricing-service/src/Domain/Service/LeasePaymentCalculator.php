@@ -15,8 +15,16 @@ use InvalidArgumentException;
  */
 final class LeasePaymentCalculator
 {
-    public function calculate(string $tenantId, string $vehicleId, LeaseTerms $terms): PricingQuote
-    {
+    public function calculate(
+        string $quoteId,
+        string $tenantId,
+        string $vehicleId,
+        LeaseTerms $terms,
+    ): PricingQuote {
+        if (!preg_match('/^[a-f0-9]{32}$/D', $quoteId)) {
+            throw new InvalidArgumentException('Quote ID has an invalid format.');
+        }
+
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenantId)) {
             throw new InvalidArgumentException('Tenant ID has an invalid format.');
         }
@@ -36,7 +44,7 @@ final class LeasePaymentCalculator
             $monthlyAmount = ($presentValue * $monthlyRate) / (1 - $discountFactor);
         }
 
-        $monthlyMinorUnits = (int) round($monthlyAmount, 0, \RoundingMode::HalfAwayFromZero);
+        $monthlyMinorUnits = (int) round($monthlyAmount, 0, \\RoundingMode::HalfAwayFromZero);
 
         if ($monthlyMinorUnits > intdiv(PHP_INT_MAX, $terms->durationMonths)) {
             throw new InvalidArgumentException('Calculated total exceeds the supported monetary range.');
@@ -49,6 +57,7 @@ final class LeasePaymentCalculator
         );
 
         return new PricingQuote(
+            quoteId: $quoteId,
             tenantId: $tenantId,
             vehicleId: $vehicleId,
             monthlyAmount: $monthlyPayment,
