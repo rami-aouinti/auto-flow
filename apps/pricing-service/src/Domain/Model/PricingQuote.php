@@ -23,6 +23,7 @@ final readonly class PricingQuote
         public int $durationMonths,
         public int $annualInterestRateBasisPoints,
         public string $calculationVersion,
+        public string $createdBy,
     ) {
     }
 }
