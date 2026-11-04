@@ -72,7 +72,12 @@ final readonly class JwtTokenVerifier
             throw new InvalidTokenException('The bearer token header is malformed.', 0, $exception);
         }
 
-        if (!$header instanceof stdClass || !isset($header->kid) || !is_string($header->kid) || trim($header->kid) === '') {
+        if (
+            !$header instanceof stdClass
+            || !isset($header->kid)
+            || !is_string($header->kid)
+            || trim($header->kid) === ''
+        ) {
             throw new InvalidTokenException('The bearer token does not contain a valid key identifier.');
         }
 
