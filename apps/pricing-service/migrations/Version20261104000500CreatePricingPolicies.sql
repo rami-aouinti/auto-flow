@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS pricing_policies (
         minimum_annual_rate_bps >= 0 AND maximum_annual_rate_bps >= minimum_annual_rate_bps
     ),
     CONSTRAINT pricing_policies_validity_range CHECK (quote_validity_days BETWEEN 1 AND 90),
-    CONSTRAINT pricing_policies_tenant_version_unique UNIQUE (tenant_id, version)
+    CONSTRAINT pricing_policies_tenant_version_unique UNIQUE (tenant_id, version),
+    CONSTRAINT pricing_policies_tenant_policy_unique UNIQUE (tenant_id, policy_id)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pricing_policies_one_active_per_tenant
