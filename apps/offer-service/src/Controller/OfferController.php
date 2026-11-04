@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Application\AcceptOffer\AcceptOfferHandler;
 use App\Application\CreateOffer\CreateOfferCommand;
 use App\Application\CreateOffer\CreateOfferHandler;
 use App\Application\GetOffer\GetOfferHandler;
 use App\Application\PublishOffer\PublishOfferHandler;
+use App\Application\RejectOffer\RejectOfferHandler;
 use App\Domain\Entity\Offer;
 use App\Domain\Exception\InvalidOfferTransition;
 use App\Domain\Exception\OfferNotFound;
@@ -42,6 +44,8 @@ final readonly class OfferController
         private CreateOfferHandler $createOfferHandler,
         private GetOfferHandler $getOfferHandler,
         private PublishOfferHandler $publishOfferHandler,
+        private AcceptOfferHandler $acceptOfferHandler,
+        private RejectOfferHandler $rejectOfferHandler,
         private int $offerValidityDays,
     ) {
     }
@@ -189,6 +193,69 @@ final readonly class OfferController
                 $this->tenantContext->requireTenantId(),
                 $principal->subject,
                 new DateTimeImmutable(),
+            );
+        } catch (InvalidOfferTransition $exception) {
+            return new JsonResponse([
+                'error' => 'invalid_offer_transition',
+                'message' => $exception->getMessage(),
+            ], JsonResponse::HTTP_CONFLICT);
+        } catch (OfferNotFound | InvalidArgumentException) {
+            return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $response = new JsonResponse($this->offerPayload($offer));
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    #[RequiresScope('offers:quote')]
+    #[Route('/api/offers/{offerId}/accept', name: 'offer_accept', methods: ['POST'])]
+    public function accept(string $offerId, Request $request): JsonResponse
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new LogicException('A verified authenticated principal is required.');
+        }
+
+        try {
+            $offer = ($this->acceptOfferHandler)(
+                OfferId::fromString($offerId),
+                $this->tenantContext->requireTenantId(),
+                $principal->subject,
+                new DateTimeImmutable(),
+            );
+        } catch (InvalidOfferTransition $exception) {
+            return new JsonResponse([
+                'error' => 'invalid_offer_transition',
+                'message' => $exception->getMessage(),
+            ], JsonResponse::HTTP_CONFLICT);
+        } catch (OfferNotFound | InvalidArgumentException) {
+            return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $response = new JsonResponse($this->offerPayload($offer));
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    #[RequiresScope('offers:quote')]
+    #[Route('/api/offers/{offerId}/reject', name: 'offer_reject', methods: ['POST'])]
+    public function reject(string $offerId, Request $request): JsonResponse
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new LogicException('A verified authenticated principal is required.');
+        }
+
+        try {
+            $offer = ($this->rejectOfferHandler)(
+                OfferId::fromString($offerId),
+                $this->tenantContext->requireTenantId(),
+                $principal->subject,
             );
         } catch (InvalidOfferTransition $exception) {
             return new JsonResponse([
