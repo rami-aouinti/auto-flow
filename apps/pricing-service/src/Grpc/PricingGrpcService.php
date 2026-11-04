@@ -81,6 +81,7 @@ final readonly class PricingGrpcService implements PricingServiceInterface
         }
 
         $response = new CalculateQuoteResponse();
+        $response->setQuoteId($quote->quoteId);
         $response->setVehicleId($quote->vehicleId);
         $response->setMonthlyAmount($quote->monthlyAmount->toDecimal());
         $response->setTotalInstallmentsAmount($quote->totalInstallmentsAmount->toDecimal());
