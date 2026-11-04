@@ -40,7 +40,7 @@ jobs:
           done
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.offer_outbox_events') IS NOT NULL AS outbox_ready"
           for attempt in $(seq 1 30); do
-            if timeout 1 bash -c '</dev/tcp/127.0.0.1/5672' 2>/dev/null; then
+            if docker compose exec -T rabbitmq rabbitmq-diagnostics -q listeners >/dev/null 2>&1; then
               break
             fi
             sleep 2
