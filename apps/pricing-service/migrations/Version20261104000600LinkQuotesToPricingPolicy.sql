@@ -8,4 +8,4 @@ ALTER TABLE pricing_quotes
 
 ALTER TABLE pricing_quotes
     ADD CONSTRAINT pricing_quotes_policy_fk
-        FOREIGN KEY (policy_id) REFERENCES pricing_policies (policy_id);
+        FOREIGN KEY (tenant_id, policy_id) REFERENCES pricing_policies (tenant_id, policy_id);
