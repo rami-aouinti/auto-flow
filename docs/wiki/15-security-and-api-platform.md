@@ -113,7 +113,7 @@ Pact verifies consumer/provider expectations for important REST interactions. Op
 | Pact REST contracts | Planned |
 | Buf Protobuf compatibility checks | Planned |
 
-The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Pricing quote writes are now tenant-bound and protected by PostgreSQL row-level security. The next increments are tenant membership/resource authorization, tenant-scoped quote reads and update/delete operations, and equivalent isolation for other services. See ADR-016 for decisions and trade-offs.
+The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Pricing quote writes, reads, pagination, and deletion are tenant-bound and protected by PostgreSQL row-level security. The next increments are tenant membership/resource authorization, update semantics for immutable quote snapshots, and equivalent isolation for other services. See ADR-016 for decisions and trade-offs.
 
 
 ## 10. Pricing quote persistence and PostgreSQL RLS
@@ -138,3 +138,17 @@ docker compose up -d --force-recreate pricing-service
 The role password in the local initialization SQL is for development only. Production deployments must provision a dedicated non-superuser database role and secret through the deployment secret manager, then grant only the required schema/table privileges. Do not reuse the local password.
 
 The Pricing Service GitHub workflow starts a real PostgreSQL instance and verifies that tenant B cannot read tenant A's row and cannot insert a row owned by tenant A. Unit tests remain runnable without PostgreSQL; the integration tests are enabled explicitly in CI.
+
+
+### Tenant-scoped quote API
+
+All routes below require the `pricing:quote` scope and an authenticated tenant context. The tenant identifier is resolved from the verified principal, not accepted from query parameters or request bodies.
+
+| Method | Path | Behavior |
+| --- | --- | --- |
+| `POST` | `/api/pricing/quotes` | Calculate and persist a quote; returns `quoteId` |
+| `GET` | `/api/pricing/quotes/{quoteId}` | Read one quote; another tenant receives the same 404 as a missing quote |
+| `GET` | `/api/pricing/quotes?limit=50&offset=0` | List only the current tenant's quotes; limit is 1-100 |
+| `DELETE` | `/api/pricing/quotes/{quoteId}` | Delete only within the current tenant; another tenant receives 404 |
+
+Every repository operation opens its own transaction, sets the transaction-local `app.tenant_id`, and relies on PostgreSQL RLS for row visibility and write enforcement. The adapter also validates tenant identifiers before opening a transaction. A missing tenant setting exposes no rows because the RLS policy compares against the absent/empty setting.
