@@ -15,7 +15,7 @@ final class GrpcMetadataTest extends TestCase
     {
         self::assertSame(
             ['x-correlation-id' => 'abc-123'],
-            GrpcMetadata::allowListed(
+            (new GrpcMetadata())->allowListed(
                 ['X-Correlation-ID' => 'abc-123', 'authorization' => 'Bearer secret'],
                 ['x-correlation-id'],
             ),
@@ -26,7 +26,7 @@ final class GrpcMetadataTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        GrpcMetadata::normalize(['x-test' => "safe\r\nInjected: yes"]);
+        (new GrpcMetadata())->normalize(['x-test' => "safe\r\nInjected: yes"]);
     }
 
     public function testItRejectsBinaryMetadataUntilAnExplicitCodecExists(): void
