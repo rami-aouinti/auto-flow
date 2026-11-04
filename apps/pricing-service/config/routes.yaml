@@ -4,6 +4,3 @@ controllers:
 
 autoflow_core:
     resource: '@CoreBundle/Resources/config/routes.yaml'
-
-nelmio_api_doc:
-    resource: '@NelmioApiDocBundle/Resources/config/routing.yaml'
