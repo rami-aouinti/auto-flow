@@ -52,6 +52,9 @@ final readonly class GrpcRequestAuthenticator
         return $principal;
     }
 
+    /**
+     * @param non-empty-string $key
+     */
     private function metadataValue(ContextInterface $context, string $key): ?string
     {
         $value = $context->getValue($key);
