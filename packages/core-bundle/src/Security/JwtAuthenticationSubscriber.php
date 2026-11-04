@@ -22,7 +22,8 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
         private bool $enabled,
         private array $protectedPrefixes,
         private array $excludedPaths,
-        private array $tenantPathPrefixes = [],
+        private array $tenantPathPrefixes,
+        private TenantPrincipalResolver $tenantPrincipalResolver,
     ) {
     }
 
