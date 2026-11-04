@@ -6,6 +6,7 @@ namespace App\Domain\Model;
 
 use App\Domain\ValueObject\Money;
 use DateTimeImmutable;
+use InvalidArgumentException;
 
 /**
  * @SuppressWarnings(PHPMD.LongVariable)
@@ -39,11 +40,11 @@ final readonly class PricingQuote
     ) {
         $this->createdAt = $createdAt ?? new DateTimeImmutable('now');
         if ($validityDays < 1 || $validityDays > 90) {
-            throw new \\InvalidArgumentException('Quote validity must be between 1 and 90 days.');
+            throw new InvalidArgumentException('Quote validity must be between 1 and 90 days.');
         }
         $this->expiresAt = $expiresAt ?? $this->createdAt->modify(sprintf('+%d days', $validityDays));
         if (($this->policyId === null) !== ($this->policyVersion === null) || ($this->policyVersion !== null && $this->policyVersion < 1)) {
-            throw new \\InvalidArgumentException('Quote policy ID and version must be provided together.');
+            throw new InvalidArgumentException('Quote policy ID and version must be provided together.');
         }
 
         if ($this->expiresAt <= $this->createdAt) {
