@@ -11,6 +11,12 @@ services:
             - '../../Tests/'
             - '../../CoreBundle.php'
 
+    AutoFlow\CoreBundle\Application\Clock\ClockInterface:
+        alias: AutoFlow\CoreBundle\Infrastructure\Clock\SystemClock
+
+    AutoFlow\CoreBundle\Application\Messaging\EventBusInterface:
+        alias: AutoFlow\CoreBundle\Infrastructure\Messenger\MessengerEventBus
+
     AutoFlow\CoreBundle\Http\Correlation\CorrelationIdSubscriber:
         arguments:
             $headerName: '%autoflow_core.correlation_header%'
