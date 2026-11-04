@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\Tests\\CoreBundle;
+namespace AutoFlow\Tests\CoreBundle;
 
-use AutoFlow\\CoreBundle\\Transport\\Http\\Response\\ApiResponseFactory;
-use PHPUnit\\Framework\\TestCase;
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
+use AutoFlow\CoreBundle\Transport\Http\Response\ApiResponseFactory;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 final class ApiResponseFactoryTest extends TestCase
 {
