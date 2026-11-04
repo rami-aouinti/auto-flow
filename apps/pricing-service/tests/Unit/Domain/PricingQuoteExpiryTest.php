@@ -13,7 +13,7 @@ final class PricingQuoteExpiryTest extends TestCase
     public function testNewQuoteExpiresAfterSevenDaysByDefault(): void
     {
         $createdAt = new DateTimeImmutable('2026-11-04T12:00:00+00:00');
-        $quote = PricingQuoteFixture::demo();
+        $quote = PricingQuoteFixture::demo(useDefaultExpiry: true);
 
         self::assertSame('2026-11-11T12:00:00+00:00', $quote->expiresAt->format(DATE_ATOM));
         self::assertFalse($quote->isExpired($createdAt->modify('+6 days')));
