@@ -66,8 +66,8 @@ jobs:
         run: docker compose --env-file .env.example build php offer-service offer-expiration-worker offer-outbox-publisher pricing-service
       - name: Validate development OpenAPI generation
         run: |
-          docker compose --env-file .env.example run --rm --no-deps offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
-          docker compose --env-file .env.example run --rm --no-deps pricing-service php bin/console nelmio:apidoc:dump --format=json > /tmp/pricing-openapi.json
+          docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
+          docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev pricing-service php bin/console nelmio:apidoc:dump --format=json > /tmp/pricing-openapi.json
           php -r '$offer = json_decode(file_get_contents("/tmp/offer-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $pricing = json_decode(file_get_contents("/tmp/pricing-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $offerPaths = $offer["paths"] ?? []; if (!isset($offerPaths["/api/offers/{vehicleId}"]["post"], $offerPaths["/api/offers/{offerId}"]["get"], $offerPaths["/api/offers/{offerId}/publish"]["post"], $offerPaths["/api/offers/{offerId}/accept"]["post"], $offerPaths["/api/offers/{offerId}/reject"]["post"], $pricing["paths"]["/api/pricing/quotes"]["post"])) { fwrite(STDERR, "Expected Offer lifecycle or Pricing REST paths are missing from the generated OpenAPI documents.\n"); exit(1); }'
       - name: Run PHPStan analysis
         run: composer phpstan
