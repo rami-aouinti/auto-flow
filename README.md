@@ -157,3 +157,10 @@ workflows. Transactional Outbox and idempotent consumers will protect event deli
 Elasticsearch will support vehicle search, filtering and indexing; PostgreSQL remains the
 source of truth for transactional data. Mercure is for pushing live updates to clients, not
 for replacing RabbitMQ or Temporal in backend workflows.
+
+
+## Engineering and architecture wiki
+
+The architecture documentation explains the product domain, service boundaries, DDD, Clean / Hexagonal Architecture, communication patterns, data consistency, quality practices and the reasoning behind major technology choices.
+
+Start with the [AutoFlow Engineering & Architecture Wiki](docs/wiki/README.md). The chapters distinguish implemented capabilities, technical demonstrations and target architecture so that planned work is not confused with delivered functionality.
