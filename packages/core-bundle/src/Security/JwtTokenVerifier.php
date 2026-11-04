@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AutoFlow\CoreBundle\Security;
 
 use Firebase\JWT\JWT;
+use JsonException;
 use stdClass;
 use Throwable;
 
@@ -41,12 +42,41 @@ final readonly class JwtTokenVerifier
     private function decode(string $token): stdClass
     {
         try {
-            return JWT::decode($token, $this->keyProvider->getKeys());
+            $keyId = $this->extractKeyId($token);
+
+            return JWT::decode($token, $this->keyProvider->getKeysForKeyId($keyId));
         } catch (JwksUnavailableException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
             throw new InvalidTokenException('The bearer token could not be verified.', 0, $exception);
         }
+    }
+
+    private function extractKeyId(string $token): string
+    {
+        $segments = explode('.', $token);
+        if (count($segments) !== 3) {
+            throw new InvalidTokenException('The bearer token must be a signed JWT.');
+        }
+
+        $encodedHeader = strtr($segments[0], '-_', '+/');
+        $encodedHeader .= str_repeat('=', (4 - strlen($encodedHeader) % 4) % 4);
+        $headerJson = base64_decode($encodedHeader, true);
+        if ($headerJson === false) {
+            throw new InvalidTokenException('The bearer token header is malformed.');
+        }
+
+        try {
+            $header = json_decode($headerJson, false, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new InvalidTokenException('The bearer token header is malformed.', 0, $exception);
+        }
+
+        if (!$header instanceof stdClass || !isset($header->kid) || !is_string($header->kid) || trim($header->kid) === '') {
+            throw new InvalidTokenException('The bearer token does not contain a valid key identifier.');
+        }
+
+        return $header->kid;
     }
 
     private function assertIssuer(stdClass $claims): void
