@@ -21,6 +21,7 @@ final class LeasePaymentCalculator
         string $createdBy,
         string $vehicleId,
         LeaseTerms $terms,
+        ?PricingPolicy $policy = null,
     ): PricingQuote {
         if (!preg_match('/^[a-f0-9]{32}$/D', $quoteId)) {
             throw new InvalidArgumentException('Quote ID has an invalid format.');
@@ -75,6 +76,9 @@ final class LeasePaymentCalculator
             createdBy: $createdBy,
             vehiclePrice: $terms->vehiclePrice,
             downPayment: $terms->downPayment,
+            policyId: $policy?->policyId,
+            policyVersion: $policy?->version,
+            validityDays: $policy?->quoteValidityDays ?? 7,
         );
     }
 }
