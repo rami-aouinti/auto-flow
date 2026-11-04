@@ -58,7 +58,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      offer-expiration-worker:
+      pricing-service:
+        condition: service_healthy
+      tempo:
+        condition: service_started
+      keycloak:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/health') === false ? 1 : 0);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  offer-expiration-worker:
     build:
       context: .
       dockerfile: docker/php/service.Dockerfile
@@ -95,20 +109,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    restart: unless-stopped
-
-  pricing-service:
-        condition: service_healthy
-      tempo:
-        condition: service_started
-      keycloak:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/health') === false ? 1 : 0);"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
     restart: unless-stopped
 
   pricing-service:
