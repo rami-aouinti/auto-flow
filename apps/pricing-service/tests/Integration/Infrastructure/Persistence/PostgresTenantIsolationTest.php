@@ -18,6 +18,9 @@ final class PostgresTenantIsolationTest extends TestCase
 {
     private PDO $connection;
 
+    /**
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     */
     protected function setUp(): void
     {
         if (getenv('RUN_DATABASE_INTEGRATION_TESTS') !== '1') {
