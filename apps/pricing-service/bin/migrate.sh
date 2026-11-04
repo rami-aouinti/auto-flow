@@ -29,7 +29,7 @@ for migration in "${ROOT_DIR}"/migrations/Version*.sql; do
         continue
     fi
     echo "Applying ${version}"
-    psql "${DATABASE_ADMIN_URL}" -v ON_ERROR_STOP=1 -f "${migration}"
+    psql "${DATABASE_ADMIN_URL}" -v ON_ERROR_STOP=1 -c "BEGIN" -f "${migration}" -c "COMMIT"
     psql "${DATABASE_ADMIN_URL}" -v ON_ERROR_STOP=1 -c "INSERT INTO pricing_schema_migrations (version) VALUES ('${version}')"
 done
 
