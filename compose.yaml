@@ -34,7 +34,7 @@ services:
       - "8081:8080"
       - "127.0.0.1:9001:9001"
     environment:
-      APP_ENV: dev
+      APP_ENV: prod
       APP_DEBUG: "0"
       APP_SECRET: local-only-offer-service-secret
       DEFAULT_URI: http://localhost:8081
@@ -80,7 +80,7 @@ services:
       - "8082:8080"
       - "127.0.0.1:9002:9001"
     environment:
-      APP_ENV: dev
+      APP_ENV: prod
       APP_DEBUG: "0"
       APP_SECRET: local-only-pricing-service-secret
       DATABASE_URL: ${PRICING_DATABASE_URL:-postgresql://autoflow_pricing:local-only-pricing-password@postgres:5432/autoflow?serverVersion=16&charset=utf8}
