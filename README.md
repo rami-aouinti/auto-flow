@@ -39,7 +39,7 @@ docker compose exec php php -v
 docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher
 ~~~
 
-The first local build of the two Symfony services installs their independent Composer dependencies, including development-only Swagger UI tooling. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` to export both generated OpenAPI specifications.
+The first local build of the three Symfony services installs their independent Composer dependencies, including development-only Swagger UI tooling. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` to export all three generated OpenAPI specifications.
 Subsequent starts reuse the built images unless their source or Dockerfile changes.
 
 ## Local interfaces and endpoints
