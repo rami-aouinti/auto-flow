@@ -21,11 +21,7 @@ final readonly class ExpireOffersHandler
 
         $expiredCount = 0;
         foreach ($this->offerRepository->findExpiredTenantIds($now, $tenantBatchSize) as $tenantId) {
-            foreach ($this->offerRepository->findExpiredForTenant($tenantId, $now, $offersPerTenant) as $offer) {
-                $offer->expire($now);
-                $this->offerRepository->save($offer);
-                ++$expiredCount;
-            }
+            $expiredCount += $this->offerRepository->expireDueForTenant($tenantId, $now, $offersPerTenant);
         }
 
         return $expiredCount;
