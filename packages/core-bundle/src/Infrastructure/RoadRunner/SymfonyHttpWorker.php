@@ -19,7 +19,7 @@ use Throwable;
  */
 final readonly class SymfonyHttpWorker
 {
-    public function run(KernelInterface&TerminableInterface $kernel): void
+    public function run(KernelInterface&TerminableInterface&ResetInterface $kernel): void
     {
         $factory = new Psr17Factory();
         $worker = new PSR7Worker(Worker::create(), $factory, $factory, $factory);
@@ -61,8 +61,13 @@ final readonly class SymfonyHttpWorker
                         '{"type":"about:blank","title":"Internal Server Error","status":500}',
                     ));
                 } finally {
-                    if ($request !== null && $response !== null) {
-                        $kernel->terminate($request, $response);
+                    try {
+                        if ($request !== null && $response !== null) {
+                            $kernel->terminate($request, $response);
+                        }
+                    } finally {
+                        // Reset tagged stateful services before the next RoadRunner request.
+                        $kernel->reset();
                     }
                 }
             }
