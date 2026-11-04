@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Infrastructure\Persistence;
 
+use App\Domain\Model\PricingQuote;
+use App\Domain\ValueObject\Money;
 use App\Infrastructure\Persistence\PostgresConnectionFactory;
+use App\Infrastructure\Persistence\PostgresPricingQuoteRepository;
 use PDO;
 use PDOException;
 use PHPUnit\Framework\Attributes\CoversNothing;
