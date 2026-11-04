@@ -6,8 +6,9 @@ namespace AutoFlow\CoreBundle\Messaging;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use JsonSerializable;
 
-final readonly class IntegrationEvent
+final readonly class IntegrationEvent implements JsonSerializable
 {
     /**
      * @param array<string, mixed> $payload
@@ -61,5 +62,22 @@ final readonly class IntegrationEvent
             $correlationId,
             $causationId,
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'eventId' => $this->eventId,
+            'eventName' => $this->eventName,
+            'aggregateId' => $this->aggregateId,
+            'occurredAt' => $this->occurredAt->format(DATE_ATOM),
+            'schemaVersion' => $this->schemaVersion,
+            'correlationId' => $this->correlationId,
+            'causationId' => $this->causationId,
+            'payload' => $this->payload,
+        ];
     }
 }
