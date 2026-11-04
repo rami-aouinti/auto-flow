@@ -21,6 +21,23 @@ final readonly class PostgresPricingPolicyRepository implements PricingPolicyRep
     public function save(PricingPolicy $policy): void
     {
         $this->withinTenant($policy->tenantId, function (PDO $pdo) use ($policy): void {
+            if ($policy->status === 'draft') {
+                $insert = $pdo->prepare(
+                    <<<'SQL'
+                    INSERT INTO pricing_policies (
+                        policy_id, tenant_id, version, status, minimum_duration_months,
+                        maximum_duration_months, minimum_annual_rate_bps, maximum_annual_rate_bps,
+                        quote_validity_days, calculation_version, created_by, created_at, published_at
+                    ) VALUES (
+                        :id, :tenant, :version, :status, :min_duration, :max_duration,
+                        :min_rate, :max_rate, :validity, :calculation, :creator, :created_at, NULL
+                    )
+                    SQL,
+                );
+                $insert->execute($this->policyParameters($policy));
+                return;
+            }
+
             if ($policy->status === 'active') {
                 $retire = $pdo->prepare(
                     <<<'SQL'
@@ -31,36 +48,43 @@ final readonly class PostgresPricingPolicyRepository implements PricingPolicyRep
                 );
                 $retire->execute(['tenant' => $policy->tenantId, 'policy_id' => $policy->policyId]);
             }
-            $statement = $pdo->prepare(
-                <<<'SQL'
-                INSERT INTO pricing_policies (
-                    policy_id, tenant_id, version, status, minimum_duration_months,
-                    maximum_duration_months, minimum_annual_rate_bps, maximum_annual_rate_bps,
-                    quote_validity_days, calculation_version, created_by, created_at, published_at
-                ) VALUES (
-                    :id, :tenant, :version, :status, :min_duration, :max_duration,
-                    :min_rate, :max_rate, :validity, :calculation, :creator, :created_at, :published_at
-                )
-                ON CONFLICT (policy_id) DO UPDATE
-                    SET status = EXCLUDED.status, published_at = EXCLUDED.published_at
-                SQL,
+
+            $expectedStatus = $policy->status === 'active' ? 'draft' : 'active';
+            $update = $pdo->prepare(
+                'UPDATE pricing_policies SET status = :status, published_at = :published_at '
+                . 'WHERE policy_id = :id AND tenant_id = :tenant AND version = :version AND status = :expected_status',
             );
-            $statement->execute([
+            $update->execute([
+                'status' => $policy->status,
+                'published_at' => $policy->publishedAt?->format('Y-m-d H:i:sP'),
                 'id' => $policy->policyId,
                 'tenant' => $policy->tenantId,
                 'version' => $policy->version,
-                'status' => $policy->status,
-                'min_duration' => $policy->minimumDurationMonths,
-                'max_duration' => $policy->maximumDurationMonths,
-                'min_rate' => $policy->minimumAnnualRateBasisPoints,
-                'max_rate' => $policy->maximumAnnualRateBasisPoints,
-                'validity' => $policy->quoteValidityDays,
-                'calculation' => $policy->calculationVersion,
-                'creator' => $policy->createdBy,
-                'created_at' => $policy->createdAt->format('Y-m-d H:i:sP'),
-                'published_at' => $policy->publishedAt?->format('Y-m-d H:i:sP'),
+                'expected_status' => $expectedStatus,
             ]);
+            if ($update->rowCount() !== 1) {
+                throw new LogicException('Pricing policy lifecycle transition did not update exactly one draft version.');
+            }
         });
+    }
+
+    /** @return array<string, int|string> */
+    private function policyParameters(PricingPolicy $policy): array
+    {
+        return [
+            'id' => $policy->policyId,
+            'tenant' => $policy->tenantId,
+            'version' => $policy->version,
+            'status' => $policy->status,
+            'min_duration' => $policy->minimumDurationMonths,
+            'max_duration' => $policy->maximumDurationMonths,
+            'min_rate' => $policy->minimumAnnualRateBasisPoints,
+            'max_rate' => $policy->maximumAnnualRateBasisPoints,
+            'validity' => $policy->quoteValidityDays,
+            'calculation' => $policy->calculationVersion,
+            'creator' => $policy->createdBy,
+            'created_at' => $policy->createdAt->format('Y-m-d H:i:sP'),
+        ];
     }
 
     public function findActive(string $tenantId): ?PricingPolicy
