@@ -22,7 +22,7 @@ final class Configuration implements ConfigurationInterface
                     ->validate()
                         ->ifTrue(
                             static fn (mixed $value): bool => !is_string($value)
-                                || preg_match('/^[A-Za-z0-9!#$%&*+.^_`|~-]+$/D', $value) !== 1,
+                                || preg_match('/^[A-Za-z0-9!#$%&\\'*+.^_`|~-]+$/D', $value) !== 1,
                         )
                         ->thenInvalid('The correlation header must be a valid HTTP token.')
                     ->end()
