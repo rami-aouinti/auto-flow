@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AutoFlow\CoreBundle\Infrastructure\RoadRunner;
 
+use LogicException;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response as PsrResponse;
 use Spiral\RoadRunner\Http\PSR7Worker;
@@ -41,7 +42,12 @@ final readonly class SymfonyHttpWorker
                 } catch (Throwable $exception) {
                     error_log(sprintf('RoadRunner could not parse an HTTP request (%s).', $exception::class));
 
-                    if (!$this->respond($worker, $this->problemResponse(400, 'Bad Request'))) {
+                    $problemResponse = $this->createPsrResponse(
+                        $this->problemResponse(400, 'Bad Request'),
+                        $responseFactory,
+                    );
+
+                    if (!$this->respond($worker, $problemResponse)) {
                         break;
                     }
 
@@ -64,7 +70,7 @@ final readonly class SymfonyHttpWorker
                 }
 
                 try {
-                    $psrResponse = $responseFactory->createResponse($response);
+                    $psrResponse = $this->createPsrResponse($response, $responseFactory);
 
                     if (!$this->respond($worker, $psrResponse)) {
                         break;
@@ -86,6 +92,17 @@ final readonly class SymfonyHttpWorker
         } finally {
             $kernel->shutdown();
         }
+    }
+
+    private function createPsrResponse(Response $response, PsrHttpFactory $factory): PsrResponse
+    {
+        $psrResponse = $factory->createResponse($response);
+
+        if (!$psrResponse instanceof PsrResponse) {
+            throw new LogicException('The configured PSR-7 factory must create Nyholm responses.');
+        }
+
+        return $psrResponse;
     }
 
     private function respond(PSR7Worker $worker, PsrResponse $response): bool

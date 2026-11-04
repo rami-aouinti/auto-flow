@@ -54,7 +54,8 @@ final class JwtAuthenticationSubscriberTest extends TestCase
     private function createRequestEvent(string $path): RequestEvent
     {
         $kernel = $this->createMock(HttpKernelInterface::class);
+        $request = new Request(server: ['REQUEST_URI' => $path, 'REQUEST_METHOD' => 'GET']);
 
-        return new RequestEvent($kernel, Request::create($path), HttpKernelInterface::MAIN_REQUEST);
+        return new RequestEvent($kernel, $request, HttpKernelInterface::MAIN_REQUEST);
     }
 }

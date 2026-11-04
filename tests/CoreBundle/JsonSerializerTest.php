@@ -43,10 +43,3 @@ final class JsonSerializerTest extends TestCase
         new JsonSerializer(decodeDepth: 0);
     }
 }
-
-final readonly class ExampleDto
-{
-    public function __construct(public string $id)
-    {
-    }
-}

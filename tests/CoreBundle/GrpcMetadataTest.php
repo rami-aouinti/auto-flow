@@ -36,6 +36,27 @@ final class GrpcMetadataTest extends TestCase
         (new GrpcMetadata())->normalize(['payload-bin' => 'encoded']);
     }
 
+    public function testItRejectsNonStringMetadataValues(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        (new GrpcMetadata())->normalize(['x-test' => 123]);
+    }
+
+    public function testItRejectsDuplicateKeysAfterCaseNormalization(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        (new GrpcMetadata())->normalize(['X-Test' => 'first', 'x-test' => 'second']);
+    }
+
+    public function testItRejectsReservedGrpcMetadataKeys(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        (new GrpcMetadata())->normalize(['grpc-timeout' => '10S']);
+    }
+
     public function testDeadlineMustBePositiveAndFinite(): void
     {
         $this->expectException(InvalidArgumentException::class);
