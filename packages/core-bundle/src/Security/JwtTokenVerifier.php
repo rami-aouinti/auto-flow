@@ -150,13 +150,17 @@ final readonly class JwtTokenVerifier
         $scopeClaim = isset($claims->scope) && is_string($claims->scope)
             ? trim($claims->scope)
             : '';
+        $scopes = $scopeClaim === '' ? [] : (preg_split('/\s+/', $scopeClaim) ?: []);
 
-        if ($scopeClaim === '') {
-            return [];
+        $realmRoles = $claims->realm_access->roles ?? [];
+        if (is_array($realmRoles)) {
+            foreach ($realmRoles as $role) {
+                if (is_string($role) && preg_match('/^[A-Za-z0-9][A-Za-z0-9:._-]{0,127}$/D', $role) === 1) {
+                    $scopes[] = $role;
+                }
+            }
         }
 
-        $scopes = preg_split('/\s+/', $scopeClaim);
-
-        return $scopes === false ? [] : $scopes;
+        return array_values(array_unique($scopes));
     }
 }
