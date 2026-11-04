@@ -17,19 +17,18 @@ final readonly class CorrelationIdMiddleware implements MiddlewareInterface
 
     public function handle(Envelope $envelope, StackInterface $stack): Envelope
     {
-        $previous = $this->context->get();
         $stamp = $envelope->last(CorrelationIdStamp::class);
+        $correlationId = $stamp instanceof CorrelationIdStamp
+            ? $stamp->correlationId
+            : ($this->context->get() ?? bin2hex(random_bytes(16)));
 
-        if ($stamp instanceof CorrelationIdStamp) {
-            $this->context->set($stamp->correlationId);
-        } elseif ($previous !== null) {
-            $envelope = $envelope->with(new CorrelationIdStamp($previous));
+        if (!$stamp instanceof CorrelationIdStamp) {
+            $envelope = $envelope->with(new CorrelationIdStamp($correlationId));
         }
 
-        try {
-            return $stack->next()->handle($envelope, $stack);
-        } finally {
-            $this->context->set($previous);
-        }
+        return $this->context->run(
+            $correlationId,
+            static fn (): Envelope => $stack->next()->handle($envelope, $stack),
+        );
     }
 }

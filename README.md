@@ -8,6 +8,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 ## Stack
 
 - PHP 8.4 CLI and Xdebug 3
+- RoadRunner 3.0.1 HTTP and gRPC workers for the Offer and Pricing services
 - Symfony 7.4 microservices with independent Composer projects
 - OpenTelemetry PHP extension, SDK and Symfony auto-instrumentation
 - PostgreSQL 16, RabbitMQ 4, Redis 7, Elasticsearch 8 and Kibana
@@ -43,6 +44,8 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | --- | --- | --- |
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
 | Pricing Service | http://localhost:8082 | Demo pricing API |
+| Offer Service gRPC | localhost:9001 | Internal gRPC listener (platform Ping smoke check) |
+| Pricing Service gRPC | localhost:9002 | Internal gRPC listener (platform Ping smoke check) |
 | RabbitMQ Management | http://localhost:15672 | Exchanges, queues, consumers, message rates and connections |
 | Elasticsearch | http://localhost:9200 | Search and indexing API |
 | Kibana | http://localhost:5601 | Elasticsearch indices, documents, queries and dashboards |
@@ -67,14 +70,28 @@ curl -i http://localhost:8081/api/offers/demo-vehicle-001
 
 Inspect the `X-Correlation-ID` response header. The outgoing Offer → Pricing request carries the same value.
 
+Check the internal gRPC transport smoke method (requires `grpcurl`):
+
+~~~bash
+grpcurl -plaintext \
+  -import-path packages/core-bundle/proto \
+  -proto core/v1/health.proto \
+  localhost:9002 autoflow.core.v1.PlatformHealthService/Ping
+~~~
+
+This Ping verifies the gRPC listener and worker registration. It is not a business API; Pricing and Offer business RPCs will have their own versioned service contracts.
+
 The bundle also adds:
 - `GET /health/live` — liveness endpoint.
-- `GET /health/ready` — readiness endpoint aggregating registered health checks.
+- `GET /health/ready` — readiness endpoint aggregating registered health checks; it fails closed (503) when no checks are registered.
+- RoadRunner HTTP workers that bridge PSR-7 requests to the Symfony HttpKernel.
+- RoadRunner gRPC workers exposing `autoflow.core.v1.PlatformHealthService/Ping` as a transport smoke check.
+- JSON and Protobuf serialization ports plus HTTP/gRPC status mapping.
 - Messenger correlation stamp/middleware for services that configure Messenger.
 - A transport-neutral integration-event envelope.
 - A Problem Details response factory for explicit HTTP error mapping.
 
-Existing `/health` routes remain unchanged for current Docker Compose health checks. See [CoreBundle documentation](packages/core-bundle/README.md) and [Wiki chapter 13](docs/wiki/13-shared-core-bundle.md). Readiness checks for real dependencies must be registered by each service.
+Existing `/health` routes remain unchanged for current Docker Compose health checks. See [CoreBundle documentation](packages/core-bundle/README.md) and [Wiki chapter 13](docs/wiki/13-shared-core-bundle.md). Readiness checks for real dependencies must be registered by each service. The first gRPC slice currently exposes a transport-level Ping method; service-owned business RPC contracts and REST-to-gRPC client calls are the next implementation step, not yet claimed as complete.
 
 ## Distributed tracing quick start
 
@@ -177,9 +194,7 @@ For coverage, the Composer coverage script activates XDEBUG_MODE=coverage.
 ## Architecture direction
 
 This repository contains independently deployable Symfony services in a monorepo.
-Each service owns its database and domain model. REST is used for synchronous interactions;
-RabbitMQ/Symfony Messenger for asynchronous messages; Temporal for durable long-running
-workflows. Transactional Outbox and idempotent consumers will protect event delivery.
+Each service owns its database and domain model. HTTP REST remains the public synchronous interface; gRPC is being introduced for internal synchronous service calls. RabbitMQ/Symfony Messenger handles asynchronous messages; Temporal handles durable long-running workflows. Transactional Outbox and idempotent consumers will protect event delivery.
 
 Elasticsearch will support vehicle search, filtering and indexing; PostgreSQL remains the
 source of truth for transactional data. Mercure is for pushing live updates to clients, not

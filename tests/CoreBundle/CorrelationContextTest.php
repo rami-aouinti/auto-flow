@@ -6,6 +6,7 @@ namespace AutoFlow\Tests\CoreBundle;
 
 use AutoFlow\CoreBundle\Context\CorrelationContext;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 final class CorrelationContextTest extends TestCase
 {
@@ -19,5 +20,36 @@ final class CorrelationContextTest extends TestCase
         $context->clear();
 
         self::assertNull($context->get());
+    }
+
+    public function testScopedContextRestoresPreviousValue(): void
+    {
+        $context = new CorrelationContext();
+        $context->set('outer');
+
+        $result = $context->run('inner', static function () use ($context): string {
+            self::assertSame('inner', $context->get());
+
+            return 'handled';
+        });
+
+        self::assertSame('handled', $result);
+        self::assertSame('outer', $context->get());
+    }
+
+    public function testScopedContextRestoresPreviousValueAfterFailure(): void
+    {
+        $context = new CorrelationContext();
+        $context->set('outer');
+
+        $this->expectException(RuntimeException::class);
+
+        try {
+            $context->run('inner', static function (): never {
+                throw new RuntimeException('failure');
+            });
+        } finally {
+            self::assertSame('outer', $context->get());
+        }
     }
 }

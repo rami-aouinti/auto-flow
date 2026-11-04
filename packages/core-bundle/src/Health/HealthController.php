@@ -26,23 +26,29 @@ final readonly class HealthController
     {
         $results = [];
         $healthy = true;
+        $checkCount = 0;
 
         foreach ($this->checks as $check) {
+            ++$checkCount;
+
             try {
                 $result = $check->check();
-                $results[$check->name()] = [
-                    'status' => $result->healthy ? 'ok' : 'failed',
-                    'details' => $result->details,
-                ];
+                $results[$check->name()] = $result->healthy ? 'ok' : 'failed';
                 $healthy = $healthy && $result->healthy;
             } catch (\Throwable) {
-                $results[$check->name()] = ['status' => 'failed'];
+                $results[$check->name()] = 'failed';
                 $healthy = false;
             }
         }
 
+        // Fail closed: an unconfigured service is not ready for traffic.
+        $healthy = $healthy && $checkCount > 0;
+
         return new JsonResponse(
-            ['status' => $healthy ? 'ok' : 'unavailable', 'checks' => $results],
+            [
+                'status' => $healthy ? 'ok' : 'unavailable',
+                'checks' => $results,
+            ],
             $healthy ? JsonResponse::HTTP_OK : JsonResponse::HTTP_SERVICE_UNAVAILABLE,
         );
     }

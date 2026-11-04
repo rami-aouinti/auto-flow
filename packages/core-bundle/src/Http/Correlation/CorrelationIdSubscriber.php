@@ -6,6 +6,7 @@ namespace AutoFlow\CoreBundle\Http\Correlation;
 
 use AutoFlow\CoreBundle\Context\CorrelationContext;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
@@ -24,6 +25,7 @@ final readonly class CorrelationIdSubscriber implements EventSubscriberInterface
         return [
             KernelEvents::REQUEST => ['onRequest', 1000],
             KernelEvents::RESPONSE => ['onResponse', -1000],
+            KernelEvents::FINISH_REQUEST => ['onFinishRequest', -1000],
             KernelEvents::TERMINATE => ['onTerminate', -1000],
         ];
     }
@@ -55,6 +57,13 @@ final readonly class CorrelationIdSubscriber implements EventSubscriberInterface
 
         if (is_string($correlationId) && $correlationId !== '') {
             $event->getResponse()->headers->set($this->headerName, $correlationId);
+        }
+    }
+
+    public function onFinishRequest(FinishRequestEvent $event): void
+    {
+        if ($event->isMainRequest()) {
+            $this->context->clear();
         }
     }
 
