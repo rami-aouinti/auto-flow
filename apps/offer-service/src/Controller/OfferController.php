@@ -8,6 +8,7 @@ use App\Security\KeycloakTokenExchangeProvider;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
+use InvalidArgumentException;
 use LogicException;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
@@ -88,6 +89,99 @@ final readonly class OfferController
             $scope->detach();
             $span->end();
         }
+    }
+
+
+    #[RequiresScope('offers:quote')]
+    #[Route('/api/offers/{vehicleId}/quotes', name: 'offer_create_quote', methods: ['POST'])]
+    public function createQuote(string $vehicleId, Request $request): JsonResponse
+    {
+        $span = Globals::tracerProvider()
+            ->getTracer('autoflow.offer-service', '1.0.0')
+            ->spanBuilder('offer.quote.create')
+            ->startSpan();
+        $scope = $span->activate();
+
+        try {
+            $payload = $request->toArray();
+            $pricingPayload = [
+                'vehicleId' => $vehicleId,
+                'vehiclePrice' => $this->requiredString($payload, 'vehiclePrice'),
+                'downPayment' => $this->requiredString($payload, 'downPayment'),
+                'residualValue' => $this->requiredString($payload, 'residualValue'),
+                'currency' => $this->requiredString($payload, 'currency'),
+                'durationMonths' => $this->requiredInteger($payload, 'durationMonths'),
+                'annualInterestRateBasisPoints' => $this->requiredInteger(
+                    $payload,
+                    'annualInterestRateBasisPoints',
+                ),
+            ];
+
+            $pricingToken = $this->pricingTokenExchange->exchangeForPricing(
+                $this->requireBearerToken($request),
+            );
+            $pricingResponse = $this->httpClient->request(
+                'POST',
+                rtrim($this->pricingServiceUrl, '/') . '/api/pricing/quotes',
+                [
+                    'auth_bearer' => $pricingToken,
+                    'headers' => [
+                        'X-Tenant-ID' => $this->tenantContext->requireTenantId(),
+                        'Content-Type' => 'application/json',
+                    ],
+                    'json' => $pricingPayload,
+                ],
+            );
+
+            $response = new JsonResponse(
+                $pricingResponse->toArray(false),
+                $pricingResponse->getStatusCode(),
+            );
+            $response->headers->set('Cache-Control', 'no-store');
+
+            return $response;
+        } catch (InvalidArgumentException $exception) {
+            return new JsonResponse([
+                'error' => 'invalid_offer_quote_request',
+                'message' => $exception->getMessage(),
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (Throwable $exception) {
+            $span->setStatus(StatusCode::STATUS_ERROR);
+            $span->recordException($exception);
+
+            throw $exception;
+        } finally {
+            $scope->detach();
+            $span->end();
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function requiredString(array $payload, string $field): string
+    {
+        $value = $payload[$field] ?? null;
+
+        if (!is_string($value) || trim($value) === '') {
+            throw new InvalidArgumentException(sprintf('Field "%s" must be a non-empty string.', $field));
+        }
+
+        return trim($value);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function requiredInteger(array $payload, string $field): int
+    {
+        $value = $payload[$field] ?? null;
+
+        if (!is_int($value)) {
+            throw new InvalidArgumentException(sprintf('Field "%s" must be an integer.', $field));
+        }
+
+        return $value;
     }
 
     private function requireBearerToken(Request $request): string
