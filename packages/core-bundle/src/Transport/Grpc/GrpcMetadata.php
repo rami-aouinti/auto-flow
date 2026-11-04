@@ -27,12 +27,8 @@ final class GrpcMetadata
                 throw new InvalidArgumentException('Invalid or unsupported gRPC metadata key.');
             }
 
-            if (!is_string($value) && !(is_array($value) && array_is_list($value))) {
-                throw new InvalidArgumentException('gRPC metadata values must be strings.');
-            }
-
-            foreach (is_array($value) ? $value : [$value] as $item) {
-                if (!is_string($item) || str_contains($item, "\r") || str_contains($item, "\n")) {
+            foreach (is_string($value) ? [$value] : $value as $item) {
+                if (str_contains($item, "\r") || str_contains($item, "\n")) {
                     throw new InvalidArgumentException('Invalid gRPC metadata value.');
                 }
             }
