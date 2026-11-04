@@ -18,9 +18,12 @@ RUN curl -fsSL \
     https://github.com/roadrunner-server/roadrunner/releases/download/v3.0.1/protoc-gen-php-grpc-3.0.1-linux-amd64.tar.gz \
     -o /tmp/protoc-gen-php-grpc.tar.gz \
     && echo "8f60ad47f34a1627b37e488b6f496bb6afe82af47d46b3ac07d60ac5bd197b3a  /tmp/protoc-gen-php-grpc.tar.gz" | sha256sum -c - \
-    && tar -xzf /tmp/protoc-gen-php-grpc.tar.gz -C /usr/local/bin protoc-gen-php-grpc \
-    && chmod +x /usr/local/bin/protoc-gen-php-grpc \
-    && rm /tmp/protoc-gen-php-grpc.tar.gz
+    && mkdir -p /tmp/protoc-plugin \
+    && tar -xzf /tmp/protoc-gen-php-grpc.tar.gz -C /tmp/protoc-plugin \
+    && plugin_path="$(find /tmp/protoc-plugin -type f -name 'protoc-gen-php-grpc*' -print -quit)" \
+    && test -n "$plugin_path" \
+    && install -m 0755 "$plugin_path" /usr/local/bin/protoc-gen-php-grpc \
+    && rm -rf /tmp/protoc-plugin /tmp/protoc-gen-php-grpc.tar.gz
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
