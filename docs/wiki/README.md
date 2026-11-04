@@ -22,6 +22,7 @@ AutoFlow is an independent portfolio and learning project inspired by publicly o
 | [12 — Pricing Service domain](12-pricing-service-domain.md) | Money, lease invariants, annuity calculation, API contract and next steps |
 | [13 — Shared CoreBundle](13-shared-core-bundle.md) | Technical shared capabilities, correlation, health, messaging and boundaries |
 | [14 — Local developer tooling](14-local-developer-tooling.md) | Adminer, per-service Swagger UI, OpenAPI contracts and dev/prod isolation |
+| [15 — Security and API platform](15-security-and-api-platform.md) | JWT/OIDC, tenant isolation, permissions, gateway, rate limits, API versions and contract tests |
 
 ## How to interpret this documentation
 
