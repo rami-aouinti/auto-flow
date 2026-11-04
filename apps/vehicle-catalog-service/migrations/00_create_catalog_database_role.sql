@@ -6,4 +6,4 @@ BEGIN
 END
 $$;
 GRANT CONNECT ON DATABASE autoflow TO autoflow_catalog;
-GRANT USAGE, CREATE ON SCHEMA public TO autoflow_catalog;
+GRANT USAGE ON SCHEMA public TO autoflow_catalog;
