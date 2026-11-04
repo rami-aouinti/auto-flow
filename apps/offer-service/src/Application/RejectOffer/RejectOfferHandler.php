@@ -15,7 +15,7 @@ final readonly class RejectOfferHandler
     {
     }
 
-    public function __invoke(OfferId $offerId, string $tenantId, string $ownerId): Offer
+    public function __invoke(OfferId $offerId, string $tenantId, string $ownerId, DateTimeImmutable $rejectedAt): Offer
     {
         $offer = $this->offerRepository->findById($offerId, $tenantId, $ownerId);
 
@@ -23,7 +23,7 @@ final readonly class RejectOfferHandler
             throw new OfferNotFound('Offer was not found.');
         }
 
-        $offer->reject();
+        $offer->reject($rejectedAt);
         $this->offerRepository->save($offer);
 
         return $offer;
