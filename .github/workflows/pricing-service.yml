@@ -72,6 +72,29 @@ jobs:
           docker exec -i autoflow-pricing-postgres \
             psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
             < apps/pricing-service/migrations/Version20261104000300AddPricingQuoteOwner.sql
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/Version20261104000400AddQuoteSnapshotAndExpiry.sql
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/Version20261104000500CreatePricingPolicies.sql
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/Version20261104000600LinkQuotesToPricingPolicy.sql
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/Version20261104000700EnforceImmutableQuoteSnapshots.sql
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/Version20261104000800EnforceImmutablePricingPolicies.sql
+      - name: Complete schema and load deterministic Pricing API fixtures
+        run: |
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/Version20261104000900ConstrainPricingCalculationVersion.sql
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/fixtures/pricing_quotes_demo.sql
 
       - name: Run PHPUnit including PostgreSQL row-level security tests
         run: |

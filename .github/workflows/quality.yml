@@ -25,6 +25,19 @@ jobs:
           composer validate --strict --working-dir=apps/pricing-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
+      - name: Validate Grafana Alloy configuration
+        run: |
+          set +e
+          timeout 10s docker run --rm \
+            -v "$PWD/infrastructure/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro" \
+            grafana/alloy:v1.6.1 run \
+            --server.http.listen-addr=0.0.0.0:12345 \
+            /etc/alloy/config.alloy
+          status=$?
+          if [ "$status" -eq 124 ]; then
+            exit 0
+          fi
+          exit "$status"
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
       - name: Run Offer unit tests
@@ -68,7 +81,7 @@ jobs:
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev pricing-service php bin/console nelmio:apidoc:dump --format=json > /tmp/pricing-openapi.json
-          php -r '$offer = json_decode(file_get_contents("/tmp/offer-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $pricing = json_decode(file_get_contents("/tmp/pricing-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $offerPaths = $offer["paths"] ?? []; if (!isset($offerPaths["/api/offers/{vehicleId}"]["post"], $offerPaths["/api/offers/{offerId}"]["get"], $offerPaths["/api/offers/{offerId}/publish"]["post"], $offerPaths["/api/offers/{offerId}/accept"]["post"], $offerPaths["/api/offers/{offerId}/reject"]["post"], $pricing["paths"]["/api/pricing/quotes"]["post"])) { fwrite(STDERR, "Expected Offer lifecycle or Pricing REST paths are missing from the generated OpenAPI documents.\n"); exit(1); }'
+          php -r '$offer = json_decode(file_get_contents("/tmp/offer-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $pricing = json_decode(file_get_contents("/tmp/pricing-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $offerPaths = $offer["paths"] ?? []; if (!isset($offerPaths["/api/offers/{vehicleId}"]["post"], $offerPaths["/api/offers/{offerId}"]["get"], $offerPaths["/api/offers/{offerId}/publish"]["post"], $offerPaths["/api/offers/{offerId}/accept"]["post"], $offerPaths["/api/offers/{offerId}/reject"]["post"], $pricing["paths"]["/api/pricing/quotes"]["post"], $pricing["paths"]["/api/pricing/quotes"]["get"], $pricing["paths"]["/api/pricing/quotes/{quoteId}"]["get"], $pricing["paths"]["/api/pricing/quotes/{quoteId}"]["delete"], $pricing["paths"]["/ready"]["get"])) { fwrite(STDERR, "Expected Offer lifecycle or Pricing REST paths are missing from the generated OpenAPI documents.\n"); exit(1); }'
       - name: Run PHPStan analysis
         run: composer phpstan
       - name: Run quality checks

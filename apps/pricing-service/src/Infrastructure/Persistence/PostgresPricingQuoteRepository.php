@@ -7,6 +7,7 @@ namespace App\Infrastructure\Persistence;
 use App\Application\Port\Out\PricingQuoteRepositoryInterface;
 use App\Domain\Model\PricingQuote;
 use App\Domain\ValueObject\Money;
+use DateTimeImmutable;
 use InvalidArgumentException;
 use LogicException;
 use PDO;
@@ -31,12 +32,14 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
                     quote_id, tenant_id, created_by, vehicle_id, monthly_amount_minor,
                     total_installments_minor, total_cost_minor, residual_value_minor,
                     currency, duration_months, annual_interest_rate_basis_points,
-                    calculation_version
+                    calculation_version, vehicle_price_minor, down_payment_minor, expires_at,
+                    policy_id, policy_version, created_at
                 ) VALUES (
                     :quote_id, :tenant_id, :created_by, :vehicle_id, :monthly_amount_minor,
                     :total_installments_minor, :total_cost_minor, :residual_value_minor,
                     :currency, :duration_months, :annual_interest_rate_basis_points,
-                    :calculation_version
+                    :calculation_version, :vehicle_price_minor, :down_payment_minor, :expires_at,
+                    :policy_id, :policy_version, :created_at
                 )
                 SQL,
             );
@@ -54,6 +57,12 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
                 'duration_months' => $quote->durationMonths,
                 'annual_interest_rate_basis_points' => $quote->annualInterestRateBasisPoints,
                 'calculation_version' => $quote->calculationVersion,
+                'vehicle_price_minor' => $quote->vehiclePrice?->minorUnits,
+                'down_payment_minor' => $quote->downPayment?->minorUnits,
+                'expires_at' => $quote->expiresAt->format('Y-m-d H:i:sP'),
+                'policy_id' => $quote->policyId,
+                'policy_version' => $quote->policyVersion,
+                'created_at' => $quote->createdAt->format('Y-m-d H:i:sP'),
             ]);
         });
     }
@@ -216,6 +225,16 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             annualInterestRateBasisPoints: (int) $row['annual_interest_rate_basis_points'],
             calculationVersion: (string) $row['calculation_version'],
             createdBy: (string) $row['created_by'],
+            vehiclePrice: $row['vehicle_price_minor'] === null
+                ? null
+                : Money::fromMinorUnits((int) $row['vehicle_price_minor'], (string) $row['currency']),
+            downPayment: $row['down_payment_minor'] === null
+                ? null
+                : Money::fromMinorUnits((int) $row['down_payment_minor'], (string) $row['currency']),
+            createdAt: new DateTimeImmutable((string) $row['created_at']),
+            expiresAt: new DateTimeImmutable((string) $row['expires_at']),
+            policyId: $row['policy_id'] === null ? null : (string) $row['policy_id'],
+            policyVersion: $row['policy_version'] === null ? null : (int) $row['policy_version'],
         );
     }
 }

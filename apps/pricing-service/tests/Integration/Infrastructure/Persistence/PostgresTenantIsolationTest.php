@@ -9,6 +9,7 @@ use App\Domain\ValueObject\Money;
 use App\Infrastructure\Persistence\PostgresConnection;
 use App\Infrastructure\Persistence\PostgresConnectionFactory;
 use App\Infrastructure\Persistence\PostgresPricingQuoteRepository;
+use App\Tests\Fixtures\PricingQuoteFixture;
 use PDO;
 use PDOException;
 use PHPUnit\Framework\Attributes\CoversNothing;
@@ -243,6 +244,32 @@ final class PostgresTenantIsolationTest extends TestCase
         self::assertNull($repository->findById('tenant-a', $ownerQuoteId, 'user-a'));
     }
 
+    public function testDatabaseRejectsMutationOfPersistedQuoteSnapshot(): void
+    {
+        $quote = PricingQuoteFixture::demo(
+            bin2hex(random_bytes(16)),
+            'tenant-a',
+            'user-a',
+            'vehicle-immutable',
+        );
+        $repository = new PostgresPricingQuoteRepository(new PostgresConnection($this->databaseUrl));
+        $repository->save($quote);
+
+        $this->connection->beginTransaction();
+        try {
+            $this->setTenant('tenant-a');
+            $update = $this->connection->prepare(
+                'UPDATE pricing_quotes SET monthly_amount_minor = 1 WHERE quote_id = :quote_id',
+            );
+            $this->expectException(PDOException::class);
+            $update->execute(['quote_id' => $quote->quoteId]);
+        } finally {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+        }
+    }
+
     private function setTenant(string $tenantId): void
     {
         $statement = $this->connection->prepare(
@@ -266,7 +293,8 @@ final class PostgresTenantIsolationTest extends TestCase
                 currency,
                 duration_months,
                 annual_interest_rate_basis_points,
-                calculation_version
+                calculation_version,
+                expires_at
             ) VALUES (
                 :quote_id,
                 :tenant_id,
@@ -278,7 +306,8 @@ final class PostgresTenantIsolationTest extends TestCase
                 'EUR',
                 36,
                 0,
-                'lease-annuity-v1'
+                'lease-annuity-v1',
+                CURRENT_TIMESTAMP + INTERVAL '7 days'
             )
             SQL,
         );

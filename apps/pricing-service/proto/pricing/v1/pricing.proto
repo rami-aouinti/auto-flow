@@ -26,6 +26,10 @@ message CalculateQuoteResponse {
   int32 annual_interest_rate_basis_points = 8;
   string calculation_version = 9;
   string quote_id = 10;
+  string created_at = 11;
+  string expires_at = 12;
+  string policy_id = 13;
+  int32 policy_version = 14;
 }
 
 service PricingService {

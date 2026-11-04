@@ -104,6 +104,10 @@ final readonly class PricingGrpcService implements PricingServiceInterface
         $response->setDurationMonths($quote->durationMonths);
         $response->setAnnualInterestRateBasisPoints($quote->annualInterestRateBasisPoints);
         $response->setCalculationVersion($quote->calculationVersion);
+        $response->setCreatedAt($quote->createdAt->format(DATE_ATOM));
+        $response->setExpiresAt($quote->expiresAt->format(DATE_ATOM));
+        $response->setPolicyId($quote->policyId ?? '');
+        $response->setPolicyVersion($quote->policyVersion ?? 0);
 
         return $response;
     }

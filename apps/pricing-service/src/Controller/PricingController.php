@@ -6,10 +6,13 @@ namespace App\Controller;
 
 use App\Application\CalculateQuote\CalculateQuoteCommand;
 use App\Application\CalculateQuote\CalculateQuoteHandler;
+use App\Infrastructure\Persistence\PostgresConnection;
+use App\Observability\PricingMetrics;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
+use JsonException;
 use LogicException;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
@@ -25,6 +28,26 @@ use Throwable;
 #[AsController]
 final class PricingController
 {
+    #[Route('/ready', name: 'pricing_readiness', methods: ['GET'])]
+    public function readiness(PostgresConnection $connection): JsonResponse
+    {
+        try {
+            $connection->get()->query('SELECT 1')->fetchColumn();
+        } catch (Throwable) {
+            return new JsonResponse([
+                'service' => 'pricing-service',
+                'status' => 'not_ready',
+                'dependencies' => ['postgresql' => 'unavailable'],
+            ], JsonResponse::HTTP_SERVICE_UNAVAILABLE);
+        }
+
+        return new JsonResponse([
+            'service' => 'pricing-service',
+            'status' => 'ready',
+            'dependencies' => ['postgresql' => 'ok'],
+        ]);
+    }
+
     #[Route('/health', name: 'pricing_health', methods: ['GET'])]
     public function health(): JsonResponse
     {
@@ -40,7 +63,10 @@ final class PricingController
         Request $request,
         CalculateQuoteHandler $handler,
         TenantContext $tenantContext,
+        PricingMetrics $metrics,
     ): JsonResponse {
+        $startedAt = microtime(true);
+        $metricResult = 'error';
         $span = Globals::tracerProvider()
             ->getTracer('autoflow.pricing-service', '1.0.0')
             ->spanBuilder('pricing.calculate')
@@ -64,6 +90,7 @@ final class PricingController
             );
 
             $quote = $handler($command);
+            $metricResult = 'success';
             $span->setAttribute('vehicle.id', $quote->vehicleId);
             $span->setAttribute('pricing.duration_months', $quote->durationMonths);
             $span->setAttribute('pricing.currency', $quote->monthlyAmount->currency);
@@ -79,11 +106,25 @@ final class PricingController
                 'durationMonths' => $quote->durationMonths,
                 'annualInterestRateBasisPoints' => $quote->annualInterestRateBasisPoints,
                 'calculationVersion' => $quote->calculationVersion,
+                'vehiclePrice' => $quote->vehiclePrice?->toDecimal(),
+                'downPayment' => $quote->downPayment?->toDecimal(),
+                'createdAt' => $quote->createdAt->format(DATE_ATOM),
+                'expiresAt' => $quote->expiresAt->format(DATE_ATOM),
+                'policyId' => $quote->policyId,
+                'policyVersion' => $quote->policyVersion,
+                'expired' => $quote->isExpired(),
             ]);
             $response->headers->set('Cache-Control', 'no-store');
 
             return $response;
+        } catch (JsonException) {
+            $metricResult = 'invalid_request';
+            return new JsonResponse([
+                'error' => 'invalid_json',
+                'message' => 'Request body must contain valid JSON.',
+            ], JsonResponse::HTTP_BAD_REQUEST);
         } catch (InvalidArgumentException $exception) {
+            $metricResult = 'invalid_request';
             return new JsonResponse([
                 'error' => 'invalid_pricing_request',
                 'message' => $exception->getMessage(),
@@ -94,6 +135,7 @@ final class PricingController
 
             throw $exception;
         } finally {
+            $metrics->recordCalculation((microtime(true) - $startedAt) * 1_000, $metricResult);
             $scope->detach();
             $span->end();
         }

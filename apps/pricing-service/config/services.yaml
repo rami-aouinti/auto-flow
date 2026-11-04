@@ -16,6 +16,9 @@ services:
     App\Application\Port\Out\PricingQuoteRepositoryInterface:
         alias: App\Infrastructure\Persistence\PostgresPricingQuoteRepository
 
+    App\Application\Port\Out\PricingPolicyRepositoryInterface:
+        alias: App\Infrastructure\Persistence\PostgresPricingPolicyRepository
+
     App\Application\Port\Out\QuoteIdGeneratorInterface:
         alias: App\Infrastructure\Persistence\RandomQuoteIdGenerator
 

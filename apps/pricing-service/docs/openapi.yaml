@@ -1,0 +1,208 @@
+openapi: 3.1.0
+info:
+  title: AutoFlow Pricing Service API
+  version: 1.0.0
+  description: Tenant-scoped lease quote calculation and quote lifecycle.
+servers:
+  - url: /
+paths:
+  /api/pricing/quotes:
+    post:
+      summary: Calculate and persist a lease quote
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalculateQuoteRequest'
+            examples:
+              demoVehicle:
+                summary: 48-month EUR lease
+                value:
+                  vehicleId: vehicle-demo-001
+                  vehiclePrice: '30000.00'
+                  downPayment: '5000.00'
+                  residualValue: '12000.00'
+                  currency: EUR
+                  durationMonths: 48
+                  annualInterestRateBasisPoints: 450
+      responses:
+        '200':
+          description: Quote calculated and stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+              examples:
+                demoQuote:
+                  value:
+                    quoteId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                    vehicleId: vehicle-demo-001
+                    vehiclePrice: '30000.00'
+                    downPayment: '5000.00'
+                    monthlyAmount: '455.46'
+                    totalInstallmentsAmount: '21862.08'
+                    totalCostIncludingDownPayment: '26862.08'
+                    residualValue: '12000.00'
+                    currency: EUR
+                    durationMonths: 48
+                    annualInterestRateBasisPoints: 450
+                    calculationVersion: lease-annuity-v1
+                    createdAt: '2026-11-04T12:00:00+00:00'
+                    expiresAt: '2026-11-11T12:00:00+00:00'
+                    policyId: '123e4567-e89b-42d3-a456-426614174000'
+                    policyVersion: 1
+                    expired: false
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Missing pricing scope or tenant authorization
+        '400':
+          description: Malformed JSON request body
+        '422':
+          description: Invalid lease terms or request payload
+        '500':
+          description: Unexpected pricing failure
+    get:
+      summary: List quotes visible to the authenticated owner or tenant administrator
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Paginated quote collection
+          content:
+            application/json:
+              example:
+                items:
+                  - quoteId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                    vehicleId: vehicle-demo-001
+                    monthlyAmount: '455.46'
+                    totalInstallmentsAmount: '21862.08'
+                    totalCostIncludingDownPayment: '26862.08'
+                    currency: EUR
+                    durationMonths: 48
+                    calculationVersion: lease-annuity-v1
+                    policyId: '123e4567-e89b-42d3-a456-426614174000'
+                    policyVersion: 1
+                    expired: false
+                  - quoteId: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+                    vehicleId: vehicle-demo-002
+                    monthlyAmount: '389.90'
+                    totalInstallmentsAmount: '14036.40'
+                    totalCostIncludingDownPayment: '18036.40'
+                    currency: EUR
+                    durationMonths: 36
+                    calculationVersion: lease-annuity-v1
+                    policyId: '123e4567-e89b-42d3-a456-426614174000'
+                    policyVersion: 1
+                    expired: false
+                limit: 50
+                offset: 0
+        '400':
+          description: Invalid pagination
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Missing pricing scope
+  /api/pricing/quotes/{quoteId}:
+    get:
+      summary: Retrieve an unexpired quote owned by the caller or visible to an authorized tenant administrator
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: quoteId
+          required: true
+          schema: { type: string, pattern: '^[a-f0-9]{32}$' }
+      responses:
+        '200':
+          description: Quote details
+        '404':
+          description: Quote not found or not visible to this caller
+        '410':
+          description: Quote has expired
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Missing pricing scope
+    delete:
+      summary: Soft-delete a quote owned by the caller or manageable by an authorized tenant administrator
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: quoteId
+          required: true
+          schema: { type: string, pattern: '^[a-f0-9]{32}$' }
+      responses:
+        '204':
+          description: Quote deleted
+        '404':
+          description: Quote not found or not visible to this caller
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Missing pricing scope
+  /ready:
+    get:
+      summary: PostgreSQL readiness probe
+      responses:
+        '200':
+          description: PostgreSQL is reachable
+        '503':
+          description: PostgreSQL is unavailable
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Process is alive
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CalculateQuoteRequest:
+      type: object
+      additionalProperties: false
+      required: [vehicleId, vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints]
+      properties:
+        vehicleId: { type: string, minLength: 1, maxLength: 100 }
+        vehiclePrice: { type: string, pattern: '^\d+\.\d{2}$' }
+        downPayment: { type: string, pattern: '^\d+\.\d{2}$' }
+        residualValue: { type: string, pattern: '^\d+\.\d{2}$' }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        durationMonths: { type: integer, minimum: 12, maximum: 72 }
+        annualInterestRateBasisPoints: { type: integer, minimum: 0, maximum: 2000 }
+    Quote:
+      type: object
+      required: [quoteId, vehicleId, monthlyAmount, totalInstallmentsAmount, totalCostIncludingDownPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints, calculationVersion, createdAt, expiresAt]
+      properties:
+        quoteId: { type: string }
+        vehicleId: { type: string }
+        vehiclePrice: { type: string, nullable: true }
+        downPayment: { type: string, nullable: true }
+        monthlyAmount: { type: string }
+        totalInstallmentsAmount: { type: string }
+        totalCostIncludingDownPayment: { type: string }
+        residualValue: { type: string }
+        currency: { type: string }
+        durationMonths: { type: integer }
+        annualInterestRateBasisPoints: { type: integer }
+        calculationVersion: { type: string }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        policyId: { type: string, nullable: true, format: uuid }
+        policyVersion: { type: integer, nullable: true, minimum: 1 }
+        expired: { type: boolean }

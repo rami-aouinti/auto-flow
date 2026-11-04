@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Service;
 
+use App\Domain\Model\PricingPolicy;
 use App\Domain\Model\PricingQuote;
 use App\Domain\ValueObject\LeaseTerms;
 use App\Domain\ValueObject\Money;
@@ -21,6 +22,7 @@ final class LeasePaymentCalculator
         string $createdBy,
         string $vehicleId,
         LeaseTerms $terms,
+        ?PricingPolicy $policy = null,
     ): PricingQuote {
         if (!preg_match('/^[a-f0-9]{32}$/D', $quoteId)) {
             throw new InvalidArgumentException('Quote ID has an invalid format.');
@@ -71,8 +73,13 @@ final class LeasePaymentCalculator
             residualValue: $terms->residualValue,
             durationMonths: $terms->durationMonths,
             annualInterestRateBasisPoints: $terms->annualInterestRateBasisPoints,
-            calculationVersion: 'lease-annuity-v1',
+            calculationVersion: $policy?->calculationVersion ?? 'lease-annuity-v1',
             createdBy: $createdBy,
+            vehiclePrice: $terms->vehiclePrice,
+            downPayment: $terms->downPayment,
+            policyId: $policy?->policyId,
+            policyVersion: $policy?->version,
+            validityDays: $policy?->quoteValidityDays ?? 7,
         );
     }
 }

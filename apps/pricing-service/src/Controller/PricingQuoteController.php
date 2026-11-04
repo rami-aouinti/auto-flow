@@ -34,7 +34,18 @@ final class PricingQuoteController
         $quote = $handler($tenantContext->requireTenantId(), $quoteId, $ownerId);
 
         if ($quote === null) {
-            return new JsonResponse(['error' => 'quote_not_found'], JsonResponse::HTTP_NOT_FOUND);
+            return new JsonResponse([
+                'error' => 'quote_not_found',
+                'message' => 'The requested quote does not exist or is not visible to this caller.',
+            ], JsonResponse::HTTP_NOT_FOUND);
+        }
+        if ($quote->isExpired()) {
+            return new JsonResponse([
+                'error' => 'quote_expired',
+                'message' => 'The quote validity period has ended.',
+                'quoteId' => $quote->quoteId,
+                'expiredAt' => $quote->expiresAt->format(DATE_ATOM),
+            ], JsonResponse::HTTP_GONE);
         }
 
         $response = new JsonResponse($this->quoteToArray($quote));
@@ -94,7 +105,10 @@ final class PricingQuoteController
         $ownerId = $principal->hasScope('pricing:quote:delete:any') ? null : $principal->subject;
 
         if (!$handler($tenantContext->requireTenantId(), $quoteId, $ownerId)) {
-            return new JsonResponse(['error' => 'quote_not_found'], JsonResponse::HTTP_NOT_FOUND);
+            return new JsonResponse([
+                'error' => 'quote_not_found',
+                'message' => 'The requested quote does not exist or is not visible to this caller.',
+            ], JsonResponse::HTTP_NOT_FOUND);
         }
 
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
@@ -112,7 +126,7 @@ final class PricingQuoteController
     }
 
     /**
-     * @return array<string, int|string>
+     * @return array<string, int|string|bool|null>
      */
     private function quoteToArray(PricingQuote $quote): array
     {
@@ -127,6 +141,13 @@ final class PricingQuoteController
             'durationMonths' => $quote->durationMonths,
             'annualInterestRateBasisPoints' => $quote->annualInterestRateBasisPoints,
             'calculationVersion' => $quote->calculationVersion,
+            'vehiclePrice' => $quote->vehiclePrice?->toDecimal(),
+            'downPayment' => $quote->downPayment?->toDecimal(),
+            'createdAt' => $quote->createdAt->format(DATE_ATOM),
+            'expiresAt' => $quote->expiresAt->format(DATE_ATOM),
+            'policyId' => $quote->policyId,
+            'policyVersion' => $quote->policyVersion,
+            'expired' => $quote->isExpired(),
         ];
     }
 }
