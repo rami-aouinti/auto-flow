@@ -18,6 +18,7 @@ final class LeasePaymentCalculator
     public function calculate(
         string $quoteId,
         string $tenantId,
+        string $createdBy,
         string $vehicleId,
         LeaseTerms $terms,
     ): PricingQuote {
@@ -27,6 +28,10 @@ final class LeasePaymentCalculator
 
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenantId)) {
             throw new InvalidArgumentException('Tenant ID has an invalid format.');
+        }
+
+        if (trim($createdBy) === '' || strlen($createdBy) > 255) {
+            throw new InvalidArgumentException('Quote creator identifier has an invalid format.');
         }
 
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/D', $vehicleId)) {
@@ -67,6 +72,7 @@ final class LeasePaymentCalculator
             durationMonths: $terms->durationMonths,
             annualInterestRateBasisPoints: $terms->annualInterestRateBasisPoints,
             calculationVersion: 'lease-annuity-v1',
+            createdBy: $createdBy,
         );
     }
 }
