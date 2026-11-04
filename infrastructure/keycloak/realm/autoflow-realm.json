@@ -171,6 +171,7 @@
       ],
       "realmRoles": [
         "offers:read",
+        "offers:quote",
         "pricing:quote"
       ],
       "attributes": {
@@ -185,6 +186,10 @@
       {
         "name": "offers:read",
         "description": "Read offer resources"
+      },
+      {
+        "name": "offers:quote",
+        "description": "Create pricing quotes through the Offer Service"
       },
       {
         "name": "pricing:quote",
