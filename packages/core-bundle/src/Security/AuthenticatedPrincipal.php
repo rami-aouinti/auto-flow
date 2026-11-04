@@ -6,7 +6,7 @@ namespace AutoFlow\CoreBundle\Security;
 
 final readonly class AuthenticatedPrincipal
 {
-    public const REQUEST_ATTRIBUTE = '_autoflow_authenticated_principal';
+    public const string REQUEST_ATTRIBUTE = '_autoflow_authenticated_principal';
 
     /**
      * @param list<string> $scopes
