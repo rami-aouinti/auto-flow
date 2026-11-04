@@ -1,12 +1,12 @@
 # ADR-014: CoreBundle v2 — Clean Architecture and transport adapters
 
-- **Status:** Proposed implementation
+- **Status:** Accepted — implementation in progress
 - **Date:** 2026-11-04
 - **Decision owners:** AutoFlow engineering
 
 ## Context
 
-The first CoreBundle iteration provides correlation IDs, health routes, an HTTP client decorator, a basic integration-event envelope and Messenger middleware. It is not yet a complete shared platform foundation. In particular, serialization is not an explicit port, transport concerns are not separated into adapters, and a PHP gRPC server runtime has not been wired into the services.
+The current CoreBundle source provides correlation IDs, health checks, an HTTP client decorator, an integration-event envelope, Messenger event publishing, JSON/Protobuf serializer adapters and RoadRunner HTTP/gRPC runners. The implementation is still being hardened: route imports must be explicit in each consuming service, runtime adapters must remain optional, and a service is not considered migrated until its HTTP/gRPC runtime and contract tests are enabled.
 
 The existing `bro-world-core` repository is a useful structural reference because it separates Domain, Application, Infrastructure and Transport. Its Symfony-coupled abstractions must not be copied into the inner layers.
 
@@ -89,3 +89,19 @@ Correlation ID, W3C trace ID, tenant ID and authenticated principal are distinct
 - Service contracts remain independently versionable.
 - The bundle stays framework-aware only in its outer adapters.
 - A runtime migration is explicit and test-gated; adding Composer packages alone is not considered gRPC support.
+
+
+## Implementation status — 2026-11-04
+
+The hardening branch addresses the following source-level gaps:
+
+- Offer and Pricing explicitly import the bundle health routes.
+- JSON typed decode now fails explicitly instead of silently ignoring the requested type.
+- Correlation context restores the previous value after HTTP requests and Messenger handling.
+- A Messenger correlation stamp/middleware is provided and covered by unit tests; each bus must opt in.
+- The RoadRunner HTTP worker attempts at most one response per request and resets the kernel after each request.
+- RoadRunner and Protobuf runtime libraries are Composer suggestions and their adapters are excluded from automatic service discovery.
+- A reusable Problem Details response factory is available.
+- Unit tests cover serializer behavior, context restoration, Messenger correlation, configuration validation and Problem Details responses.
+
+These are implementation changes, not test results. PHPUnit, static analysis, Composer dependency resolution and real RoadRunner HTTP/gRPC integration tests still need to run in CI and in each consuming service.
