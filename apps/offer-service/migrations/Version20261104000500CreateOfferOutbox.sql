@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS offer_outbox_events (
     attempt_count INTEGER NOT NULL DEFAULT 0,
     next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_error TEXT NULL,
-    CONSTRAINT offer_outbox_attempt_count_non_negative CHECK (attempt_count >= 0)
+    CONSTRAINT offer_outbox_attempt_count_non_negative CHECK (attempt_count >= 0),
+    CONSTRAINT offer_outbox_event_type_valid
+        CHECK (event_type IN ('OfferCreated', 'OfferPublished', 'OfferExpired'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_offer_outbox_pending
