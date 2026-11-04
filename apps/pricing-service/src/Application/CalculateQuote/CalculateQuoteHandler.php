@@ -38,6 +38,7 @@ final readonly class CalculateQuoteHandler
         $quote = $this->calculator->calculate(
             $this->quoteIdGenerator->generate(),
             $command->tenantId,
+            $command->createdBy,
             $command->vehicleId,
             $terms,
         );
