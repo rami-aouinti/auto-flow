@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Security\KeycloakClientCredentialsTokenProvider;
+use AutoFlow\CoreBundle\Security\RequiresScope;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -35,6 +36,7 @@ final readonly class OfferController
         ]);
     }
 
+    #[RequiresScope('offers:read')]
     #[Route('/api/offers/{vehicleId}', name: 'offer_show', methods: ['GET'])]
     public function show(string $vehicleId): JsonResponse
     {
