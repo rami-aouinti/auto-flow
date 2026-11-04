@@ -45,7 +45,7 @@ AutoFlow\\CoreBundle\\CoreBundle::class => ['all' => true],
 Configure it in `config/packages/autoflow_core.yaml`:
 
 ```yaml
-autoflow_core:
+core:
     correlation_id: true
     correlation_header: X-Correlation-ID
 ```
