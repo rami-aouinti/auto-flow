@@ -86,7 +86,8 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                 }
 
                 self::appendOutboxEvents($connection, $events);
-        });
+            },
+        );
 
         $offer->markPersisted();
     }
