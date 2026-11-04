@@ -34,3 +34,33 @@ loki.write "local" {
     url = "http://loki:3100/loki/api/v1/push"
   }
 }
+
+otelcol.receiver.otlp "autoflow" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.autoflow.input]
+  }
+}
+
+otelcol.processor.batch "autoflow" {
+  output {
+    metrics = [otelcol.exporter.prometheus.autoflow.input]
+  }
+}
+
+otelcol.exporter.prometheus "autoflow" {
+  forward_to = [prometheus.remote_write.autoflow.receiver]
+}
+
+prometheus.remote_write "autoflow" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
