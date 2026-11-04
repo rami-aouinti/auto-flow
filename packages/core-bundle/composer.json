@@ -19,6 +19,9 @@
     "nyholm/psr7": "^1.8",
     "symfony/psr-http-message-bridge": "7.4.*"
   },
+  "suggest": {
+    "google/protobuf": "Required when using the ProtobufSerializer adapter."
+  },
   "autoload": {
     "psr-4": {
       "AutoFlow\\CoreBundle\\": "src/"
@@ -31,6 +34,5 @@
     "symfony": {
       "allow-contrib": false
     }
-  },
-  "suggest": {}
+  }
 }
