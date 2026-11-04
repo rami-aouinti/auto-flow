@@ -1,0 +1,31 @@
+{
+  "name": "autoflow/core-bundle",
+  "description": "Shared technical foundation for AutoFlow Symfony microservices.",
+  "type": "symfony-bundle",
+  "license": "proprietary",
+  "version": "1.0.0",
+  "require": {
+    "php": "^8.4",
+    "symfony/config": "7.4.*",
+    "symfony/dependency-injection": "7.4.*",
+    "symfony/framework-bundle": "7.4.*",
+    "symfony/http-client": "7.4.*",
+    "symfony/http-kernel": "7.4.*",
+    "symfony/messenger": "7.4.*",
+    "symfony/routing": "7.4.*",
+    "symfony/yaml": "7.4.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "AutoFlow\\CoreBundle\\": "src/"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "extra": {
+    "symfony": {
+      "allow-contrib": false
+    }
+  }
+}
