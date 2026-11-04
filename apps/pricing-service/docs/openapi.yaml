@@ -151,9 +151,9 @@ components:
       required: [vehicleId, vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints]
       properties:
         vehicleId: { type: string, minLength: 1, maxLength: 100 }
-        vehiclePrice: { type: string, pattern: '^\\d+\\.\\d{2}$' }
-        downPayment: { type: string, pattern: '^\\d+\\.\\d{2}$' }
-        residualValue: { type: string, pattern: '^\\d+\\.\\d{2}$' }
+        vehiclePrice: { type: string, pattern: '^\d+\.\d{2}$' }
+        downPayment: { type: string, pattern: '^\d+\.\d{2}$' }
+        residualValue: { type: string, pattern: '^\d+\.\d{2}$' }
         currency: { type: string, pattern: '^[A-Z]{3}$' }
         durationMonths: { type: integer, minimum: 12, maximum: 72 }
         annualInterestRateBasisPoints: { type: integer, minimum: 0, maximum: 2000 }
