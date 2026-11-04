@@ -100,6 +100,19 @@ final class PostgresOfferRepositoryIntegrationTest extends TestCase
         $firstRead->publish(new DateTimeImmutable('+1 minute'));
         $this->repository->save($firstRead);
 
+        $publishedEvent = $this->connection->prepare(<<<'SQL'
+            SELECT COUNT(*)
+            FROM offer_outbox_events
+            WHERE tenant_id = :tenant_id
+              AND aggregate_id = :offer_id
+              AND event_type = 'OfferPublished'
+            SQL);
+        $publishedEvent->execute([
+            'tenant_id' => $tenantId,
+            'offer_id' => (string) $offer->id(),
+        ]);
+        self::assertSame(1, (int) $publishedEvent->fetchColumn());
+
         $staleRead->publish(new DateTimeImmutable('+2 minutes'));
         $this->expectException(ConcurrentOfferModification::class);
         $this->repository->save($staleRead);
