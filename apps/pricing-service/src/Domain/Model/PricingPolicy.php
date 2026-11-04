@@ -33,10 +33,18 @@ final readonly class PricingPolicy
         if ($version < 1 || !in_array($status, ['draft', 'active', 'retired'], true)) {
             throw new InvalidArgumentException('Pricing policy version or status is invalid.');
         }
-        if ($minimumDurationMonths < 12 || $maximumDurationMonths > 72 || $maximumDurationMonths < $minimumDurationMonths) {
+        if (
+            $minimumDurationMonths < 12
+            || $maximumDurationMonths > 72
+            || $maximumDurationMonths < $minimumDurationMonths
+        ) {
             throw new InvalidArgumentException('Pricing policy duration range is invalid.');
         }
-        if ($minimumAnnualRateBasisPoints < 0 || $maximumAnnualRateBasisPoints > 2000 || $maximumAnnualRateBasisPoints < $minimumAnnualRateBasisPoints) {
+        if (
+            $minimumAnnualRateBasisPoints < 0
+            || $maximumAnnualRateBasisPoints > 2000
+            || $maximumAnnualRateBasisPoints < $minimumAnnualRateBasisPoints
+        ) {
             throw new InvalidArgumentException('Pricing policy annual rate range is invalid.');
         }
         if ($quoteValidityDays < 1 || $quoteValidityDays > 90) {
