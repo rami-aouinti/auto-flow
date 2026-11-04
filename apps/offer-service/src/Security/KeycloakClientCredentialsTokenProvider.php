@@ -52,7 +52,11 @@ final class KeycloakClientCredentialsTokenProvider
 
             return $this->accessToken;
         } catch (Throwable $exception) {
-            throw new RuntimeException('Could not obtain a service access token for the Pricing Service.', 0, $exception);
+            throw new RuntimeException(
+                'Could not obtain a service access token for the Pricing Service.',
+                0,
+                $exception,
+            );
         }
     }
 }

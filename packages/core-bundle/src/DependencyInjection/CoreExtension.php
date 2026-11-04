@@ -27,8 +27,14 @@ final class CoreExtension extends Extension
         $container->setParameter('autoflow_core.jwt.audience', $authentication['audience']);
         $container->setParameter('autoflow_core.jwt.jwks_uri', $authentication['jwks_uri']);
         $container->setParameter('autoflow_core.jwt.jwks_cache_ttl', $authentication['jwks_cache_ttl']);
-        $container->setParameter('autoflow_core.jwt.protected_path_prefixes', $authentication['protected_path_prefixes']);
-        $container->setParameter('autoflow_core.jwt.excluded_paths', $authentication['excluded_paths']);
+        $container->setParameter(
+            'autoflow_core.jwt.protected_path_prefixes',
+            $authentication['protected_path_prefixes'],
+        );
+        $container->setParameter(
+            'autoflow_core.jwt.excluded_paths',
+            $authentication['excluded_paths'],
+        );
 
         if ($authentication['enabled']) {
             foreach (['issuer', 'audience', 'jwks_uri'] as $required) {

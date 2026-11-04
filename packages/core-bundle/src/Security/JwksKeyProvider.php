@@ -59,7 +59,11 @@ final class JwksKeyProvider
         } catch (JwksUnavailableException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
-            throw new JwksUnavailableException('The identity provider signing keys are temporarily unavailable.', 0, $exception);
+            throw new JwksUnavailableException(
+                'The identity provider signing keys are temporarily unavailable.',
+                0,
+                $exception,
+            );
         }
     }
 }
