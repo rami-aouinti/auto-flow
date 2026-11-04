@@ -9,8 +9,10 @@ use App\Application\GetPricingQuote\GetPricingQuoteHandler;
 use App\Application\ListPricingQuotes\ListPricingQuotesHandler;
 use App\Domain\Model\PricingQuote;
 use AutoFlow\CoreBundle\Context\TenantContext;
+use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
+use LogicException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\AsController;
@@ -23,10 +25,13 @@ final class PricingQuoteController
     #[Route('/api/pricing/quotes/{quoteId}', name: 'pricing_get_quote', methods: ['GET'])]
     public function getQuote(
         string $quoteId,
+        Request $request,
         GetPricingQuoteHandler $handler,
         TenantContext $tenantContext,
     ): JsonResponse {
-        $quote = $handler($tenantContext->requireTenantId(), $quoteId);
+        $principal = $this->authenticatedPrincipal($request);
+        $ownerId = $principal->hasScope('pricing:quote:read:any') ? null : $principal->subject;
+        $quote = $handler($tenantContext->requireTenantId(), $quoteId, $ownerId);
 
         if ($quote === null) {
             return new JsonResponse(['error' => 'quote_not_found'], JsonResponse::HTTP_NOT_FOUND);
@@ -55,8 +60,11 @@ final class PricingQuoteController
             ], JsonResponse::HTTP_BAD_REQUEST);
         }
 
+        $principal = $this->authenticatedPrincipal($request);
+        $ownerId = $principal->hasScope('pricing:quote:read:any') ? null : $principal->subject;
+
         try {
-            $quotes = $handler($tenantContext->requireTenantId(), $limit, $offset);
+            $quotes = $handler($tenantContext->requireTenantId(), $ownerId, $limit, $offset);
         } catch (InvalidArgumentException $exception) {
             return new JsonResponse([
                 'error' => 'invalid_pagination',
@@ -78,14 +86,29 @@ final class PricingQuoteController
     #[Route('/api/pricing/quotes/{quoteId}', name: 'pricing_delete_quote', methods: ['DELETE'])]
     public function deleteQuote(
         string $quoteId,
+        Request $request,
         DeletePricingQuoteHandler $handler,
         TenantContext $tenantContext,
     ): JsonResponse {
-        if (!$handler($tenantContext->requireTenantId(), $quoteId)) {
+        $principal = $this->authenticatedPrincipal($request);
+        $ownerId = $principal->hasScope('pricing:quote:delete:any') ? null : $principal->subject;
+
+        if (!$handler($tenantContext->requireTenantId(), $quoteId, $ownerId)) {
             return new JsonResponse(['error' => 'quote_not_found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);
+    }
+
+    private function authenticatedPrincipal(Request $request): AuthenticatedPrincipal
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new LogicException('A verified authenticated principal is required.');
+        }
+
+        return $principal;
     }
 
     /**
