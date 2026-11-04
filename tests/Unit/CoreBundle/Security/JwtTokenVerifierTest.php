@@ -37,6 +37,22 @@ final class JwtTokenVerifierTest extends TestCase
         self::assertFalse($principal->hasScope('contracts:write'));
     }
 
+    public function testItRejectsAnEmptyTenantIdentifier(): void
+    {
+        [$verifier, $token] = $this->createVerifier([
+            'iss' => 'https://identity.autoflow.test/realms/autoflow',
+            'aud' => ['autoflow-pricing'],
+            'sub' => 'user-123',
+            'tenant_id' => ' ',
+            'iat' => time(),
+            'exp' => time() + 300,
+        ]);
+
+        $this->expectException(InvalidTokenException::class);
+
+        $verifier->verify($token);
+    }
+
     public function testItRefreshesJwksWhenKeycloakRotatesToANewKeyId(): void
     {
         $oldKeyPair = openssl_pkey_new([
