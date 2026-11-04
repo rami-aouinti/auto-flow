@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS pricing_policies (
         minimum_annual_rate_bps >= 0 AND maximum_annual_rate_bps <= 2000 AND maximum_annual_rate_bps >= minimum_annual_rate_bps
     ),
     CONSTRAINT pricing_policies_validity_range CHECK (quote_validity_days BETWEEN 1 AND 90),
+    CONSTRAINT pricing_policies_supported_calculation CHECK (calculation_version = 'lease-annuity-v1'),
     CONSTRAINT pricing_policies_published_at_consistency CHECK (
         (status = 'draft' AND published_at IS NULL)
         OR (status IN ('active', 'retired') AND published_at IS NOT NULL)
