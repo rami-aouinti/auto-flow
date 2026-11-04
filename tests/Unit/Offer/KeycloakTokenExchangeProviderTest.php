@@ -10,8 +10,6 @@ use RuntimeException;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
-require_once dirname(__DIR__, 3) . '/apps/offer-service/src/Security/KeycloakTokenExchangeProvider.php';
-
 final class KeycloakTokenExchangeProviderTest extends TestCase
 {
     public function testExchangesAccessTokenForPricingAudience(): void
