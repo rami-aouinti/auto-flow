@@ -57,7 +57,7 @@ final readonly class PricingGrpcService implements PricingServiceInterface
                 StatusCode::UNAUTHENTICATED,
                 $exception,
             );
-        } catch (MissingScopeException|TenantDelegationException $exception) {
+        } catch (MissingScopeException | TenantDelegationException $exception) {
             throw GRPCException::create(
                 'The caller is not authorized for this pricing operation.',
                 StatusCode::PERMISSION_DENIED,
