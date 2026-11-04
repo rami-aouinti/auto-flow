@@ -128,4 +128,15 @@ OFFER_TEST_DATABASE_URL='postgresql://autoflow_offer:local-only-offer-password@1
   vendor/bin/phpunit --configuration phpunit.xml tests/Integration/Offer
 ```
 
-The integration tests verify persisted state, transactional outbox records, forced tenant RLS and the automatic expiration transaction. They are skipped when `OFFER_TEST_DATABASE_URL` is not set.
+The integration suite also includes a RabbitMQ publisher-confirm test. Start PostgreSQL and RabbitMQ, apply migrations `00`, `004`, `005` and `006`, then run:
+
+```bash
+OFFER_TEST_DATABASE_URL='postgresql://autoflow_offer:local-only-offer-password@127.0.0.1:5432/autoflow' \\
+RABBITMQ_TEST_HOST=127.0.0.1 \\
+RABBITMQ_TEST_PORT=5672 \\
+RABBITMQ_TEST_USER=autoflow \\
+RABBITMQ_TEST_PASSWORD=autoflow \\
+  vendor/bin/phpunit --configuration phpunit.xml tests/Integration/Offer
+```
+
+The integration tests verify persisted state, atomic Offer/outbox writes, forced tenant RLS, optimistic concurrency, expiration processing and RabbitMQ publisher confirms. PostgreSQL tests are skipped without `OFFER_TEST_DATABASE_URL`; the RabbitMQ publisher test is additionally skipped without `RABBITMQ_TEST_HOST`.
