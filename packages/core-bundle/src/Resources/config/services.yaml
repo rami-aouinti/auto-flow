@@ -9,6 +9,8 @@ services:
             - '../../DependencyInjection/'
             - '../../Resources/'
             - '../../Tests/'
+            - '../../Infrastructure/RoadRunner/'
+            - '../../Infrastructure/Serialization/ProtobufSerializer.php'
             - '../../CoreBundle.php'
 
     AutoFlow\CoreBundle\Application\Clock\ClockInterface:
