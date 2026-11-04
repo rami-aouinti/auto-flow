@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\Tests\\Unit\\CoreBundle\\Security;
+namespace AutoFlow\Tests\Unit\CoreBundle\Security;
 
-use AutoFlow\\CoreBundle\\Security\\JwksKeyProvider;
-use AutoFlow\\CoreBundle\\Security\\JwtAuthenticationSubscriber;
-use AutoFlow\\CoreBundle\\Security\\JwtTokenVerifier;
-use PHPUnit\\Framework\\TestCase;
-use Symfony\\Component\\HttpClient\\MockHttpClient;
-use Symfony\\Component\\HttpFoundation\\Request;
-use Symfony\\Component\\HttpKernel\\Event\\RequestEvent;
-use Symfony\\Component\\HttpKernel\\HttpKernelInterface;
+use AutoFlow\CoreBundle\Security\JwksKeyProvider;
+use AutoFlow\CoreBundle\Security\JwtAuthenticationSubscriber;
+use AutoFlow\CoreBundle\Security\JwtTokenVerifier;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 final class JwtAuthenticationSubscriberTest extends TestCase
 {
