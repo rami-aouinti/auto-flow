@@ -8,9 +8,9 @@ server:
 http:
   address: "0.0.0.0:8080"
   max_request_size: 16
-  middleware: ["headers", "gzip"]
+  middleware: ["gzip"]
   pool:
-    num_workers: 4
+    num_workers: 1
     max_jobs: 1000
     allocate_timeout: 60s
     destroy_timeout: 60s
@@ -21,7 +21,7 @@ grpc:
     - "../packages/core-bundle/proto/core/v1/health.proto"
   pool:
     command: "php bin/grpc-worker.php"
-    num_workers: 2
+    num_workers: 1
     max_jobs: 1000
     allocate_timeout: 60s
     destroy_timeout: 60s
