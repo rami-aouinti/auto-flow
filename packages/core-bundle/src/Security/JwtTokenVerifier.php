@@ -59,7 +59,17 @@ final readonly class JwtTokenVerifier
             throw new InvalidTokenException('The bearer token must be a signed JWT.');
         }
 
-        $encodedHeader = strtr($segments[0], '-_', '+/');
+        $header = $this->decodeHeader($segments[0]);
+        if (!$header instanceof stdClass || !isset($header->kid) || !$this->isValidKeyId($header->kid)) {
+            throw new InvalidTokenException('The bearer token does not contain a valid key identifier.');
+        }
+
+        return $header->kid;
+    }
+
+    private function decodeHeader(string $encodedHeader): mixed
+    {
+        $encodedHeader = strtr($encodedHeader, '-_', '+/');
         $encodedHeader .= str_repeat('=', (4 - strlen($encodedHeader) % 4) % 4);
         $headerJson = base64_decode($encodedHeader, true);
         if ($headerJson === false) {
@@ -67,23 +77,18 @@ final readonly class JwtTokenVerifier
         }
 
         try {
-            $header = json_decode($headerJson, false, 512, JSON_THROW_ON_ERROR);
+            return json_decode($headerJson, false, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
             throw new InvalidTokenException('The bearer token header is malformed.', 0, $exception);
         }
+    }
 
-        if (
-            !$header instanceof stdClass
-            || !isset($header->kid)
-            || !is_string($header->kid)
-            || trim($header->kid) === ''
-            || strlen($header->kid) > 128
-            || preg_match('/^[A-Za-z0-9._:-]+$/D', $header->kid) !== 1
-        ) {
-            throw new InvalidTokenException('The bearer token does not contain a valid key identifier.');
-        }
-
-        return $header->kid;
+    private function isValidKeyId(mixed $keyId): bool
+    {
+        return is_string($keyId)
+            && trim($keyId) !== ''
+            && strlen($keyId) <= 128
+            && preg_match('/^[A-Za-z0-9._:-]+$/D', $keyId) === 1;
     }
 
     private function assertIssuer(stdClass $claims): void
