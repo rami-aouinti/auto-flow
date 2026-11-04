@@ -27,7 +27,7 @@ final class LeasePaymentCalculatorTest extends TestCase
             annualInterestRateBasisPoints: 0,
         );
 
-        $quote = (new LeasePaymentCalculator())->calculate('vehicle-001', $terms);
+        $quote = new LeasePaymentCalculator()->calculate('vehicle-001', $terms);
 
         self::assertSame('500.00', $quote->monthlyAmount->toDecimal());
         self::assertSame('18000.00', $quote->totalInstallmentsAmount->toDecimal());
@@ -45,7 +45,7 @@ final class LeasePaymentCalculatorTest extends TestCase
             annualInterestRateBasisPoints: 500,
         );
 
-        $quote = (new LeasePaymentCalculator())->calculate('vehicle-001', $terms);
+        $quote = new LeasePaymentCalculator()->calculate('vehicle-001', $terms);
 
         self::assertGreaterThan(50000, $quote->monthlyAmount->minorUnits);
         self::assertSame('EUR', $quote->monthlyAmount->currency);
