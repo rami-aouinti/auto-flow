@@ -120,6 +120,14 @@ The current SQL migrations are:
 - `Version20261104000100CreatePricingQuotes.sql`
 - `Version20261104000200AddPricingQuoteSoftDelete.sql`
 - `Version20261104000300AddPricingQuoteOwner.sql`
+- `Version20261104000400AddQuoteSnapshotAndExpiry.sql`
+- `Version20261104000500CreatePricingPolicies.sql`
+- `Version20261104000600LinkQuotesToPricingPolicy.sql`
+- `Version20261104000700EnforceImmutableQuoteSnapshots.sql`
+
+Use `apps/pricing-service/bin/migrate.sh` with `DATABASE_ADMIN_URL` to apply unapplied versioned migrations. The runner records applied filenames in `pricing_schema_migrations`. The optional `PRICING_BOOTSTRAP_LOCAL_ROLE=1` switch is for local development only; production database roles must be provisioned securely out of band.
+
+Deterministic demo data lives in `apps/pricing-service/fixtures/pricing_quotes_demo.sql`. Reusable PHPUnit fixture factories live in `apps/pricing-service/tests/Fixtures/`.
 
 The role password in the role-creation SQL and `PRICING_DATABASE_URL` must remain aligned. Keep local credentials out of production configuration and inject production secrets through the deployment secret manager.
 
@@ -134,19 +142,23 @@ The role password in the role-creation SQL and `PRICING_DATABASE_URL` must remai
 - Quote endpoints must remain non-cacheable.
 - Return generic server errors; do not expose SQL, stack traces or internal infrastructure details.
 
-## 7. Pricing policy and quote lifecycle — next implementation increment
+## 7. Pricing policy and quote lifecycle — implementation in progress on the feature branch
 
-The current quote stores the calculation version but does not yet persist a separately managed commercial Pricing Policy or an expiry lifecycle. These are the next business capabilities; they must not be described as already implemented.
+The production-readiness branch now contains the first implementation slice:
 
-The intended design is:
+- `PricingPolicy` is a tenant-scoped, versioned domain model with draft, active and retired states.
+- `CreatePricingPolicyHandler` creates drafts; `PublishPricingPolicyHandler` activates a version.
+- `PostgresPricingPolicyRepository` persists and reads policies under transaction-local tenant context and PostgreSQL RLS.
+- Only one active policy per tenant is allowed. Publishing a new version retires the previous active version.
+- Quote calculation loads the active tenant policy when one exists and checks the duration/rate guardrails. Existing tenants without a policy retain the legacy 7-day default while policy rollout is completed.
+- Quotes persist original vehicle price/down payment, creation and expiry timestamps, and the exact policy ID/version used. The database trigger rejects mutation of snapshot fields while allowing soft deletion.
+- Quote validity defaults to seven days and may be configured by policy (1–90 days). The API returns HTTP 410 for an expired quote lookup.
 
-- A tenant-scoped, versioned `PricingPolicy` aggregate with immutable published versions.
-- Policy attributes initially limited to explicitly approved calculation inputs and guardrails: supported currencies, allowed durations, minimum/maximum annual nominal rate, default quote validity and calculation algorithm version.
-- Draft → published → retired lifecycle. Published versions are immutable; changes create a new version.
-- Policy selection is explicit and deterministic. The chosen policy version is copied into the quote snapshot.
-- Quote validity defaults to seven days, configurable by the selected policy. Store `expires_at` at creation; do not recompute old quote expiry from a later policy.
-- Expiration is evaluated at read/use boundaries and may be materialized asynchronously for operational reporting. Expiration must never rewrite the calculated amounts.
-- Existing API response fields remain backward compatible; additive metadata such as `policyVersion`, `createdAt` and `expiresAt` is introduced deliberately and documented in OpenAPI.
+Current demo policy guardrails are intentionally aligned with the existing LeaseTerms boundaries (12–72 months and 0–2000 basis points). These are implementation defaults, not approved commercial or regulatory financing terms. The policy does not introduce taxes, fees, insurance, maintenance, mileage or lender-specific rules.
+
+The API contract examples and local Swagger definition use the deterministic demo quote in `apps/pricing-service/fixtures/pricing_quotes_demo.sql`. PHPUnit fixtures are provided by `PricingQuoteFixture` and `PricingPolicyFixture`.
+
+**Verification status:** implementation and test sources are present on the feature branch; the GitHub Actions run and local Docker/PostgreSQL execution must pass before merge. Do not treat source creation as test evidence.
 
 A quote is a historical calculation snapshot. Updating or retiring a policy must never change an existing quote.
 
