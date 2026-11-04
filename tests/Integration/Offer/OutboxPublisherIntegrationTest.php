@@ -37,7 +37,7 @@ final class OutboxPublisherIntegrationTest extends TestCase
             getenv('RABBITMQ_TEST_PASSWORD') ?: 'autoflow',
             '/',
             false,
-            'AMQPLAIN',
+            'PLAIN',
             null,
             'en_US',
             3.0,
