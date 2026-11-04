@@ -92,7 +92,7 @@ curl -i http://localhost:8082/api/pricing/quotes \\
   -d '{"vehicleId":"vehicle-001","vehiclePrice":"30000.00","downPayment":"3000.00","residualValue":"9000.00","currency":"EUR","durationMonths":36,"annualInterestRateBasisPoints":500}'
 ~~~
 
-Offer obtains a separate client-credentials token for its downstream Pricing call; it does not blindly forward the end-user bearer token. The user-to-service token exchange / delegated user context is a later authorization design decision.
+Offer validates the incoming user access token, then exchanges it with Keycloak using the confidential `autoflow-offer-to-pricing` client and the standard OAuth 2.0 Token Exchange grant. The exchanged token is downscoped to the `autoflow-pricing` audience and sent to Pricing. Pricing therefore validates its own audience while retaining the user's `sub`; quote ownership is based on that verified subject. The local realm gives the demo user the `offers:read` and `pricing:quote` realm roles and includes the Offer workload client in the original token audience. For a production realm, enable Standard Token Exchange on the confidential requester client, allow that client to exchange to the Pricing audience, and map only the appropriate user roles/permissions. Do not use the deprecated legacy token-exchange feature.
 
 ## CoreBundle quick check
 
