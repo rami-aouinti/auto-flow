@@ -102,7 +102,7 @@ final class OutboxPublisherIntegrationTest extends TestCase
             );
             $published->execute(['event_id' => $eventId]);
 
-            self::assertNotFalse($published->fetchColumn());
+            self::assertNotNull($published->fetchColumn());
         } finally {
             if ($channel->is_open()) {
                 $channel->close();
