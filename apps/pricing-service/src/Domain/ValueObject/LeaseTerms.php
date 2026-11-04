@@ -15,7 +15,10 @@ final readonly class LeaseTerms
         public int $durationMonths,
         public int $annualInterestRateBasisPoints,
     ) {
-        if ($vehiclePrice->currency !== $downPayment->currency || $vehiclePrice->currency !== $residualValue->currency) {
+        if (
+            $vehiclePrice->currency !== $downPayment->currency
+            || $vehiclePrice->currency !== $residualValue->currency
+        ) {
             throw new InvalidArgumentException('All lease amounts must use the same currency.');
         }
 
