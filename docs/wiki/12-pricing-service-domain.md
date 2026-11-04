@@ -126,6 +126,7 @@ The current SQL migrations are:
 - `Version20261104000700EnforceImmutableQuoteSnapshots.sql`
 - `Version20261104000800EnforceImmutablePricingPolicies.sql`
 - `Version20261104000900ConstrainPricingCalculationVersion.sql`
+- `Version20261104000900ConstrainPricingCalculationVersion.sql`
 
 Use `apps/pricing-service/bin/migrate.sh` with `DATABASE_ADMIN_URL` to apply unapplied versioned migrations. The runner records applied filenames in `pricing_schema_migrations`. The optional `PRICING_BOOTSTRAP_LOCAL_ROLE=1` switch is for local development only; production database roles must be provisioned securely out of band.
 
