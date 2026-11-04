@@ -38,7 +38,7 @@ final class CorrelationIdMiddlewareTest extends TestCase
         $stack->method('next')->willReturn($nextMiddleware);
 
         $middleware = new CorrelationIdMiddleware($context);
-        $result = $middleware->handle(Envelope::wrap(new \stdClass()), $stack);
+        $result = $middleware->handle(new Envelope(new stdClass()), $stack);
 
         self::assertInstanceOf(CorrelationIdStamp::class, $result->last(CorrelationIdStamp::class));
         self::assertNull($context->get());
