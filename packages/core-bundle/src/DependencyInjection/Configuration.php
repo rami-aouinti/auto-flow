@@ -18,7 +18,6 @@ final class Configuration implements ConfigurationInterface
             ->children()
                 ->booleanNode('correlation_id')->defaultTrue()->end()
                 ->scalarNode('correlation_header')->defaultValue('X-Correlation-ID')->end()
-                ->booleanNode('health_endpoints')->defaultTrue()->end()
             ->end();
 
         return $treeBuilder;
