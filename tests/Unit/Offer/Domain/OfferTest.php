@@ -95,6 +95,24 @@ final class OfferTest extends TestCase
         self::assertEquals($rejectedAt, $offer->rejectedAt());
     }
 
+    public function testOfferCannotBeAcceptedBeforePublicationTime(): void
+    {
+        $offer = $this->createOffer();
+        $offer->publish(new DateTimeImmutable('2026-11-06T12:00:00+00:00'));
+
+        $this->expectException(InvalidOfferTransition::class);
+        $offer->accept(new DateTimeImmutable('2026-11-05T12:00:00+00:00'));
+    }
+
+    public function testOfferCannotBeRejectedBeforePublicationTime(): void
+    {
+        $offer = $this->createOffer();
+        $offer->publish(new DateTimeImmutable('2026-11-06T12:00:00+00:00'));
+
+        $this->expectException(InvalidOfferTransition::class);
+        $offer->reject(new DateTimeImmutable('2026-11-05T12:00:00+00:00'));
+    }
+
     public function testDraftOfferCannotBeAccepted(): void
     {
         $offer = $this->createOffer();
