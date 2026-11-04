@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\Tests\\CoreBundle;
+namespace AutoFlow\Tests\CoreBundle;
 
-use AutoFlow\\CoreBundle\\Transport\\Grpc\\GrpcDeadline;
-use AutoFlow\\CoreBundle\\Transport\\Grpc\\GrpcMetadata;
+use AutoFlow\CoreBundle\Transport\Grpc\GrpcDeadline;
+use AutoFlow\CoreBundle\Transport\Grpc\GrpcMetadata;
 use InvalidArgumentException;
-use PHPUnit\\Framework\\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class GrpcMetadataTest extends TestCase
 {
@@ -26,7 +26,7 @@ final class GrpcMetadataTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        GrpcMetadata::normalize(['x-test' => "safe\\r\\nInjected: yes"]);
+        GrpcMetadata::normalize(['x-test' => "safe\r\nInjected: yes"]);
     }
 
     public function testItRejectsBinaryMetadataUntilAnExplicitCodecExists(): void
