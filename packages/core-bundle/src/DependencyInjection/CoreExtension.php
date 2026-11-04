@@ -32,6 +32,6 @@ final class CoreExtension extends Extension
 
     public function getAlias(): string
     {
-        return 'autoflow_core';
+        return 'core';
     }
 }
