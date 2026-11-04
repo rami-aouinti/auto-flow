@@ -60,10 +60,12 @@ final readonly class CorrelationIdHttpClient implements HttpClientInterface
 
         if (array_is_list($headers)) {
             $headers[] = $this->headerName . ': ' . $correlationId;
-        } else {
-            $headers[$this->headerName] = $correlationId;
+            $options['headers'] = $headers;
+
+            return $options;
         }
 
+        $headers[$this->headerName] = $correlationId;
         $options['headers'] = $headers;
 
         return $options;
