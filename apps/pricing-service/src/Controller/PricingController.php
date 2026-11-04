@@ -7,8 +7,10 @@ namespace App\Controller;
 use App\Application\CalculateQuote\CalculateQuoteCommand;
 use App\Application\CalculateQuote\CalculateQuoteHandler;
 use AutoFlow\CoreBundle\Context\TenantContext;
+use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
+use LogicException;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -48,8 +50,10 @@ final class PricingController
 
         try {
             $payload = $request->toArray();
+            $principal = $this->authenticatedPrincipal($request);
             $command = new CalculateQuoteCommand(
                 tenantId: $tenantContext->requireTenantId(),
+                createdBy: $principal->subject,
                 vehicleId: $this->requiredString($payload, 'vehicleId'),
                 vehiclePrice: $this->requiredString($payload, 'vehiclePrice'),
                 downPayment: $this->requiredString($payload, 'downPayment'),
@@ -95,7 +99,6 @@ final class PricingController
         }
     }
 
-
     /**
      * Legacy endpoint retained for the existing Offer demonstration.
      *
@@ -135,6 +138,17 @@ final class PricingController
             $scope->detach();
             $span->end();
         }
+    }
+
+    private function authenticatedPrincipal(Request $request): AuthenticatedPrincipal
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new LogicException('A verified authenticated principal is required.');
+        }
+
+        return $principal;
     }
 
     /**
