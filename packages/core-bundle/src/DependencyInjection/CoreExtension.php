@@ -26,8 +26,8 @@ final class CoreExtension extends Extension
         $loader->load('services.yaml');
 
         if (!$config['correlation_id']) {
-            $container->removeDefinition(\\AutoFlow\\CoreBundle\\Http\\Correlation\\CorrelationIdSubscriber::class);
-            $container->removeDefinition(\\AutoFlow\\CoreBundle\\Http\\Client\\CorrelationIdHttpClient::class);
+            $container->removeDefinition(\AutoFlow\CoreBundle\Http\Correlation\CorrelationIdSubscriber::class);
+            $container->removeDefinition(\AutoFlow\CoreBundle\Http\Client\CorrelationIdHttpClient::class);
         }
     }
 
