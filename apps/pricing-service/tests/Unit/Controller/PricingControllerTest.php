@@ -10,6 +10,7 @@ use App\Application\Port\Out\PricingQuoteRepositoryInterface;
 use App\Application\Port\Out\QuoteIdGeneratorInterface;
 use App\Controller\PricingController;
 use App\Domain\Service\LeasePaymentCalculator;
+use App\Infrastructure\Persistence\PostgresConnection;
 use App\Observability\PricingMetrics;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
@@ -82,7 +83,7 @@ final class PricingControllerTest extends TestCase
 
     public function testReadinessReturnsServiceUnavailableWhenPostgresIsUnavailable(): void
     {
-        $response = (new PricingController())->readiness(new \\App\\Infrastructure\\Persistence\\PostgresConnection('invalid-database-url'));
+        $response = (new PricingController())->readiness(new PostgresConnection('invalid-database-url'));
 
         self::assertSame(503, $response->getStatusCode());
     }
