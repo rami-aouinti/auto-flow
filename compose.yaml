@@ -65,7 +65,7 @@ services:
       keycloak:
         condition: service_started
     healthcheck:
-      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/health') === false ? 1 : 0);"]
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/ready') === false ? 1 : 0);"]
       interval: 15s
       timeout: 10s
       retries: 5
