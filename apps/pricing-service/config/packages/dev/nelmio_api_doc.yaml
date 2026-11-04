@@ -118,6 +118,115 @@ nelmio_api_doc:
                                                 example: invalid_pricing_request
                                             message:
                                                 type: string
+            /api/pricing/quotes/{quoteId}:
+                get:
+                    tags: [Pricing]
+                    summary: Retrieve a quote owned by the caller or visible to an authorized tenant administrator.
+                    parameters:
+                        - name: quoteId
+                          in: path
+                          required: true
+                          schema: { type: string, pattern: '^[a-f0-9]{32}                get:
+                    tags: [Pricing]
+                    summary: Retrieve the legacy demonstration quote
+                    deprecated: true
+                    parameters:
+                        - name: vehicleId
+                          in: path
+                          required: true
+                          schema:
+                              type: string
+                    responses:
+                        '200':
+                            description: Static demonstration pricing response. Use POST /api/pricing/quotes for calculations.
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            vehicleId:
+                                                type: string
+                                            monthlyAmount:
+                                                type: number
+                                            currency:
+                                                type: string
+                                            durationMonths:
+                                                type: integer
+                                            calculation:
+                                                type: string
+                                                example: demo-only
+    areas:
+        path_patterns:
+            - ^/api(?!/doc)
+ }
+                    responses:
+                        '200':
+                            description: Quote details including immutable input snapshot and expiry.
+                        '404':
+                            description: Quote not found or not visible to this caller.
+                        '410':
+                            description: Quote expired; the response contains quoteId and expiredAt.
+                delete:
+                    tags: [Pricing]
+                    summary: Soft-delete an owned quote or a quote manageable by tenant administrator.
+                    parameters:
+                        - name: quoteId
+                          in: path
+                          required: true
+                          schema: { type: string, pattern: '^[a-f0-9]{32}                get:
+                    tags: [Pricing]
+                    summary: Retrieve the legacy demonstration quote
+                    deprecated: true
+                    parameters:
+                        - name: vehicleId
+                          in: path
+                          required: true
+                          schema:
+                              type: string
+                    responses:
+                        '200':
+                            description: Static demonstration pricing response. Use POST /api/pricing/quotes for calculations.
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            vehicleId:
+                                                type: string
+                                            monthlyAmount:
+                                                type: number
+                                            currency:
+                                                type: string
+                                            durationMonths:
+                                                type: integer
+                                            calculation:
+                                                type: string
+                                                example: demo-only
+    areas:
+        path_patterns:
+            - ^/api(?!/doc)
+ }
+                    responses:
+                        '204':
+                            description: Quote soft-deleted.
+                        '404':
+                            description: Quote not found or not visible to this caller.
+            /api/pricing/quotes:
+                get:
+                    tags: [Pricing]
+                    summary: List quotes visible to the authenticated owner or tenant administrator.
+                    parameters:
+                        - name: limit
+                          in: query
+                          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+                        - name: offset
+                          in: query
+                          schema: { type: integer, minimum: 0, default: 0 }
+                    responses:
+                        '200':
+                            description: Paginated quotes.
+                        '400':
+                            description: Invalid pagination.
             /api/pricing/{vehicleId}:
                 get:
                     tags: [Pricing]
