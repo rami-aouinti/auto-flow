@@ -138,7 +138,7 @@ services:
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
       OTEL_PROPAGATORS: tracecontext,baggage
-      OTEL_PHP_EXCLUDED_URLS: ^/health$
+      OTEL_PHP_EXCLUDED_URLS: ^/(health|ready)$
     depends_on:
       postgres:
         condition: service_healthy
