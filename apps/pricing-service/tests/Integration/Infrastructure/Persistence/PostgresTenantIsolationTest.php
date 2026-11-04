@@ -9,6 +9,7 @@ use App\Domain\ValueObject\Money;
 use App\Infrastructure\Persistence\PostgresConnection;
 use App\Infrastructure\Persistence\PostgresConnectionFactory;
 use App\Infrastructure\Persistence\PostgresPricingQuoteRepository;
+use App\Tests\Fixtures\PricingQuoteFixture;
 use PDO;
 use PDOException;
 use PHPUnit\Framework\Attributes\CoversNothing;
