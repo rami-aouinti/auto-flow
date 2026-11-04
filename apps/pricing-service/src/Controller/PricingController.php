@@ -79,6 +79,10 @@ final class PricingController
                 'durationMonths' => $quote->durationMonths,
                 'annualInterestRateBasisPoints' => $quote->annualInterestRateBasisPoints,
                 'calculationVersion' => $quote->calculationVersion,
+                'vehiclePrice' => $quote->vehiclePrice?->toDecimal(),
+                'downPayment' => $quote->downPayment?->toDecimal(),
+                'createdAt' => $quote->createdAt->format(DATE_ATOM),
+                'expiresAt' => $quote->expiresAt->format(DATE_ATOM),
             ]);
             $response->headers->set('Cache-Control', 'no-store');
 
