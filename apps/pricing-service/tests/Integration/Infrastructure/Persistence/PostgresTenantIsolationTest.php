@@ -146,6 +146,7 @@ final class PostgresTenantIsolationTest extends TestCase
         $quote = new PricingQuote(
             quoteId: $quoteId,
             tenantId: 'tenant-a',
+            createdBy: 'user-a',
             vehicleId: 'vehicle-002',
             monthlyAmount: Money::fromMinorUnits(42000, 'EUR'),
             totalInstallmentsAmount: Money::fromMinorUnits(1512000, 'EUR'),
@@ -189,6 +190,57 @@ final class PostgresTenantIsolationTest extends TestCase
                 $this->connection->rollBack();
             }
         }
+    }
+
+
+    /**
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     */
+    public function testRepositoryRestrictsQuoteReadsListsAndDeletesToTheCreatorWithinOneTenant(): void
+    {
+        $ownerQuoteId = bin2hex(random_bytes(16));
+        $otherQuoteId = bin2hex(random_bytes(16));
+        $repository = new PostgresPricingQuoteRepository(new PostgresConnection($this->databaseUrl));
+
+        $ownerQuote = new PricingQuote(
+            quoteId: $ownerQuoteId,
+            tenantId: 'tenant-a',
+            createdBy: 'user-a',
+            vehicleId: 'vehicle-owner',
+            monthlyAmount: Money::fromMinorUnits(50000, 'EUR'),
+            totalInstallmentsAmount: Money::fromMinorUnits(1800000, 'EUR'),
+            totalCostIncludingDownPayment: Money::fromMinorUnits(2100000, 'EUR'),
+            residualValue: Money::fromMinorUnits(900000, 'EUR'),
+            durationMonths: 36,
+            annualInterestRateBasisPoints: 0,
+            calculationVersion: 'lease-annuity-v1',
+        );
+        $otherQuote = new PricingQuote(
+            quoteId: $otherQuoteId,
+            tenantId: 'tenant-a',
+            createdBy: 'user-b',
+            vehicleId: 'vehicle-other',
+            monthlyAmount: Money::fromMinorUnits(42000, 'EUR'),
+            totalInstallmentsAmount: Money::fromMinorUnits(1512000, 'EUR'),
+            totalCostIncludingDownPayment: Money::fromMinorUnits(1812000, 'EUR'),
+            residualValue: Money::fromMinorUnits(800000, 'EUR'),
+            durationMonths: 36,
+            annualInterestRateBasisPoints: 250,
+            calculationVersion: 'lease-annuity-v1',
+        );
+
+        $repository->save($ownerQuote);
+        $repository->save($otherQuote);
+
+        self::assertNotNull($repository->findById('tenant-a', $ownerQuoteId, 'user-a'));
+        self::assertNull($repository->findById('tenant-a', $ownerQuoteId, 'user-b'));
+        self::assertSame([$otherQuoteId], array_map(
+            static fn (PricingQuote $quote): string => $quote->quoteId,
+            $repository->findAll('tenant-a', 'user-b'),
+        ));
+        self::assertFalse($repository->delete('tenant-a', $ownerQuoteId, 'user-b'));
+        self::assertTrue($repository->delete('tenant-a', $ownerQuoteId, 'user-a'));
+        self::assertNull($repository->findById('tenant-a', $ownerQuoteId, 'user-a'));
     }
 
     private function setTenant(string $tenantId): void
