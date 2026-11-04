@@ -31,12 +31,14 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
                     quote_id, tenant_id, created_by, vehicle_id, monthly_amount_minor,
                     total_installments_minor, total_cost_minor, residual_value_minor,
                     currency, duration_months, annual_interest_rate_basis_points,
-                    calculation_version, vehicle_price_minor, down_payment_minor, expires_at
+                    calculation_version, vehicle_price_minor, down_payment_minor, expires_at,
+                    policy_id, policy_version
                 ) VALUES (
                     :quote_id, :tenant_id, :created_by, :vehicle_id, :monthly_amount_minor,
                     :total_installments_minor, :total_cost_minor, :residual_value_minor,
                     :currency, :duration_months, :annual_interest_rate_basis_points,
-                    :calculation_version, :vehicle_price_minor, :down_payment_minor, :expires_at
+                    :calculation_version, :vehicle_price_minor, :down_payment_minor, :expires_at,
+                    :policy_id, :policy_version
                 )
                 SQL,
             );
@@ -57,6 +59,8 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
                 'vehicle_price_minor' => $quote->vehiclePrice?->minorUnits,
                 'down_payment_minor' => $quote->downPayment?->minorUnits,
                 'expires_at' => $quote->expiresAt->format('Y-m-d H:i:sP'),
+                'policy_id' => $quote->policyId,
+                'policy_version' => $quote->policyVersion,
             ]);
         });
     }
@@ -223,6 +227,8 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             downPayment: $row['down_payment_minor'] === null ? null : Money::fromMinorUnits((int) $row['down_payment_minor'], (string) $row['currency']),
             createdAt: new \\DateTimeImmutable((string) $row['created_at']),
             expiresAt: new \\DateTimeImmutable((string) $row['expires_at']),
+            policyId: $row['policy_id'] === null ? null : (string) $row['policy_id'],
+            policyVersion: $row['policy_version'] === null ? null : (int) $row['policy_version'],
         );
     }
 }
