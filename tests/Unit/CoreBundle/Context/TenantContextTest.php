@@ -34,6 +34,25 @@ final class TenantContextTest extends TestCase
         self::assertNull((new TenantContext($requestStack))->getTenantId());
     }
 
+    public function testItRestoresThePreviousTenantAfterScopedWork(): void
+    {
+        $requestStack = new RequestStack();
+        $request = new Request();
+        $request->attributes->set(
+            AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
+            new AuthenticatedPrincipal('user-123', 'tenant-original', ['offers:read']),
+        );
+        $requestStack->push($request);
+        $context = new TenantContext($requestStack);
+
+        $result = $context->run('tenant-message', function () use ($context): string {
+            return $context->requireTenantId();
+        });
+
+        self::assertSame('tenant-message', $result);
+        self::assertSame('tenant-original', $context->requireTenantId());
+    }
+
     public function testItRequiresTenantForTenantScopedOperations(): void
     {
         $requestStack = new RequestStack();
