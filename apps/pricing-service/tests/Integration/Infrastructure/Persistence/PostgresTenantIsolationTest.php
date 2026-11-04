@@ -103,6 +103,7 @@ final class PostgresTenantIsolationTest extends TestCase
         $quote = new PricingQuote(
             quoteId: $quoteId,
             tenantId: 'tenant-a',
+            createdBy: 'user-a',
             vehicleId: 'vehicle-001',
             monthlyAmount: Money::fromMinorUnits(50000, 'EUR'),
             totalInstallmentsAmount: Money::fromMinorUnits(1800000, 'EUR'),
@@ -157,20 +158,20 @@ final class PostgresTenantIsolationTest extends TestCase
         $repository = new PostgresPricingQuoteRepository(new PostgresConnection($this->databaseUrl));
         $repository->save($quote);
 
-        self::assertNull($repository->findById('tenant-b', $quoteId));
-        self::assertSame([], $repository->findAll('tenant-b'));
-        self::assertFalse($repository->delete('tenant-b', $quoteId));
+        self::assertNull($repository->findById('tenant-b', $quoteId, null));
+        self::assertSame([], $repository->findAll('tenant-b', null));
+        self::assertFalse($repository->delete('tenant-b', $quoteId, null));
 
-        $found = $repository->findById('tenant-a', $quoteId);
+        $found = $repository->findById('tenant-a', $quoteId, 'user-a');
         self::assertNotNull($found);
         self::assertSame('tenant-a', $found->tenantId);
         self::assertSame($quoteId, $found->quoteId);
 
-        $tenantQuotes = $repository->findAll('tenant-a');
+        $tenantQuotes = $repository->findAll('tenant-a', 'user-a');
         self::assertContainsOnlyInstancesOf(PricingQuote::class, $tenantQuotes);
         self::assertContainsEquals($found, $tenantQuotes);
 
-        self::assertTrue($repository->delete('tenant-a', $quoteId));
+        self::assertTrue($repository->delete('tenant-a', $quoteId, 'user-a'));
         self::assertNull($repository->findById('tenant-a', $quoteId));
 
         $this->connection->beginTransaction();
