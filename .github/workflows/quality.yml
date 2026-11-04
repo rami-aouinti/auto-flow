@@ -100,7 +100,7 @@ jobs:
           ];
           $bearer = $pricing["components"]["securitySchemes"]["bearerAuth"] ?? null;
           $quoteSchema = $pricing["components"]["schemas"]["PricingQuote"] ?? null;
-          $postSchema = $pricingPaths["/api/pricing/quotes"]["post"]["requestBody"]["content"]["application/json"]["schema"]["$ref"] ?? null;
+          $postSchema = $pricingPaths["/api/pricing/quotes"]["post"]["requestBody"]["content"]["application/json"]["schema"]["\$ref"] ?? null;
           $healthSecurity = $pricingPaths["/health"]["get"]["security"] ?? null;
           $readySecurity = $pricingPaths["/ready"]["get"]["security"] ?? null;
           if (in_array(false, $requiredPaths, true)
