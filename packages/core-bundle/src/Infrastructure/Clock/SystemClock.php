@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\CoreBundle\\Infrastructure\\Clock;
+namespace AutoFlow\CoreBundle\Infrastructure\Clock;
 
-use AutoFlow\\CoreBundle\\Application\\Clock\\ClockInterface;
+use AutoFlow\CoreBundle\Application\Clock\ClockInterface;
 use DateTimeImmutable;
 
 final class SystemClock implements ClockInterface
