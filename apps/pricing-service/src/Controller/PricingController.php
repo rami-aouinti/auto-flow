@@ -65,6 +65,7 @@ final class PricingController
             $span->setAttribute('pricing.currency', $quote->monthlyAmount->currency);
 
             $response = new JsonResponse([
+                'quoteId' => $quote->quoteId,
                 'vehicleId' => $quote->vehicleId,
                 'monthlyAmount' => $quote->monthlyAmount->toDecimal(),
                 'totalInstallmentsAmount' => $quote->totalInstallmentsAmount->toDecimal(),
