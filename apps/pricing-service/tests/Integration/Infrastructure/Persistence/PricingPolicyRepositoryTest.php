@@ -29,12 +29,13 @@ final class PricingPolicyRepositoryTest extends TestCase
     public function testPolicyRepositoryEnforcesTenantRlsAndLoadsActiveVersion(): void
     {
         $repository = new PostgresPricingPolicyRepository(new PostgresConnection($this->databaseUrl));
+        $tenantId = 'tenant-policy-' . bin2hex(random_bytes(4));
         $policyId = '123e4567-e89b-42d3-a456-' . bin2hex(random_bytes(6));
-        $draft = PricingPolicyFixture::draft('tenant-policy-test', random_int(100, 100000), $policyId);
+        $draft = PricingPolicyFixture::draft($tenantId, random_int(100, 100000), $policyId);
         $repository->save($draft);
 
         self::assertNull($repository->findByVersion('tenant-other', $draft->version));
-        self::assertNull($repository->findActive('tenant-policy-test'));
+        self::assertNull($repository->findActive($tenantId));
 
         $active = $draft->activate(new \DateTimeImmutable('now'));
         $repository->save($active);
@@ -49,7 +50,7 @@ final class PricingPolicyRepositoryTest extends TestCase
         $pdo->beginTransaction();
         try {
             $tenant = $pdo->prepare("SELECT set_config('app.tenant_id', :tenant_id, true)");
-            $tenant->execute(['tenant_id' => 'tenant-policy-test']);
+            $tenant->execute(['tenant_id' => $tenantId]);
             $update = $pdo->prepare('UPDATE pricing_policies SET maximum_annual_rate_bps = 1900 WHERE policy_id = :policy_id');
             $this->expectException(PDOException::class);
             $update->execute(['policy_id' => $policyId]);
