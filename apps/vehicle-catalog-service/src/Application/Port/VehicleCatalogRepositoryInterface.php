@@ -21,4 +21,5 @@ interface VehicleCatalogRepositoryInterface
     public function createModel(VehicleModel $model): void;
     public function createGeneration(VehicleGeneration $generation): void;
     public function createVariant(VehicleVariant $variant): void;
+    public function publishVariant(string $variantId): bool;
 }
