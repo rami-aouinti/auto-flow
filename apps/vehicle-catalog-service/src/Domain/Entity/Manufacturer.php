@@ -35,4 +35,14 @@ final readonly class Manufacturer
 
         return new self(CatalogueId::generate(), $code, $name, CatalogStatus::DRAFT);
     }
+
+    public function withStatus(CatalogStatus $status): self
+    {
+        return new self($this->id, $this->code, $this->name, $this->status->transitionTo($status));
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->id->value === $other->id->value;
+    }
 }
