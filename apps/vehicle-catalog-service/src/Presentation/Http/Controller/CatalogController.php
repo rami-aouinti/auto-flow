@@ -8,6 +8,7 @@ use App\Application\CatalogApplicationService;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
 use PDOException;
+use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -122,7 +123,7 @@ final readonly class CatalogController
             return $this->problem(422,'INVALID_MANUFACTURER',$e->getMessage(),$request);
         } catch (PDOException $e) {
             return $this->databaseProblem($e,$request);
-        } catch (\JsonException) {
+        } catch (JsonException) {
             return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request);
         }
     }
