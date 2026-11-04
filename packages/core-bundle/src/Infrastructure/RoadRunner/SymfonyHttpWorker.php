@@ -53,7 +53,7 @@ final readonly class SymfonyHttpWorker
                 }
 
                 $request = null;
-                $response = null;
+                $response = new Response('', Response::HTTP_INTERNAL_SERVER_ERROR);
 
                 try {
                     $request = $requestFactory->createRequest($psrRequest);
