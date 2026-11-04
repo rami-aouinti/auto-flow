@@ -45,8 +45,9 @@ final class JwksKeyProvider
      */
     public function getKeysForKeyId(string $keyId): array
     {
+        $hadFreshCache = $this->keys !== null && microtime(true) < $this->expiresAt;
         $keys = $this->getKeys();
-        if (isset($keys[$keyId])) {
+        if (isset($keys[$keyId]) || !$hadFreshCache) {
             return $keys;
         }
 
