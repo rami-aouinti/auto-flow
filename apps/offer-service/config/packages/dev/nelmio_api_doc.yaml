@@ -2,8 +2,10 @@ nelmio_api_doc:
     documentation:
         info:
             title: AutoFlow Offer Service API
-            description: REST API for creating and managing vehicle offers.
-            version: 1.0.0
+            description: |
+                REST API for creating and managing vehicle offers.
+                Local demo records are loaded with bin/load-demo-fixtures.php and are available only in the development environment.
+            version: 1.1.0
         servers:
             - url: http://localhost:8081
               description: Local development
@@ -13,6 +15,74 @@ nelmio_api_doc:
                     type: http
                     scheme: bearer
                     bearerFormat: JWT
+            schemas:
+                OfferPricing:
+                    type: object
+                    properties:
+                        monthlyAmount:
+                            type: string
+                            example: "589.00"
+                        totalInstallmentsAmount:
+                            type: string
+                            example: "28272.00"
+                        totalCostIncludingDownPayment:
+                            type: string
+                            example: "33272.00"
+                        residualValue:
+                            type: string
+                            example: "9500.00"
+                        currency:
+                            type: string
+                            example: EUR
+                        durationMonths:
+                            type: integer
+                            example: 48
+                        annualInterestRateBasisPoints:
+                            type: integer
+                            example: 425
+                        calculationVersion:
+                            type: string
+                            example: demo-v1
+                OfferResponse:
+                    type: object
+                    properties:
+                        offerId:
+                            type: string
+                            example: demo-offer-published-001
+                        quoteId:
+                            type: string
+                            example: quote-demo-published-001
+                        vehicleId:
+                            type: string
+                            example: vehicle-demo-tesla-model-3
+                        status:
+                            type: string
+                            enum: [draft, published, accepted, rejected, expired, withdrawn]
+                            example: published
+                        publishedAt:
+                            type: string
+                            format: date-time
+                            nullable: true
+                        acceptedAt:
+                            type: string
+                            format: date-time
+                            nullable: true
+                        rejectedAt:
+                            type: string
+                            format: date-time
+                            nullable: true
+                        expiredAt:
+                            type: string
+                            format: date-time
+                            nullable: true
+                        pricing:
+                            $ref: '#/components/schemas/OfferPricing'
+                        createdAt:
+                            type: string
+                            format: date-time
+                        expiresAt:
+                            type: string
+                            format: date-time
         security:
             - bearerAuth: []
         paths:
@@ -20,12 +90,16 @@ nelmio_api_doc:
                 post:
                     tags: [Offers]
                     summary: Create an offer from a Pricing quote
+                    description: |
+                        Creates a draft offer and stores an immutable Pricing snapshot.
+                        The example request is for a local demo vehicle; a live Pricing quote is still required.
                     parameters:
                         - name: vehicleId
                           in: path
                           required: true
                           schema:
                               type: string
+                          example: vehicle-demo-bmw-i4
                     requestBody:
                         required: true
                         content:
@@ -52,9 +126,46 @@ nelmio_api_doc:
                                         annualInterestRateBasisPoints:
                                             type: integer
                                             example: 425
+                                examples:
+                                    bmwI4:
+                                        summary: BMW i4 demo financing request
+                                        value:
+                                            vehiclePrice: "42000.00"
+                                            downPayment: "5000.00"
+                                            residualValue: "8000.00"
+                                            currency: EUR
+                                            durationMonths: 48
+                                            annualInterestRateBasisPoints: 425
                     responses:
                         '201':
                             description: Offer created in draft status with an immutable Pricing snapshot.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/OfferResponse'
+                                    examples:
+                                        createdDraft:
+                                            summary: Newly created draft offer
+                                            value:
+                                                offerId: demo-offer-draft-001
+                                                quoteId: quote-demo-draft-001
+                                                vehicleId: vehicle-demo-bmw-i4
+                                                status: draft
+                                                publishedAt: null
+                                                acceptedAt: null
+                                                rejectedAt: null
+                                                expiredAt: null
+                                                pricing:
+                                                    monthlyAmount: "729.90"
+                                                    totalInstallmentsAmount: "35035.20"
+                                                    totalCostIncludingDownPayment: "40035.20"
+                                                    residualValue: "8000.00"
+                                                    currency: EUR
+                                                    durationMonths: 48
+                                                    annualInterestRateBasisPoints: 425
+                                                    calculationVersion: demo-v1
+                                                createdAt: "2026-11-03T12:00:00+00:00"
+                                                expiresAt: "2026-12-03T12:00:00+00:00"
                         '401':
                             description: Missing or invalid access token.
                         '403':
@@ -65,17 +176,112 @@ nelmio_api_doc:
                 get:
                     tags: [Offers]
                     summary: Retrieve an offer belonging to the authenticated tenant and creator
+                    description: Use one of the seeded IDs below after loading local demo fixtures.
                     parameters:
                         - name: offerId
                           in: path
                           required: true
                           schema:
                               type: string
+                          example: demo-offer-published-001
                     responses:
                         '200':
                             description: Offer and immutable Pricing snapshot.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/OfferResponse'
+                                    examples:
+                                        publishedOffer:
+                                            summary: Published Tesla Model 3 demo offer
+                                            value:
+                                                offerId: demo-offer-published-001
+                                                quoteId: quote-demo-published-001
+                                                vehicleId: vehicle-demo-tesla-model-3
+                                                status: published
+                                                publishedAt: "2026-11-03T12:00:00+00:00"
+                                                acceptedAt: null
+                                                rejectedAt: null
+                                                expiredAt: null
+                                                pricing:
+                                                    monthlyAmount: "589.00"
+                                                    totalInstallmentsAmount: "28272.00"
+                                                    totalCostIncludingDownPayment: "33272.00"
+                                                    residualValue: "9500.00"
+                                                    currency: EUR
+                                                    durationMonths: 48
+                                                    annualInterestRateBasisPoints: 425
+                                                    calculationVersion: demo-v1
+                                                createdAt: "2026-11-02T12:00:00+00:00"
+                                                expiresAt: "2026-12-02T12:00:00+00:00"
+                                        acceptedOffer:
+                                            summary: Accepted Volvo EX30 demo offer
+                                            value:
+                                                offerId: demo-offer-accepted-001
+                                                quoteId: quote-demo-accepted-001
+                                                vehicleId: vehicle-demo-volvo-ex30
+                                                status: accepted
+                                                publishedAt: "2026-10-31T12:00:00+00:00"
+                                                acceptedAt: "2026-11-01T12:00:00+00:00"
+                                                rejectedAt: null
+                                                expiredAt: null
+                                                pricing:
+                                                    monthlyAmount: "499.00"
+                                                    totalInstallmentsAmount: "23952.00"
+                                                    totalCostIncludingDownPayment: "27952.00"
+                                                    residualValue: "7200.00"
+                                                    currency: EUR
+                                                    durationMonths: 48
+                                                    annualInterestRateBasisPoints: 425
+                                                    calculationVersion: demo-v1
+                                                createdAt: "2026-10-30T12:00:00+00:00"
+                                                expiresAt: "2026-11-29T12:00:00+00:00"
+                                        rejectedOffer:
+                                            summary: Rejected Audi Q4 demo offer
+                                            value:
+                                                offerId: demo-offer-rejected-001
+                                                quoteId: quote-demo-rejected-001
+                                                vehicleId: vehicle-demo-audi-q4
+                                                status: rejected
+                                                publishedAt: "2026-10-29T12:00:00+00:00"
+                                                acceptedAt: null
+                                                rejectedAt: "2026-10-30T12:00:00+00:00"
+                                                expiredAt: null
+                                                pricing:
+                                                    monthlyAmount: "649.00"
+                                                    totalInstallmentsAmount: "31152.00"
+                                                    totalCostIncludingDownPayment: "36152.00"
+                                                    residualValue: "8500.00"
+                                                    currency: EUR
+                                                    durationMonths: 48
+                                                    annualInterestRateBasisPoints: 425
+                                                    calculationVersion: demo-v1
+                                                createdAt: "2026-10-28T12:00:00+00:00"
+                                                expiresAt: "2026-11-27T12:00:00+00:00"
+                                        expiredOffer:
+                                            summary: Expired Mercedes EQA demo offer
+                                            value:
+                                                offerId: demo-offer-expired-001
+                                                quoteId: quote-demo-expired-001
+                                                vehicleId: vehicle-demo-mercedes-eqa
+                                                status: expired
+                                                publishedAt: "2026-09-26T12:00:00+00:00"
+                                                acceptedAt: null
+                                                rejectedAt: null
+                                                expiredAt: "2026-10-26T12:00:00+00:00"
+                                                pricing:
+                                                    monthlyAmount: "699.00"
+                                                    totalInstallmentsAmount: "33552.00"
+                                                    totalCostIncludingDownPayment: "38552.00"
+                                                    residualValue: "7800.00"
+                                                    currency: EUR
+                                                    durationMonths: 48
+                                                    annualInterestRateBasisPoints: 425
+                                                    calculationVersion: demo-v1
+                                                createdAt: "2026-09-25T12:00:00+00:00"
+                                                expiresAt: "2026-10-26T12:00:00+00:00"
                         '404':
-                            description: Offer not found.
+                            description: Offer not found for the authenticated tenant and creator.
             /api/offers/{offerId}/publish:
                 post:
                     tags: [Offers]
@@ -86,9 +292,34 @@ nelmio_api_doc:
                           required: true
                           schema:
                               type: string
+                          example: demo-offer-draft-001
                     responses:
                         '200':
                             description: Offer published.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/OfferResponse'
+                                    example:
+                                        offerId: demo-offer-draft-001
+                                        quoteId: quote-demo-draft-001
+                                        vehicleId: vehicle-demo-bmw-i4
+                                        status: published
+                                        publishedAt: "2026-11-04T12:00:00+00:00"
+                                        acceptedAt: null
+                                        rejectedAt: null
+                                        expiredAt: null
+                                        pricing:
+                                            monthlyAmount: "729.90"
+                                            totalInstallmentsAmount: "35035.20"
+                                            totalCostIncludingDownPayment: "40035.20"
+                                            residualValue: "8000.00"
+                                            currency: EUR
+                                            durationMonths: 48
+                                            annualInterestRateBasisPoints: 425
+                                            calculationVersion: demo-v1
+                                        createdAt: "2026-11-03T12:00:00+00:00"
+                                        expiresAt: "2026-12-03T12:00:00+00:00"
                         '404':
                             description: Offer not found.
                         '409':
@@ -103,9 +334,34 @@ nelmio_api_doc:
                           required: true
                           schema:
                               type: string
+                          example: demo-offer-published-001
                     responses:
                         '200':
                             description: Offer accepted.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/OfferResponse'
+                                    example:
+                                        offerId: demo-offer-published-001
+                                        quoteId: quote-demo-published-001
+                                        vehicleId: vehicle-demo-tesla-model-3
+                                        status: accepted
+                                        publishedAt: "2026-11-03T12:00:00+00:00"
+                                        acceptedAt: "2026-11-04T12:00:00+00:00"
+                                        rejectedAt: null
+                                        expiredAt: null
+                                        pricing:
+                                            monthlyAmount: "589.00"
+                                            totalInstallmentsAmount: "28272.00"
+                                            totalCostIncludingDownPayment: "33272.00"
+                                            residualValue: "9500.00"
+                                            currency: EUR
+                                            durationMonths: 48
+                                            annualInterestRateBasisPoints: 425
+                                            calculationVersion: demo-v1
+                                        createdAt: "2026-11-02T12:00:00+00:00"
+                                        expiresAt: "2026-12-02T12:00:00+00:00"
                         '404':
                             description: Offer not found.
                         '409':
@@ -120,9 +376,34 @@ nelmio_api_doc:
                           required: true
                           schema:
                               type: string
+                          example: demo-offer-published-001
                     responses:
                         '200':
                             description: Offer rejected.
+                            content:
+                                application/json:
+                                    schema:
+                                        $ref: '#/components/schemas/OfferResponse'
+                                    example:
+                                        offerId: demo-offer-published-001
+                                        quoteId: quote-demo-published-001
+                                        vehicleId: vehicle-demo-tesla-model-3
+                                        status: rejected
+                                        publishedAt: "2026-11-03T12:00:00+00:00"
+                                        acceptedAt: null
+                                        rejectedAt: "2026-11-04T12:00:00+00:00"
+                                        expiredAt: null
+                                        pricing:
+                                            monthlyAmount: "589.00"
+                                            totalInstallmentsAmount: "28272.00"
+                                            totalCostIncludingDownPayment: "33272.00"
+                                            residualValue: "9500.00"
+                                            currency: EUR
+                                            durationMonths: 48
+                                            annualInterestRateBasisPoints: 425
+                                            calculationVersion: demo-v1
+                                        createdAt: "2026-11-02T12:00:00+00:00"
+                                        expiresAt: "2026-12-02T12:00:00+00:00"
                         '404':
                             description: Offer not found.
                         '409':
