@@ -17,13 +17,13 @@ See [ADR-014](../../docs/adr/ADR-014-core-bundle-v2-clean-architecture.md).
 | --- | --- |
 | Correlation context | Scoped value with previous-context restoration |
 | HTTP correlation | Incoming header validation, response header and outgoing Symfony HttpClient propagation |
-| Messenger | EventBus adapter; correlation middleware/stamp availability must be verified against service wiring |
+| Messenger | EventBus adapter plus correlation stamp/middleware; enable the middleware explicitly on each bus |
 | Serialization | JSON native-value serializer and generated Protobuf message serializer |
 | Health | Liveness/readiness controller and tagged health checks |
 | RoadRunner HTTP | PSR-7 to HttpFoundation worker adapter |
 | RoadRunner gRPC | Server runner that registers service-owned generated adapters |
 | Clock | Injectable system clock |
-| Problem Details | Shared HTTP error response factory |
+| Problem Details | Not yet implemented as a dedicated reusable factory; service-level exception mapping remains outside the bundle for now |
 
 The table describes package source capabilities, not proof that each service has enabled or deployed them. Check service configuration and integration tests before relying on a capability in production.
 
