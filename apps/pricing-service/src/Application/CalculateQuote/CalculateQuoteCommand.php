@@ -13,7 +13,7 @@ final readonly class CalculateQuoteCommand
         public string $residualValue,
         public string $currency,
         public int $durationMonths,
-        public int $annualInterestRateBasisPoints,
+        public int $annualRateBps,
     ) {
     }
 }
