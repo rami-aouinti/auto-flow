@@ -8,6 +8,7 @@ final readonly class CalculateQuoteCommand
 {
     public function __construct(
         public string $tenantId,
+        public string $createdBy,
         public string $vehicleId,
         public string $vehiclePrice,
         public string $downPayment,
