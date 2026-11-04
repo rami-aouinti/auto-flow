@@ -77,6 +77,8 @@ final readonly class JwtTokenVerifier
             || !isset($header->kid)
             || !is_string($header->kid)
             || trim($header->kid) === ''
+            || strlen($header->kid) > 128
+            || preg_match('/^[A-Za-z0-9._:-]+$/D', $header->kid) !== 1
         ) {
             throw new InvalidTokenException('The bearer token does not contain a valid key identifier.');
         }
@@ -127,8 +129,7 @@ final readonly class JwtTokenVerifier
 
         if (
             !is_string($claims->tenant_id)
-            || trim($claims->tenant_id) === ''
-            || trim($claims->tenant_id) !== $claims->tenant_id
+            || preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $claims->tenant_id) !== 1
         ) {
             throw new InvalidTokenException('The token contains an invalid tenant identifier.');
         }
