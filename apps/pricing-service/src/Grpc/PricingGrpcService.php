@@ -15,7 +15,6 @@ use AutoFlow\CoreBundle\Security\MissingScopeException;
 use AutoFlow\CoreBundle\Security\TenantDelegationException;
 use AutoFlow\CoreBundle\Transport\Grpc\GrpcRequestAuthenticator;
 use InvalidArgumentException;
-use Psr\Log\LoggerInterface;
 use Spiral\RoadRunner\GRPC\ContextInterface;
 use Spiral\RoadRunner\GRPC\Exception\GRPCException;
 use Spiral\RoadRunner\GRPC\StatusCode;
@@ -29,7 +28,6 @@ final readonly class PricingGrpcService implements PricingServiceInterface
     public function __construct(
         private CalculateQuoteHandler $handler,
         private GrpcRequestAuthenticator $requestAuthenticator,
-        private LoggerInterface $logger,
     ) {
     }
 
@@ -52,19 +50,23 @@ final readonly class PricingGrpcService implements PricingServiceInterface
                 annualRateBps: $request->getAnnualInterestRateBasisPoints(),
             ));
         } catch (JwksUnavailableException $exception) {
+            error_log(sprintf(
+                '[AutoFlow gRPC auth] JWKS unavailable: %s',
+                $exception->getMessage(),
+            ));
+
             throw GRPCException::create(
                 'The authentication service is temporarily unavailable.',
                 StatusCode::UNAVAILABLE,
                 $exception,
             );
         } catch (InvalidTokenException $exception) {
-            // Keep the client response deliberately generic, but retain a safe
-            // diagnostic without ever logging the bearer token itself.
-            $this->logger->warning('gRPC request authentication failed.', [
-                'reason' => $exception->getMessage(),
-                'exception_class' => $exception::class,
-                'method' => 'CalculateQuote',
-            ]);
+            // Keep the external response generic; log only the safe reason,
+            // never the bearer token or its contents.
+            error_log(sprintf(
+                '[AutoFlow gRPC auth] Token rejected: %s',
+                $exception->getMessage(),
+            ));
 
             throw GRPCException::create(
                 'A valid bearer token is required.',
