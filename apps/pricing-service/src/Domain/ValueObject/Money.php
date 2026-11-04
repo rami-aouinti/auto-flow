@@ -23,7 +23,9 @@ final readonly class Money
         }
 
         if (!preg_match('/^(0|[1-9][0-9]*)(?:\.([0-9]{1,2}))?$/D', $amount, $matches)) {
-            throw new InvalidArgumentException('Money amount must be a non-negative decimal with at most two fractional digits.');
+            throw new InvalidArgumentException(
+                'Money amount must be a non-negative decimal with at most two fractional digits.',
+            );
         }
 
         $whole = (int) $matches[1];
