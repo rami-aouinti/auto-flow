@@ -111,6 +111,59 @@ docker compose up -d --build offer-service offer-expiration-worker offer-outbox-
 
 The expiration worker needs PostgreSQL. The outbox publisher additionally waits for RabbitMQ to become healthy.
 
+## Local demo fixtures and Swagger UI
+
+The development-only fixture loader creates five deterministic offers for the local Keycloak demo user:
+
+| Offer ID | Vehicle | Initial status |
+| --- | --- | --- |
+| `demo-offer-draft-001` | BMW i4 | `draft` |
+| `demo-offer-published-001` | Tesla Model 3 | `published` |
+| `demo-offer-accepted-001` | Volvo EX30 | `accepted` |
+| `demo-offer-rejected-001` | Audi Q4 | `rejected` |
+| `demo-offer-expired-001` | Mercedes EQA | `expired` |
+
+The loader is idempotent, requires `APP_ENV=dev`, and uses the `autoflow_offer` database role with the tenant RLS context set to `tenant-demo` by default. It requires the Keycloak user's actual `sub` claim so the existing owner-only authorization rule works. It does not create Outbox rows or publish RabbitMQ messages.
+
+Enable the development-only Swagger UI for the Offer container by adding these values to the repository-root `.env` file:
+
+```dotenv
+OFFER_APP_ENV=dev
+OFFER_APP_DEBUG=1
+```
+
+Recreate the Offer container (the service image must include the new loader):
+
+```bash
+docker compose up -d --build --force-recreate offer-service
+```
+
+Obtain the demo user's subject from a local access token and load the fixtures:
+
+```bash
+DEMO_SUBJECT=$(curl -fsS -X POST http://localhost:8080/realms/autoflow/protocol/openid-connect/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'grant_type=password' \
+  --data-urlencode 'client_id=autoflow-local-client' \
+  --data-urlencode 'username=demo' \
+  --data-urlencode 'password=demo' |
+  python3 -c 'import sys,json,base64; token=json.load(sys.stdin)["access_token"]; part=token.split(".")[1]; print(json.loads(base64.urlsafe_b64decode(part + "=" * (-len(part) % 4)))["sub"])')
+
+docker compose exec -e APP_ENV=dev -e DEMO_USER_SUBJECT="$DEMO_SUBJECT" \
+  -e DEMO_TENANT_ID=tenant-demo offer-service php bin/load-demo-fixtures.php
+```
+
+Open [Offer Swagger UI](http://localhost:8081/api/doc). Click **Authorize** and paste the same Keycloak access token (Bearer). Use `GET /api/offers/{offerId}` with one of the IDs in the table to retrieve the corresponding persisted fixture. The documentation also includes request and response examples for the lifecycle endpoints.
+
+To retrieve a fixture directly:
+
+```bash
+curl -i http://localhost:8081/api/offers/demo-offer-published-001 \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Keep `OFFER_APP_ENV=dev` local only. The Swagger bundle and UI are intentionally not enabled in production.
+
 ## Tests
 
 Unit tests:
