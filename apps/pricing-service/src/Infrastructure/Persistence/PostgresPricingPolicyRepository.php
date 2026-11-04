@@ -8,6 +8,7 @@ use App\Application\Port\Out\PricingPolicyRepositoryInterface;
 use App\Domain\Model\PricingPolicy;
 use DateTimeImmutable;
 use InvalidArgumentException;
+use LogicException;
 use PDO;
 use Throwable;
 
@@ -98,6 +99,9 @@ final readonly class PostgresPricingPolicyRepository implements PricingPolicyRep
             throw new InvalidArgumentException('Tenant identifier has an invalid format.');
         }
         $pdo = $this->connection->get();
+        if ($pdo->inTransaction()) {
+            throw new LogicException('Pricing policy repository operations must own their database transaction.');
+        }
         $pdo->beginTransaction();
         try {
             $tenant = $pdo->prepare("SELECT set_config('app.tenant_id', :tenant_id, true)");
