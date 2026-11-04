@@ -118,7 +118,7 @@ The current security increment adds RS256/JWKS verification, audience isolation,
 
 ## 10. Pricing quote persistence and PostgreSQL RLS
 
-Pricing stores each calculated quote as an immutable snapshot in `pricing_quotes`. The application layer depends on `PricingQuoteRepositoryInterface`; the PostgreSQL adapter is an infrastructure implementation. `quote_id` is generated independently of the tenant and `tenant_id` is always taken from the verified HTTP/gRPC principal, never from the request body.
+Pricing stores each calculated quote as an immutable snapshot in `pricing_quotes`. Deletion is a soft-delete operation (`deleted_at`) so the financial calculation snapshot remains available for audit and retention policies. The application layer depends on `PricingQuoteRepositoryInterface`; the PostgreSQL adapter is an infrastructure implementation. `quote_id` is generated independently of the tenant and `tenant_id` is always taken from the verified HTTP/gRPC principal, never from the request body.
 
 PostgreSQL enforces tenant isolation with row-level security:
 - `ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY` are applied to `pricing_quotes`;
@@ -132,6 +132,7 @@ For a fresh local database, Docker Compose initializes the restricted role and q
 ```bash
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/pricing-service/migrations/00_create_pricing_database_role.sql
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/pricing-service/migrations/Version20261104000100CreatePricingQuotes.sql
+docker compose exec -T postgres psql -U autoflow -d autoflow < apps/pricing-service/migrations/Version20261104000200AddPricingQuoteSoftDelete.sql
 docker compose up -d --force-recreate pricing-service
 ```
 
