@@ -29,63 +29,63 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
         $this->withinTenantTransaction(
             $offer->tenantId(),
             function (PDO $connection) use ($offer, $events, $expectedStatus): void {
-            if ($expectedStatus === null) {
-                $snapshot = $offer->pricingSnapshot();
-                $statement = $connection->prepare(<<<'SQL'
-                    INSERT INTO offers (
-                        tenant_id, offer_id, created_by, status, quote_id, pricing_snapshot,
-                        created_at, expires_at
-                    ) VALUES (
-                        :tenant_id, :offer_id, :created_by, :status, :quote_id,
-                        CAST(:pricing_snapshot AS JSONB), :created_at, :expires_at
-                    )
-                    SQL);
-                $statement->execute([
-                    'tenant_id' => $offer->tenantId(),
-                    'offer_id' => (string) $offer->id(),
-                    'created_by' => $offer->createdBy(),
-                    'status' => $offer->status()->value,
-                    'quote_id' => $snapshot->quoteId,
-                    'pricing_snapshot' => json_encode([
-                        'quoteId' => $snapshot->quoteId,
-                        'vehicleId' => $snapshot->vehicleId,
-                        'monthlyAmount' => $snapshot->monthlyAmount,
-                        'totalInstallmentsAmount' => $snapshot->totalInstallmentsAmount,
-                        'totalCostIncludingDownPayment' => $snapshot->totalCostIncludingDownPayment,
-                        'residualValue' => $snapshot->residualValue,
-                        'currency' => $snapshot->currency,
-                        'durationMonths' => $snapshot->durationMonths,
-                        'annualInterestRateBasisPoints' => $snapshot->annualInterestRateBasisPoints,
-                        'calculationVersion' => $snapshot->calculationVersion,
-                    ], JSON_THROW_ON_ERROR),
-                    'created_at' => $offer->createdAt()->format(DATE_ATOM),
-                    'expires_at' => $offer->expiresAt()->format(DATE_ATOM),
-                ]);
-            } else {
-                $update = $connection->prepare(<<<'SQL'
-                    UPDATE offers
-                    SET status = :status
-                    WHERE tenant_id = :tenant_id
-                      AND offer_id = :offer_id
-                      AND created_by = :created_by
-                      AND status = :expected_status
-                    SQL);
-                $update->execute([
-                    'status' => $offer->status()->value,
-                    'tenant_id' => $offer->tenantId(),
-                    'offer_id' => (string) $offer->id(),
-                    'created_by' => $offer->createdBy(),
-                    'expected_status' => $expectedStatus->value,
-                ]);
+                if ($expectedStatus === null) {
+                    $snapshot = $offer->pricingSnapshot();
+                    $statement = $connection->prepare(<<<'SQL'
+                        INSERT INTO offers (
+                            tenant_id, offer_id, created_by, status, quote_id, pricing_snapshot,
+                            created_at, expires_at
+                        ) VALUES (
+                            :tenant_id, :offer_id, :created_by, :status, :quote_id,
+                            CAST(:pricing_snapshot AS JSONB), :created_at, :expires_at
+                        )
+                        SQL);
+                    $statement->execute([
+                        'tenant_id' => $offer->tenantId(),
+                        'offer_id' => (string) $offer->id(),
+                        'created_by' => $offer->createdBy(),
+                        'status' => $offer->status()->value,
+                        'quote_id' => $snapshot->quoteId,
+                        'pricing_snapshot' => json_encode([
+                            'quoteId' => $snapshot->quoteId,
+                            'vehicleId' => $snapshot->vehicleId,
+                            'monthlyAmount' => $snapshot->monthlyAmount,
+                            'totalInstallmentsAmount' => $snapshot->totalInstallmentsAmount,
+                            'totalCostIncludingDownPayment' => $snapshot->totalCostIncludingDownPayment,
+                            'residualValue' => $snapshot->residualValue,
+                            'currency' => $snapshot->currency,
+                            'durationMonths' => $snapshot->durationMonths,
+                            'annualInterestRateBasisPoints' => $snapshot->annualInterestRateBasisPoints,
+                            'calculationVersion' => $snapshot->calculationVersion,
+                        ], JSON_THROW_ON_ERROR),
+                        'created_at' => $offer->createdAt()->format(DATE_ATOM),
+                        'expires_at' => $offer->expiresAt()->format(DATE_ATOM),
+                    ]);
+                } else {
+                    $update = $connection->prepare(<<<'SQL'
+                        UPDATE offers
+                        SET status = :status
+                        WHERE tenant_id = :tenant_id
+                          AND offer_id = :offer_id
+                          AND created_by = :created_by
+                          AND status = :expected_status
+                        SQL);
+                    $update->execute([
+                        'status' => $offer->status()->value,
+                        'tenant_id' => $offer->tenantId(),
+                        'offer_id' => (string) $offer->id(),
+                        'created_by' => $offer->createdBy(),
+                        'expected_status' => $expectedStatus->value,
+                    ]);
 
-                if ($update->rowCount() !== 1) {
-                    throw new ConcurrentOfferModification(
-                        'The offer was modified by another operation. Reload it and retry.',
-                    );
+                    if ($update->rowCount() !== 1) {
+                        throw new ConcurrentOfferModification(
+                            'The offer was modified by another operation. Reload it and retry.',
+                        );
+                    }
                 }
-            }
 
-            self::appendOutboxEvents($connection, $events);
+                self::appendOutboxEvents($connection, $events);
         });
 
         $offer->markPersisted();
