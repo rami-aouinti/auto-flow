@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\\Domain\\Entity;
+namespace App\Domain\Entity;
 
-use App\\Domain\\ValueObject\\CatalogueId;
+use App\Domain\ValueObject\CatalogueId;
 use InvalidArgumentException;
 
 final readonly class VehicleModel
