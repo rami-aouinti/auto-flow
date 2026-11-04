@@ -81,33 +81,15 @@ The controller currently performs three responsibilities:
 
 That is acceptable for a deliberately small proof of connectivity. It is not the final design for a growing Offer bounded context. A more mature implementation would move orchestration into an application use case and keep the controller as a transport adapter.
 
-## 4. Pricing controller — current behaviour
+## 4. Pricing controller — current and new behaviour
 
-The route is `GET /api/pricing/{vehicleId}`. It currently returns a fixed response:
+The original route is GET /api/pricing/{vehicleId}. It remains temporarily available for the Offer tracing demonstration and returns a fixed 329.00 EUR response labelled legacy-demo-only. It is not the calculation API and must not be used for new integrations.
 
-~~~php
-return new JsonResponse([
-    'vehicleId' => $vehicleId,
-    'monthlyAmount' => 329.00,
-    'currency' => 'EUR',
-    'durationMonths' => 48,
-    'calculation' => 'demo-only',
-]);
-~~~
+The new route is POST /api/pricing/quotes. It accepts explicit inputs: vehicle ID, vehicle price, down payment, residual value, currency, duration and annual interest rate in basis points.
 
-The amount is illustrative. There is no production pricing policy, persisted quote, customer-specific calculation or audit snapshot in this controller.
+The request is translated into an application command. The handler creates Money and LeaseTerms value objects, then delegates the calculation to the domain LeasePaymentCalculator. The controller returns monetary values as decimal strings, together with the calculation version.
 
-A production Pricing context would need explicit inputs and rules, for example:
-- Vehicle or product identity.
-- Leasing duration.
-- Mileage allowance.
-- Down payment and fees.
-- Customer or commercial segment where legally and commercially appropriate.
-- Validity period and effective date.
-- Tax and currency rules.
-- Pricing policy version and explanation of the result.
-
-Do not add these fields without clarifying the business requirements first.
+The new implementation has real domain validation and a deterministic annuity calculation, but it is still an illustrative fixed-rate model. Pricing policy persistence, taxes, fees, mileage, customer-specific rules, quote expiry and regulated financial validation are not implemented.
 
 ## 5. Why HTTP is used here
 
