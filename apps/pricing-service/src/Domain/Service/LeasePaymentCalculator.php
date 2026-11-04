@@ -73,7 +73,7 @@ final class LeasePaymentCalculator
             residualValue: $terms->residualValue,
             durationMonths: $terms->durationMonths,
             annualInterestRateBasisPoints: $terms->annualInterestRateBasisPoints,
-            calculationVersion: 'lease-annuity-v1',
+            calculationVersion: $policy?->calculationVersion ?? 'lease-annuity-v1',
             createdBy: $createdBy,
             vehiclePrice: $terms->vehiclePrice,
             downPayment: $terms->downPayment,
