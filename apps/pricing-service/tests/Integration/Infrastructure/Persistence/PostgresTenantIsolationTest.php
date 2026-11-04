@@ -245,7 +245,7 @@ final class PostgresTenantIsolationTest extends TestCase
 
     public function testDatabaseRejectsMutationOfPersistedQuoteSnapshot(): void
     {
-        $quote = \\App\\Tests\\Fixtures\\PricingQuoteFixture::demo(
+        $quote = PricingQuoteFixture::demo(
             bin2hex(random_bytes(16)),
             'tenant-a',
             'user-a',
