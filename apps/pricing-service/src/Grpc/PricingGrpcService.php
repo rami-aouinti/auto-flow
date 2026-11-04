@@ -35,8 +35,11 @@ final readonly class PricingGrpcService implements PricingServiceInterface
     public function CalculateQuote(ContextInterface $ctx, CalculateQuoteRequest $request): CalculateQuoteResponse
     {
         try {
-            $this->requestAuthenticator->authenticate($ctx, 'pricing:quote');
+            $principal = $this->requestAuthenticator->authenticate($ctx, 'pricing:quote');
+            assert($principal->tenantId !== null);
+
             $quote = ($this->handler)(new CalculateQuoteCommand(
+                tenantId: $principal->tenantId,
                 vehicleId: trim($request->getVehicleId()),
                 vehiclePrice: trim($request->getVehiclePrice()),
                 downPayment: trim($request->getDownPayment()),
