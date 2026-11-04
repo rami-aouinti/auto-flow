@@ -59,14 +59,22 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 
 ## Distributed tracing quick start
 
-The Offer and Pricing services are small Symfony 7.4 demonstration applications. They are
-not yet the production Offer and Pricing bounded contexts and the returned price is static
-demo data.
+The Offer and Pricing services are Symfony 7.4 applications with independent Composer projects.
+Pricing now exposes a first domain-backed quote calculation endpoint. The older Offer → Pricing
+GET path remains available for tracing compatibility and still returns clearly labelled static demo data.
 
 Trigger one request across both services:
 
 ~~~bash
 curl http://localhost:8081/api/offers/demo-vehicle-001
+~~~
+
+Calculate an illustrative lease quote directly through Pricing:
+
+~~~bash
+curl -X POST http://localhost:8082/api/pricing/quotes \\
+  -H 'Content-Type: application/json' \\
+  -d '{"vehicleId":"vehicle-001","vehiclePrice":"30000.00","downPayment":"3000.00","residualValue":"9000.00","currency":"EUR","durationMonths":36,"annualInterestRateBasisPoints":500}'
 ~~~
 
 Check both health endpoints:

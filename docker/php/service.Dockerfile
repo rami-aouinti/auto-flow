@@ -2,8 +2,8 @@ FROM php:8.4-cli-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        unzip zip libicu-dev libcurl4-openssl-dev libzip-dev \
-    && docker-php-ext-install -j"$(nproc)" intl curl opcache zip \
+        unzip zip libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev \
+    && docker-php-ext-install -j"$(nproc)" intl curl mbstring opcache zip \
     && pecl install opentelemetry \
     && docker-php-ext-enable opentelemetry \
     && apt-get clean \
@@ -12,10 +12,11 @@ RUN apt-get update \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 ARG SERVICE_PATH
+ARG COMPOSER_NO_DEV=--no-dev
 WORKDIR /app
 
 COPY ${SERVICE_PATH}/composer.json ./composer.json
-RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts
+RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-progress --no-scripts
 
 COPY ${SERVICE_PATH}/ ./
 
