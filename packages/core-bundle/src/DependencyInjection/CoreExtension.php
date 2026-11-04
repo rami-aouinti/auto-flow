@@ -39,7 +39,9 @@ final class CoreExtension extends Extension
         if ($authentication['enabled']) {
             foreach (['issuer', 'audience', 'jwks_uri'] as $required) {
                 if (!is_string($authentication[$required]) || trim($authentication[$required]) === '') {
-                    throw new InvalidArgumentException(sprintf('Core JWT authentication requires a non-empty "%s".', $required));
+                    throw new InvalidArgumentException(
+                        sprintf('Core JWT authentication requires a non-empty "%s".', $required),
+                    );
                 }
             }
         }
