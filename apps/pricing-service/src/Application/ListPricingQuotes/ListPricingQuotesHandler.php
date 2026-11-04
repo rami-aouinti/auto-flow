@@ -16,8 +16,12 @@ final readonly class ListPricingQuotesHandler
     /**
      * @return list<\App\Domain\Model\PricingQuote>
      */
-    public function __invoke(string $tenantId, int $limit = 50, int $offset = 0): array
-    {
-        return $this->quoteRepository->findAll($tenantId, $limit, $offset);
+    public function __invoke(
+        string $tenantId,
+        ?string $ownerId,
+        int $limit = 50,
+        int $offset = 0,
+    ): array {
+        return $this->quoteRepository->findAll($tenantId, $ownerId, $limit, $offset);
     }
 }
