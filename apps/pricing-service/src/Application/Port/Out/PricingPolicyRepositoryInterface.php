@@ -12,5 +12,7 @@ interface PricingPolicyRepositoryInterface
 
     public function findActive(string $tenantId): ?PricingPolicy;
 
+    public function findLatest(string $tenantId): ?PricingPolicy;
+
     public function findByVersion(string $tenantId, int $version): ?PricingPolicy;
 }
