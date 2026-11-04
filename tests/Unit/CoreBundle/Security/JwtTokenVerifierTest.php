@@ -39,18 +39,43 @@ final class JwtTokenVerifierTest extends TestCase
 
     public function testItRejectsAnEmptyTenantIdentifier(): void
     {
-        [$verifier, $token] = $this->createVerifier([
+        $this->assertInvalidTenantIdentifier(' ');
+    }
+
+    public function testItRejectsAMalformedTenantIdentifier(): void
+    {
+        $this->assertInvalidTenantIdentifier('tenant/acme');
+    }
+
+    public function testItRejectsAnOverlongKeyIdentifierBeforeFetchingJwks(): void
+    {
+        $keyPair = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => 2048,
+        ]);
+        self::assertNotFalse($keyPair);
+
+        $token = JWT::encode([
             'iss' => 'https://identity.autoflow.test/realms/autoflow',
             'aud' => ['autoflow-pricing'],
             'sub' => 'user-123',
-            'tenant_id' => ' ',
             'iat' => time(),
             'exp' => time() + 300,
-        ]);
+        ], $keyPair, 'RS256', str_repeat('a', 129));
 
-        $this->expectException(InvalidTokenException::class);
+        $httpClient = new MockHttpClient();
+        $verifier = new JwtTokenVerifier(
+            new JwksKeyProvider($httpClient, 'https://identity.autoflow.test/jwks'),
+            'https://identity.autoflow.test/realms/autoflow',
+            'autoflow-pricing',
+        );
 
-        $verifier->verify($token);
+        try {
+            $verifier->verify($token);
+            self::fail('An overlong kid must be rejected.');
+        } catch (InvalidTokenException) {
+            self::assertSame(0, $httpClient->getRequestsCount());
+        }
     }
 
     public function testItRefreshesJwksWhenKeycloakRotatesToANewKeyId(): void
@@ -113,6 +138,24 @@ final class JwtTokenVerifierTest extends TestCase
 
         $this->expectException(InvalidTokenException::class);
 
+        $verifier->verify($token);
+    }
+
+    /**
+     * @param array<string, mixed> $claims
+     */
+    private function assertInvalidTenantIdentifier(string $tenantId): void
+    {
+        [$verifier, $token] = $this->createVerifier([
+            'iss' => 'https://identity.autoflow.test/realms/autoflow',
+            'aud' => ['autoflow-pricing'],
+            'sub' => 'user-123',
+            'tenant_id' => $tenantId,
+            'iat' => time(),
+            'exp' => time() + 300,
+        ]);
+
+        $this->expectException(InvalidTokenException::class);
         $verifier->verify($token);
     }
 
