@@ -24,7 +24,7 @@ final class LeasePaymentCalculator
         $monthlyRate = $terms->annualInterestRateBasisPoints / 10_000 / 12;
         $financeableAmount = $terms->vehiclePrice->minorUnits - $terms->downPayment->minorUnits;
 
-        if ($monthlyRate === 0.0) {
+        if ($terms->annualInterestRateBasisPoints === 0) {
             $monthlyAmount = ($financeableAmount - $terms->residualValue->minorUnits) / $terms->durationMonths;
         } else {
             $discountFactor = (1 + $monthlyRate) ** (-$terms->durationMonths);
