@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\CalculateQuote;
 
+use App\Application\Port\Out\PricingQuoteRepositoryInterface;
+use App\Application\Port\Out\QuoteIdGeneratorInterface;
 use App\Domain\Model\PricingQuote;
 use App\Domain\Service\LeasePaymentCalculator;
 use App\Domain\ValueObject\LeaseTerms;
@@ -16,6 +18,8 @@ final readonly class CalculateQuoteHandler
 {
     public function __construct(
         private LeasePaymentCalculator $calculator,
+        private PricingQuoteRepositoryInterface $quoteRepository,
+        private QuoteIdGeneratorInterface $quoteIdGenerator,
     ) {
     }
 
@@ -31,6 +35,15 @@ final readonly class CalculateQuoteHandler
             annualInterestRateBasisPoints: $command->annualRateBps,
         );
 
-        return $this->calculator->calculate($command->tenantId, $command->vehicleId, $terms);
+        $quote = $this->calculator->calculate(
+            $this->quoteIdGenerator->generate(),
+            $command->tenantId,
+            $command->vehicleId,
+            $terms,
+        );
+
+        $this->quoteRepository->save($quote);
+
+        return $quote;
     }
 }
