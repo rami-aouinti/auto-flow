@@ -8,6 +8,7 @@ use AutoFlow\CoreBundle\Context\CorrelationContext;
 use AutoFlow\CoreBundle\Infrastructure\Messenger\CorrelationIdMiddleware;
 use AutoFlow\CoreBundle\Messaging\CorrelationIdStamp;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
@@ -19,18 +20,21 @@ final class CorrelationIdMiddlewareTest extends TestCase
         $context = new CorrelationContext();
         $context->set('outer-request');
         $middleware = new CorrelationIdMiddleware($context);
-        $message = new \stdClass();
+        $message = new stdClass();
 
         $next = $this->createMock(MiddlewareInterface::class);
         $next->expects(self::once())
             ->method('handle')
-            ->with(self::callback(static function (Envelope $envelope): bool {
-                $stamp = $envelope->last(CorrelationIdStamp::class);
+            ->with(
+                self::callback(static function (Envelope $envelope): bool {
+                    $stamp = $envelope->last(CorrelationIdStamp::class);
 
-                return $stamp instanceof CorrelationIdStamp
-                    && $stamp->correlationId === 'outer-request';
-            }))
-            ->willReturnCallback(static function (Envelope $envelope): Envelope {
+                    return $stamp instanceof CorrelationIdStamp
+                        && $stamp->correlationId === 'outer-request';
+                }),
+                self::isInstanceOf(StackInterface::class),
+            )
+            ->willReturnCallback(static function (Envelope $envelope, StackInterface $stack): Envelope {
                 return $envelope;
             });
 
@@ -48,16 +52,19 @@ final class CorrelationIdMiddlewareTest extends TestCase
         $context = new CorrelationContext();
         $context->set('outer-request');
         $middleware = new CorrelationIdMiddleware($context);
-        $envelope = (new Envelope(new \stdClass()))->with(new CorrelationIdStamp('message-123'));
+        $envelope = (new Envelope(new stdClass()))->with(new CorrelationIdStamp('message-123'));
 
         $next = $this->createMock(MiddlewareInterface::class);
         $next->expects(self::once())
             ->method('handle')
-            ->with(self::callback(static function (Envelope $received) use ($context): bool {
-                self::assertSame('message-123', $context->get());
+            ->with(
+                self::callback(static function (Envelope $received) use ($context): bool {
+                    self::assertSame('message-123', $context->get());
 
-                return $received->last(CorrelationIdStamp::class) instanceof CorrelationIdStamp;
-            }))
+                    return $received->last(CorrelationIdStamp::class) instanceof CorrelationIdStamp;
+                }),
+                self::isInstanceOf(StackInterface::class),
+            )
             ->willReturnArgument(0);
 
         $stack = $this->createMock(StackInterface::class);
