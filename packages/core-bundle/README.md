@@ -62,12 +62,15 @@ The bundle aliases `ClockInterface` to `SystemClock` and `EventBusInterface` to 
 
 ## Runtime dependencies
 
-The bundle requires:
-- `roadrunner/http` and `nyholm/psr7` for the RoadRunner HTTP worker;
-- `roadrunner/grpc` for the gRPC server runner;
-- `symfony/psr-http-message-bridge` for PSR-7 / HttpFoundation conversion.
+RoadRunner and Protobuf are optional adapters. The base bundle does not require their runtime libraries. Add only the packages needed by a service:
 
-Each service must include its own RoadRunner binary and configuration. The package does not silently replace a service's HTTP runtime. Runtime migration is complete only after that service has a registered gRPC adapter and HTTP/gRPC integration tests.
+```bash
+composer require roadrunner/http nyholm/psr7 symfony/psr-http-message-bridge
+composer require roadrunner/grpc # only for the gRPC server runner
+composer require google/protobuf # only for Protobuf messages
+```
+
+Their classes are excluded from automatic service discovery so a service that does not install these packages can still compile its Symfony container. Instantiate/register the relevant adapter explicitly in the service that uses it. Each service must include its own RoadRunner binary and configuration. Runtime migration is complete only after that service has a registered gRPC adapter and HTTP/gRPC integration tests.
 
 ## RoadRunner HTTP worker
 
@@ -125,20 +128,31 @@ grpc:
 
 The shared `PlatformHealthService/Ping` contract is a transport smoke check only. Business RPCs, their `.proto` files and generated adapters remain service-owned and must delegate to that service's Application handlers. Do not expose internal gRPC listeners publicly without an explicit network/security requirement.
 
+## HTTP Problem Details
+
+Use `ProblemDetailsFactory` for a safe, standardized client error response:
+
+```php
+return $problemDetailsFactory->create(
+    422,
+    'Unprocessable Content',
+    'The requested vehicle configuration is invalid.',
+    'https://api.example.com/problems/invalid-vehicle-configuration',
+    '/api/v1/quotes',
+    ['errorCode' => 'INVALID_CONFIGURATION'],
+);
+```
+
+The factory rejects non-error HTTP statuses, empty titles and extension members that overwrite standard Problem Details fields. Never expose stack traces, SQL errors, credentials or internal exception messages in public details.
+
 ## Serialization
 
 Application code depends on `SerializerInterface`. Infrastructure supplies:
 - `JsonSerializer` for REST payloads and JSON event envelopes;
-- `ProtobufSerializer` for generated Protobuf messages at gRPC boundaries.
+- `ProtobufSerializer` for generated Protobuf messages at gRPC boundaries (register it explicitly when google/protobuf is installed).
 
-For Protobuf decoding, pass the expected generated message class as the second argument:
+`JsonSerializer::decode()` returns native PHP values. It rejects a non-null target class instead of silently ignoring it; typed DTO hydration belongs to an explicit mapper or a dedicated serializer adapter. Never deserialize an arbitrary class name from an untrusted payload. Generated Protobuf classes must be mapped to application DTOs; Domain entities are never serialized directly.
 
-```php
-$payload = $serializer->encode($requestMessage);
-$request = $serializer->decode($payload, CalculateQuoteRequest::class);
-```
-
-Never deserialize an arbitrary class name supplied by an untrusted payload. Generated Protobuf classes must be mapped to application DTOs. Domain entities are never serialized directly.
 
 ## JWT authentication boundary
 
@@ -148,11 +162,25 @@ The bundle does not issue tokens, store passwords, own user or tenant records, d
 
 Offer uses a dedicated OAuth2 Client Credentials identity to call Pricing. It requests a Pricing-audience token and caches it until shortly before expiry; it does not forward an incoming user's bearer token. Production deployments must inject unique secrets through a secret manager and use TLS.
 
+## Messenger correlation propagation
+
+The package provides `CorrelationIdStamp` and `CorrelationIdMiddleware`. Enable the middleware on each relevant bus while retaining Symfony's default middleware:
+
+```yaml
+framework:
+    messenger:
+        buses:
+            messenger.bus.default:
+                middleware:
+                    - id: AutoFlow\\CoreBundle\\Infrastructure\\Messenger\\CorrelationIdMiddleware
+```
+
+The middleware attaches a stamp when absent, reuses an incoming stamp and restores the previous context after handling. Configure it on every bus that needs propagation.
+
 ## Correlation and worker safety
 
-Correlation IDs are distinct from W3C trace IDs, tenant IDs and authenticated principals. The context supports scoped execution and restores the previous value in a `finally` block. HTTP context is also cleared at Symfony's `kernel.finish_request` event so a long-running RoadRunner worker cannot leak one request's ID into the next request.
+Correlation IDs are distinct from W3C trace IDs, tenant IDs and authenticated principals. The HTTP subscriber stores and restores the previous context at Symfony's `kernel.finish_request` event so a long-running worker cannot leak one request's ID into the next request.
 
-Messenger middleware adds an ID when a message is dispatched without an HTTP request and restores the previous worker context after handling.
 
 ## Readiness checks
 
