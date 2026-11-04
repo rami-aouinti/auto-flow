@@ -33,7 +33,7 @@ final readonly class GrpcRequestAuthenticator
         bool $tenantRequired = true,
     ): AuthenticatedPrincipal {
         $authorization = $this->metadataValue($context, 'authorization');
-        if ($authorization === null || preg_match('/^Bearer\s+([^\s]+)$/iD', $authorization, $matches) !== 1) {
+        if ($authorization === null || preg_match('/^Bearer\\s+([^\\s]+)$/iD', $authorization, $matches) !== 1) {
             throw new InvalidTokenException('A valid bearer token is required for this gRPC method.');
         }
 
@@ -53,11 +53,27 @@ final readonly class GrpcRequestAuthenticator
     }
 
     /**
+     * RoadRunner stores incoming request headers under the "metadata" context
+     * value. Read that map first; retain direct lookup as a compatibility fallback.
+     *
      * @param non-empty-string $key
      */
     private function metadataValue(ContextInterface $context, string $key): ?string
     {
-        $value = $context->getValue($key);
+        $metadata = $context->getValue('metadata');
+        if (is_array($metadata)) {
+            foreach ($metadata as $metadataKey => $value) {
+                if (is_string($metadataKey) && strcasecmp($metadataKey, $key) === 0) {
+                    return $this->singleMetadataValue($value);
+                }
+            }
+        }
+
+        return $this->singleMetadataValue($context->getValue($key));
+    }
+
+    private function singleMetadataValue(mixed $value): ?string
+    {
         if (is_array($value)) {
             if (count($value) !== 1) {
                 return null;
