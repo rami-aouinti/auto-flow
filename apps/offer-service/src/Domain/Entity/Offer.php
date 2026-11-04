@@ -129,7 +129,6 @@ final class Offer
             throw new InvalidOfferTransition('An expired offer cannot be accepted.');
         }
 
-        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Accepted;
     }
 
@@ -141,7 +140,6 @@ final class Offer
             throw new InvalidOfferTransition('An offer can only be rejected during its validity period.');
         }
 
-        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Rejected;
     }
 
@@ -155,7 +153,6 @@ final class Offer
             throw new InvalidOfferTransition('An offer cannot expire before its expiration time.');
         }
 
-        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Expired;
         $this->record(new OfferExpired(
             eventId: (string) OfferId::generate(),
@@ -175,7 +172,6 @@ final class Offer
             throw new InvalidOfferTransition('Only draft or published offers can be withdrawn.');
         }
 
-        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Withdrawn;
     }
 
