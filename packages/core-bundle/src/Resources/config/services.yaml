@@ -13,9 +13,6 @@ services:
     AutoFlow\CoreBundle\Http\Correlation\CorrelationIdSubscriber:
         arguments:
             $headerName: '%autoflow_core.correlation_header%'
-        tags:
-            - { name: kernel.event_subscriber }
-        calls: []
 
     AutoFlow\CoreBundle\Http\Client\CorrelationIdHttpClient:
         decorates: http_client
@@ -26,3 +23,5 @@ services:
     AutoFlow\CoreBundle\Health\HealthController:
         arguments:
             $checks: !tagged_iterator autoflow_core.health_check
+        tags:
+            - controller.service_arguments
