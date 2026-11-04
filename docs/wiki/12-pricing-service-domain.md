@@ -130,6 +130,8 @@ Use `apps/pricing-service/bin/migrate.sh` with `DATABASE_ADMIN_URL` to apply una
 
 Deterministic demo data lives in `apps/pricing-service/fixtures/pricing_quotes_demo.sql`. Reusable PHPUnit fixture factories live in `apps/pricing-service/tests/Fixtures/`.
 
+For local Docker development, apply pending migrations from the repository root with `DATABASE_ADMIN_URL` set to the PostgreSQL administrator connection, then seed the Swagger demo data with `docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow < apps/pricing-service/fixtures/pricing_quotes_demo.sql`. Do not remove the persistent PostgreSQL volume to apply migrations.
+
 The role password in the role-creation SQL and `PRICING_DATABASE_URL` must remain aligned. Keep local credentials out of production configuration and inject production secrets through the deployment secret manager.
 
 ## 6. Security requirements
