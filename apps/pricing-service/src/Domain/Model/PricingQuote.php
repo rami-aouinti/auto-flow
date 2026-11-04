@@ -6,6 +6,9 @@ namespace App\Domain\Model;
 
 use App\Domain\ValueObject\Money;
 
+/**
+ * @SuppressWarnings(PHPMD.LongVariable)
+ */
 final readonly class PricingQuote
 {
     public function __construct(
