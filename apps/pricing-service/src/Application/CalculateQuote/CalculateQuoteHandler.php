@@ -31,6 +31,6 @@ final readonly class CalculateQuoteHandler
             annualInterestRateBasisPoints: $command->annualRateBps,
         );
 
-        return $this->calculator->calculate($command->vehicleId, $terms);
+        return $this->calculator->calculate($command->tenantId, $command->vehicleId, $terms);
     }
 }
