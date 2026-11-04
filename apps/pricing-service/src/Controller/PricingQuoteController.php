@@ -36,6 +36,13 @@ final class PricingQuoteController
         if ($quote === null) {
             return new JsonResponse(['error' => 'quote_not_found'], JsonResponse::HTTP_NOT_FOUND);
         }
+        if ($quote->isExpired()) {
+            return new JsonResponse([
+                'error' => 'quote_expired',
+                'quoteId' => $quote->quoteId,
+                'expiredAt' => $quote->expiresAt->format(DATE_ATOM),
+            ], JsonResponse::HTTP_GONE);
+        }
 
         $response = new JsonResponse($this->quoteToArray($quote));
         $response->headers->set('Cache-Control', 'no-store');
@@ -127,6 +134,10 @@ final class PricingQuoteController
             'durationMonths' => $quote->durationMonths,
             'annualInterestRateBasisPoints' => $quote->annualInterestRateBasisPoints,
             'calculationVersion' => $quote->calculationVersion,
+            'vehiclePrice' => $quote->vehiclePrice?->toDecimal(),
+            'downPayment' => $quote->downPayment?->toDecimal(),
+            'createdAt' => $quote->createdAt->format(DATE_ATOM),
+            'expiresAt' => $quote->expiresAt->format(DATE_ATOM),
         ];
     }
 }
