@@ -49,7 +49,7 @@ final class GrpcMetadata
     public function allowListed(array $metadata, array $allowedKeys): array
     {
         $normalized = $this->normalize($metadata);
-        $allowed = array_fill_keys(array_map('strtolower', $allowedKeys), true);
+        $allowed = array_fill_keys(array_map(strtolower(...), $allowedKeys), true);
 
         return array_intersect_key($normalized, $allowed);
     }
