@@ -52,6 +52,9 @@ paths:
                     calculationVersion: lease-annuity-v1
                     createdAt: '2026-11-04T12:00:00+00:00'
                     expiresAt: '2026-11-11T12:00:00+00:00'
+                    policyId: '123e4567-e89b-42d3-a456-426614174000'
+                    policyVersion: 1
+                    expired: false
         '401':
           description: Missing or invalid bearer token
         '403':
