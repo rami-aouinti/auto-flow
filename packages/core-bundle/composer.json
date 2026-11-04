@@ -13,14 +13,14 @@
     "symfony/http-kernel": "7.4.*",
     "symfony/messenger": "7.4.*",
     "symfony/routing": "7.4.*",
-    "symfony/yaml": "7.4.*",
-    "roadrunner/grpc": "^3.8",
-    "roadrunner/http": "^4.0",
-    "nyholm/psr7": "^1.8",
-    "symfony/psr-http-message-bridge": "7.4.*"
+    "symfony/yaml": "7.4.*"
   },
   "suggest": {
-    "google/protobuf": "Required when using the ProtobufSerializer adapter."
+    "google/protobuf": "Required when using the ProtobufSerializer adapter.",
+    "roadrunner/grpc": "Required when using the RoadRunner gRPC server adapter.",
+    "roadrunner/http": "Required when using the RoadRunner HTTP worker adapter.",
+    "nyholm/psr7": "Required by the RoadRunner HTTP worker adapter.",
+    "symfony/psr-http-message-bridge": "Required by the RoadRunner HTTP worker adapter."
   },
   "autoload": {
     "psr-4": {
