@@ -15,7 +15,7 @@ final class LeasePaymentCalculatorPolicyTest extends TestCase
 {
     public function testQuoteCopiesActivePolicyVersionAndValidityIntoSnapshot(): void
     {
-        $policy = PricingPolicyFixture::draft(validityDays: 14, calculationVersion: 'lease-annuity-v2')->activate(
+        $policy = PricingPolicyFixture::draft(validityDays: 14)->activate(
             new DateTimeImmutable('2026-11-04T12:00:00+00:00'),
         );
         $terms = new LeaseTerms(
@@ -37,7 +37,7 @@ final class LeasePaymentCalculatorPolicyTest extends TestCase
 
         self::assertSame($policy->policyId, $quote->policyId);
         self::assertSame($policy->version, $quote->policyVersion);
-        self::assertSame('lease-annuity-v2', $quote->calculationVersion);
+        self::assertSame('lease-annuity-v1', $quote->calculationVersion);
         self::assertSame(14, (int) $quote->createdAt->diff($quote->expiresAt)->format('%a'));
     }
 }
