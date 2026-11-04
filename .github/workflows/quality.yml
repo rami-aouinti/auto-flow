@@ -81,7 +81,39 @@ jobs:
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev pricing-service php bin/console nelmio:apidoc:dump --format=json > /tmp/pricing-openapi.json
-          php -r '$offer = json_decode(file_get_contents("/tmp/offer-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $pricing = json_decode(file_get_contents("/tmp/pricing-openapi.json"), true, flags: JSON_THROW_ON_ERROR); $offerPaths = $offer["paths"] ?? []; if (!isset($offerPaths["/api/offers/{vehicleId}"]["post"], $offerPaths["/api/offers/{offerId}"]["get"], $offerPaths["/api/offers/{offerId}/publish"]["post"], $offerPaths["/api/offers/{offerId}/accept"]["post"], $offerPaths["/api/offers/{offerId}/reject"]["post"], $pricing["paths"]["/api/pricing/quotes"]["post"], $pricing["paths"]["/api/pricing/quotes"]["get"], $pricing["paths"]["/api/pricing/quotes/{quoteId}"]["get"], $pricing["paths"]["/api/pricing/quotes/{quoteId}"]["delete"], $pricing["paths"]["/ready"]["get"])) { fwrite(STDERR, "Expected Offer lifecycle or Pricing REST paths are missing from the generated OpenAPI documents.\n"); exit(1); }'
+          php -r '
+          $offer = json_decode(file_get_contents("/tmp/offer-openapi.json"), true, flags: JSON_THROW_ON_ERROR);
+          $pricing = json_decode(file_get_contents("/tmp/pricing-openapi.json"), true, flags: JSON_THROW_ON_ERROR);
+          $offerPaths = $offer["paths"] ?? [];
+          $pricingPaths = $pricing["paths"] ?? [];
+          $requiredPaths = [
+              isset($offerPaths["/api/offers/{vehicleId}"]["post"]),
+              isset($offerPaths["/api/offers/{offerId}"]["get"]),
+              isset($offerPaths["/api/offers/{offerId}/publish"]["post"]),
+              isset($offerPaths["/api/offers/{offerId}/accept"]["post"]),
+              isset($offerPaths["/api/offers/{offerId}/reject"]["post"]),
+              isset($pricingPaths["/api/pricing/quotes"]["post"]),
+              isset($pricingPaths["/api/pricing/quotes"]["get"]),
+              isset($pricingPaths["/api/pricing/quotes/{quoteId}"]["get"]),
+              isset($pricingPaths["/api/pricing/quotes/{quoteId}"]["delete"]),
+              isset($pricingPaths["/ready"]["get"]),
+          ];
+          $bearer = $pricing["components"]["securitySchemes"]["bearerAuth"] ?? null;
+          $quoteSchema = $pricing["components"]["schemas"]["PricingQuote"] ?? null;
+          $postSchema = $pricingPaths["/api/pricing/quotes"]["post"]["requestBody"]["content"]["application/json"]["schema"]["$ref"] ?? null;
+          $healthSecurity = $pricingPaths["/health"]["get"]["security"] ?? null;
+          $readySecurity = $pricingPaths["/ready"]["get"]["security"] ?? null;
+          if (in_array(false, $requiredPaths, true)
+              || ($bearer["scheme"] ?? null) !== "bearer"
+              || ($bearer["type"] ?? null) !== "http"
+              || !is_array($quoteSchema)
+              || $postSchema !== "#/components/schemas/PricingQuoteRequest"
+              || $healthSecurity !== []
+              || $readySecurity !== []) {
+              fwrite(STDERR, "Generated OpenAPI is missing required Offer/Pricing operations, Pricing schemas, JWT bearer auth, or public health/readiness definitions.\\n");
+              exit(1);
+          }
+          '
       - name: Run PHPStan analysis
         run: composer phpstan
       - name: Run quality checks
