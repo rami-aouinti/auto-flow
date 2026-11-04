@@ -24,7 +24,7 @@ final readonly class OfferController
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $pricingServiceUrl,
-        private KeycloakClientCredentialsTokenProvider $pricingTokenProvider,
+        private KeycloakTokenExchangeProvider $pricingTokenExchange,
         private TenantContext $tenantContext,
     ) {
     }
@@ -40,7 +40,7 @@ final readonly class OfferController
 
     #[RequiresScope('offers:read')]
     #[Route('/api/offers/{vehicleId}', name: 'offer_show', methods: ['GET'])]
-    public function show(string $vehicleId): JsonResponse
+    public function show(string $vehicleId, Request $request): JsonResponse
     {
         $span = Globals::tracerProvider()
             ->getTracer('autoflow.offer-service', '1.0.0')
@@ -60,7 +60,7 @@ final readonly class OfferController
                     rawurlencode($vehicleId),
                 ),
                 [
-                    'auth_bearer' => $this->pricingTokenProvider->getAccessToken(),
+                    'auth_bearer' => $this->pricingTokenExchange->exchangeForPricing($this->requireBearerToken($request)),
                     'headers' => ['X-Tenant-ID' => $this->tenantContext->requireTenantId()],
                 ],
             );
