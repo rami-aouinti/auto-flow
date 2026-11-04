@@ -40,7 +40,7 @@ final class PricingPolicyRepositoryTest extends TestCase
         $active = $draft->activate(new \DateTimeImmutable('now'));
         $repository->save($active);
 
-        $loaded = $repository->findActive('tenant-policy-test');
+        $loaded = $repository->findActive($tenantId);
         self::assertNotNull($loaded);
         self::assertSame($draft->version, $loaded->version);
         self::assertSame('active', $loaded->status);
