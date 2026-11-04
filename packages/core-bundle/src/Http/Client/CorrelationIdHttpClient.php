@@ -25,31 +25,7 @@ final readonly class CorrelationIdHttpClient implements HttpClientInterface
         $correlationId = $this->context->get();
 
         if ($correlationId !== null) {
-            $headers = $options['headers'] ?? [];
-
-            if (!is_array($headers)) {
-                $headers = [];
-            }
-
-            $hasHeader = false;
-
-            foreach ($headers as $name => $value) {
-                $candidate = is_string($name) ? $name : (is_string($value) ? strtok($value, ':') : '');
-                if (is_string($candidate) && strcasecmp(trim($candidate), $this->headerName) === 0) {
-                    $hasHeader = true;
-                    break;
-                }
-            }
-
-            if (!$hasHeader) {
-                if (array_is_list($headers)) {
-                    $headers[] = $this->headerName . ': ' . $correlationId;
-                } else {
-                    $headers[$this->headerName] = $correlationId;
-                }
-
-                $options['headers'] = $headers;
-            }
+            $options = $this->addCorrelationHeader($options, $correlationId);
         }
 
         return $this->inner->request($method, $url, $options);
@@ -68,5 +44,44 @@ final readonly class CorrelationIdHttpClient implements HttpClientInterface
     public function withOptions(array $options): static
     {
         return new self($this->inner->withOptions($options), $this->context, $this->headerName);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function addCorrelationHeader(array $options, string $correlationId): array
+    {
+        $headers = $options['headers'] ?? [];
+
+        if (!is_array($headers) || $this->containsCorrelationHeader($headers)) {
+            return $options;
+        }
+
+        if (array_is_list($headers)) {
+            $headers[] = $this->headerName . ': ' . $correlationId;
+        } else {
+            $headers[$this->headerName] = $correlationId;
+        }
+
+        $options['headers'] = $headers;
+
+        return $options;
+    }
+
+    /**
+     * @param array<array-key, mixed> $headers
+     */
+    private function containsCorrelationHeader(array $headers): bool
+    {
+        foreach ($headers as $name => $value) {
+            $candidate = is_string($name) ? $name : (is_string($value) ? strtok($value, ':') : '');
+
+            if (is_string($candidate) && strcasecmp(trim($candidate), $this->headerName) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
