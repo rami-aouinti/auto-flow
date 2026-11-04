@@ -7,6 +7,7 @@ namespace App\Infrastructure\Persistence;
 use App\Application\Port\Out\PricingQuoteRepositoryInterface;
 use App\Domain\Model\PricingQuote;
 use App\Domain\ValueObject\Money;
+use InvalidArgumentException;
 use LogicException;
 use PDO;
 use Throwable;
@@ -148,6 +149,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
 
     /**
      * @param array<string, mixed> $row
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     private static function hydrate(array $row): PricingQuote
     {
