@@ -53,7 +53,7 @@ OpenTelemetry remains responsible for trace/span context propagation through W3C
 
 RoadRunner owns the process lifecycle and exposes HTTP and gRPC listeners. The HTTP worker converts PSR-7 messages at the outer boundary and invokes the normal Symfony HttpKernel. The gRPC worker registers generated service interfaces and service-owned adapters. The shared `PlatformHealthService/Ping` method verifies gRPC transport startup.
 
-The next service-specific step is to add versioned `.proto` contracts for Pricing and Offer business operations. Each gRPC adapter must map its Protobuf request to the same Application command/handler used by REST; it must not reimplement pricing or offer rules. Generated messages must never enter Domain code. Internal gRPC listeners are not intended to be public endpoints.
+The Pricing service now owns a versioned `autoflow.pricing.v1.PricingService/CalculateQuote` contract. Its adapter maps Protobuf values into `CalculateQuoteCommand` and delegates to the same `CalculateQuoteHandler` used by the REST controller. Money crosses the transport as decimal strings, not floating-point numbers. Offer business RPCs and the Offer → Pricing gRPC client remain the next step. Generated messages must never enter Domain code. Internal gRPC listeners are not intended to be public endpoints.
 
 Application depends on `SerializerInterface`; Infrastructure provides JSON and Protobuf codecs. The Protobuf decoder requires an explicit generated message class and must never instantiate a class name taken from an untrusted payload.
 
@@ -130,7 +130,7 @@ Messenger consumers opt in by adding `AutoFlow\\CoreBundle\\Messenger\\Correlati
 The root PHPUnit suite includes tests for the context lifecycle, serializers, readiness behavior, gRPC smoke service and status mapping. CI validates Composer manifests, runs quality checks and builds both RoadRunner service images. End-to-end gRPC calls and business RPCs still require their service-specific contracts and tests.
 
 Next increments:
-1. Add service-owned Pricing and Offer `.proto` contracts with business adapters delegating to existing Application handlers.
+1. Add the Offer service `.proto` contract and business adapter, delegating to existing Application handlers.
 2. Add a PHP gRPC client for internal Offer → Pricing calls, including deadlines, metadata propagation and safe status mapping; retain REST as an available interface.
 3. Add end-to-end RoadRunner HTTP/gRPC integration tests and a test proving both transports invoke the same application handler.
 4. Add functional tests for correlation propagation and Messenger context restoration.
