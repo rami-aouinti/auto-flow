@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\CoreBundle\\Infrastructure\\Messenger;
+namespace AutoFlow\CoreBundle\Infrastructure\Messenger;
 
-use AutoFlow\\CoreBundle\\Application\\Messaging\\EventBusInterface;
-use AutoFlow\\CoreBundle\\Messaging\\IntegrationEvent;
-use Symfony\\Component\\Messenger\\MessageBusInterface;
+use AutoFlow\CoreBundle\Application\Messaging\EventBusInterface;
+use AutoFlow\CoreBundle\Messaging\IntegrationEvent;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final readonly class MessengerEventBus implements EventBusInterface
 {
