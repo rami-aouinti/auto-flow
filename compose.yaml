@@ -83,6 +83,7 @@ services:
       APP_ENV: dev
       APP_DEBUG: "1"
       APP_SECRET: local-only-pricing-service-secret
+      DATABASE_URL: ${PRICING_DATABASE_URL:-postgresql://autoflow:autoflow@postgres:5432/autoflow?serverVersion=16&charset=utf8}
       DEFAULT_URI: http://localhost:8082
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
@@ -97,6 +98,8 @@ services:
       OTEL_PROPAGATORS: tracecontext,baggage
       OTEL_PHP_EXCLUDED_URLS: ^/health$
     depends_on:
+      postgres:
+        condition: service_healthy
       tempo:
         condition: service_started
       keycloak:
@@ -143,7 +146,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-autoflow}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-autoflow}
     ports: ["5432:5432"]
-    volumes: [postgres-data:/var/lib/postgresql/data]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./apps/pricing-service/migrations/Version20261104000100CreatePricingQuotes.sql:/docker-entrypoint-initdb.d/20-pricing-quotes.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
