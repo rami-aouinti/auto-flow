@@ -51,7 +51,7 @@ final class ExpireOffersHandlerTest extends TestCase
 
     public function testRejectsInvalidBatchSizes(): void
     {
-        $repository = new class implements OfferRepositoryInterface {
+        $repository = new class () implements OfferRepositoryInterface {
             public function save(Offer $offer): void
             {
             }
