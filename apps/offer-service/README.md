@@ -63,7 +63,7 @@ The `offer-expiration-worker` checks for due tenants every 30 seconds. It locks 
 
 ## Domain events and transactional outbox
 
-The aggregate records these domain facts:
+The aggregate records transition timestamps (`publishedAt`, `acceptedAt`, `rejectedAt`, `expiredAt`) as well as these domain facts:
 
 - `OfferCreated`
 - `OfferPublished`
@@ -96,10 +96,11 @@ Offer Service owns its persistence role (`autoflow_offer`) and does not access P
 
 On a **new empty PostgreSQL volume**, the Compose initialization scripts create the Offer role, table, outbox table and expiration tenant lookup function automatically.
 
-If the PostgreSQL volume already exists, Docker does not rerun `docker-entrypoint-initdb.d`. Apply the new migration once manually from the repository root (the role and offers table should already exist):
+If the PostgreSQL volume already exists, Docker does not rerun `docker-entrypoint-initdb.d`. Apply both new migrations once manually from the repository root (the role and offers table should already exist):
 
 ```bash
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/offer-service/migrations/Version20261104000500CreateOfferOutbox.sql
+docker compose exec -T postgres psql -U autoflow -d autoflow < apps/offer-service/migrations/Version20261104000600AddOfferLifecycleTimestamps.sql
 ```
 
 Then rebuild and start the Offer API and its two workers:
