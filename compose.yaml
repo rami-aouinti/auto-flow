@@ -39,6 +39,7 @@ services:
       APP_SECRET: local-only-offer-service-secret
       DEFAULT_URI: http://localhost:8081
       PRICING_SERVICE_URL: http://pricing-service:8080
+      OFFER_DATABASE_URL: ${OFFER_DATABASE_URL:-postgresql://autoflow_offer:local-only-offer-password@postgres:5432/autoflow}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/autoflow/protocol/openid-connect/token
@@ -55,6 +56,8 @@ services:
       OTEL_PROPAGATORS: tracecontext,baggage
       OTEL_PHP_EXCLUDED_URLS: ^/health$
     depends_on:
+      postgres:
+        condition: service_healthy
       pricing-service:
         condition: service_healthy
       tempo:
@@ -152,6 +155,8 @@ services:
       - ./apps/pricing-service/migrations/Version20261104000100CreatePricingQuotes.sql:/docker-entrypoint-initdb.d/20-pricing-quotes.sql:ro
       - ./apps/pricing-service/migrations/Version20261104000200AddPricingQuoteSoftDelete.sql:/docker-entrypoint-initdb.d/30-pricing-quote-soft-delete.sql:ro
       - ./apps/pricing-service/migrations/Version20261104000300AddPricingQuoteOwner.sql:/docker-entrypoint-initdb.d/40-pricing-quote-owner.sql:ro
+      - ./apps/offer-service/migrations/00_create_offer_database_role.sql:/docker-entrypoint-initdb.d/50-offer-role.sql:ro
+      - ./apps/offer-service/migrations/Version20261104000400CreateOffers.sql:/docker-entrypoint-initdb.d/60-offers.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s

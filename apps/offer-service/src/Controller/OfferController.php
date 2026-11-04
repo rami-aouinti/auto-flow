@@ -4,10 +4,19 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Application\CreateOffer\CreateOfferCommand;
+use App\Application\CreateOffer\CreateOfferHandler;
+use App\Application\GetOffer\GetOfferHandler;
+use App\Application\PublishOffer\PublishOfferHandler;
+use App\Domain\Entity\Offer;
+use App\Domain\Exception\InvalidOfferTransition;
+use App\Domain\Exception\OfferNotFound;
+use App\Domain\ValueObject\OfferId;
 use App\Security\KeycloakTokenExchangeProvider;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
+use DateTimeImmutable;
 use InvalidArgumentException;
 use LogicException;
 use OpenTelemetry\API\Globals;
@@ -30,6 +39,10 @@ final readonly class OfferController
         private string $pricingServiceUrl,
         private KeycloakTokenExchangeProvider $pricingTokenExchange,
         private TenantContext $tenantContext,
+        private CreateOfferHandler $createOfferHandler,
+        private GetOfferHandler $getOfferHandler,
+        private PublishOfferHandler $publishOfferHandler,
+        private int $offerValidityDays,
     ) {
     }
 
@@ -42,44 +55,83 @@ final readonly class OfferController
         ]);
     }
 
-    #[RequiresScope('offers:read')]
-    #[Route('/api/offers/{vehicleId}', name: 'offer_show', methods: ['GET'])]
-    public function show(string $vehicleId, Request $request): JsonResponse
+
+    #[RequiresScope('offers:quote')]
+    #[Route('/api/offers/{vehicleId}', name: 'offer_create', methods: ['POST'])]
+    public function create(string $vehicleId, Request $request): JsonResponse
     {
         $span = Globals::tracerProvider()
             ->getTracer('autoflow.offer-service', '1.0.0')
-            ->spanBuilder('offer.compose')
+            ->spanBuilder('offer.create')
             ->startSpan();
-
         $scope = $span->activate();
 
         try {
-            $span->setAttribute('vehicle.id', $vehicleId);
-            $pricingToken = $this->pricingTokenExchange->exchangeForPricing(
-                $this->requireBearerToken($request),
-            );
+            if ($this->offerValidityDays < 1 || $this->offerValidityDays > 365) {
+                throw new LogicException('Offer validity must be between 1 and 365 days.');
+            }
 
-            $pricingResponse = $this->httpClient->request(
-                'GET',
-                sprintf(
-                    '%s/api/pricing/%s',
-                    rtrim($this->pricingServiceUrl, '/'),
-                    rawurlencode($vehicleId),
+            $payload = $request->toArray();
+            $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+            if (!$principal instanceof AuthenticatedPrincipal) {
+                throw new LogicException('A verified authenticated principal is required.');
+            }
+
+            $createdAt = new DateTimeImmutable();
+            $expiresAt = $createdAt->modify(sprintf('+%d days', $this->offerValidityDays));
+
+            if (!$expiresAt instanceof DateTimeImmutable) {
+                throw new LogicException('Could not calculate the offer expiration date.');
+            }
+
+            $offer = ($this->createOfferHandler)(new CreateOfferCommand(
+                tenantId: $this->tenantContext->requireTenantId(),
+                createdBy: $principal->subject,
+                subjectAccessToken: $this->requireBearerToken($request),
+                vehicleId: $vehicleId,
+                vehiclePrice: $this->requiredString($payload, 'vehiclePrice'),
+                downPayment: $this->requiredString($payload, 'downPayment'),
+                residualValue: $this->requiredString($payload, 'residualValue'),
+                currency: $this->requiredString($payload, 'currency'),
+                durationMonths: $this->requiredInteger($payload, 'durationMonths'),
+                annualInterestRateBasisPoints: $this->requiredInteger(
+                    $payload,
+                    'annualInterestRateBasisPoints',
                 ),
-                [
-                    'auth_bearer' => $pricingToken,
-                    'headers' => ['X-Tenant-ID' => $this->tenantContext->requireTenantId()],
+                createdAt: $createdAt,
+                expiresAt: $expiresAt,
+            ));
+
+            $span->setAttribute('offer.id', (string) $offer->id());
+            $span->setAttribute('vehicle.id', $vehicleId);
+
+            $response = new JsonResponse([
+                'offerId' => (string) $offer->id(),
+                'vehicleId' => $offer->pricingSnapshot()->vehicleId,
+                'quoteId' => $offer->pricingSnapshot()->quoteId,
+                'status' => $offer->status()->value,
+                'pricing' => [
+                    'monthlyAmount' => $offer->pricingSnapshot()->monthlyAmount,
+                    'totalInstallmentsAmount' => $offer->pricingSnapshot()->totalInstallmentsAmount,
+                    'totalCostIncludingDownPayment' => $offer->pricingSnapshot()->totalCostIncludingDownPayment,
+                    'residualValue' => $offer->pricingSnapshot()->residualValue,
+                    'currency' => $offer->pricingSnapshot()->currency,
+                    'durationMonths' => $offer->pricingSnapshot()->durationMonths,
+                    'annualInterestRateBasisPoints' => $offer->pricingSnapshot()->annualInterestRateBasisPoints,
+                    'calculationVersion' => $offer->pricingSnapshot()->calculationVersion,
                 ],
-            );
+                'createdAt' => $offer->createdAt()->format(DATE_ATOM),
+                'expiresAt' => $offer->expiresAt()->format(DATE_ATOM),
+            ], JsonResponse::HTTP_CREATED);
+            $response->headers->set('Cache-Control', 'no-store');
 
-            $pricing = $pricingResponse->toArray();
-
+            return $response;
+        } catch (InvalidArgumentException $exception) {
             return new JsonResponse([
-                'offerId' => sprintf('demo-%s', $vehicleId),
-                'vehicleId' => $vehicleId,
-                'status' => 'calculated',
-                'pricing' => $pricing,
-            ]);
+                'error' => 'invalid_offer_request',
+                'message' => $exception->getMessage(),
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         } catch (Throwable $exception) {
             $span->setStatus(StatusCode::STATUS_ERROR);
             $span->recordException($exception);
@@ -91,6 +143,67 @@ final readonly class OfferController
         }
     }
 
+    #[RequiresScope('offers:read')]
+    #[Route('/api/offers/{offerId}', name: 'offer_show', methods: ['GET'])]
+    public function show(string $offerId, Request $request): JsonResponse
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new LogicException('A verified authenticated principal is required.');
+        }
+
+        try {
+            $offer = ($this->getOfferHandler)(
+                OfferId::fromString($offerId),
+                $this->tenantContext->requireTenantId(),
+                $principal->subject,
+            );
+        } catch (InvalidArgumentException) {
+            $offer = null;
+        }
+
+        if ($offer === null) {
+            return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $response = new JsonResponse($this->offerPayload($offer));
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    #[RequiresScope('offers:quote')]
+    #[Route('/api/offers/{offerId}/publish', name: 'offer_publish', methods: ['POST'])]
+    public function publish(string $offerId, Request $request): JsonResponse
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new LogicException('A verified authenticated principal is required.');
+        }
+
+        try {
+            $offer = ($this->publishOfferHandler)(
+                OfferId::fromString($offerId),
+                $this->tenantContext->requireTenantId(),
+                $principal->subject,
+                new DateTimeImmutable(),
+            );
+        } catch (InvalidOfferTransition $exception) {
+            return new JsonResponse([
+                'error' => 'invalid_offer_transition',
+                'message' => $exception->getMessage(),
+            ], JsonResponse::HTTP_CONFLICT);
+        } catch (OfferNotFound | InvalidArgumentException) {
+            return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $response = new JsonResponse($this->offerPayload($offer));
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
 
     #[RequiresScope('offers:quote')]
     #[Route('/api/offers/{vehicleId}/quotes', name: 'offer_create_quote', methods: ['POST'])]
@@ -154,6 +267,34 @@ final readonly class OfferController
             $scope->detach();
             $span->end();
         }
+    }
+
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function offerPayload(Offer $offer): array
+    {
+        $snapshot = $offer->pricingSnapshot();
+
+        return [
+            'offerId' => (string) $offer->id(),
+            'quoteId' => $snapshot->quoteId,
+            'vehicleId' => $snapshot->vehicleId,
+            'status' => $offer->status()->value,
+            'pricing' => [
+                'monthlyAmount' => $snapshot->monthlyAmount,
+                'totalInstallmentsAmount' => $snapshot->totalInstallmentsAmount,
+                'totalCostIncludingDownPayment' => $snapshot->totalCostIncludingDownPayment,
+                'residualValue' => $snapshot->residualValue,
+                'currency' => $snapshot->currency,
+                'durationMonths' => $snapshot->durationMonths,
+                'annualInterestRateBasisPoints' => $snapshot->annualInterestRateBasisPoints,
+                'calculationVersion' => $snapshot->calculationVersion,
+            ],
+            'createdAt' => $offer->createdAt()->format(DATE_ATOM),
+            'expiresAt' => $offer->expiresAt()->format(DATE_ATOM),
+        ];
     }
 
     /**
