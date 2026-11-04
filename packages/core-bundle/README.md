@@ -106,7 +106,7 @@ use AutoFlow\CoreBundle\Infrastructure\RoadRunner\GrpcServerRunner;
 
 The gRPC adapter maps Protobuf request messages to application commands and maps application results to Protobuf response messages. Never pass generated messages into Domain methods. Keep protocol errors safe and map them to native gRPC status codes.
 
-`GrpcMetadata::allowListed()` is provided for explicit propagation of operational metadata such as correlation IDs. Do not forward authorization metadata by default. `GrpcDeadline` validates a positive finite timeout duration; the service-specific client adapter must translate it to the selected gRPC client's deadline API.
+`(new GrpcMetadata())->allowListed()` is provided for explicit propagation of operational metadata such as correlation IDs. Do not forward authorization metadata by default. `GrpcDeadline` validates a positive finite timeout duration; the service-specific client adapter must translate it to the selected gRPC client's deadline API.
 
 A typical RoadRunner configuration has independent HTTP and gRPC listeners and worker pools:
 
