@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Service;
 
+use App\Domain\Model\PricingPolicy;
 use App\Domain\Model\PricingQuote;
 use App\Domain\ValueObject\LeaseTerms;
 use App\Domain\ValueObject\Money;
