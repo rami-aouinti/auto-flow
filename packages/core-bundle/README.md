@@ -40,8 +40,8 @@ See [ADR-014](../../docs/adr/ADR-014-core-bundle-v2-clean-architecture.md), [ADR
 Use the interfaces from Application; do not inject Symfony, Doctrine or RoadRunner into Domain/Application handlers.
 
 ```php
-use AutoFlow\\CoreBundle\\Application\\Clock\\ClockInterface;
-use AutoFlow\\CoreBundle\\Application\\Messaging\\EventBusInterface;
+use AutoFlow\CoreBundle\Application\Clock\ClockInterface;
+use AutoFlow\CoreBundle\Application\Messaging\EventBusInterface;
 
 final readonly class RegisterOfferHandler
 {
@@ -77,8 +77,8 @@ Each service must include its own RoadRunner binary and configuration. The packa
 A service entry point can delegate HTTP handling to the shared worker:
 
 ```php
-use App\\Kernel;
-use AutoFlow\\CoreBundle\\Infrastructure\\RoadRunner\\SymfonyHttpWorker;
+use App\Kernel;
+use AutoFlow\CoreBundle\Infrastructure\RoadRunner\SymfonyHttpWorker;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -97,7 +97,7 @@ The worker converts PSR-7 to HttpFoundation only at the transport boundary. The 
 Each service owns its `.proto` files and generated classes. Implement the generated interface in a transport adapter and delegate to the same Application handler used by REST.
 
 ```php
-use AutoFlow\\CoreBundle\\Infrastructure\\RoadRunner\\GrpcServerRunner;
+use AutoFlow\CoreBundle\Infrastructure\RoadRunner\GrpcServerRunner;
 
 (new GrpcServerRunner())->run([
     GeneratedPricingServiceInterface::class => $pricingGrpcAdapter,
