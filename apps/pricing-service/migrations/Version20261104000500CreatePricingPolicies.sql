@@ -13,10 +13,10 @@ CREATE TABLE IF NOT EXISTS pricing_policies (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     published_at TIMESTAMPTZ NULL,
     CONSTRAINT pricing_policies_duration_range CHECK (
-        minimum_duration_months >= 1 AND maximum_duration_months >= minimum_duration_months
+        minimum_duration_months >= 12 AND maximum_duration_months <= 72 AND maximum_duration_months >= minimum_duration_months
     ),
     CONSTRAINT pricing_policies_rate_range CHECK (
-        minimum_annual_rate_bps >= 0 AND maximum_annual_rate_bps >= minimum_annual_rate_bps
+        minimum_annual_rate_bps >= 0 AND maximum_annual_rate_bps <= 2000 AND maximum_annual_rate_bps >= minimum_annual_rate_bps
     ),
     CONSTRAINT pricing_policies_validity_range CHECK (quote_validity_days BETWEEN 1 AND 90),
     CONSTRAINT pricing_policies_tenant_version_unique UNIQUE (tenant_id, version),
