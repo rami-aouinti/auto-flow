@@ -23,7 +23,11 @@ final readonly class PostgresPricingPolicyRepository implements PricingPolicyRep
         $this->withinTenant($policy->tenantId, function (PDO $pdo) use ($policy): void {
             if ($policy->status === 'active') {
                 $retire = $pdo->prepare(
-                    "UPDATE pricing_policies SET status = 'retired' WHERE tenant_id = :tenant AND status = 'active' AND policy_id <> :policy_id",
+                    <<<'SQL'
+                    UPDATE pricing_policies
+                    SET status = 'retired'
+                    WHERE tenant_id = :tenant AND status = 'active' AND policy_id <> :policy_id
+                    SQL,
                 );
                 $retire->execute(['tenant' => $policy->tenantId, 'policy_id' => $policy->policyId]);
             }
