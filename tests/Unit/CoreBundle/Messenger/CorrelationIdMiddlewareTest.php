@@ -8,6 +8,7 @@ use AutoFlow\CoreBundle\Context\CorrelationContext;
 use AutoFlow\CoreBundle\Infrastructure\Messenger\CorrelationIdMiddleware;
 use AutoFlow\CoreBundle\Messaging\CorrelationIdStamp;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Middleware\MiddlewareInterface;
 use Symfony\Component\Messenger\Middleware\StackInterface;
