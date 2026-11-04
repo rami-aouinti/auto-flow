@@ -1,0 +1,12 @@
+core:
+    authentication:
+        enabled: true
+        issuer: '%env(AUTOFLOW_JWT_ISSUER)%'
+        audience: 'autoflow-offer'
+        jwks_uri: '%env(resolve:AUTOFLOW_JWT_JWKS_URI)%'
+        jwks_cache_ttl: 300
+        protected_path_prefixes:
+            - '/api/'
+        excluded_paths:
+            - '/api/doc'
+            - '/api/doc.json'

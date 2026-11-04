@@ -19,6 +19,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - PostgreSQL, Redis, Elasticsearch, RabbitMQ and container metrics exporters
 - Mailpit for local email testing
 - Adminer 5 for local PostgreSQL inspection
+- Keycloak OIDC with RS256 JWT access tokens for local authentication
 - NelmioApiDocBundle + Swagger UI / OpenAPI 3 for interactive REST API testing in development only
 - PHP-CS-Fixer, PHP_CodeSniffer, PHPStan, PHPMD, Rector and PHPUnit
 - GitHub Actions quality workflow
@@ -63,19 +64,39 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Alloy | http://localhost:12345 | Log collector status and component UI |
 | Mailpit | http://localhost:8025 | Local email inbox |
 | Adminer | http://localhost:8083 | Browser-based PostgreSQL administration (local host only) |
+| Keycloak | http://localhost:8080 | Local OIDC identity provider and token issuer |
 | PostgreSQL | localhost:5432 | Relational database |
 | Redis | localhost:6379 | Cache and ephemeral data |
 | OTLP gRPC / HTTP | localhost:4317 / 4318 | OpenTelemetry trace ingestion |
 
+## Authentication quick start
+
+Offer and Pricing validate RS256 access tokens locally using Keycloak's JWKS endpoint. Their expected audiences are distinct (`autoflow-offer` and `autoflow-pricing`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
+
+The imported `demo` user and password `demo`, and the local password-grant client below, are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
+
+~~~bash
+TOKEN=$(curl -fsS -X POST http://localhost:8080/realms/autoflow/protocol/openid-connect/token \\
+  -H 'Content-Type: application/x-www-form-urlencoded' \\
+  --data-urlencode 'grant_type=password' \\
+  --data-urlencode 'client_id=autoflow-local-client' \\
+  --data-urlencode 'username=demo' \\
+  --data-urlencode 'password=demo' | jq -r .access_token)
+
+curl -i http://localhost:8081/api/offers/demo-vehicle-001 \\
+  -H "Authorization: Bearer $TOKEN"
+
+curl -i http://localhost:8082/api/pricing/quotes \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H 'Content-Type: application/json' \\
+  -d '{"vehicleId":"vehicle-001","vehiclePrice":"30000.00","downPayment":"3000.00","residualValue":"9000.00","currency":"EUR","durationMonths":36,"annualInterestRateBasisPoints":500}'
+~~~
+
+Offer obtains a separate client-credentials token for its downstream Pricing call; it does not blindly forward the end-user bearer token. The user-to-service token exchange / delegated user context is a later authorization design decision.
+
 ## CoreBundle quick check
 
 Every HTTP request handled by Offer or Pricing receives a validated or generated `X-Correlation-ID`. The ID is returned in the response and propagated by the Symfony HttpClient decorator to downstream HTTP calls.
-
-```bash
-curl -i http://localhost:8081/api/offers/demo-vehicle-001
-```
-
-Inspect the `X-Correlation-ID` response header. The outgoing Offer → Pricing request carries the same value.
 
 Check the internal gRPC transport smoke method (requires `grpcurl`):
 

@@ -34,6 +34,7 @@ See [ADR-014](../../docs/adr/ADR-014-core-bundle-v2-clean-architecture.md), [ADR
 | Transaction port | Application transaction boundary without Doctrine coupling |
 | HTTP response factory | Small JSON success envelope helper |
 | Problem Details | RFC 9457-style response factory |
+| JWT verification | RS256 signature validation against cached JWKS, issuer/audience/expiry checks and normalized request principal |
 
 ## Application ports
 
@@ -143,6 +144,14 @@ $request = $serializer->decode($payload, CalculateQuoteRequest::class);
 
 Never deserialize an arbitrary class name supplied by an untrusted payload. Generated Protobuf classes must be mapped to application DTOs. Domain entities are never serialized directly.
 
+## JWT authentication boundary
+
+When enabled by service configuration, the bundle protects configured HTTP path prefixes. It retrieves the issuer's JWKS, accepts RS256 signing keys only, validates the token signature and checks issuer, audience, subject and expiration. JWKS keys are cached in-process for a configurable short TTL. The subscriber attaches an immutable `AuthenticatedPrincipal` to the request under `AuthenticatedPrincipal::REQUEST_ATTRIBUTE`; it contains the verified subject, optional tenant ID and scopes.
+
+The bundle does not issue tokens, store passwords, own user or tenant records, decide business permissions, or authorize resource ownership. Use an external OpenID Connect provider (Keycloak in local AutoFlow development) to issue tokens. Each service must keep its own expected audience and enforce its own authorization policies. A missing/invalid token returns 401; unavailable JWKS returns 503. Health and development documentation paths are excluded explicitly.
+
+Offer uses a dedicated OAuth2 Client Credentials identity to call Pricing. It requests a Pricing-audience token and caches it until shortly before expiry; it does not forward an incoming user's bearer token. Production deployments must inject unique secrets through a secret manager and use TLS.
+
 ## Correlation and worker safety
 
 Correlation IDs are distinct from W3C trace IDs, tenant IDs and authenticated principals. The context supports scoped execution and restores the previous value in a `finally` block. HTTP context is also cleared at Symfony's `kernel.finish_request` event so a long-running RoadRunner worker cannot leak one request's ID into the next request.
@@ -161,7 +170,8 @@ Implement `HealthCheckInterface` in a service-specific Infrastructure class. The
 - Transactional Outbox persistence and relay workers.
 - Broker topology, routing keys, retry policies and dead-letter queues.
 - Temporal workflows and SDK lifecycle.
-- Authentication, authorization, tenant isolation and business-specific rate limits.
+- Identity lifecycle, password storage, token issuance and refresh-token handling.
+- Business authorization policies, tenant membership, tenant isolation and business-specific rate limits.
 - Service-owned gRPC contracts, generated business classes and client implementations.
 
 Temporal remains appropriate for durable, long-running workflows. Messenger remains appropriate for independent asynchronous jobs and event delivery.
