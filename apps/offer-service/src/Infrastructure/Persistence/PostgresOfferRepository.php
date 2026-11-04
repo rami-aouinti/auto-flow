@@ -26,7 +26,9 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
         $events = $offer->domainEvents();
         $expectedStatus = $offer->persistedStatus();
 
-        $this->withinTenantTransaction($offer->tenantId(), function (PDO $connection) use ($offer, $events, $expectedStatus): void {
+        $this->withinTenantTransaction(
+            $offer->tenantId(),
+            function (PDO $connection) use ($offer, $events, $expectedStatus): void {
             if ($expectedStatus === null) {
                 $snapshot = $offer->pricingSnapshot();
                 $statement = $connection->prepare(<<<'SQL'
@@ -77,7 +79,9 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                 ]);
 
                 if ($update->rowCount() !== 1) {
-                    throw new ConcurrentOfferModification('The offer was modified by another operation. Reload it and retry.');
+                    throw new ConcurrentOfferModification(
+                        'The offer was modified by another operation. Reload it and retry.',
+                    );
                 }
             }
 
@@ -146,9 +150,13 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                     $statement->fetchAll(),
                 );
 
-                $update = $connection->prepare(
-                    'UPDATE offers SET status = :status WHERE tenant_id = :tenant_id AND offer_id = :offer_id AND status = :expected_status',
-                );
+                $update = $connection->prepare(<<<'SQL'
+                    UPDATE offers
+                    SET status = :status
+                    WHERE tenant_id = :tenant_id
+                      AND offer_id = :offer_id
+                      AND status = :expected_status
+                    SQL);
 
                 foreach ($offers as $offer) {
                     $offer->expire($now);
@@ -160,7 +168,9 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                     ]);
 
                     if ($update->rowCount() !== 1) {
-                        throw new ConcurrentOfferModification('The offer changed while the expiration batch was being processed.');
+                        throw new ConcurrentOfferModification(
+                            'The offer changed while the expiration batch was being processed.',
+                        );
                     }
 
                     self::appendOutboxEvents($connection, $offer->domainEvents());
