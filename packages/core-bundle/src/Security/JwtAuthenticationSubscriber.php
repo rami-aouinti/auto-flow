@@ -96,7 +96,9 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
                 'title' => 'Authentication service unavailable',
                 'status' => 503,
                 'detail' => 'The signing keys cannot currently be retrieved.',
-            ], JsonResponse::HTTP_SERVICE_UNAVAILABLE));
+            ], JsonResponse::HTTP_SERVICE_UNAVAILABLE, [
+                'Cache-Control' => 'no-store',
+            ]));
         } catch (InvalidTokenException) {
             $event->setResponse($this->unauthorized());
         }
