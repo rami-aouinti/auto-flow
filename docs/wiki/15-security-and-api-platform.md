@@ -35,7 +35,7 @@ A valid JWT only establishes a verified identity and claims. Pricing still owns 
 
 ## 3. JWT contract
 
-**Implemented first slice:** both Symfony services protect `/api/*`, while `/health` and development-only Swagger endpoints remain public. Offer accepts audience `autoflow-offer`; Pricing accepts `autoflow-pricing`. The CoreBundle verifies RS256/JWKS and attaches an `AuthenticatedPrincipal` to the request. Offer obtains its own Pricing-audience token using Client Credentials. The local Keycloak realm contains a demo user and a password-grant client strictly for local smoke testing; browser applications must use Authorization Code + PKCE.
+**Implemented first slice:** both Symfony services protect `/api/*`, while `/health` and development-only Swagger endpoints remain public. Offer accepts audience `autoflow-offer`; Pricing accepts `autoflow-pricing`. The CoreBundle verifies RS256/JWKS and attaches an `AuthenticatedPrincipal` to the request. Offer obtains a dedicated Pricing-audience token using Client Credentials and requests the `pricing:quote tenant:delegate` scopes. The local Keycloak realm contains a demo user and a password-grant client strictly for local smoke testing; browser applications must use Authorization Code + PKCE.
 
 The resource services accept bearer access tokens and validate:
 - signature against the issuer's JWKS;
@@ -63,13 +63,13 @@ The payload is not trusted until the signature and claims have been validated. N
 
 ## 4. Tenant isolation
 
-Tenant context must be propagated through HTTP, messages, cache keys and audit events when the operation is tenant-scoped. A missing tenant fails closed. Every tenant-owned repository query includes the tenant constraint, and tests must prove that Tenant A cannot read or mutate Tenant B's resources.
+Tenant context is resolved from the verified `tenant_id` claim for user tokens. Offer forwards that tenant to Pricing using `X-Tenant-ID` alongside its own service token. Pricing accepts this delegation only when the verified service token has the dedicated `tenant:delegate` scope. A tenant already present in a token cannot be overwritten by a different header value. Tenant-required HTTP routes are configured explicitly and fail closed when no valid tenant context can be resolved. Tenant-scoped persistence and resource-level membership checks remain service-owned responsibilities.
 
 The tenant identifier in the access token is the active tenant, not proof that the user belongs to every tenant. Tenant selection must be validated against membership before a token for that tenant is issued.
 
 ## 5. Permissions
 
-Use coarse scopes/client roles in tokens and fine-grained policies inside the service. Example:
+Use coarse scopes/client roles in tokens and fine-grained policies inside the service. The CoreBundle provides the `RequiresScope` method attribute and `ScopeAuthorizationSubscriber`; the Offer and Pricing REST actions require `offers:read` and `pricing:quote` respectively. Example:
 - `offers:read`
 - `pricing:quote`
 - `contracts:write`
@@ -78,7 +78,11 @@ A service must still check resource ownership and tenant context. Use deny-by-de
 
 ## 6. Service-to-service authentication
 
-Offer calling Pricing must use an explicit workload identity and a token whose audience is Pricing. Use OAuth2 Client Credentials with a dedicated client identity and least-privilege scope. Do not share one generic secret across every service, and do not blindly forward an end-user token.
+Offer calling Pricing uses OAuth2 Client Credentials with a dedicated workload identity and a Pricing audience. The client requests `pricing:quote tenant:delegate`; grant `tenant:delegate` only to the Offer service account in Keycloak. Pricing validates the token and scope before accepting the delegated tenant header. Do not share one generic secret across services, and do not blindly forward an end-user token.
+
+## 6.1 gRPC authentication
+
+Pricing's gRPC `CalculateQuote` method uses `GrpcRequestAuthenticator`. Callers must send bearer access token metadata and, for a delegated service tenant, `x-tenant-id` metadata. The method validates the JWT, requires `pricing:quote`, resolves tenant delegation through `tenant:delegate`, and maps failures to standard gRPC statuses. gRPC metadata is not trusted merely because it is transported over an internal network.
 
 ## 7. Gateway and rate limits
 
@@ -100,13 +104,13 @@ Pact verifies consumer/provider expectations for important REST interactions. Op
 | --- | --- |
 | Keycloak local identity provider | Implemented in JWT foundation branch (local realm) |
 | RS256/JWKS validation in CoreBundle | Implemented in JWT foundation branch; CI pending |
-| Principal and tenant request context | Verified principal attached to HTTP request; tenant claim exposed when present |
-| Service-specific permission policies | Planned |
-| Tenant-scoped persistence and negative tests | Planned |
+| Principal and tenant request context | Implemented: verified HTTP principal, request-scoped TenantContext, and explicit tenant delegation |
+| REST scope enforcement | Implemented for Offer read and Pricing quote endpoints; resource-level policies remain service-owned |
+| Tenant delegation policy and negative tests | Implemented for HTTP delegation; tenant-scoped persistence and cross-tenant resource tests remain planned |
 | Traefik edge gateway | Planned |
 | Redis-backed rate limiting | Planned |
 | REST `/api/v1` migration | Planned |
 | Pact REST contracts | Planned |
 | Buf Protobuf compatibility checks | Planned |
 
-The first implementation slice adds Keycloak for local token issuance, RS256/JWKS verification in CoreBundle, audience isolation for Offer and Pricing, and a dedicated client-credentials token for Offer → Pricing. It does not yet enforce scopes, tenant membership, or tenant-scoped persistence; those remain the next security increment. See ADR-016 for decisions and trade-offs.
+The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Tenant membership, resource-level authorization, tenant-scoped persistence, and cross-tenant integration tests are still service-owned follow-up work. See ADR-016 for decisions and trade-offs.
