@@ -124,6 +124,7 @@ The current SQL migrations are:
 - `Version20261104000500CreatePricingPolicies.sql`
 - `Version20261104000600LinkQuotesToPricingPolicy.sql`
 - `Version20261104000700EnforceImmutableQuoteSnapshots.sql`
+- `Version20261104000800EnforceImmutablePricingPolicies.sql`
 
 Use `apps/pricing-service/bin/migrate.sh` with `DATABASE_ADMIN_URL` to apply unapplied versioned migrations. The runner records applied filenames in `pricing_schema_migrations`. The optional `PRICING_BOOTSTRAP_LOCAL_ROLE=1` switch is for local development only; production database roles must be provisioned securely out of band.
 
@@ -152,7 +153,7 @@ The production-readiness branch now contains the first implementation slice:
 - Only one active policy per tenant is allowed. Publishing a new version retires the previous active version.
 - Quote calculation loads the active tenant policy when one exists and checks the duration/rate guardrails. Existing tenants without a policy retain the legacy 7-day default while policy rollout is completed.
 - Quotes persist original vehicle price/down payment, creation and expiry timestamps, and the exact policy ID/version used. The database trigger rejects mutation of snapshot fields while allowing soft deletion.
-- Quote validity defaults to seven days and may be configured by policy (1–90 days). The API returns HTTP 410 for an expired quote lookup.
+- Quote validity defaults to seven days and may be configured by policy (1–90 days). The API returns HTTP 410 for an expired quote lookup. The quote stores `policy_id` and `policy_version`, and the database enforces a tenant-consistent policy reference.
 
 Current demo policy guardrails are intentionally aligned with the existing LeaseTerms boundaries (12–72 months and 0–2000 basis points). These are implementation defaults, not approved commercial or regulatory financing terms. The policy does not introduce taxes, fees, insurance, maintenance, mileage or lender-specific rules.
 
