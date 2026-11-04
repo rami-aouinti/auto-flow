@@ -28,7 +28,7 @@ final class CorrelationIdMiddlewareTest extends TestCase
                 $stamp = $envelope->last(CorrelationIdStamp::class);
 
                 return $stamp instanceof CorrelationIdStamp
-                    && preg_match('/^[a-f0-9]{32}$/D', $stamp->correlationId) === 1;
+                    && $stamp->correlationId === 'outer-request';
             }))
             ->willReturnCallback(static function (Envelope $envelope): Envelope {
                 return $envelope;
