@@ -20,6 +20,7 @@ AutoFlow is an independent portfolio and learning project inspired by publicly o
 | [10 — Domain and persistence model](10-domain-data-model.md) | Conceptual leasing model, ownership, money and lifecycle |
 | [11 — Events and workflows](11-event-catalogue-and-workflows.md) | Event catalogue, Outbox, Messenger, Temporal and idempotency |
 | [12 — Pricing Service domain](12-pricing-service-domain.md) | Money, lease invariants, annuity calculation, API contract and next steps |
+| [13 — Shared CoreBundle](13-shared-core-bundle.md) | Technical shared capabilities, correlation, health, messaging and boundaries |
 
 ## How to interpret this documentation
 
@@ -45,6 +46,7 @@ The repository currently contains:
 - OpenTelemetry distributed tracing exported to Grafana Tempo.
 - Grafana, Prometheus, Loki, Grafana Alloy and infrastructure exporters.
 - Mercure and Mailpit for local integration scenarios.
+- A shared Symfony CoreBundle for correlation IDs, outgoing HTTP propagation, health endpoints, Messenger correlation primitives, integration-event metadata and Problem Details responses.
 
 The Pricing calculation is an illustrative fixed-rate annuity model, not a regulated financial offer. Pricing policy persistence, quote snapshots, taxes, fees, customer-specific rules, authentication and production validation are not implemented yet. The legacy GET endpoint still returns static demonstration data so the existing Offer tracing path remains compatible.
 
