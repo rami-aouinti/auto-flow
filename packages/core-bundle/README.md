@@ -23,7 +23,7 @@ See [ADR-014](../../docs/adr/ADR-014-core-bundle-v2-clean-architecture.md).
 | RoadRunner HTTP | PSR-7 to HttpFoundation worker adapter |
 | RoadRunner gRPC | Server runner that registers service-owned generated adapters |
 | Clock | Injectable system clock |
-| Problem Details | Not yet implemented as a dedicated reusable factory; service-level exception mapping remains outside the bundle for now |
+| Problem Details | RFC 9457-style JSON response factory with reserved-member validation |
 
 The table describes package source capabilities, not proof that each service has enabled or deployed them. Check service configuration and integration tests before relying on a capability in production.
 
