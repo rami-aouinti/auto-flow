@@ -28,7 +28,8 @@ final class PricingPolicyRepositoryTest extends TestCase
     public function testPolicyRepositoryEnforcesTenantRlsAndLoadsActiveVersion(): void
     {
         $repository = new PostgresPricingPolicyRepository(new PostgresConnection($this->databaseUrl));
-        $draft = PricingPolicyFixture::draft('tenant-policy-test', random_int(100, 100000));
+        $policyId = '123e4567-e89b-42d3-a456-' . bin2hex(random_bytes(6));
+        $draft = PricingPolicyFixture::draft('tenant-policy-test', random_int(100, 100000), $policyId);
         $repository->save($draft);
 
         self::assertNull($repository->findByVersion('tenant-other', $draft->version));
