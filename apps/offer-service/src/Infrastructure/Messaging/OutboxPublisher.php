@@ -83,7 +83,10 @@ final readonly class OutboxPublisher
                     UPDATE offer_outbox_events
                     SET attempt_count = attempt_count + 1,
                         next_attempt_at = NOW()
-                            + (LEAST(300, POWER(2, LEAST(attempt_count + 1, 8)))::double precision * INTERVAL '1 second'),
+                            + (
+                                LEAST(300, POWER(2, LEAST(attempt_count + 1, 8)))::double precision
+                                * INTERVAL '1 second'
+                            ),
                         last_error = :last_error
                     WHERE event_id = :event_id
                     SQL);
