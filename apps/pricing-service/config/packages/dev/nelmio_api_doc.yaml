@@ -120,4 +120,4 @@ nelmio_api_doc:
     areas:
         default:
             path_patterns:
-                - '^/api'
+                - '^/api(?!/doc)'
