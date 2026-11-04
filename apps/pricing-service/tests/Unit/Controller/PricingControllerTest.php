@@ -10,10 +10,10 @@ use App\Application\Port\Out\PricingQuoteRepositoryInterface;
 use App\Application\Port\Out\QuoteIdGeneratorInterface;
 use App\Controller\PricingController;
 use App\Domain\Service\LeasePaymentCalculator;
-use App\Infrastructure\Persistence\PostgresConnection;
 use App\Observability\PricingMetrics;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -60,7 +60,7 @@ final class PricingControllerTest extends TestCase
     {
         $controller = new PricingController();
         $request = $this->request('{"vehicleId":"vehicle-demo-001"}');
-        $response = $controller->calculate($request, $this->handler(), $this->tenantContext($request), new PricingMetrics());
+        $response = $controller->calculate($request, $this->handler(false), $this->tenantContext($request), new PricingMetrics());
 
         self::assertSame(422, $response->getStatusCode());
     }
