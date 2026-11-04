@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace App\\Presentation\\Http\\Controller;
+namespace App\Presentation\Http\Controller;
 
-use App\\Application\\CatalogApplicationService;
-use AutoFlow\\CoreBundle\\Security\\RequiresScope;
+use App\Application\CatalogApplicationService;
+use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
 use PDOException;
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
-use Symfony\\Component\\HttpFoundation\\Request;
-use Symfony\\Component\\Routing\\Attribute\\Route;
-use OpenApi\\Attributes as OA;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Attribute\Route;
+use OpenApi\Attributes as OA;
 
 #[Route('/api/v1')]
 final readonly class CatalogController
 {
-    #[OA\\Get(path: '/api/v1/manufacturers', summary: 'List published manufacturers', tags: ['Catalogue'])]
-    #[OA\\Response(response: 200, description: 'Published manufacturers')]
+    #[OA\Get(path: '/api/v1/manufacturers', summary: 'List published manufacturers', tags: ['Catalogue'])]
+    #[OA\Response(response: 200, description: 'Published manufacturers')]
     #[RequiresScope('catalog:read')]
     #[Route('/manufacturers', methods: ['GET'])]
     public function manufacturers(CatalogApplicationService $catalog): JsonResponse
@@ -25,20 +25,20 @@ final readonly class CatalogController
         return new JsonResponse(['items'=>$catalog->listManufacturers()]);
     }
 
-    #[OA\\Get(path: '/api/v1/vehicles', summary: 'Search published vehicle variants', tags: ['Catalogue'])]
-    #[OA\\Parameter(name: 'q', in: 'query', description: 'Search variant, model or manufacturer name', schema: new OA\\Schema(type: 'string'))]
-    #[OA\\Parameter(name: 'manufacturerId', in: 'query', schema: new OA\\Schema(type: 'string'))]
-    #[OA\\Parameter(name: 'fuelType', in: 'query', schema: new OA\\Schema(type: 'string'))]
-    #[OA\\Parameter(name: 'bodyStyle', in: 'query', schema: new OA\\Schema(type: 'string'))]
-    #[OA\\Parameter(name: 'powertrain', in: 'query', schema: new OA\\Schema(type: 'string'))]
-    #[OA\\Parameter(name: 'transmission', in: 'query', schema: new OA\\Schema(type: 'string'))]
-    #[OA\\Parameter(name: 'minPowerKw', in: 'query', schema: new OA\\Schema(type: 'integer', minimum: 1))]
-    #[OA\\Parameter(name: 'maxPowerKw', in: 'query', schema: new OA\\Schema(type: 'integer', minimum: 1))]
-    #[OA\\Parameter(name: 'minSeats', in: 'query', schema: new OA\\Schema(type: 'integer', minimum: 1))]
-    #[OA\\Parameter(name: 'maxSeats', in: 'query', schema: new OA\\Schema(type: 'integer', minimum: 1))]
-    #[OA\\Parameter(name: 'limit', in: 'query', schema: new OA\\Schema(type: 'integer', default: 20, minimum: 1, maximum: 100))]
-    #[OA\\Parameter(name: 'offset', in: 'query', schema: new OA\\Schema(type: 'integer', default: 0, minimum: 0))]
-    #[OA\\Response(response: 200, description: 'Paginated vehicle variants')]
+    #[OA\Get(path: '/api/v1/vehicles', summary: 'Search published vehicle variants', tags: ['Catalogue'])]
+    #[OA\Parameter(name: 'q', in: 'query', description: 'Search variant, model or manufacturer name', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'manufacturerId', in: 'query', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'fuelType', in: 'query', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'bodyStyle', in: 'query', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'powertrain', in: 'query', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'transmission', in: 'query', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'minPowerKw', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1))]
+    #[OA\Parameter(name: 'maxPowerKw', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1))]
+    #[OA\Parameter(name: 'minSeats', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1))]
+    #[OA\Parameter(name: 'maxSeats', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1))]
+    #[OA\Parameter(name: 'limit', in: 'query', schema: new OA\Schema(type: 'integer', default: 20, minimum: 1, maximum: 100))]
+    #[OA\Parameter(name: 'offset', in: 'query', schema: new OA\Schema(type: 'integer', default: 0, minimum: 0))]
+    #[OA\Response(response: 200, description: 'Paginated vehicle variants')]
     #[RequiresScope('catalog:read')]
     #[Route('/vehicles', methods: ['GET'])]
     public function vehicles(Request $request, CatalogApplicationService $catalog): JsonResponse
@@ -61,10 +61,10 @@ final readonly class CatalogController
         }
     }
 
-    #[OA\\Get(path: '/api/v1/vehicles/{variantId}', summary: 'Get a published vehicle variant', tags: ['Catalogue'])]
-    #[OA\\Parameter(name: 'variantId', in: 'path', required: true, schema: new OA\\Schema(type: 'string', pattern: '^[a-f0-9]{32}$'))]
-    #[OA\\Response(response: 200, description: 'Vehicle details')]
-    #[OA\\Response(response: 404, description: 'Vehicle not found')]
+    #[OA\Get(path: '/api/v1/vehicles/{variantId}', summary: 'Get a published vehicle variant', tags: ['Catalogue'])]
+    #[OA\Parameter(name: 'variantId', in: 'path', required: true, schema: new OA\Schema(type: 'string', pattern: '^[a-f0-9]{32}$'))]
+    #[OA\Response(response: 200, description: 'Vehicle details')]
+    #[OA\Response(response: 404, description: 'Vehicle not found')]
     #[RequiresScope('catalog:read')]
     #[Route('/vehicles/{variantId}', methods: ['GET'])]
     public function vehicle(string $variantId, Request $request, CatalogApplicationService $catalog): JsonResponse
@@ -78,12 +78,12 @@ final readonly class CatalogController
             : new JsonResponse($vehicle);
     }
 
-    #[OA\\Post(path: '/api/v1/manufacturers', summary: 'Register a manufacturer', tags: ['Catalogue management'])]
-    #[OA\\RequestBody(required: true, content: new OA\\JsonContent(properties: [
-        new OA\\Property(property: 'code',type: 'string',example: 'VOLKSWAGEN'),
-        new OA\\Property(property: 'name',type: 'string',example: 'Volkswagen')
+    #[OA\Post(path: '/api/v1/manufacturers', summary: 'Register a manufacturer', tags: ['Catalogue management'])]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(properties: [
+        new OA\Property(property: 'code',type: 'string',example: 'VOLKSWAGEN'),
+        new OA\Property(property: 'name',type: 'string',example: 'Volkswagen')
     ], required: ['code','name']))]
-    #[OA\\Response(response: 201, description: 'Manufacturer registered')]
+    #[OA\Response(response: 201, description: 'Manufacturer registered')]
     #[RequiresScope('catalog:manage')]
     #[Route('/manufacturers', methods: ['POST'])]
     public function createManufacturer(Request $request, CatalogApplicationService $catalog): JsonResponse
@@ -96,15 +96,15 @@ final readonly class CatalogController
             return $this->problem(422,'INVALID_MANUFACTURER',$e->getMessage(),$request);
         } catch (PDOException $e) {
             return $this->databaseProblem($e,$request);
-        } catch (\\JsonException) {
+        } catch (\JsonException) {
             return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request);
         }
     }
 
-    #[OA\\Post(path: '/api/v1/models', summary: 'Register a model', tags: ['Catalogue management'])]
-    #[OA\\RequestBody(required: true, content: new OA\\JsonContent(properties: [
-        new OA\\Property(property: 'manufacturerId',type: 'string'),
-        new OA\\Property(property: 'name',type: 'string')
+    #[OA\Post(path: '/api/v1/models', summary: 'Register a model', tags: ['Catalogue management'])]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(properties: [
+        new OA\Property(property: 'manufacturerId',type: 'string'),
+        new OA\Property(property: 'name',type: 'string')
     ], required: ['manufacturerId','name']))]
     #[RequiresScope('catalog:manage')]
     #[Route('/models', methods: ['POST'])]
@@ -116,14 +116,14 @@ final readonly class CatalogController
             return new JsonResponse(['modelId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_MODEL',$e->getMessage(),$request); }
         catch (PDOException $e) { return $this->databaseProblem($e,$request); }
-        catch (\\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
+        catch (\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
-    #[OA\\Post(path: '/api/v1/generations', summary: 'Register a model generation', tags: ['Catalogue management'])]
-    #[OA\\RequestBody(required: true, content: new OA\\JsonContent(properties: [
-        new OA\\Property(property: 'modelId',type: 'string'),new OA\\Property(property: 'name',type: 'string'),
-        new OA\\Property(property: 'productionStartYear',type: 'integer',nullable: true),
-        new OA\\Property(property: 'productionEndYear',type: 'integer',nullable: true)
+    #[OA\Post(path: '/api/v1/generations', summary: 'Register a model generation', tags: ['Catalogue management'])]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(properties: [
+        new OA\Property(property: 'modelId',type: 'string'),new OA\Property(property: 'name',type: 'string'),
+        new OA\Property(property: 'productionStartYear',type: 'integer',nullable: true),
+        new OA\Property(property: 'productionEndYear',type: 'integer',nullable: true)
     ], required: ['modelId','name']))]
     #[RequiresScope('catalog:manage')]
     #[Route('/generations', methods: ['POST'])]
@@ -137,12 +137,12 @@ final readonly class CatalogController
             return new JsonResponse(['generationId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_GENERATION',$e->getMessage(),$request); }
         catch (PDOException $e) { return $this->databaseProblem($e,$request); }
-        catch (\\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
+        catch (\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
-    #[OA\\Post(path: '/api/v1/vehicles', summary: 'Register a technical vehicle variant', tags: ['Catalogue management'])]
-    #[OA\\RequestBody(required: true, content: new OA\\JsonContent(type: 'object', required: ['generationId','name','fuelType','powertrain','bodyStyle','transmission']))]
-    #[OA\\Response(response: 201, description: 'Variant registered in draft state')]
+    #[OA\Post(path: '/api/v1/vehicles', summary: 'Register a technical vehicle variant', tags: ['Catalogue management'])]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(type: 'object', required: ['generationId','name','fuelType','powertrain','bodyStyle','transmission']))]
+    #[OA\Response(response: 201, description: 'Variant registered in draft state')]
     #[RequiresScope('catalog:manage')]
     #[Route('/vehicles', methods: ['POST'])]
     public function createVariant(Request $request, CatalogApplicationService $catalog): JsonResponse
@@ -152,7 +152,7 @@ final readonly class CatalogController
             return new JsonResponse(['variantId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_VARIANT',$e->getMessage(),$request); }
         catch (PDOException $e) { return $this->databaseProblem($e,$request); }
-        catch (\\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
+        catch (\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
     #[RequiresScope('catalog:manage')]
