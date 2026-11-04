@@ -5,9 +5,17 @@ declare(strict_types=1);
 namespace AutoFlow\CoreBundle\Infrastructure\Serialization;
 
 use AutoFlow\CoreBundle\Application\Serialization\SerializerInterface;
+use InvalidArgumentException;
 use JsonException;
 use RuntimeException;
 
+/**
+ * JSON wire-format serializer.
+ *
+ * JSON decoding returns native PHP values (arrays/scalars/null). Typed object
+ * hydration belongs to an explicit DTO mapper or Symfony Serializer adapter;
+ * silently ignoring the requested type would be unsafe and misleading.
+ */
 final readonly class JsonSerializer implements SerializerInterface
 {
     public function __construct(
@@ -15,7 +23,7 @@ final readonly class JsonSerializer implements SerializerInterface
         private int $decodeDepth = 512,
     ) {
         if ($this->decodeDepth < 1) {
-            throw new RuntimeException('The JSON decode depth must be greater than zero.');
+            throw new InvalidArgumentException('The JSON decode depth must be greater than zero.');
         }
     }
 
@@ -36,6 +44,12 @@ final readonly class JsonSerializer implements SerializerInterface
 
     public function decode(string $payload, ?string $type = null): mixed
     {
+        if ($type !== null) {
+            throw new InvalidArgumentException(
+                'JsonSerializer does not hydrate PHP classes. Decode to native values and use an explicit DTO mapper.',
+            );
+        }
+
         try {
             return json_decode($payload, true, $this->decodeDepth, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
