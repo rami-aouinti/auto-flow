@@ -25,6 +25,11 @@ jobs:
           composer validate --strict --working-dir=apps/pricing-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
+      - name: Validate Grafana Alloy configuration
+        run: |
+          docker run --rm \
+            -v "$PWD/infrastructure/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro" \
+            grafana/alloy:v1.6.1 validate /etc/alloy/config.alloy
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
       - name: Run Offer unit tests
