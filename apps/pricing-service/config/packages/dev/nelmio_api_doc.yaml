@@ -2,7 +2,7 @@ nelmio_api_doc:
     documentation:
         info:
             title: AutoFlow Pricing Service API
-            description: REST API for vehicle leasing quote calculations.
+            description: Tenant-scoped lease quote calculation and lifecycle.
             version: 1.0.0
         servers:
             - url: http://localhost:8082
@@ -19,244 +19,105 @@ nelmio_api_doc:
             /api/pricing/quotes:
                 post:
                     tags: [Pricing]
-                    summary: Calculate a vehicle leasing quote
-                    description: Validates lease inputs and delegates the calculation to the Pricing Application handler.
+                    summary: Calculate and persist a lease quote
                     requestBody:
                         required: true
                         content:
                             application/json:
                                 schema:
                                     type: object
-                                    required:
-                                        - vehicleId
-                                        - vehiclePrice
-                                        - downPayment
-                                        - residualValue
-                                        - currency
-                                        - durationMonths
-                                        - annualInterestRateBasisPoints
+                                    additionalProperties: false
+                                    required: [vehicleId, vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints]
                                     properties:
-                                        vehicleId:
-                                            type: string
-                                            example: vehicle-001
-                                        vehiclePrice:
-                                            type: string
-                                            description: Decimal amount represented as a string to avoid JSON floating-point ambiguity.
-                                            example: "42000.00"
-                                        downPayment:
-                                            type: string
-                                            example: "5000.00"
-                                        residualValue:
-                                            type: string
-                                            example: "12000.00"
-                                        currency:
-                                            type: string
-                                            minLength: 3
-                                            maxLength: 3
-                                            example: EUR
-                                        durationMonths:
-                                            type: integer
-                                            minimum: 1
-                                            example: 48
-                                        annualInterestRateBasisPoints:
-                                            type: integer
-                                            minimum: 0
-                                            example: 499
+                                        vehicleId: { type: string, example: vehicle-demo-001 }
+                                        vehiclePrice: { type: string, example: '30000.00' }
+                                        downPayment: { type: string, example: '5000.00' }
+                                        residualValue: { type: string, example: '12000.00' }
+                                        currency: { type: string, example: EUR }
+                                        durationMonths: { type: integer, minimum: 12, maximum: 72, example: 48 }
+                                        annualInterestRateBasisPoints: { type: integer, minimum: 0, maximum: 2000, example: 450 }
+                                examples:
+                                    demo:
+                                        summary: Deterministic demo vehicle quote
+                                        value:
+                                            vehicleId: vehicle-demo-001
+                                            vehiclePrice: '30000.00'
+                                            downPayment: '5000.00'
+                                            residualValue: '12000.00'
+                                            currency: EUR
+                                            durationMonths: 48
+                                            annualInterestRateBasisPoints: 450
                     responses:
                         '200':
-                            description: Quote calculated successfully.
+                            description: Quote calculated and persisted
                             content:
                                 application/json:
-                                    schema:
-                                        type: object
-                                        required:
-                                            - vehicleId
-                                            - monthlyAmount
-                                            - totalInstallmentsAmount
-                                            - totalCostIncludingDownPayment
-                                            - residualValue
-                                            - currency
-                                            - durationMonths
-                                            - annualInterestRateBasisPoints
-                                            - calculationVersion
-                                        properties:
-                                            vehicleId:
-                                                type: string
-                                            monthlyAmount:
-                                                type: string
-                                                example: "689.42"
-                                            totalInstallmentsAmount:
-                                                type: string
-                                                example: "33092.16"
-                                            totalCostIncludingDownPayment:
-                                                type: string
-                                                example: "38092.16"
-                                            residualValue:
-                                                type: string
-                                                example: "12000.00"
-                                            currency:
-                                                type: string
-                                                example: EUR
-                                            durationMonths:
-                                                type: integer
-                                                example: 48
-                                            annualInterestRateBasisPoints:
-                                                type: integer
-                                                example: 499
-                                            calculationVersion:
-                                                type: string
-                                                example: annuity-v1
-                        '422':
-                            description: Invalid quote input.
-                            content:
-                                application/json:
-                                    schema:
-                                        type: object
-                                        properties:
-                                            error:
-                                                type: string
-                                                example: invalid_pricing_request
-                                            message:
-                                                type: string
+                                    example:
+                                        quoteId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                        vehicleId: vehicle-demo-001
+                                        vehiclePrice: '30000.00'
+                                        downPayment: '5000.00'
+                                        monthlyAmount: '455.46'
+                                        totalInstallmentsAmount: '21862.08'
+                                        totalCostIncludingDownPayment: '26862.08'
+                                        residualValue: '12000.00'
+                                        currency: EUR
+                                        durationMonths: 48
+                                        annualInterestRateBasisPoints: 450
+                                        calculationVersion: lease-annuity-v1
+                                        createdAt: '2026-11-04T12:00:00+00:00'
+                                        expiresAt: '2026-11-11T12:00:00+00:00'
+                        '401': { description: Missing or invalid bearer token }
+                        '403': { description: Missing pricing scope or tenant authorization }
+                        '422': { description: Invalid request or lease terms }
+                get:
+                    tags: [Pricing]
+                    summary: List quotes visible to the caller
+                    parameters:
+                        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+                        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+                    responses:
+                        '200': { description: Paginated quote collection }
+                        '400': { description: Invalid pagination }
             /api/pricing/quotes/{quoteId}:
                 get:
                     tags: [Pricing]
-                    summary: Retrieve a quote owned by the caller or visible to an authorized tenant administrator.
+                    summary: Retrieve a quote snapshot
                     parameters:
-                        - name: quoteId
-                          in: path
-                          required: true
-                          schema: { type: string, pattern: '^[a-f0-9]{32}                get:
-                    tags: [Pricing]
-                    summary: Retrieve the legacy demonstration quote
-                    deprecated: true
-                    parameters:
-                        - name: vehicleId
-                          in: path
-                          required: true
-                          schema:
-                              type: string
+                        - { name: quoteId, in: path, required: true, schema: { type: string } }
                     responses:
-                        '200':
-                            description: Static demonstration pricing response. Use POST /api/pricing/quotes for calculations.
-                            content:
-                                application/json:
-                                    schema:
-                                        type: object
-                                        properties:
-                                            vehicleId:
-                                                type: string
-                                            monthlyAmount:
-                                                type: number
-                                            currency:
-                                                type: string
-                                            durationMonths:
-                                                type: integer
-                                            calculation:
-                                                type: string
-                                                example: demo-only
-    areas:
-        path_patterns:
-            - ^/api(?!/doc)
- }
-                    responses:
-                        '200':
-                            description: Quote details including immutable input snapshot and expiry.
-                        '404':
-                            description: Quote not found or not visible to this caller.
-                        '410':
-                            description: Quote expired; the response contains quoteId and expiredAt.
+                        '200': { description: Quote snapshot and validity metadata }
+                        '404': { description: Quote not found or not visible to caller }
+                        '410': { description: Quote expired }
                 delete:
                     tags: [Pricing]
-                    summary: Soft-delete an owned quote or a quote manageable by tenant administrator.
+                    summary: Soft-delete a quote
                     parameters:
-                        - name: quoteId
-                          in: path
-                          required: true
-                          schema: { type: string, pattern: '^[a-f0-9]{32}                get:
-                    tags: [Pricing]
-                    summary: Retrieve the legacy demonstration quote
-                    deprecated: true
-                    parameters:
-                        - name: vehicleId
-                          in: path
-                          required: true
-                          schema:
-                              type: string
+                        - { name: quoteId, in: path, required: true, schema: { type: string } }
                     responses:
-                        '200':
-                            description: Static demonstration pricing response. Use POST /api/pricing/quotes for calculations.
-                            content:
-                                application/json:
-                                    schema:
-                                        type: object
-                                        properties:
-                                            vehicleId:
-                                                type: string
-                                            monthlyAmount:
-                                                type: number
-                                            currency:
-                                                type: string
-                                            durationMonths:
-                                                type: integer
-                                            calculation:
-                                                type: string
-                                                example: demo-only
-    areas:
-        path_patterns:
-            - ^/api(?!/doc)
- }
-                    responses:
-                        '204':
-                            description: Quote soft-deleted.
-                        '404':
-                            description: Quote not found or not visible to this caller.
-            /api/pricing/quotes:
-                get:
-                    tags: [Pricing]
-                    summary: List quotes visible to the authenticated owner or tenant administrator.
-                    parameters:
-                        - name: limit
-                          in: query
-                          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
-                        - name: offset
-                          in: query
-                          schema: { type: integer, minimum: 0, default: 0 }
-                    responses:
-                        '200':
-                            description: Paginated quotes.
-                        '400':
-                            description: Invalid pagination.
+                        '204': { description: Quote soft-deleted }
+                        '404': { description: Quote not found or not visible to caller }
             /api/pricing/{vehicleId}:
                 get:
                     tags: [Pricing]
-                    summary: Retrieve the legacy demonstration quote
+                    summary: Legacy static demonstration quote
                     deprecated: true
                     parameters:
-                        - name: vehicleId
-                          in: path
-                          required: true
-                          schema:
-                              type: string
+                        - { name: vehicleId, in: path, required: true, schema: { type: string } }
                     responses:
-                        '200':
-                            description: Static demonstration pricing response. Use POST /api/pricing/quotes for calculations.
-                            content:
-                                application/json:
-                                    schema:
-                                        type: object
-                                        properties:
-                                            vehicleId:
-                                                type: string
-                                            monthlyAmount:
-                                                type: number
-                                            currency:
-                                                type: string
-                                            durationMonths:
-                                                type: integer
-                                            calculation:
-                                                type: string
-                                                example: demo-only
+                        '200': { description: Static demonstration response }
+            /health:
+                get:
+                    summary: Liveness probe
+                    responses:
+                        '200': { description: Process is alive }
+            /ready:
+                get:
+                    summary: PostgreSQL readiness probe
+                    responses:
+                        '200': { description: PostgreSQL is reachable }
+                        '503': { description: PostgreSQL is unavailable }
     areas:
-        path_patterns:
-            - ^/api(?!/doc)
+        default:
+            path_patterns:
+                - '^/api'
