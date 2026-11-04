@@ -79,10 +79,8 @@ final readonly class SymfonyHttpWorker
                     error_log(sprintf('RoadRunner could not write an HTTP response (%s).', $exception::class));
                     break;
                 } finally {
-                    try {
-                        if ($request instanceof Request) {
-                            $kernel->terminate($request, $response);
-                        }
+                    if ($request instanceof Request) {
+                        $kernel->terminate($request, $response);
                     }
                 }
             }
