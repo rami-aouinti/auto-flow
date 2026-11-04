@@ -48,14 +48,13 @@ Configure it in `config/packages/autoflow_core.yaml`:
 autoflow_core:
     correlation_id: true
     correlation_header: X-Correlation-ID
-    health_endpoints: true
 ```
 
 Import the health routes in `config/routes/autoflow_core.yaml`:
 
 ```yaml
 autoflow_core:
-    resource: '@AutoFlowCoreBundle/Resources/config/routes.yaml'
+    resource: '@CoreBundle/Resources/config/routes.yaml'
 ```
 
 The existing service `/health` endpoint is intentionally left unchanged for Docker Compose compatibility. The bundle adds `/health/live` and `/health/ready`.
