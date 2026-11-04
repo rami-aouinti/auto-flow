@@ -225,8 +225,12 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             annualInterestRateBasisPoints: (int) $row['annual_interest_rate_basis_points'],
             calculationVersion: (string) $row['calculation_version'],
             createdBy: (string) $row['created_by'],
-            vehiclePrice: $row['vehicle_price_minor'] === null ? null : Money::fromMinorUnits((int) $row['vehicle_price_minor'], (string) $row['currency']),
-            downPayment: $row['down_payment_minor'] === null ? null : Money::fromMinorUnits((int) $row['down_payment_minor'], (string) $row['currency']),
+            vehiclePrice: $row['vehicle_price_minor'] === null
+                ? null
+                : Money::fromMinorUnits((int) $row['vehicle_price_minor'], (string) $row['currency']),
+            downPayment: $row['down_payment_minor'] === null
+                ? null
+                : Money::fromMinorUnits((int) $row['down_payment_minor'], (string) $row['currency']),
             createdAt: new DateTimeImmutable((string) $row['created_at']),
             expiresAt: new DateTimeImmutable((string) $row['expires_at']),
             policyId: $row['policy_id'] === null ? null : (string) $row['policy_id'],
