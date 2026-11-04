@@ -45,9 +45,7 @@ final class TenantContextTest extends TestCase
         $requestStack->push($request);
         $context = new TenantContext($requestStack);
 
-        $result = $context->run('tenant-message', function () use ($context): string {
-            return $context->requireTenantId();
-        });
+        $result = $context->run('tenant-message', fn (): string => $context->requireTenantId());
 
         self::assertSame('tenant-message', $result);
         self::assertSame('tenant-original', $context->requireTenantId());
