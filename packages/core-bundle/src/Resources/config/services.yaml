@@ -11,6 +11,8 @@ services:
             - '../../Tests/'
             - '../../Infrastructure/RoadRunner/'
             - '../../Infrastructure/Serialization/ProtobufSerializer.php'
+            - '../../Transport/Grpc/Generated/'
+            - '../../Transport/Grpc/PlatformHealthGrpcService.php'
             - '../../CoreBundle.php'
 
     AutoFlow\CoreBundle\Application\Clock\ClockInterface:
