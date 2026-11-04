@@ -20,7 +20,11 @@ final class ScopeAuthorizationSubscriber implements EventSubscriberInterface
     public function onKernelController(ControllerEvent $event): void
     {
         $controller = $event->getController();
-        if (!is_array($controller) || (!is_object($controller[0]) && !is_string($controller[0])) || !is_string($controller[1])) {
+        if (
+            !is_array($controller)
+            || (!is_object($controller[0]) && !is_string($controller[0]))
+            || !is_string($controller[1])
+        ) {
             return;
         }
 
