@@ -42,14 +42,15 @@ final class CorrelationContextTest extends TestCase
         $context = new CorrelationContext();
         $context->set('outer');
 
-        $this->expectException(RuntimeException::class);
-
         try {
             $context->run('inner', static function (): never {
                 throw new RuntimeException('failure');
             });
-        } finally {
-            self::assertSame('outer', $context->get());
+            self::fail('Expected callback exception was not thrown.');
+        } catch (RuntimeException $exception) {
+            self::assertSame('failure', $exception->getMessage());
         }
+
+        self::assertSame('outer', $context->get());
     }
 }

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace AutoFlow\CoreBundle\Infrastructure\RoadRunner;
 
 use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7\Response;
+use Nyholm\Psr7\Response as PsrResponse;
 use Spiral\RoadRunner\Http\PSR7Worker;
 use Spiral\RoadRunner\Worker;
 use Symfony\Bridge\PsrHttpMessage\Factory\HttpFoundationFactory;
 use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Symfony\Component\HttpKernel\TerminableInterface;
 use Symfony\Contracts\Service\ResetInterface;
@@ -17,6 +19,9 @@ use Throwable;
 
 /**
  * RoadRunner HTTP adapter for a Symfony HttpKernel.
+ *
+ * A request receives at most one response attempt. A failed response write
+ * terminates this worker loop because the transport may no longer be usable.
  */
 final readonly class SymfonyHttpWorker
 {
@@ -35,11 +40,11 @@ final readonly class SymfonyHttpWorker
                     $psrRequest = $worker->waitRequest();
                 } catch (Throwable $exception) {
                     error_log(sprintf('RoadRunner could not parse an HTTP request (%s).', $exception::class));
-                    $worker->respond(new Response(
-                        400,
-                        ['content-type' => 'application/problem+json'],
-                        '{"type":"about:blank","title":"Bad Request","status":400}',
-                    ));
+
+                    if (!$this->respond($worker, $this->problemResponse(400, 'Bad Request'))) {
+                        break;
+                    }
+
                     continue;
                 }
 
@@ -48,26 +53,33 @@ final readonly class SymfonyHttpWorker
                 }
 
                 $request = null;
-                $response = null;
+                $response = new Response('', Response::HTTP_INTERNAL_SERVER_ERROR);
 
                 try {
                     $request = $requestFactory->createRequest($psrRequest);
                     $response = $kernel->handle($request);
-                    $worker->respond($responseFactory->createResponse($response));
                 } catch (Throwable $exception) {
                     error_log(sprintf('RoadRunner HTTP request failed (%s).', $exception::class));
-                    $worker->respond(new Response(
-                        500,
-                        ['content-type' => 'application/problem+json'],
-                        '{"type":"about:blank","title":"Internal Server Error","status":500}',
-                    ));
+                    $response = $this->problemResponse(500, 'Internal Server Error');
+                }
+
+                try {
+                    $psrResponse = $responseFactory->createResponse($response);
+
+                    if (!$this->respond($worker, $psrResponse)) {
+                        break;
+                    }
+                } catch (Throwable $exception) {
+                    // Do not attempt a second response after a response conversion/write failure.
+                    error_log(sprintf('RoadRunner could not write an HTTP response (%s).', $exception::class));
+                    break;
                 } finally {
                     try {
-                        if ($request !== null && $response !== null) {
+                        if ($request instanceof Request && $response instanceof Response) {
                             $kernel->terminate($request, $response);
                         }
                     } finally {
-                        // Reset tagged stateful services before the next RoadRunner request.
+                        // Long-running workers must not retain request-scoped service state.
                         $kernel->reset();
                     }
                 }
@@ -75,5 +87,34 @@ final readonly class SymfonyHttpWorker
         } finally {
             $kernel->shutdown();
         }
+    }
+
+    private function respond(PSR7Worker $worker, PsrResponse $response): bool
+    {
+        try {
+            $worker->respond($response);
+
+            return true;
+        } catch (Throwable $exception) {
+            error_log(sprintf('RoadRunner response transport failed (%s).', $exception::class));
+
+            return false;
+        }
+    }
+
+    private function problemResponse(int $status, string $title): Response
+    {
+        return new Response(
+            json_encode(
+                [
+                    'type' => 'about:blank',
+                    'title' => $title,
+                    'status' => $status,
+                ],
+                JSON_THROW_ON_ERROR,
+            ),
+            $status,
+            ['content-type' => 'application/problem+json'],
+        );
     }
 }
