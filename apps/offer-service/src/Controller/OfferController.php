@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Security\KeycloakClientCredentialsTokenProvider;
+use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
@@ -24,6 +25,7 @@ final readonly class OfferController
         private HttpClientInterface $httpClient,
         private string $pricingServiceUrl,
         private KeycloakClientCredentialsTokenProvider $pricingTokenProvider,
+        private TenantContext $tenantContext,
     ) {
     }
 
@@ -57,7 +59,10 @@ final readonly class OfferController
                     rtrim($this->pricingServiceUrl, '/'),
                     rawurlencode($vehicleId),
                 ),
-                ['auth_bearer' => $this->pricingTokenProvider->getAccessToken()],
+                [
+                    'auth_bearer' => $this->pricingTokenProvider->getAccessToken(),
+                    'headers' => ['X-Tenant-ID' => $this->tenantContext->requireTenantId()],
+                ],
             );
 
             $pricing = $pricingResponse->toArray();
