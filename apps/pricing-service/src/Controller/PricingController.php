@@ -25,6 +25,26 @@ use Throwable;
 #[AsController]
 final class PricingController
 {
+    #[Route('/ready', name: 'pricing_readiness', methods: ['GET'])]
+    public function readiness(PostgresConnection $connection): JsonResponse
+    {
+        try {
+            $connection->get()->query('SELECT 1')->fetchColumn();
+        } catch (Throwable) {
+            return new JsonResponse([
+                'service' => 'pricing-service',
+                'status' => 'not_ready',
+                'dependencies' => ['postgresql' => 'unavailable'],
+            ], JsonResponse::HTTP_SERVICE_UNAVAILABLE);
+        }
+
+        return new JsonResponse([
+            'service' => 'pricing-service',
+            'status' => 'ready',
+            'dependencies' => ['postgresql' => 'ok'],
+        ]);
+    }
+
     #[Route('/health', name: 'pricing_health', methods: ['GET'])]
     public function health(): JsonResponse
     {
