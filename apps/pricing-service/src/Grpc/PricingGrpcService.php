@@ -15,7 +15,7 @@ use AutoFlow\CoreBundle\Security\MissingScopeException;
 use AutoFlow\CoreBundle\Security\TenantDelegationException;
 use AutoFlow\CoreBundle\Transport\Grpc\GrpcRequestAuthenticator;
 use InvalidArgumentException;
-use Psr\\Log\\LoggerInterface;
+use Psr\Log\LoggerInterface;
 use Spiral\RoadRunner\GRPC\ContextInterface;
 use Spiral\RoadRunner\GRPC\Exception\GRPCException;
 use Spiral\RoadRunner\GRPC\StatusCode;
