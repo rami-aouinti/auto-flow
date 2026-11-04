@@ -50,6 +50,50 @@ final readonly class PricingPolicy
         }
     }
 
+    public function activate(DateTimeImmutable $publishedAt): self
+    {
+        if ($this->status !== 'draft') {
+            throw new InvalidArgumentException('Only a draft pricing policy can be activated.');
+        }
+        return new self(
+            policyId: $this->policyId,
+            tenantId: $this->tenantId,
+            version: $this->version,
+            status: 'active',
+            minimumDurationMonths: $this->minimumDurationMonths,
+            maximumDurationMonths: $this->maximumDurationMonths,
+            minimumAnnualRateBasisPoints: $this->minimumAnnualRateBasisPoints,
+            maximumAnnualRateBasisPoints: $this->maximumAnnualRateBasisPoints,
+            quoteValidityDays: $this->quoteValidityDays,
+            calculationVersion: $this->calculationVersion,
+            createdBy: $this->createdBy,
+            createdAt: $this->createdAt,
+            publishedAt: $publishedAt,
+        );
+    }
+
+    public function retire(): self
+    {
+        if ($this->status !== 'active') {
+            throw new InvalidArgumentException('Only an active pricing policy can be retired.');
+        }
+        return new self(
+            policyId: $this->policyId,
+            tenantId: $this->tenantId,
+            version: $this->version,
+            status: 'retired',
+            minimumDurationMonths: $this->minimumDurationMonths,
+            maximumDurationMonths: $this->maximumDurationMonths,
+            minimumAnnualRateBasisPoints: $this->minimumAnnualRateBasisPoints,
+            maximumAnnualRateBasisPoints: $this->maximumAnnualRateBasisPoints,
+            quoteValidityDays: $this->quoteValidityDays,
+            calculationVersion: $this->calculationVersion,
+            createdBy: $this->createdBy,
+            createdAt: $this->createdAt,
+            publishedAt: $this->publishedAt,
+        );
+    }
+
     public function allows(int $durationMonths, int $annualRateBasisPoints): bool
     {
         return $durationMonths >= $this->minimumDurationMonths
