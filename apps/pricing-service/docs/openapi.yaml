@@ -79,6 +79,34 @@ paths:
       responses:
         '200':
           description: Paginated quote collection
+          content:
+            application/json:
+              example:
+                items:
+                  - quoteId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                    vehicleId: vehicle-demo-001
+                    monthlyAmount: '455.46'
+                    totalInstallmentsAmount: '21862.08'
+                    totalCostIncludingDownPayment: '26862.08'
+                    currency: EUR
+                    durationMonths: 48
+                    calculationVersion: lease-annuity-v1
+                    policyId: '123e4567-e89b-42d3-a456-426614174000'
+                    policyVersion: 1
+                    expired: false
+                  - quoteId: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+                    vehicleId: vehicle-demo-002
+                    monthlyAmount: '389.90'
+                    totalInstallmentsAmount: '14036.40'
+                    totalCostIncludingDownPayment: '18036.40'
+                    currency: EUR
+                    durationMonths: 36
+                    calculationVersion: lease-annuity-v1
+                    policyId: '123e4567-e89b-42d3-a456-426614174000'
+                    policyVersion: 1
+                    expired: false
+                limit: 50
+                offset: 0
         '400':
           description: Invalid pagination
         '401':
