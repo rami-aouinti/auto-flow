@@ -23,6 +23,8 @@ AutoFlow is an independent portfolio and learning project inspired by publicly o
 | [13 — Shared CoreBundle](13-shared-core-bundle.md) | Technical shared capabilities, correlation, health, messaging and boundaries |
 | [14 — Local developer tooling](14-local-developer-tooling.md) | Adminer, per-service Swagger UI, OpenAPI contracts and dev/prod isolation |
 | [15 — Security and API platform](15-security-and-api-platform.md) | JWT/OIDC, tenant isolation, permissions, gateway, rate limits, API versions and contract tests |
+| [16 — Vehicle Catalog context map](16-vehicle-catalog-context-map.md) | Vehicle domain, ownership boundaries, context map and open questions |
+| [17 — Engineering delivery and agents](17-engineering-delivery-and-agents.md) | Issue-to-PR workflow, quality gates and AI agent rules |
 
 ## How to interpret this documentation
 
