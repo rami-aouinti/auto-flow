@@ -9,5 +9,5 @@ services:
             - '../src/Kernel.php'
             - '../src/Grpc/Generated/'
 
-    App\\Grpc\\PricingGrpcService:
+    App\Grpc\PricingGrpcService:
         public: true
