@@ -63,7 +63,9 @@ final readonly class PostgresPricingPolicyRepository implements PricingPolicyRep
                 'expected_status' => $expectedStatus,
             ]);
             if ($update->rowCount() !== 1) {
-                throw new LogicException('Pricing policy lifecycle transition did not update exactly one draft version.');
+                throw new LogicException(
+                    'Pricing policy lifecycle transition did not update exactly one draft version.',
+                );
             }
         });
     }
