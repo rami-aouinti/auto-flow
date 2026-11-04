@@ -17,7 +17,16 @@ final class Configuration implements ConfigurationInterface
         $root
             ->children()
                 ->booleanNode('correlation_id')->defaultTrue()->end()
-                ->scalarNode('correlation_header')->defaultValue('X-Correlation-ID')->end()
+                ->scalarNode('correlation_header')
+                    ->defaultValue('X-Correlation-ID')
+                    ->validate()
+                        ->ifTrue(
+                            static fn (mixed $value): bool => !is_string($value)
+                                || preg_match('/^[A-Za-z0-9!#$%&*+.^_`|~-]+$/D', $value) !== 1,
+                        )
+                        ->thenInvalid('The correlation header must be a valid HTTP token.')
+                    ->end()
+                ->end()
             ->end();
 
         return $treeBuilder;
