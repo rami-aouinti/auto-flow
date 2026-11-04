@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Entity;
 
 use App\Domain\ValueObject\CatalogueId;
+use App\Domain\ValueObject\CatalogStatus;
 use InvalidArgumentException;
 
 final readonly class VehicleModel
@@ -14,6 +15,7 @@ final readonly class VehicleModel
         public CatalogueId $manufacturerId,
         public string $name,
         public string $normalizedName,
+        public CatalogStatus $status,
     ) {
     }
 
@@ -30,6 +32,23 @@ final readonly class VehicleModel
             CatalogueId::fromString($manufacturerId),
             $name,
             mb_strtolower($name),
+            CatalogStatus::DRAFT,
         );
+    }
+
+    public function withStatus(CatalogStatus $status): self
+    {
+        return new self(
+            $this->id,
+            $this->manufacturerId,
+            $this->name,
+            $this->normalizedName,
+            $this->status->transitionTo($status),
+        );
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->id->value === $other->id->value;
     }
 }
