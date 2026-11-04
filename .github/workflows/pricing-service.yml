@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   unit-tests:
-    name: Pricing domain unit tests
+    name: Pricing domain and tenant integration tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -33,5 +33,45 @@ jobs:
             --build-arg COMPOSER_NO_DEV= \
             --tag autoflow-pricing-test .
 
-      - name: Run PHPUnit
-        run: docker run --rm --entrypoint vendor/bin/phpunit autoflow-pricing-test
+      - name: Start isolated PostgreSQL test database
+        run: |
+          docker network create autoflow-pricing-tests
+          docker run --detach \
+            --name autoflow-pricing-postgres \
+            --network autoflow-pricing-tests \
+            --env POSTGRES_DB=autoflow \
+            --env POSTGRES_USER=autoflow \
+            --env POSTGRES_PASSWORD=autoflow \
+            postgres:16-alpine
+
+          exit_code=1
+          for attempt in $(seq 1 30); do
+            if docker exec autoflow-pricing-postgres pg_isready -U autoflow -d autoflow; then
+              exit_code=0
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$exit_code" -ne 0 ]; then
+            docker logs autoflow-pricing-postgres
+            exit 1
+          fi
+
+      - name: Create restricted application role and tenant-isolated schema
+        run: |
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/00_create_pricing_database_role.sql
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/Version20261104000100CreatePricingQuotes.sql
+
+      - name: Run PHPUnit including PostgreSQL row-level security tests
+        run: |
+          docker run --rm \
+            --network autoflow-pricing-tests \
+            --env DATABASE_URL=postgresql://autoflow_pricing:local-only-pricing-password@autoflow-pricing-postgres:5432/autoflow \
+            --env RUN_DATABASE_INTEGRATION_TESTS=1 \
+            --entrypoint vendor/bin/phpunit \
+            autoflow-pricing-test
