@@ -44,7 +44,7 @@ jobs:
           OFFER_TEST_DATABASE_URL: postgresql://autoflow_offer:local-only-offer-password@127.0.0.1:5432/autoflow
         run: vendor/bin/phpunit --configuration phpunit.xml tests/Integration/Offer
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service pricing-service
+        run: docker compose --env-file .env.example build php offer-service offer-expiration-worker offer-outbox-publisher pricing-service
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
