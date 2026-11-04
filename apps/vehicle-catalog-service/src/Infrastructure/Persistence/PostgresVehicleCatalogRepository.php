@@ -82,7 +82,16 @@ final readonly class PostgresVehicleCatalogRepository implements VehicleCatalogR
         $sql='SELECT manufacturer_id,code,name,status,created_at,updated_at FROM catalog_manufacturers';
         if ($publishedOnly) { $sql.=" WHERE status='published'"; }
         $sql.=' ORDER BY name';
-        return $this->connection->get()->query($sql)->fetchAll();
+        $rows = $this->connection->get()->query($sql)->fetchAll();
+
+        return array_map(static fn (array $row): array => [
+            'manufacturerId' => trim((string) $row['manufacturer_id']),
+            'code' => $row['code'],
+            'name' => $row['name'],
+            'status' => $row['status'],
+            'createdAt' => $row['created_at'],
+            'updatedAt' => $row['updated_at'],
+        ], $rows);
     }
 
     public function createManufacturer(Manufacturer $manufacturer): void
