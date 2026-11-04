@@ -60,8 +60,8 @@ RUN set +e; APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret DATABASE_URL=p
     timeout --signal=TERM --kill-after=3s 8s rr serve -c .rr.yaml; status=$?; \
     if [ "$status" -ne 124 ] && [ "$status" -ne 137 ]; then exit "$status"; fi
 
-ENV APP_ENV=dev
-ENV APP_DEBUG=1
+ENV APP_ENV=prod
+ENV APP_DEBUG=0
 
 EXPOSE 8080 9001
 
