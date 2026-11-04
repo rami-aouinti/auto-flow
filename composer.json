@@ -31,7 +31,7 @@
     "roadrunner/grpc": "^3.8",
     "roadrunner/http": "^4.0",
     "symfony/psr-http-message-bridge": "7.4.*",
-    "firebase/php-jwt": "^6.11"
+    "firebase/php-jwt": "^7.2.1"
   },
   "config": {
     "sort-packages": true,

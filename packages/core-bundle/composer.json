@@ -18,7 +18,7 @@
     "roadrunner/http": "^4.0",
     "nyholm/psr7": "^1.8",
     "symfony/psr-http-message-bridge": "7.4.*",
-    "firebase/php-jwt": "^6.11"
+    "firebase/php-jwt": "^7.2.1"
   },
   "autoload": {
     "psr-4": {
