@@ -104,6 +104,11 @@ final class PricingController
                 'downPayment' => $quote->downPayment?->toDecimal(),
                 'createdAt' => $quote->createdAt->format(DATE_ATOM),
                 'expiresAt' => $quote->expiresAt->format(DATE_ATOM),
+            'policyId' => $quote->policyId,
+            'policyVersion' => $quote->policyVersion,
+            'expired' => $quote->isExpired(),
+                'policyId' => $quote->policyId,
+                'policyVersion' => $quote->policyVersion,
             ]);
             $response->headers->set('Cache-Control', 'no-store');
 
