@@ -54,6 +54,26 @@
       ]
     },
     {
+      "clientId": "autoflow-offer",
+      "name": "Offer Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-pricing",
+      "name": "Pricing Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
       "clientId": "autoflow-offer-to-pricing",
       "name": "Offer Service to Pricing Service workload identity",
       "enabled": true,
