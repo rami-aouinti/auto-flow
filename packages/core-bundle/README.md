@@ -98,6 +98,40 @@ core:
     correlation_header: X-Correlation-ID
 ~~~
 
+## JWT scopes and tenant context
+
+JWT authentication validates the RS256 signature against the Keycloak JWKS, issuer, audience and expiry before placing an AuthenticatedPrincipal on the current request. The principal contains the verified subject, optional `tenant_id` claim and OAuth `scope` values.
+
+Protect controller actions declaratively:
+
+~~~php
+use AutoFlow\\CoreBundle\\Security\\RequiresScope;
+
+#[RequiresScope('pricing:quote')]
+#[Route('/api/pricing/quotes', methods: ['POST'])]
+public function calculate(...): JsonResponse
+{
+    // ...
+}
+~~~
+
+The ScopeAuthorizationSubscriber returns HTTP 403 when the authenticated principal is missing or does not contain the required scope. Keycloak must issue the relevant scopes (for example `offers:read` and `pricing:quote`) to the corresponding clients/users.
+
+TenantContext reads the tenant only from the verified request principal; it never trusts a caller-supplied tenant header. Use `getTenantId()` for an optional tenant and `requireTenantId()` for operations that must be tenant-scoped. The latter throws MissingTenantContextException if there is no verified tenant.
+
+Tenant enforcement can be enabled for selected route prefixes:
+
+~~~yaml
+core:
+    authentication:
+        tenant_required_path_prefixes:
+            - '/api/tenant/'
+~~~
+
+The default list is empty to avoid breaking existing non-tenant endpoints. Add prefixes only after the identity provider issues tenant claims for those callers and tenant context is propagated securely across service boundaries. A service-to-service client-credentials token without a tenant claim must not be used for a tenant-required operation.
+
+The bundle supplies the cross-cutting tenant context and scope gate, not tenant membership or resource-level business policy. Each service must still verify that the principal is entitled to access the specific tenant-owned resource.
+
 ## Messenger correlation
 
 Enable the middleware on each relevant bus while retaining Symfony's default middleware:
