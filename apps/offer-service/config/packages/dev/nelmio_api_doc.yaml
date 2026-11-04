@@ -1,0 +1,49 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: AutoFlow Offer Service API
+            description: REST API for composing vehicle offers from downstream pricing data.
+            version: 1.0.0
+        servers:
+            - url: http://localhost:8081
+              description: Local development
+        paths:
+            /api/offers/{vehicleId}:
+                get:
+                    tags: [Offers]
+                    summary: Retrieve a composed vehicle offer
+                    description: Calls the Pricing Service and combines its pricing response with offer metadata.
+                    parameters:
+                        - name: vehicleId
+                          in: path
+                          required: true
+                          description: Identifier of the vehicle.
+                          schema:
+                              type: string
+                    responses:
+                        '200':
+                            description: Offer composed successfully.
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        required: [offerId, vehicleId, status, pricing]
+                                        properties:
+                                            offerId:
+                                                type: string
+                                                example: demo-vehicle-001
+                                            vehicleId:
+                                                type: string
+                                                example: vehicle-001
+                                            status:
+                                                type: string
+                                                example: calculated
+                                            pricing:
+                                                type: object
+                                                description: Response returned by the Pricing Service.
+                                                additionalProperties: true
+                        '500':
+                            description: Unexpected error while composing the offer.
+    areas:
+        path_patterns:
+            - ^/api(?!/doc(?:\\.|$))

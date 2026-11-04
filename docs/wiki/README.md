@@ -21,6 +21,7 @@ AutoFlow is an independent portfolio and learning project inspired by publicly o
 | [11 — Events and workflows](11-event-catalogue-and-workflows.md) | Event catalogue, Outbox, Messenger, Temporal and idempotency |
 | [12 — Pricing Service domain](12-pricing-service-domain.md) | Money, lease invariants, annuity calculation, API contract and next steps |
 | [13 — Shared CoreBundle](13-shared-core-bundle.md) | Technical shared capabilities, correlation, health, messaging and boundaries |
+| [14 — Local developer tooling](14-local-developer-tooling.md) | Adminer, per-service Swagger UI, OpenAPI contracts and dev/prod isolation |
 
 ## How to interpret this documentation
 

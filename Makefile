@@ -1,4 +1,4 @@
-.PHONY: build up down logs shell install quality cs cs-fix phpcs phpstan phpmd rector rector-fix test coverage audit
+.PHONY: build up down logs shell install quality cs cs-fix phpcs phpstan phpmd rector rector-fix test coverage audit api-docs
 build:
 	docker compose build --no-cache
 up:
@@ -33,3 +33,7 @@ coverage:
 	docker compose exec php composer coverage
 audit:
 	docker compose exec php composer security:audit
+
+api-docs:
+	docker compose exec offer-service php bin/console nelmio:apidoc:dump --format=json
+	docker compose exec pricing-service php bin/console nelmio:apidoc:dump --format=json
