@@ -47,7 +47,7 @@ final readonly class PostgresVehicleCatalogRepository implements VehicleCatalogR
         $count = $this->connection->get()->prepare('SELECT COUNT(*) '.$from.' WHERE '.$condition);
         $count->execute($params);
         $total = (int) $count->fetchColumn();
-        $sql = 'SELECT mf.manufacturer_id,mf.code AS manufacturer_code,mf.name AS manufacturer_name,'
+        $sql = 'SELECT mf.manufacturer_id,mf.code AS brand_code,mf.name AS manufacturer_name,'
             .'m.model_id,m.name AS model_name,g.generation_id,g.name AS generation_name,'
             .'g.production_start_year,g.production_end_year,v.* '.$from.' WHERE '.$condition
             .' ORDER BY mf.name,m.name,g.production_start_year DESC NULLS LAST,v.name LIMIT :limit OFFSET :offset';
@@ -134,6 +134,40 @@ final readonly class PostgresVehicleCatalogRepository implements VehicleCatalogR
         });
     }
 
+    public function publishVariant(string $variantId): bool
+    {
+        $db=$this->connection->get();
+        $db->beginTransaction();
+        try {
+            $find=$db->prepare('SELECT g.generation_id,m.model_id,mf.manufacturer_id,v.status FROM catalog_vehicle_variants v JOIN catalog_generations g ON g.generation_id=v.generation_id JOIN catalog_models m ON m.model_id=g.model_id JOIN catalog_manufacturers mf ON mf.manufacturer_id=m.manufacturer_id WHERE v.variant_id=:id FOR UPDATE OF v');
+            $find->execute(['id'=>$variantId]);
+            $row=$find->fetch();
+            if (!is_array($row) || $row['status']==='archived') {
+                $db->rollBack();
+                return false;
+            }
+            foreach ([
+                ['catalog_manufacturers','manufacturer_id',$row['manufacturer_id']],
+                ['catalog_models','model_id',$row['model_id']],
+                ['catalog_generations','generation_id',$row['generation_id']]
+            ] as [$table,$column,$id]) {
+                $db->prepare("UPDATE {$table} SET status='published',updated_at=CURRENT_TIMESTAMP WHERE {$column}=:id AND status<>'archived'")->execute(['id'=>$id]);
+            }
+            $db->prepare("UPDATE catalog_vehicle_variants SET status='published',updated_at=CURRENT_TIMESTAMP WHERE variant_id=:id")->execute(['id'=>$variantId]);
+            $eventId=bin2hex(random_bytes(16));
+            $event=['eventId'=>$eventId,'eventType'=>'catalog.vehicle_variant.published','schemaVersion'=>1,
+                'aggregateId'=>$variantId,'occurredAt'=>(new \\DateTimeImmutable())->format(DATE_ATOM),
+                'payload'=>['variantId'=>$variantId]];
+            $insert=$db->prepare('INSERT INTO catalog_outbox(event_id,aggregate_id,event_type,schema_version,payload) VALUES(:id,:aggregate,:type,1,:payload)');
+            $insert->execute(['id'=>$eventId,'aggregate'=>$variantId,'type'=>'catalog.vehicle_variant.published','payload'=>json_encode($event,JSON_THROW_ON_ERROR)]);
+            $db->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) { $db->rollBack(); }
+            throw $e;
+        }
+    }
+
     private function baseSelect(): string
     {
         return 'FROM catalog_vehicle_variants v JOIN catalog_generations g ON g.generation_id=v.generation_id '
@@ -145,7 +179,7 @@ final readonly class PostgresVehicleCatalogRepository implements VehicleCatalogR
     {
         $media=$row['media_references'] ?? '[]';
         return [
-            'variantId'=>$row['variant_id'],'manufacturer'=>['manufacturerId'=>$row['manufacturer_id'],'code'=>$row['manufacturer_code'],'name'=>$row['manufacturer_name']],
+            'variantId'=>$row['variant_id'],'manufacturer'=>['manufacturerId'=>$row['manufacturer_id'],'code'=>$row['brand_code'],'name'=>$row['manufacturer_name']],
             'model'=>['modelId'=>$row['model_id'],'name'=>$row['model_name']],
             'generation'=>['generationId'=>$row['generation_id'],'name'=>$row['generation_name'],'productionStartYear'=>$row['production_start_year']===null?null:(int)$row['production_start_year'],'productionEndYear'=>$row['production_end_year']===null?null:(int)$row['production_end_year']],
             'manufacturerCode'=>$row['manufacturer_code'],'name'=>$row['name'],'fuelType'=>$row['fuel_type'],'powertrain'=>$row['powertrain'],
