@@ -31,6 +31,7 @@ services:
         SERVICE_PATH: apps/offer-service
     ports:
       - "8081:8080"
+      - "127.0.0.1:9001:9001"
     environment:
       APP_ENV: dev
       APP_DEBUG: "1"
@@ -68,6 +69,7 @@ services:
         SERVICE_PATH: apps/pricing-service
     ports:
       - "8082:8080"
+      - "127.0.0.1:9002:9001"
     environment:
       APP_ENV: dev
       APP_DEBUG: "1"

@@ -1,0 +1,27 @@
+version: "3"
+
+server:
+  command: "php bin/http-worker.php"
+  relay: "pipes"
+  relay_timeout: 20s
+
+http:
+  address: "0.0.0.0:8080"
+  max_request_size: 16
+  middleware: ["headers", "gzip"]
+  pool:
+    num_workers: 4
+    max_jobs: 1000
+    allocate_timeout: 60s
+    destroy_timeout: 60s
+
+grpc:
+  listen: "tcp://0.0.0.0:9001"
+  proto:
+    - "../packages/core-bundle/proto/core/v1/health.proto"
+  pool:
+    command: "php bin/grpc-worker.php"
+    num_workers: 2
+    max_jobs: 1000
+    allocate_timeout: 60s
+    destroy_timeout: 60s

@@ -22,4 +22,23 @@ final class CorrelationContext
     {
         $this->correlationId = null;
     }
+
+    /**
+     * Run work in a correlation scope and always restore the previous value.
+     *
+     * @template TResult
+     * @param callable(): TResult $work
+     * @return TResult
+     */
+    public function run(string $correlationId, callable $work): mixed
+    {
+        $previous = $this->correlationId;
+        $this->correlationId = $correlationId;
+
+        try {
+            return $work();
+        } finally {
+            $this->correlationId = $previous;
+        }
+    }
 }

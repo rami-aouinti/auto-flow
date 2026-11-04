@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package autoflow.core.v1;
+
+option php_namespace = "AutoFlow\\CoreBundle\\Transport\\Grpc\\Generated\\Core\\V1";
+option php_metadata_namespace = "AutoFlow\\CoreBundle\\Transport\\Grpc\\Generated\\GPBMetadata";
+
+import "google/protobuf/empty.proto";
+
+// Minimal transport smoke-test contract. Business RPCs belong to each service.
+service PlatformHealthService {
+  rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
