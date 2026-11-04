@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\CoreBundle\\Application\\Clock;
+namespace AutoFlow\CoreBundle\Application\Clock;
 
 use DateTimeImmutable;
 
