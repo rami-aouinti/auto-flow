@@ -19,6 +19,37 @@ final class ConfigurationTest extends TestCase
         self::assertSame('X-Correlation-ID', $config['correlation_header']);
     }
 
+    public function testValidHttpTokenPunctuationIsAcceptedInCorrelationHeader(): void
+    {
+        $config = (new Processor())->processConfiguration(new Configuration(), [[
+            'correlation_header' => "X'Correlation-ID",
+        ]]);
+
+        self::assertSame("X'Correlation-ID", $config['correlation_header']);
+    }
+
+    public function testProtectedPathPrefixesMustBeAbsolutePaths(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+
+        (new Processor())->processConfiguration(new Configuration(), [[
+            'authentication' => [
+                'protected_path_prefixes' => ['api/'],
+            ],
+        ]]);
+    }
+
+    public function testAtLeastOneProtectedPathPrefixIsRequired(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+
+        (new Processor())->processConfiguration(new Configuration(), [[
+            'authentication' => [
+                'protected_path_prefixes' => [],
+            ],
+        ]]);
+    }
+
     public function testInvalidCorrelationHeaderIsRejected(): void
     {
         $this->expectException(InvalidConfigurationException::class);

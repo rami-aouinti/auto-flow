@@ -22,7 +22,7 @@ final class Configuration implements ConfigurationInterface
                     ->validate()
                         ->ifTrue(
                             static fn (mixed $value): bool => !is_string($value)
-                                || preg_match('/^[A-Za-z0-9!#$%&*+.^_`|~-]+$/D', $value) !== 1,
+                                || preg_match('/^[A-Za-z0-9!#$%&\\x27*+.^_`|~-]+$/D', $value) !== 1,
                         )
                         ->thenInvalid('The correlation header must be a valid HTTP token.')
                     ->end()
@@ -36,11 +36,30 @@ final class Configuration implements ConfigurationInterface
                         ->scalarNode('jwks_uri')->defaultValue('')->end()
                         ->integerNode('jwks_cache_ttl')->min(1)->defaultValue(300)->end()
                         ->arrayNode('protected_path_prefixes')
-                            ->scalarPrototype()->end()
+                            ->scalarPrototype()
+                                ->validate()
+                                    ->ifTrue(
+                                        static fn (mixed $value): bool => !is_string($value)
+                                            || $value === ''
+                                            || !str_starts_with($value, '/'),
+                                    )
+                                    ->thenInvalid('Protected path prefixes must be non-empty absolute paths.')
+                                ->end()
+                            ->end()
+                            ->requiresAtLeastOneElement()
                             ->defaultValue(['/api/'])
                         ->end()
                         ->arrayNode('excluded_paths')
-                            ->scalarPrototype()->end()
+                            ->scalarPrototype()
+                                ->validate()
+                                    ->ifTrue(
+                                        static fn (mixed $value): bool => !is_string($value)
+                                            || $value === ''
+                                            || !str_starts_with($value, '/'),
+                                    )
+                                    ->thenInvalid('Excluded paths must be non-empty absolute paths.')
+                                ->end()
+                            ->end()
                             ->defaultValue(['/api/doc', '/api/doc.json'])
                         ->end()
                     ->end()
