@@ -135,6 +135,45 @@ final class PostgresTenantIsolationTest extends TestCase
         }
     }
 
+
+    /**
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     */
+    public function testRepositoryReadsListsAndDeletesOnlyWithinTheCurrentTenant(): void
+    {
+        $quoteId = bin2hex(random_bytes(16));
+        $quote = new PricingQuote(
+            quoteId: $quoteId,
+            tenantId: 'tenant-a',
+            vehicleId: 'vehicle-002',
+            monthlyAmount: Money::fromMinorUnits(42000, 'EUR'),
+            totalInstallmentsAmount: Money::fromMinorUnits(1512000, 'EUR'),
+            totalCostIncludingDownPayment: Money::fromMinorUnits(1812000, 'EUR'),
+            residualValue: Money::fromMinorUnits(800000, 'EUR'),
+            durationMonths: 36,
+            annualInterestRateBasisPoints: 250,
+            calculationVersion: 'lease-annuity-v1',
+        );
+        $repository = new PostgresPricingQuoteRepository(new PostgresConnection($this->databaseUrl));
+        $repository->save($quote);
+
+        self::assertNull($repository->findById('tenant-b', $quoteId));
+        self::assertSame([], $repository->findAll('tenant-b'));
+        self::assertFalse($repository->delete('tenant-b', $quoteId));
+
+        $found = $repository->findById('tenant-a', $quoteId);
+        self::assertNotNull($found);
+        self::assertSame('tenant-a', $found->tenantId);
+        self::assertSame($quoteId, $found->quoteId);
+
+        $tenantQuotes = $repository->findAll('tenant-a');
+        self::assertContainsOnlyInstancesOf(PricingQuote::class, $tenantQuotes);
+        self::assertContainsEquals($found, $tenantQuotes);
+
+        self::assertTrue($repository->delete('tenant-a', $quoteId));
+        self::assertNull($repository->findById('tenant-a', $quoteId));
+    }
+
     private function setTenant(string $tenantId): void
     {
         $statement = $this->connection->prepare(
