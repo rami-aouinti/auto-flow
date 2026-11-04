@@ -19,7 +19,7 @@ services:
         arguments:
             $pricingServiceUrl: '%app.pricing_service_url%'
 
-    App\Security\KeycloakClientCredentialsTokenProvider:
+    App\Security\KeycloakTokenExchangeProvider:
         arguments:
             $tokenUrl: '%app.keycloak_token_url%'
             $clientId: '%app.pricing_client_id%'
