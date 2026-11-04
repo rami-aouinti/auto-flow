@@ -226,11 +226,16 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
             createdAt: new DateTimeImmutable((string) $row['created_at']),
             expiresAt: new DateTimeImmutable((string) $row['expires_at']),
             status: OfferStatus::from((string) $row['status']),
-            publishedAt: $row['published_at'] !== null ? new DateTimeImmutable((string) $row['published_at']) : null,
-            acceptedAt: $row['accepted_at'] !== null ? new DateTimeImmutable((string) $row['accepted_at']) : null,
-            rejectedAt: $row['rejected_at'] !== null ? new DateTimeImmutable((string) $row['rejected_at']) : null,
-            expiredAt: $row['expired_at'] !== null ? new DateTimeImmutable((string) $row['expired_at']) : null,
+            publishedAt: self::nullableDateTime($row['published_at'] ?? null),
+            acceptedAt: self::nullableDateTime($row['accepted_at'] ?? null),
+            rejectedAt: self::nullableDateTime($row['rejected_at'] ?? null),
+            expiredAt: self::nullableDateTime($row['expired_at'] ?? null),
         );
+    }
+
+    private static function nullableDateTime(mixed $value): ?DateTimeImmutable
+    {
+        return $value === null ? null : new DateTimeImmutable((string) $value);
     }
 
     /** @param list<DomainEvent> $events */
