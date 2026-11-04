@@ -243,6 +243,32 @@ final class PostgresTenantIsolationTest extends TestCase
         self::assertNull($repository->findById('tenant-a', $ownerQuoteId, 'user-a'));
     }
 
+    public function testDatabaseRejectsMutationOfPersistedQuoteSnapshot(): void
+    {
+        $quote = \\App\\Tests\\Fixtures\\PricingQuoteFixture::demo(
+            bin2hex(random_bytes(16)),
+            'tenant-a',
+            'user-a',
+            'vehicle-immutable',
+        );
+        $repository = new PostgresPricingQuoteRepository(new PostgresConnection($this->databaseUrl));
+        $repository->save($quote);
+
+        $this->connection->beginTransaction();
+        try {
+            $this->setTenant('tenant-a');
+            $update = $this->connection->prepare(
+                'UPDATE pricing_quotes SET monthly_amount_minor = 1 WHERE quote_id = :quote_id',
+            );
+            $this->expectException(PDOException::class);
+            $update->execute(['quote_id' => $quote->quoteId]);
+        } finally {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+        }
+    }
+
     private function setTenant(string $tenantId): void
     {
         $statement = $this->connection->prepare(
