@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\CoreBundle\\Application\\Idempotency;
+namespace AutoFlow\CoreBundle\Application\Idempotency;
 
 /**
  * Persistence port for idempotent command/API handling.
