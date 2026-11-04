@@ -71,6 +71,10 @@ final readonly class Money
     {
         $this->assertSameCurrency($other);
 
+        if ($other->minorUnits > PHP_INT_MAX - $this->minorUnits) {
+            throw new InvalidArgumentException('Money addition exceeds the supported range.');
+        }
+
         return self::fromMinorUnits($this->minorUnits + $other->minorUnits, $this->currency);
     }
 
