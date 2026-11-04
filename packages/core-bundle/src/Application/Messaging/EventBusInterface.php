@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\CoreBundle\\Application\\Messaging;
+namespace AutoFlow\CoreBundle\Application\Messaging;
 
-use AutoFlow\\CoreBundle\\Messaging\\IntegrationEvent;
+use AutoFlow\CoreBundle\Messaging\IntegrationEvent;
 
 /**
  * Port for publishing integration events.
