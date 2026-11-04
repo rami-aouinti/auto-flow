@@ -157,3 +157,19 @@ New integrations must call POST /api/pricing/quotes and supply explicit lease te
 7. Add metrics for calculation volume, validation failures and latency.
 
 Do not add RabbitMQ or Temporal to this calculation path without an asynchronous business requirement. A deterministic calculation needed immediately by Offer is a reasonable synchronous HTTP use case.
+
+
+## 9. Running the unit tests
+
+The normal service image installs production dependencies only. To build a temporary test image with PHPUnit, run from the repository root:
+
+~~~bash
+docker build -f docker/php/service.Dockerfile \
+  --build-arg SERVICE_PATH=apps/pricing-service \
+  --build-arg COMPOSER_NO_DEV= \
+  -t autoflow-pricing-test .
+
+docker run --rm --entrypoint vendor/bin/phpunit autoflow-pricing-test
+~~~
+
+The build uses the same PHP 8.4 service image and Composer manifest, but includes development dependencies. The normal Compose Pricing image remains free of PHPUnit.
