@@ -1,0 +1,3 @@
+autoflow_core:
+    correlation_id: true
+    correlation_header: X-Correlation-ID
