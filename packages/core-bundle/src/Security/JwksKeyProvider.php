@@ -19,7 +19,8 @@ final class JwksKeyProvider
 
     private float $expiresAt = 0.0;
 
-    private float $lastKidRefreshAt = 0.0;
+    /** @var array<string, float> */
+    private array $lastKidRefreshAt = [];
 
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -50,13 +51,17 @@ final class JwksKeyProvider
             return $keys;
         }
 
-        // Unknown kid can indicate Keycloak key rotation. Refresh at most once
-        // every five seconds to avoid turning arbitrary kid values into a JWKS DoS.
-        if (microtime(true) - $this->lastKidRefreshAt < 5.0) {
+        // A key rotation can introduce a new kid while this worker still has
+        // a valid cached JWKS document. Throttle retries per unknown kid rather
+        // than globally: an unrelated invalid kid must not block a legitimate
+        // refresh for the active signing key.
+        $now = microtime(true);
+        $lastRefreshAt = $this->lastKidRefreshAt[$keyId] ?? 0.0;
+        if ($now - $lastRefreshAt < 5.0) {
             return $keys;
         }
 
-        $this->lastKidRefreshAt = microtime(true);
+        $this->lastKidRefreshAt[$keyId] = $now;
 
         return $this->refreshKeys();
     }
