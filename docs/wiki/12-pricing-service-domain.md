@@ -142,7 +142,7 @@ PostgreSQL should persist policy versions and quote snapshots when those lifecyc
 
 ## 7. Compatibility endpoint
 
-GET /api/pricing/{vehicleId} is retained only so the existing Offer → Pricing tracing demonstration continues to work. Its 329.00 EUR amount is still static, the response identifies itself as legacy-demo-only, and the response includes a deprecation header.
+GET /api/pricing/{vehicleId} is retained only so the existing Offer → Pricing tracing demonstration continues to work. Its 329.00 EUR amount and response body remain unchanged for compatibility; the endpoint sends a deprecation header and remains static demonstration data.
 
 New integrations must call POST /api/pricing/quotes and supply explicit lease terms. The Offer service has not yet been migrated to the new contract.
 
