@@ -45,7 +45,7 @@ final readonly class PricingPolicy
         if (trim($calculationVersion) === '' || trim($createdBy) === '') {
             throw new InvalidArgumentException('Pricing policy version and creator are required.');
         }
-        if (($status === 'active') !== ($publishedAt !== null)) {
+        if (($status !== 'draft') !== ($publishedAt !== null)) {
             throw new InvalidArgumentException('Only an active policy must have a publication timestamp.');
         }
     }
