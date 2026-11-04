@@ -147,7 +147,7 @@ framework:
                     - id: AutoFlow\\CoreBundle\\Infrastructure\\Messenger\\TenantContextMiddleware
 ~~~
 
-When dispatching inside a verified tenant context, the middleware adds a TenantStamp. When consuming the message, it restores that tenant in TenantContext for the duration of the handler and always restores the previous value. A message stamp that attempts to switch an already active tenant is rejected. Handlers must still call `requireTenantId()` and enforce tenant constraints in their own repositories. Messages without a tenant remain unscoped; do not use them for tenant-owned operations.
+When dispatching inside a verified tenant context, the middleware adds a TenantStamp. When consuming the message, it restores that tenant in TenantContext for the duration of the handler and always restores the previous value. A message stamp that attempts to switch an already active tenant is rejected. Handlers must still call `requireTenantId()` and enforce tenant constraints in their own repositories. TenantStamp is transport context, not an authentication credential: restrict broker publishers and verify tenant/resource authorization in each service. Messages without a tenant remain unscoped; do not use them for tenant-owned operations.
 
 ## Messenger correlation
 
