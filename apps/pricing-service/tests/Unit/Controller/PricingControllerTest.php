@@ -70,7 +70,12 @@ final class PricingControllerTest extends TestCase
     {
         $controller = new PricingController();
         $request = $this->request('{"vehicleId":"vehicle-demo-001"}');
-        $response = $controller->calculate($request, $this->handler(false), $this->tenantContext($request), new PricingMetrics());
+        $response = $controller->calculate(
+            $request,
+            $this->handler(false),
+            $this->tenantContext($request),
+            new PricingMetrics(),
+        );
 
         self::assertSame(422, $response->getStatusCode());
     }
