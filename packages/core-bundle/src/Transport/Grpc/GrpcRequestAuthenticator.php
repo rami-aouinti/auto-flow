@@ -6,8 +6,8 @@ namespace AutoFlow\CoreBundle\Transport\Grpc;
 
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\InvalidTokenException;
-use AutoFlow\CoreBundle\Security\JwtTokenVerifier;
 use AutoFlow\CoreBundle\Security\JwksUnavailableException;
+use AutoFlow\CoreBundle\Security\JwtTokenVerifier;
 use AutoFlow\CoreBundle\Security\MissingScopeException;
 use AutoFlow\CoreBundle\Security\TenantDelegationException;
 use AutoFlow\CoreBundle\Security\TenantPrincipalResolver;
