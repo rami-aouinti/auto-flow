@@ -81,7 +81,7 @@ final readonly class VehicleVariant
             self::positiveInt($data, 'lengthMm', 20000),
             self::positiveInt($data, 'widthMm', 5000),
             self::positiveInt($data, 'heightMm', 5000),
-            self::positiveInt($data, 'co2EmissionGPerKm', 2000),
+            self::nonNegativeInt($data, 'co2EmissionGPerKm', 2000),
             array_values($media),
         );
     }
@@ -105,6 +105,19 @@ final readonly class VehicleVariant
         $value = filter_var($data[$key], FILTER_VALIDATE_INT);
         if (!is_int($value) || $value < 1 || $value > $max) {
             throw new InvalidArgumentException(sprintf('%s must be an integer between 1 and %d.', $key, $max));
+        }
+        return $value;
+    }
+
+    /** @param array<string,mixed> $data */
+    private static function nonNegativeInt(array $data, string $key, int $max): ?int
+    {
+        if (!array_key_exists($key, $data) || $data[$key] === null || $data[$key] === '') {
+            return null;
+        }
+        $value = filter_var($data[$key], FILTER_VALIDATE_INT);
+        if (!is_int($value) || $value < 0 || $value > $max) {
+            throw new InvalidArgumentException(sprintf('%s must be an integer between 0 and %d.', $key, $max));
         }
         return $value;
     }
