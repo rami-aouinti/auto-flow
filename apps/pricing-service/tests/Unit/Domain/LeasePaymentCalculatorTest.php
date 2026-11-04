@@ -82,6 +82,7 @@ final class LeasePaymentCalculatorTest extends TestCase
         (new LeasePaymentCalculator())->calculate(
             '0123456789abcdef0123456789abcdef',
             '../tenant-b',
+            'user-a',
             'vehicle-001',
             $terms,
         );
