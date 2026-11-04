@@ -26,7 +26,12 @@ WORKDIR /app
 # Resolve the local CoreBundle path repository inside the image.
 COPY packages/core-bundle/ /packages/core-bundle/
 COPY ${SERVICE_PATH}/composer.json ./composer.json
-RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-progress --no-scripts
+RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-progress --no-scripts \
+    && composer show autoflow/core-bundle --no-interaction \
+    && test -f /packages/core-bundle/src/Security/JwtTokenVerifier.php \
+    && test -f vendor/autoflow/core-bundle/src/Security/JwtTokenVerifier.php \
+    && cmp -s /packages/core-bundle/src/Security/JwtTokenVerifier.php vendor/autoflow/core-bundle/src/Security/JwtTokenVerifier.php \
+    || { echo "ERROR: installed autoflow/core-bundle does not match the CoreBundle source copied into the image."; exit 1; }
 
 COPY ${SERVICE_PATH}/ ./
 
