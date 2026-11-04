@@ -33,9 +33,18 @@ final readonly class PricingQuote
         public ?Money $downPayment = null,
         ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $expiresAt = null,
+        public ?string $policyId = null,
+        public ?int $policyVersion = null,
+        int $validityDays = 7,
     ) {
         $this->createdAt = $createdAt ?? new DateTimeImmutable('now');
-        $this->expiresAt = $expiresAt ?? $this->createdAt->modify('+7 days');
+        if ($validityDays < 1 || $validityDays > 90) {
+            throw new \\InvalidArgumentException('Quote validity must be between 1 and 90 days.');
+        }
+        $this->expiresAt = $expiresAt ?? $this->createdAt->modify(sprintf('+%d days', $validityDays));
+        if (($this->policyId === null) !== ($this->policyVersion === null) || ($this->policyVersion !== null && $this->policyVersion < 1)) {
+            throw new \\InvalidArgumentException('Quote policy ID and version must be provided together.');
+        }
 
         if ($this->expiresAt <= $this->createdAt) {
             throw new \InvalidArgumentException('Quote expiry must be later than its creation time.');
