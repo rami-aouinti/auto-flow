@@ -29,6 +29,7 @@ services:
       dockerfile: docker/php/service.Dockerfile
       args:
         SERVICE_PATH: apps/offer-service
+        COMPOSER_NO_DEV: ""
     ports:
       - "8081:8080"
       - "127.0.0.1:9001:9001"
@@ -67,6 +68,7 @@ services:
       dockerfile: docker/php/service.Dockerfile
       args:
         SERVICE_PATH: apps/pricing-service
+        COMPOSER_NO_DEV: ""
     ports:
       - "8082:8080"
       - "127.0.0.1:9002:9001"
@@ -94,6 +96,18 @@ services:
       timeout: 3s
       retries: 5
       start_period: 20s
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:5.4.1
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8083}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   postgres:

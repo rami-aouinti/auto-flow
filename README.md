@@ -18,6 +18,8 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - Tempo and OTLP for distributed traces
 - PostgreSQL, Redis, Elasticsearch, RabbitMQ and container metrics exporters
 - Mailpit for local email testing
+- Adminer 5 for local PostgreSQL inspection
+- NelmioApiDocBundle + Swagger UI / OpenAPI 3 for interactive REST API testing in development only
 - PHP-CS-Fixer, PHP_CodeSniffer, PHPStan, PHPMD, Rector and PHPUnit
 - GitHub Actions quality workflow
 
@@ -35,7 +37,7 @@ docker compose exec php composer install
 docker compose exec php php -v
 ~~~
 
-The first build of the two Symfony services installs their independent Composer dependencies.
+The first local build of the two Symfony services installs their independent Composer dependencies, including development-only Swagger UI tooling. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` to export both generated OpenAPI specifications.
 Subsequent starts reuse the built images unless their source or Dockerfile changes.
 
 ## Local interfaces and endpoints
@@ -43,7 +45,11 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Service | URL | Purpose |
 | --- | --- | --- |
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
+| Offer Swagger UI | http://localhost:8081/api/doc | Interactive Offer REST API documentation (dev only) |
+| Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
 | Pricing Service | http://localhost:8082 | Demo pricing API |
+| Pricing Swagger UI | http://localhost:8082/api/doc | Interactive Pricing REST API documentation (dev only) |
+| Pricing OpenAPI JSON | http://localhost:8082/api/doc.json | Machine-readable Pricing API contract (dev only) |
 | Offer Service gRPC | localhost:9001 | Internal gRPC listener (platform Ping smoke check) |
 | Pricing Service gRPC | localhost:9002 | `PricingService.CalculateQuote` plus platform Ping |
 | RabbitMQ Management | http://localhost:15672 | Exchanges, queues, consumers, message rates and connections |
@@ -56,6 +62,7 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Tempo | http://localhost:3200 | Distributed trace backend (explore through Grafana) |
 | Alloy | http://localhost:12345 | Log collector status and component UI |
 | Mailpit | http://localhost:8025 | Local email inbox |
+| Adminer | http://localhost:8083 | Browser-based PostgreSQL administration (local host only) |
 | PostgreSQL | localhost:5432 | Relational database |
 | Redis | localhost:6379 | Cache and ephemeral data |
 | OTLP gRPC / HTTP | localhost:4317 / 4318 | OpenTelemetry trace ingestion |

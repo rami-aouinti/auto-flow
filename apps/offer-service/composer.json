@@ -48,5 +48,10 @@
     "symfony": {
       "require": "7.4.*"
     }
+  },
+  "require-dev": {
+    "nelmio/api-doc-bundle": "^5.13.2",
+    "symfony/asset": "7.4.*",
+    "symfony/twig-bundle": "7.4.*"
   }
 }
