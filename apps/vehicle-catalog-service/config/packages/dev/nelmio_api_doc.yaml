@@ -1,0 +1,17 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: AutoFlow Vehicle Catalog API
+            description: Authoritative vehicle identity and technical catalogue. No pricing or order availability.
+            version: 1.0.0
+        components:
+            securitySchemes:
+                bearerAuth:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+        security:
+            - bearerAuth: []
+    areas:
+        path_patterns:
+            - ^/api/v1
