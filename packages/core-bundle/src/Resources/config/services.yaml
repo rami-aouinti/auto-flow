@@ -46,7 +46,7 @@ services:
             $enabled: '%autoflow_core.jwt.enabled%'
             $protectedPrefixes: '%autoflow_core.jwt.protected_path_prefixes%'
             $excludedPaths: '%autoflow_core.jwt.excluded_paths%'
-            $tenantRequiredPrefixes: '%autoflow_core.jwt.tenant_required_path_prefixes%'
+            $tenantPathPrefixes: '%autoflow_core.jwt.tenant_required_path_prefixes%'
 
     AutoFlow\CoreBundle\Health\HealthController:
         arguments:
