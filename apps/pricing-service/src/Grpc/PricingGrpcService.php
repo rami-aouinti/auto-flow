@@ -15,6 +15,7 @@ use AutoFlow\CoreBundle\Security\MissingScopeException;
 use AutoFlow\CoreBundle\Security\TenantDelegationException;
 use AutoFlow\CoreBundle\Transport\Grpc\GrpcRequestAuthenticator;
 use InvalidArgumentException;
+use Psr\\Log\\LoggerInterface;
 use Spiral\RoadRunner\GRPC\ContextInterface;
 use Spiral\RoadRunner\GRPC\Exception\GRPCException;
 use Spiral\RoadRunner\GRPC\StatusCode;
@@ -28,6 +29,7 @@ final readonly class PricingGrpcService implements PricingServiceInterface
     public function __construct(
         private CalculateQuoteHandler $handler,
         private GrpcRequestAuthenticator $requestAuthenticator,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -56,6 +58,14 @@ final readonly class PricingGrpcService implements PricingServiceInterface
                 $exception,
             );
         } catch (InvalidTokenException $exception) {
+            // Keep the client response deliberately generic, but retain a safe
+            // diagnostic without ever logging the bearer token itself.
+            $this->logger->warning('gRPC request authentication failed.', [
+                'reason' => $exception->getMessage(),
+                'exception_class' => $exception::class,
+                'method' => 'CalculateQuote',
+            ]);
+
             throw GRPCException::create(
                 'A valid bearer token is required.',
                 StatusCode::UNAUTHENTICATED,
