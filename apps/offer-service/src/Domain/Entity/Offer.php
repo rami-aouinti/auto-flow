@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Entity;
 
+use App\Domain\Event\DomainEvent;
+use App\Domain\Event\OfferCreated;
+use App\Domain\Event\OfferExpired;
+use App\Domain\Event\OfferPublished;
 use App\Domain\Exception\InvalidOfferTransition;
 use App\Domain\ValueObject\OfferId;
 use App\Domain\ValueObject\OfferStatus;
@@ -19,6 +23,9 @@ use InvalidArgumentException;
 final class Offer
 {
     private OfferStatus $status;
+
+    /** @var list<DomainEvent> */
+    private array $domainEvents = [];
 
     private function __construct(
         private readonly OfferId $id,
@@ -51,7 +58,19 @@ final class Offer
             throw new InvalidArgumentException('Offer expiration must be later than its creation time.');
         }
 
-        return new self($id, $tenantId, $createdBy, $pricingSnapshot, $createdAt, $expiresAt);
+        $offer = new self($id, $tenantId, $createdBy, $pricingSnapshot, $createdAt, $expiresAt);
+        $offer->record(new OfferCreated(
+            eventId: (string) OfferId::generate(),
+            tenantId: $tenantId,
+            offerId: (string) $id,
+            createdBy: $createdBy,
+            quoteId: $pricingSnapshot->quoteId,
+            vehicleId: $pricingSnapshot->vehicleId,
+            occurredAt: $createdAt,
+            expiresAt: $expiresAt,
+        ));
+
+        return $offer;
     }
 
     public static function reconstitute(
@@ -65,6 +84,7 @@ final class Offer
     ): self {
         $offer = self::create($id, $tenantId, $createdBy, $pricingSnapshot, $createdAt, $expiresAt);
         $offer->status = $status;
+        $offer->clearDomainEvents();
 
         return $offer;
     }
@@ -73,16 +93,34 @@ final class Offer
     {
         $this->assertStatus(OfferStatus::Draft);
 
+        if ($publishedAt < $this->createdAt) {
+            throw new InvalidOfferTransition('An offer cannot be published before it was created.');
+        }
+
         if ($publishedAt >= $this->expiresAt) {
             throw new InvalidOfferTransition('An expired offer cannot be published.');
         }
 
         $this->status = OfferStatus::Published;
+        $this->record(new OfferPublished(
+            eventId: (string) OfferId::generate(),
+            tenantId: $this->tenantId,
+            offerId: (string) $this->id,
+            createdBy: $this->createdBy,
+            quoteId: $this->pricingSnapshot->quoteId,
+            vehicleId: $this->pricingSnapshot->vehicleId,
+            occurredAt: $publishedAt,
+            expiresAt: $this->expiresAt,
+        ));
     }
 
     public function accept(DateTimeImmutable $acceptedAt): void
     {
         $this->assertStatus(OfferStatus::Published);
+
+        if ($acceptedAt < $this->createdAt) {
+            throw new InvalidOfferTransition('An offer cannot be accepted before it was created.');
+        }
 
         if ($acceptedAt >= $this->expiresAt) {
             throw new InvalidOfferTransition('An expired offer cannot be accepted.');
@@ -108,6 +146,16 @@ final class Offer
         }
 
         $this->status = OfferStatus::Expired;
+        $this->record(new OfferExpired(
+            eventId: (string) OfferId::generate(),
+            tenantId: $this->tenantId,
+            offerId: (string) $this->id,
+            createdBy: $this->createdBy,
+            quoteId: $this->pricingSnapshot->quoteId,
+            vehicleId: $this->pricingSnapshot->vehicleId,
+            occurredAt: $expiredAt,
+            expiresAt: $this->expiresAt,
+        ));
     }
 
     public function withdraw(): void
@@ -117,6 +165,22 @@ final class Offer
         }
 
         $this->status = OfferStatus::Withdrawn;
+    }
+
+    /** @return list<DomainEvent> */
+    public function domainEvents(): array
+    {
+        return $this->domainEvents;
+    }
+
+    public function clearDomainEvents(): void
+    {
+        $this->domainEvents = [];
+    }
+
+    private function record(DomainEvent $event): void
+    {
+        $this->domainEvents[] = $event;
     }
 
     public function id(): OfferId
