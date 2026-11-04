@@ -29,14 +29,26 @@ final class RejectOfferHandlerTest extends TestCase
 
         $repository = new class ($offer) implements OfferRepositoryInterface {
             public int $saveCount = 0;
-            public function __construct(private Offer $offer) {}
-            public function save(Offer $offer): void { $this->offer = $offer; ++$this->saveCount; }
+            public function __construct(private Offer $offer)
+            {
+            }
+            public function save(Offer $offer): void
+            {
+                $this->offer = $offer;
+                ++$this->saveCount;
+            }
             public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
             {
                 return $this->offer->createdBy() === $ownerId ? $this->offer : null;
             }
-            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array { return []; }
-            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int { return 0; }
+            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+            {
+                return [];
+            }
+            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
+            {
+                return 0;
+            }
         };
 
         $rejected = (new RejectOfferHandler($repository))(
@@ -53,8 +65,13 @@ final class RejectOfferHandlerTest extends TestCase
     public function testCannotRejectOfferNotOwnedByCaller(): void
     {
         $repository = new class implements OfferRepositoryInterface {
-            public function save(Offer $offer): void {}
-            public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer { return null; }
+            public function save(Offer $offer): void
+            {
+            }
+            public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
+            {
+                return null;
+            }
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array { return []; }
             public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int { return 0; }
         };
