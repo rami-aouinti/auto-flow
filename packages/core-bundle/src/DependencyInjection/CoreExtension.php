@@ -19,7 +19,6 @@ final class CoreExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $container->setParameter('autoflow_core.correlation_id_enabled', $config['correlation_id']);
         $container->setParameter('autoflow_core.correlation_header', $config['correlation_header']);
 
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
