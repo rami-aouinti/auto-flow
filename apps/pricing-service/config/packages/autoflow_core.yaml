@@ -10,7 +10,7 @@ core:
         protected_path_prefixes:
             - /api/
         tenant_required_path_prefixes:
-            - /api/
+            - /api/pricing/
         excluded_paths:
             - /api/doc
             - /api/doc.json
