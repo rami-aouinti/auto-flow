@@ -81,8 +81,6 @@ final class JwtTokenVerifierTest extends TestCase
         ];
 
         $jwksJson = json_encode($jwks, JSON_THROW_ON_ERROR);
-        self::assertIsString($jwksJson);
-
         $httpClient = new MockHttpClient([
             new MockResponse($jwksJson, [
                 'http_code' => 200,

@@ -64,6 +64,6 @@ final readonly class JwtTokenVerifier
             $scopes = [];
         }
 
-        return new AuthenticatedPrincipal($claims->sub, $tenantId, array_values($scopes));
+        return new AuthenticatedPrincipal($claims->sub, $tenantId, $scopes);
     }
 }
