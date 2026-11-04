@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Entity;
 
 use App\Domain\ValueObject\CatalogueId;
+use App\Domain\ValueObject\CatalogStatus;
 use InvalidArgumentException;
 
 final readonly class VehicleGeneration
@@ -15,6 +16,7 @@ final readonly class VehicleGeneration
         public string $name,
         public ?int $productionStartYear,
         public ?int $productionEndYear,
+        public CatalogStatus $status,
     ) {
     }
 
@@ -46,6 +48,24 @@ final readonly class VehicleGeneration
             $name,
             $startYear,
             $endYear,
+            CatalogStatus::DRAFT,
         );
+    }
+
+    public function withStatus(CatalogStatus $status): self
+    {
+        return new self(
+            $this->id,
+            $this->modelId,
+            $this->name,
+            $this->productionStartYear,
+            $this->productionEndYear,
+            $this->status->transitionTo($status),
+        );
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->id->value === $other->id->value;
     }
 }
