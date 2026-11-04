@@ -65,7 +65,7 @@ final class PricingController
         TenantContext $tenantContext,
         PricingMetrics $metrics,
     ): JsonResponse {
-        $startedAt = hrtime(true);
+        $startedAt = microtime(true);
         $metricResult = 'error';
         $span = Globals::tracerProvider()
             ->getTracer('autoflow.pricing-service', '1.0.0')
@@ -135,7 +135,7 @@ final class PricingController
 
             throw $exception;
         } finally {
-            $metrics->recordCalculation((hrtime(true) - $startedAt) / 1_000_000, $metricResult);
+            $metrics->recordCalculation((microtime(true) - $startedAt) * 1_000, $metricResult);
             $scope->detach();
             $span->end();
         }
