@@ -151,6 +151,7 @@ services:
       - ./apps/pricing-service/migrations/00_create_pricing_database_role.sql:/docker-entrypoint-initdb.d/10-pricing-role.sql:ro
       - ./apps/pricing-service/migrations/Version20261104000100CreatePricingQuotes.sql:/docker-entrypoint-initdb.d/20-pricing-quotes.sql:ro
       - ./apps/pricing-service/migrations/Version20261104000200AddPricingQuoteSoftDelete.sql:/docker-entrypoint-initdb.d/30-pricing-quote-soft-delete.sql:ro
+      - ./apps/pricing-service/migrations/Version20261104000300AddPricingQuoteOwner.sql:/docker-entrypoint-initdb.d/40-pricing-quote-owner.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
