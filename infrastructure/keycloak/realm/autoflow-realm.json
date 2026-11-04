@@ -50,6 +50,17 @@
             "access.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "offer-to-pricing-requester-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-offer-to-pricing",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
         }
       ]
     },
@@ -95,7 +106,10 @@
             "introspection.token.claim": "true"
           }
         }
-      ]
+      ],
+      "attributes": {
+        "standard.token.exchange.enabled": "true"
+      }
     }
   ],
   "users": [
@@ -112,7 +126,23 @@
           "value": "demo",
           "temporary": false
         }
+      ],
+      "realmRoles": [
+        "offers:read",
+        "pricing:quote"
       ]
     }
-  ]
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "offers:read",
+        "description": "Read offer resources"
+      },
+      {
+        "name": "pricing:quote",
+        "description": "Calculate and access pricing quotes"
+      }
+    ]
+  }
 }
