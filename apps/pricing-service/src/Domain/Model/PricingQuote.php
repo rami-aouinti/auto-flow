@@ -12,6 +12,7 @@ use App\Domain\ValueObject\Money;
 final readonly class PricingQuote
 {
     public function __construct(
+        public string $quoteId,
         public string $tenantId,
         public string $vehicleId,
         public Money $monthlyAmount,
