@@ -181,7 +181,10 @@ final readonly class CatalogController
         catch (\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
-    #[OA\\Post(path: '/api/v1/vehicles/{variantId}/publish', summary: 'Publish a draft vehicle variant', tags: ['Catalogue management'])]\n    #[OA\\Response(response: 200, description: 'Vehicle variant published')]\n    #[RequiresScope('catalog:manage')]\n    #[Route('/vehicles/{variantId}/publish', methods: ['POST'])]
+    #[OA\Post(path: '/api/v1/vehicles/{variantId}/publish', summary: 'Publish a draft vehicle variant', tags: ['Catalogue management'])]
+    #[OA\Response(response: 200, description: 'Vehicle variant published')]
+    #[RequiresScope('catalog:manage')]
+    #[Route('/vehicles/{variantId}/publish', methods: ['POST'])]
     public function publishVariant(string $variantId, Request $request, CatalogApplicationService $catalog): JsonResponse
     {
         if (!$catalog->publishVariant($variantId)) {
