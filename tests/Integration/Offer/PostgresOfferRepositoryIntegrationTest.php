@@ -42,15 +42,19 @@ final class PostgresOfferRepositoryIntegrationTest extends TestCase
         self::assertNotNull($this->repository->findById($offer->id(), $tenantId, $ownerId));
         self::assertNull($this->repository->findById($offer->id(), $tenantId . '-other', $ownerId));
 
-        $event = $this->connection->prepare(
-            "SELECT event_type, payload FROM offer_outbox_events WHERE tenant_id = :tenant_id AND aggregate_id = :offer_id",
-        );
+        $event = $this->connection->prepare(<<<'SQL'
+            SELECT event_type, payload
+            FROM offer_outbox_events
+            WHERE tenant_id = :tenant_id
+              AND aggregate_id = :offer_id
+            SQL);
         $event->execute(['tenant_id' => $tenantId, 'offer_id' => (string) $offer->id()]);
         $row = $event->fetch(\PDO::FETCH_ASSOC);
 
         self::assertIsArray($row);
         self::assertSame('OfferCreated', $row['event_type']);
-        self::assertSame((string) $offer->id(), json_decode((string) $row['payload'], true, 512, JSON_THROW_ON_ERROR)['data']['offerId']);
+        $payload = json_decode((string) $row['payload'], true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame((string) $offer->id(), $payload['data']['offerId']);
     }
 
     public function testExpirationLocksRowsAndPersistsExpiredEvent(): void
@@ -70,9 +74,13 @@ final class PostgresOfferRepositoryIntegrationTest extends TestCase
         self::assertNotNull($expired);
         self::assertSame('expired', $expired->status()->value);
 
-        $event = $this->connection->prepare(
-            "SELECT COUNT(*) FROM offer_outbox_events WHERE tenant_id = :tenant_id AND aggregate_id = :offer_id AND event_type = 'OfferExpired'",
-        );
+        $event = $this->connection->prepare(<<<'SQL'
+            SELECT COUNT(*)
+            FROM offer_outbox_events
+            WHERE tenant_id = :tenant_id
+              AND aggregate_id = :offer_id
+              AND event_type = 'OfferExpired'
+            SQL);
         $event->execute(['tenant_id' => $tenantId, 'offer_id' => (string) $offer->id()]);
         self::assertSame(1, (int) $event->fetchColumn());
     }
