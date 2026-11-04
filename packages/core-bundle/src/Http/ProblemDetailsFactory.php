@@ -12,7 +12,7 @@ final readonly class ProblemDetailsFactory
     private const RESERVED_MEMBERS = ['type', 'title', 'status', 'detail', 'instance'];
 
     /**
-     * @param array<string, mixed> $extensions
+     * @param array<array-key, mixed> $extensions
      */
     public function create(
         int $status,
