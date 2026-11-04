@@ -97,7 +97,6 @@ When the package is published or the monorepo moves to versioned artifacts, repl
 autoflow_core:
     correlation_id: true
     correlation_header: X-Correlation-ID
-    health_endpoints: true
 ```
 
 Messenger consumers opt in by adding `AutoFlow\\CoreBundle\\Messenger\\CorrelationIdMiddleware` to the bus middleware list.
