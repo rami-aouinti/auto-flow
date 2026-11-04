@@ -70,9 +70,11 @@ nelmio_api_doc:
                                         policyId: '123e4567-e89b-42d3-a456-426614174000'
                                         policyVersion: 1
                                         expired: false
+                        '400': { description: Malformed JSON request body }
                         '401': { description: Missing or invalid bearer token }
                         '403': { description: Missing pricing scope or tenant authorization }
                         '422': { description: Invalid request or lease terms }
+                        '500': { description: Unexpected pricing failure }
                 get:
                     tags: [Pricing]
                     summary: List quotes visible to the caller
