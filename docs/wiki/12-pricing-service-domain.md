@@ -125,6 +125,7 @@ The current SQL migrations are:
 - `Version20261104000600LinkQuotesToPricingPolicy.sql`
 - `Version20261104000700EnforceImmutableQuoteSnapshots.sql`
 - `Version20261104000800EnforceImmutablePricingPolicies.sql`
+- `Version20261104000900ConstrainPricingCalculationVersion.sql`
 
 Use `apps/pricing-service/bin/migrate.sh` with `DATABASE_ADMIN_URL` to apply unapplied versioned migrations. The runner records applied filenames in `pricing_schema_migrations`. The optional `PRICING_BOOTSTRAP_LOCAL_ROLE=1` switch is for local development only; production database roles must be provisioned securely out of band.
 
@@ -158,7 +159,7 @@ The production-readiness branch now contains the first implementation slice:
 - The gRPC response adds fields for creation/expiry timestamps and policy ID/version without renumbering or changing existing protobuf fields; a serialization contract test covers the additive metadata.
 - `/health` is the liveness endpoint; `/ready` checks PostgreSQL. The Pricing container healthcheck uses `/ready`, so dependent services wait for database readiness.
 - Quote validity defaults to seven days and may be configured by policy (1–90 days). The API returns HTTP 410 for an expired quote lookup.
-- REST calculation records low-cardinality outcome counters and request-duration histograms through OpenTelemetry; the runtime still needs an OTLP metrics reader/exporter configured to export them. The quote stores `policy_id` and `policy_version`, and the database enforces a tenant-consistent policy reference.
+- REST calculation records low-cardinality outcome counters and request-duration histograms through OpenTelemetry; the runtime still needs an OTLP metrics reader/exporter configured to export them. The quote stores `policy_id` and `policy_version`, and the database enforces a tenant-consistent policy reference. Only `lease-annuity-v1` is currently supported as a calculation algorithm; policies cannot advertise a future algorithm until its implementation and tests exist.
 
 Current demo policy guardrails are intentionally aligned with the existing LeaseTerms boundaries (12–72 months and 0–2000 basis points). These are implementation defaults, not approved commercial or regulatory financing terms. The policy does not introduce taxes, fees, insurance, maintenance, mileage or lender-specific rules.
 
@@ -195,4 +196,4 @@ Do not invent customer-specific discounts, campaign stacking, VAT/tax calculatio
 4. Complete REST/OpenAPI and gRPC contract tests.
 5. Add operational metrics, deployment checks, migration automation and load/restore verification.
 
-The wiki status must be updated only after the relevant code is merged and its CI/integration evidence is available.
+The feature-branch documentation describes implemented source behavior, but the branch remains unverified until its queued CI and local Docker/PostgreSQL checks complete. Do not merge or describe the service as production-ready before that evidence is green.
