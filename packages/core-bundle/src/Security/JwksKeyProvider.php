@@ -19,7 +19,7 @@ final class JwksKeyProvider
 
     private float $expiresAt = 0.0;
 
-    private float $lastUnknownKeyRefreshAt = 0.0;
+    private float $lastKidRefreshAt = 0.0;
 
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -52,11 +52,11 @@ final class JwksKeyProvider
 
         // Unknown kid can indicate Keycloak key rotation. Refresh at most once
         // every five seconds to avoid turning arbitrary kid values into a JWKS DoS.
-        if (microtime(true) - $this->lastUnknownKeyRefreshAt < 5.0) {
+        if (microtime(true) - $this->lastKidRefreshAt < 5.0) {
             return $keys;
         }
 
-        $this->lastUnknownKeyRefreshAt = microtime(true);
+        $this->lastKidRefreshAt = microtime(true);
 
         return $this->refreshKeys();
     }
