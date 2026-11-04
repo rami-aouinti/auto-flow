@@ -12,6 +12,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(LeasePaymentCalculator::class)]
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 final class LeasePaymentCalculatorTest extends TestCase
 {
     public function testZeroInterestRateCalculatesStraightLineDepreciation(): void
