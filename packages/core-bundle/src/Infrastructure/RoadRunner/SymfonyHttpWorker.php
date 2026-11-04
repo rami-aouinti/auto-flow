@@ -42,10 +42,12 @@ final readonly class SymfonyHttpWorker
                 } catch (Throwable $exception) {
                     error_log(sprintf('RoadRunner could not parse an HTTP request (%s).', $exception::class));
 
-                    if (!$this->respond(
-                        $worker,
-                        $this->createPsrResponse($this->problemResponse(400, 'Bad Request'), $responseFactory),
-                    )) {
+                    $problemResponse = $this->createPsrResponse(
+                        $this->problemResponse(400, 'Bad Request'),
+                        $responseFactory,
+                    );
+
+                    if (!$this->respond($worker, $problemResponse)) {
                         break;
                     }
 
@@ -68,7 +70,9 @@ final readonly class SymfonyHttpWorker
                 }
 
                 try {
-                    if (!$this->respond($worker, $this->createPsrResponse($response, $responseFactory))) {
+                    $psrResponse = $this->createPsrResponse($response, $responseFactory);
+
+                    if (!$this->respond($worker, $psrResponse)) {
                         break;
                     }
                 } catch (Throwable $exception) {
