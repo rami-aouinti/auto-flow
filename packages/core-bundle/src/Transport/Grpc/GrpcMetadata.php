@@ -77,19 +77,33 @@ final class GrpcMetadata
     private function normalizeValue(mixed $value): string|array
     {
         if (is_string($value)) {
-            $values = [$value];
-        } elseif (is_array($value) && array_is_list($value)) {
-            $values = $value;
-        } else {
+            $this->assertPrintableAscii($value);
+
+            return $value;
+        }
+
+        if (!is_array($value) || !array_is_list($value)) {
             throw new InvalidArgumentException('gRPC metadata values must be strings or lists of strings.');
         }
 
-        foreach ($values as $item) {
-            if (!is_string($item) || preg_match('/^[\x20-\x7E]*$/D', $item) !== 1) {
-                throw new InvalidArgumentException('gRPC metadata values must contain printable ASCII only.');
+        $normalizedValues = [];
+
+        foreach ($value as $item) {
+            if (!is_string($item)) {
+                throw new InvalidArgumentException('gRPC metadata values must be strings or lists of strings.');
             }
+
+            $this->assertPrintableAscii($item);
+            $normalizedValues[] = $item;
         }
 
-        return $value;
+        return $normalizedValues;
+    }
+
+    private function assertPrintableAscii(string $value): void
+    {
+        if (preg_match('/^[\x20-\x7E]*$/D', $value) !== 1) {
+            throw new InvalidArgumentException('gRPC metadata values must contain printable ASCII only.');
+        }
     }
 }
