@@ -15,15 +15,12 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
     /**
      * @param list<string> $protectedPrefixes
      * @param list<string> $excludedPaths
-     * @param list<string> $tenantPathPrefixes
      */
     public function __construct(
         private JwtTokenVerifier $tokenVerifier,
         private bool $enabled,
         private array $protectedPrefixes,
         private array $excludedPaths,
-        private array $tenantPathPrefixes,
-        private TenantPrincipalResolver $tenantPrincipalResolver,
     ) {
     }
 
