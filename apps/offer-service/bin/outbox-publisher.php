@@ -13,40 +13,68 @@ if (!is_string($databaseUrl) || $databaseUrl === '') {
     throw new RuntimeException('OFFER_DATABASE_URL is required.');
 }
 
-$connection = new AMQPStreamConnection(
-    getenv('RABBITMQ_HOST') ?: 'rabbitmq',
-    (int) (getenv('RABBITMQ_PORT') ?: 5672),
-    getenv('RABBITMQ_USER') ?: 'autoflow',
-    getenv('RABBITMQ_PASSWORD') ?: 'autoflow',
-    getenv('RABBITMQ_VHOST') ?: '/',
-    false,
-    'AMQPLAIN',
-    null,
-    'en_US',
-    3.0,
-    3.0,
-    null,
-    true,
-    30,
-);
+$connectRabbit = static function (): array {
+    $connection = new AMQPStreamConnection(
+        getenv('RABBITMQ_HOST') ?: 'rabbitmq',
+        (int) (getenv('RABBITMQ_PORT') ?: 5672),
+        getenv('RABBITMQ_USER') ?: 'autoflow',
+        getenv('RABBITMQ_PASSWORD') ?: 'autoflow',
+        getenv('RABBITMQ_VHOST') ?: '/',
+        false,
+        'AMQPLAIN',
+        null,
+        'en_US',
+        3.0,
+        3.0,
+        null,
+        true,
+        30,
+    );
+    $channel = $connection->channel();
 
-$channel = $connection->channel();
-$publisher = new OutboxPublisher(new PostgresConnection($databaseUrl), $channel);
+    return [
+        $connection,
+        $channel,
+        new OutboxPublisher(new PostgresConnection($databaseUrl), $channel),
+    ];
+};
 
+[$rabbitConnection, $channel, $publisher] = $connectRabbit();
 error_log('[Offer Outbox] Publisher started.');
 
 try {
     while (true) {
         try {
-            if (!$publisher->publishNext()) {
-                usleep(500_000);
-            }
+            $published = $publisher->publishNext();
         } catch (Throwable $exception) {
             error_log('[Offer Outbox] Worker iteration failed: ' . $exception->getMessage());
-            sleep(2);
+            $published = false;
+        }
+
+        if (!$rabbitConnection->isConnected() || !$channel->is_open()) {
+            try {
+                if ($channel->is_open()) {
+                    $channel->close();
+                }
+                if ($rabbitConnection->isConnected()) {
+                    $rabbitConnection->close();
+                }
+            } catch (Throwable) {
+                // The connection is already unavailable; create a fresh one below.
+            }
+
+            [$rabbitConnection, $channel, $publisher] = $connectRabbit();
+        }
+
+        if (!$published) {
+            usleep(500_000);
         }
     }
 } finally {
-    $channel->close();
-    $connection->close();
+    if ($channel->is_open()) {
+        $channel->close();
+    }
+    if ($rabbitConnection->isConnected()) {
+        $rabbitConnection->close();
+    }
 }
