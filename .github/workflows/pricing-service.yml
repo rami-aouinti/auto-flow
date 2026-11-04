@@ -81,6 +81,9 @@ jobs:
           docker exec -i autoflow-pricing-postgres \
             psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
             < apps/pricing-service/migrations/Version20261104000600LinkQuotesToPricingPolicy.sql
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/Version20261104000700EnforceImmutableQuoteSnapshots.sql
 
       - name: Run PHPUnit including PostgreSQL row-level security tests
         run: |
