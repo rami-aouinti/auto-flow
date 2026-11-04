@@ -29,6 +29,8 @@ final readonly class CatalogController
     #[OA\Get(path: '/api/v1/vehicles', summary: 'Search published vehicle variants', tags: ['Catalogue'])]
     #[OA\Parameter(name: 'q', in: 'query', description: 'Search variant, model or manufacturer name', schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'manufacturerId', in: 'query', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'modelId', in: 'query', schema: new OA\Schema(type: 'string'))]
+    #[OA\Parameter(name: 'generationId', in: 'query', schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'fuelType', in: 'query', schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'bodyStyle', in: 'query', schema: new OA\Schema(type: 'string'))]
     #[OA\Parameter(name: 'powertrain', in: 'query', schema: new OA\Schema(type: 'string'))]
@@ -168,7 +170,28 @@ final readonly class CatalogController
     }
 
     #[OA\Post(path: '/api/v1/vehicles', summary: 'Register a technical vehicle variant', tags: ['Catalogue management'])]
-    #[OA\RequestBody(required: true, content: new OA\JsonContent(type: 'object', required: ['generationId','name','fuelType','powertrain','bodyStyle','transmission']))]
+    #[OA\RequestBody(required: true, content: new OA\JsonContent(
+        properties: [
+            new OA\Property(property: 'generationId', type: 'string'),
+            new OA\Property(property: 'manufacturerCode', type: 'string', nullable: true),
+            new OA\Property(property: 'name', type: 'string'),
+            new OA\Property(property: 'fuelType', type: 'string', enum: ['petrol', 'diesel', 'electric', 'hybrid', 'plug_in_hybrid', 'hydrogen', 'lpg', 'cng', 'other']),
+            new OA\Property(property: 'powertrain', type: 'string', enum: ['ice', 'mhev', 'hev', 'phev', 'bev', 'fcev', 'other']),
+            new OA\Property(property: 'bodyStyle', type: 'string', enum: ['suv', 'sedan', 'hatchback', 'estate', 'coupe', 'convertible', 'van', 'pickup', 'other']),
+            new OA\Property(property: 'transmission', type: 'string', enum: ['manual', 'automatic', 'single_speed', 'other']),
+            new OA\Property(property: 'powerKw', type: 'integer', nullable: true),
+            new OA\Property(property: 'displacementCc', type: 'integer', nullable: true),
+            new OA\Property(property: 'seats', type: 'integer', nullable: true),
+            new OA\Property(property: 'doors', type: 'integer', nullable: true),
+            new OA\Property(property: 'curbWeightKg', type: 'integer', nullable: true),
+            new OA\Property(property: 'lengthMm', type: 'integer', nullable: true),
+            new OA\Property(property: 'widthMm', type: 'integer', nullable: true),
+            new OA\Property(property: 'heightMm', type: 'integer', nullable: true),
+            new OA\Property(property: 'co2EmissionGPerKm', type: 'integer', nullable: true),
+            new OA\Property(property: 'mediaReferences', type: 'array', items: new OA\Items(type: 'object'), nullable: true),
+        ],
+        required: ['generationId', 'name', 'fuelType', 'powertrain', 'bodyStyle', 'transmission']
+    ))]
     #[OA\Response(response: 201, description: 'Variant registered in draft state')]
     #[RequiresScope('catalog:manage')]
     #[Route('/vehicles', methods: ['POST'])]
