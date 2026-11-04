@@ -22,11 +22,24 @@ final readonly class PostgresPricingPolicyRepository implements PricingPolicyRep
     {
         $this->withinTenant($policy->tenantId, function (PDO $pdo) use ($policy): void {
             if ($policy->status === 'active') {
-                $retire = $pdo->prepare("UPDATE pricing_policies SET status = 'retired' WHERE tenant_id = :tenant AND status = 'active' AND policy_id <> :policy_id");
+                $retire = $pdo->prepare(
+                    "UPDATE pricing_policies SET status = 'retired' WHERE tenant_id = :tenant AND status = 'active' AND policy_id <> :policy_id",
+                );
                 $retire->execute(['tenant' => $policy->tenantId, 'policy_id' => $policy->policyId]);
             }
             $statement = $pdo->prepare(
-                'INSERT INTO pricing_policies (policy_id, tenant_id, version, status, minimum_duration_months, maximum_duration_months, minimum_annual_rate_bps, maximum_annual_rate_bps, quote_validity_days, calculation_version, created_by, created_at, published_at) VALUES (:id, :tenant, :version, :status, :min_duration, :max_duration, :min_rate, :max_rate, :validity, :calculation, :creator, :created_at, :published_at) ON CONFLICT (policy_id) DO UPDATE SET status = EXCLUDED.status, published_at = EXCLUDED.published_at',
+                <<<'SQL'
+                INSERT INTO pricing_policies (
+                    policy_id, tenant_id, version, status, minimum_duration_months,
+                    maximum_duration_months, minimum_annual_rate_bps, maximum_annual_rate_bps,
+                    quote_validity_days, calculation_version, created_by, created_at, published_at
+                ) VALUES (
+                    :id, :tenant, :version, :status, :min_duration, :max_duration,
+                    :min_rate, :max_rate, :validity, :calculation, :creator, :created_at, :published_at
+                )
+                ON CONFLICT (policy_id) DO UPDATE
+                    SET status = EXCLUDED.status, published_at = EXCLUDED.published_at
+                SQL,
             );
             $statement->execute([
                 'id' => $policy->policyId,
@@ -87,7 +100,9 @@ final readonly class PostgresPricingPolicyRepository implements PricingPolicyRep
                 calculationVersion: (string) $row['calculation_version'],
                 createdBy: (string) $row['created_by'],
                 createdAt: new DateTimeImmutable((string) $row['created_at']),
-                publishedAt: $row['published_at'] === null ? null : new DateTimeImmutable((string) $row['published_at']),
+                publishedAt: $row['published_at'] === null
+                    ? null
+                    : new DateTimeImmutable((string) $row['published_at']),
             );
         });
     }
