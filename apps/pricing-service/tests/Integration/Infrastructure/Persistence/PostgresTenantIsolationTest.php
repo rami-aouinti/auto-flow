@@ -293,7 +293,8 @@ final class PostgresTenantIsolationTest extends TestCase
                 currency,
                 duration_months,
                 annual_interest_rate_basis_points,
-                calculation_version
+                calculation_version,
+                expires_at
             ) VALUES (
                 :quote_id,
                 :tenant_id,
@@ -305,7 +306,8 @@ final class PostgresTenantIsolationTest extends TestCase
                 'EUR',
                 36,
                 0,
-                'lease-annuity-v1'
+                'lease-annuity-v1',
+                CURRENT_TIMESTAMP + INTERVAL '7 days'
             )
             SQL,
         );
