@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\CoreBundle\\Transport\\Grpc;
+namespace AutoFlow\CoreBundle\Transport\Grpc;
 
 use InvalidArgumentException;
 
@@ -32,7 +32,7 @@ final class GrpcMetadata
             }
 
             foreach (is_array($value) ? $value : [$value] as $item) {
-                if (!is_string($item) || str_contains($item, "\\r") || str_contains($item, "\\n")) {
+                if (!is_string($item) || str_contains($item, "\r") || str_contains($item, "\n")) {
                     throw new InvalidArgumentException('Invalid gRPC metadata value.');
                 }
             }
