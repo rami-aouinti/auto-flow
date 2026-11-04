@@ -7,14 +7,20 @@ namespace AutoFlow\CoreBundle\Context;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use Symfony\Component\HttpFoundation\RequestStack;
 
-final readonly class TenantContext
+final class TenantContext
 {
-    public function __construct(private RequestStack $requestStack)
+    private ?string $activeTenantId = null;
+
+    public function __construct(private readonly RequestStack $requestStack)
     {
     }
 
     public function getTenantId(): ?string
     {
+        if ($this->activeTenantId !== null) {
+            return $this->activeTenantId;
+        }
+
         $principal = $this->requestStack->getCurrentRequest()?->attributes->get(
             AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
         );
@@ -30,5 +36,22 @@ final readonly class TenantContext
         }
 
         return $tenantId;
+    }
+
+    /**
+     * @template TResult
+     * @param callable(): TResult $work
+     * @return TResult
+     */
+    public function run(string $tenantId, callable $work): mixed
+    {
+        $previous = $this->activeTenantId;
+        $this->activeTenantId = $tenantId;
+
+        try {
+            return $work();
+        } finally {
+            $this->activeTenantId = $previous;
+        }
     }
 }
