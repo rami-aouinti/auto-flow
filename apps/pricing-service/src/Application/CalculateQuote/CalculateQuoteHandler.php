@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Application\CalculateQuote;
 
+use App\Application\Port\Out\PricingPolicyRepositoryInterface;
 use App\Application\Port\Out\PricingQuoteRepositoryInterface;
 use App\Application\Port\Out\QuoteIdGeneratorInterface;
 use App\Domain\Model\PricingQuote;
 use App\Domain\Service\LeasePaymentCalculator;
 use App\Domain\ValueObject\LeaseTerms;
 use App\Domain\ValueObject\Money;
+use InvalidArgumentException;
 
 /**
  * @SuppressWarnings(PHPMD.StaticAccess)
@@ -38,7 +40,7 @@ final readonly class CalculateQuoteHandler
         );
 
         if ($policy !== null && !$policy->allows($terms->durationMonths, $terms->annualInterestRateBasisPoints)) {
-            throw new \\InvalidArgumentException('Lease terms are outside the active pricing policy.');
+            throw new InvalidArgumentException('Lease terms are outside the active pricing policy.');
         }
 
         $quote = $this->calculator->calculate(
