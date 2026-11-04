@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\CoreBundle\\Transport\\Http\\Response;
+namespace AutoFlow\CoreBundle\Transport\Http\Response;
 
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 final class ApiResponseFactory
 {
