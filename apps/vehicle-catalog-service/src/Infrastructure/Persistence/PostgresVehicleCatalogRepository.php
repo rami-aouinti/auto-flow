@@ -139,10 +139,10 @@ final readonly class PostgresVehicleCatalogRepository implements VehicleCatalogR
         $db=$this->connection->get();
         $db->beginTransaction();
         try {
-            $find=$db->prepare('SELECT g.generation_id,m.model_id,mf.manufacturer_id,v.status FROM catalog_vehicle_variants v JOIN catalog_generations g ON g.generation_id=v.generation_id JOIN catalog_models m ON m.model_id=g.model_id JOIN catalog_manufacturers mf ON mf.manufacturer_id=m.manufacturer_id WHERE v.variant_id=:id FOR UPDATE OF v');
+            $find=$db->prepare('SELECT g.generation_id,m.model_id,mf.manufacturer_id,v.status AS variant_status,g.status AS generation_status,m.status AS model_status,mf.status AS manufacturer_status FROM catalog_vehicle_variants v JOIN catalog_generations g ON g.generation_id=v.generation_id JOIN catalog_models m ON m.model_id=g.model_id JOIN catalog_manufacturers mf ON mf.manufacturer_id=m.manufacturer_id WHERE v.variant_id=:id FOR UPDATE OF v');
             $find->execute(['id'=>$variantId]);
             $row=$find->fetch();
-            if (!is_array($row) || $row['status']==='archived') {
+            if (!is_array($row) || in_array('archived', [$row['variant_status'], $row['generation_status'], $row['model_status'], $row['manufacturer_status']], true)) {
                 $db->rollBack();
                 return false;
             }
