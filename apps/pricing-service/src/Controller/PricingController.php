@@ -11,6 +11,7 @@ use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
+use JsonException;
 use LogicException;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
@@ -113,6 +114,11 @@ final class PricingController
             $response->headers->set('Cache-Control', 'no-store');
 
             return $response;
+        } catch (JsonException) {
+            return new JsonResponse([
+                'error' => 'invalid_json',
+                'message' => 'Request body must contain valid JSON.',
+            ], JsonResponse::HTTP_BAD_REQUEST);
         } catch (InvalidArgumentException $exception) {
             return new JsonResponse([
                 'error' => 'invalid_pricing_request',
