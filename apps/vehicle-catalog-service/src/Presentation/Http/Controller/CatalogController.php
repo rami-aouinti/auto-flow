@@ -53,6 +53,32 @@ final readonly class CatalogController
             $value=$request->query->get($key);
             if ($value!==null && $value!=='') { $filters[$key]=$value; }
         }
+        foreach (['manufacturerId','modelId','generationId'] as $idKey) {
+            if (isset($filters[$idKey]) && preg_match('/^[a-f0-9]{32}$/D', (string) $filters[$idKey]) !== 1) {
+                return $this->problem(400,'INVALID_FILTER',sprintf('%s must be a valid catalogue identifier.',$idKey),$request);
+            }
+        }
+        foreach (['minPowerKw','maxPowerKw','minSeats','maxSeats'] as $numericKey) {
+            if (isset($filters[$numericKey]) && filter_var($filters[$numericKey],FILTER_VALIDATE_INT) === false) {
+                return $this->problem(400,'INVALID_FILTER',sprintf('%s must be an integer.',$numericKey),$request);
+            }
+        }
+        foreach ([
+            'fuelType'=>['petrol','diesel','electric','hybrid','plug_in_hybrid','hydrogen','lpg','cng','other'],
+            'powertrain'=>['ice','mhev','hev','phev','bev','fcev','other'],
+            'bodyStyle'=>['suv','sedan','hatchback','estate','coupe','convertible','van','pickup','other'],
+            'transmission'=>['manual','automatic','single_speed','other']
+        ] as $key=>$allowed) {
+            if (isset($filters[$key]) && !in_array($filters[$key],$allowed,true)) {
+                return $this->problem(400,'INVALID_FILTER',sprintf('%s is not a supported catalogue filter.',$key),$request);
+            }
+        }
+        if (isset($filters['minPowerKw'],$filters['maxPowerKw']) && (int)$filters['minPowerKw']>(int)$filters['maxPowerKw']) {
+            return $this->problem(400,'INVALID_FILTER','minPowerKw cannot exceed maxPowerKw.',$request);
+        }
+        if (isset($filters['minSeats'],$filters['maxSeats']) && (int)$filters['minSeats']>(int)$filters['maxSeats']) {
+            return $this->problem(400,'INVALID_FILTER','minSeats cannot exceed maxSeats.',$request);
+        }
         try {
             $result=$catalog->listVehicles($filters,$limit,$offset);
             return new JsonResponse(['items'=>$result['items'],'total'=>$result['total'],'limit'=>$limit,'offset'=>$offset]);
@@ -155,8 +181,7 @@ final readonly class CatalogController
         catch (\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
-    #[RequiresScope('catalog:manage')]
-    #[Route('/vehicles/{variantId}/publish', methods: ['POST'])]
+    #[OA\\Post(path: '/api/v1/vehicles/{variantId}/publish', summary: 'Publish a draft vehicle variant', tags: ['Catalogue management'])]\n    #[OA\\Response(response: 200, description: 'Vehicle variant published')]\n    #[RequiresScope('catalog:manage')]\n    #[Route('/vehicles/{variantId}/publish', methods: ['POST'])]
     public function publishVariant(string $variantId, Request $request, CatalogApplicationService $catalog): JsonResponse
     {
         if (!$catalog->publishVariant($variantId)) {
