@@ -10,8 +10,7 @@
     "ext-intl": "*",
     "ext-pdo": "*",
     "ext-pdo_pgsql": "*",
-    "ext-sockets": "*",
-    "firebase/php-jwt": "^6.11"
+    "ext-sockets": "*"
   },
   "require-dev": {
     "friendsofphp/php-cs-fixer": "^3.85",
@@ -31,7 +30,8 @@
     "nyholm/psr7": "^1.8",
     "roadrunner/grpc": "^3.8",
     "roadrunner/http": "^4.0",
-    "symfony/psr-http-message-bridge": "7.4.*"
+    "symfony/psr-http-message-bridge": "7.4.*",
+    "firebase/php-jwt": "^6.11"
   },
   "config": {
     "sort-packages": true,

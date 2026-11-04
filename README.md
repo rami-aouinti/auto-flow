@@ -144,13 +144,15 @@ GET path remains available for tracing compatibility and still returns clearly l
 Trigger one request across both services:
 
 ~~~bash
-curl http://localhost:8081/api/offers/demo-vehicle-001
+curl http://localhost:8081/api/offers/demo-vehicle-001 \\
+  -H "Authorization: Bearer $TOKEN"
 ~~~
 
 Calculate an illustrative lease quote directly through Pricing:
 
 ~~~bash
 curl -X POST http://localhost:8082/api/pricing/quotes \\
+  -H "Authorization: Bearer $TOKEN" \\
   -H 'Content-Type: application/json' \\
   -d '{"vehicleId":"vehicle-001","vehiclePrice":"30000.00","downPayment":"3000.00","residualValue":"9000.00","currency":"EUR","durationMonths":36,"annualInterestRateBasisPoints":500}'
 ~~~

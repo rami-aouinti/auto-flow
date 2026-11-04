@@ -65,7 +65,10 @@ final class JwtTokenVerifierTest extends TestCase
         self::assertIsArray($details);
         self::assertArrayHasKey('rsa', $details);
 
-        $rsa = $details['rsa'];
+        $rsa = $details['rsa'] ?? null;
+        self::assertIsArray($rsa);
+        self::assertIsString($rsa['n'] ?? null);
+        self::assertIsString($rsa['e'] ?? null);
         $jwks = [
             'keys' => [[
                 'kty' => 'RSA',
@@ -77,8 +80,11 @@ final class JwtTokenVerifierTest extends TestCase
             ]],
         ];
 
+        $jwksJson = json_encode($jwks, JSON_THROW_ON_ERROR);
+        self::assertIsString($jwksJson);
+
         $httpClient = new MockHttpClient([
-            new MockResponse(json_encode($jwks, JSON_THROW_ON_ERROR), [
+            new MockResponse($jwksJson, [
                 'http_code' => 200,
                 'response_headers' => ['content-type: application/json'],
             ]),

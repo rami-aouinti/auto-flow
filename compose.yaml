@@ -122,12 +122,6 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - ./infrastructure/keycloak/realm:/opt/keycloak/data/import:ro
-    healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9000'"]
-      interval: 10s
-      timeout: 3s
-      retries: 20
-      start_period: 45s
     restart: unless-stopped
 
   adminer:
