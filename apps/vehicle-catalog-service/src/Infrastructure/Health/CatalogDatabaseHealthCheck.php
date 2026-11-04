@@ -11,12 +11,21 @@ use Throwable;
 
 final readonly class CatalogDatabaseHealthCheck implements HealthCheckInterface
 {
-    public function __construct(private PostgresConnection $connection) {}
-    public function name(): string { return 'vehicle-catalog-postgres'; }
+    public function __construct(
+        private PostgresConnection $connection,
+    ) {
+    }
+
+    public function name(): string
+    {
+        return 'vehicle-catalog-postgres';
+    }
+
     public function check(): HealthCheckResult
     {
         try {
             $this->connection->get()->query('SELECT 1');
+
             return HealthCheckResult::healthy();
         } catch (Throwable) {
             return HealthCheckResult::unhealthy();
