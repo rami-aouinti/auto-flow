@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\\Domain\\Entity;
+namespace App\Domain\Entity;
 
-use App\\Domain\\ValueObject\\CatalogueId;
-use App\\Domain\\ValueObject\\CatalogStatus;
+use App\Domain\ValueObject\CatalogueId;
+use App\Domain\ValueObject\CatalogStatus;
 use InvalidArgumentException;
 
 final readonly class Manufacturer
