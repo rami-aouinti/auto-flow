@@ -19,7 +19,20 @@ This is the proposed domain boundary for Sprint 1, not a claim that the complete
 | VehicleVariant | A concrete technical configuration within a generation | Variant identity, engine, transmission, body style and measured specifications |
 | VehicleMediaReference | A reference to an image or other media asset | Media identifier and usage metadata; binary storage belongs to Media |
 
-The exact attributes and invariants must be decided in issue #21 before implementation. Do not invent business rules from assumptions about a real leasing provider.
+## Sprint 1 domain decisions (issue #21)
+
+The initial implementation uses the following deliberately conservative decisions:
+
+- A variant is identified by a generated opaque 128-bit catalogue ID. A manufacturer variant code is optional metadata with a uniqueness constraint when present; it is not the primary identity.
+- Model identity is unique within a manufacturer by normalized model name. Generation identity is unique within a model by generation label.
+- Production start/end years are optional because historical catalogue sources may be incomplete. If both are known, end year cannot precede start year.
+- Fuel type, powertrain, body style and transmission use explicit controlled vocabularies. The first vocabulary set is intentionally small and can evolve through an API/schema versioning decision.
+- Technical values use explicit units in field names: power kW, displacement cm³, dimensions mm, curb weight kg and CO₂ g/km. Optional values remain nullable when the source is unknown.
+- Lifecycle states are draft, published, discontinued and archived. New records are draft. A catalogue manager explicitly publishes a variant; publication also publishes non-archived ancestors. Archived variants cannot be republished.
+- Media is stored as references with usage metadata; binary content is owned by Media.
+- Pricing, discounts, stock/inventory, customer eligibility, commercial availability and delivery promises are not catalogue fields.
+
+These are AutoFlow project decisions for the first increment, not claims about another company's catalogue. They are recorded in ADR-017. Unknown future requirements (localized labels, model-year semantics, source provenance and equipment packages) remain open rather than being guessed.
 
 ## Context map
 
@@ -74,4 +87,4 @@ The boundary is healthy when Pricing can calculate a quote without importing cat
 
 ## Implementation status
 
-**Status:** domain design / Sprint 1 work in progress. The concepts above are a proposed model. Update this section after issue #21 is reviewed and the implementation is merged.
+**Status:** implementation is on `feature/vehicle-catalog-service`; final acceptance remains pending CI, integration verification and merge. The Wiki describes the approved first-increment decisions, not a claim that the feature is already deployed.
