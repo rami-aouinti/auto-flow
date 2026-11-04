@@ -62,7 +62,17 @@ services:
         condition: service_healthy
       tempo:
         condition: service_started
-      vehicle-catalog-service:
+      keycloak:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/ready') === false ? 1 : 0);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  vehicle-catalog-service:
     build:
       context: .
       dockerfile: docker/php/service.Dockerfile
@@ -124,16 +134,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    restart: unless-stopped
-
-  keycloak:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8080/ready') === false ? 1 : 0);"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
     restart: unless-stopped
 
   offer-expiration-worker:
