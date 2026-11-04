@@ -143,7 +143,7 @@ final readonly class CatalogController
             return new JsonResponse(['modelId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_MODEL',$e->getMessage(),$request); }
         catch (PDOException $e) { return $this->databaseProblem($e,$request); }
-        catch (\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
+        catch (JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
     #[OA\Post(path: '/api/v1/generations', summary: 'Register a model generation', tags: ['Catalogue management'])]
@@ -164,7 +164,7 @@ final readonly class CatalogController
             return new JsonResponse(['generationId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_GENERATION',$e->getMessage(),$request); }
         catch (PDOException $e) { return $this->databaseProblem($e,$request); }
-        catch (\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
+        catch (JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
     #[OA\Post(path: '/api/v1/vehicles', summary: 'Register a technical vehicle variant', tags: ['Catalogue management'])]
@@ -179,10 +179,11 @@ final readonly class CatalogController
             return new JsonResponse(['variantId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_VARIANT',$e->getMessage(),$request); }
         catch (PDOException $e) { return $this->databaseProblem($e,$request); }
-        catch (\JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
+        catch (JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
     #[OA\Post(path: '/api/v1/vehicles/{variantId}/publish', summary: 'Publish a draft vehicle variant', tags: ['Catalogue management'])]
+    #[OA\Parameter(name: 'variantId', in: 'path', required: true, schema: new OA\Schema(type: 'string'))]
     #[OA\Response(response: 200, description: 'Vehicle variant published')]
     #[RequiresScope('catalog:manage')]
     #[Route('/vehicles/{variantId}/publish', methods: ['POST'])]
