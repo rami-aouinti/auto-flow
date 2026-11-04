@@ -19,6 +19,8 @@ final class JwksKeyProvider
 
     private float $expiresAt = 0.0;
 
+    private float $lastRefreshAt = 0.0;
+
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly string $jwksUri,
@@ -41,6 +43,25 @@ final class JwksKeyProvider
     /**
      * @return array<string, Key>
      */
+    public function getKeysForKeyId(string $keyId): array
+    {
+        $keys = $this->getKeys();
+        if (isset($keys[$keyId])) {
+            return $keys;
+        }
+
+        // Unknown kid can indicate Keycloak key rotation. Refresh at most once
+        // every five seconds to avoid turning arbitrary kid values into a JWKS DoS.
+        if (microtime(true) - $this->lastRefreshAt < 5.0) {
+            return $keys;
+        }
+
+        return $this->refreshKeys();
+    }
+
+    /**
+     * @return array<string, Key>
+     */
     private function refreshKeys(): array
     {
         try {
@@ -51,6 +72,7 @@ final class JwksKeyProvider
 
             $this->keys = $keys;
             $this->expiresAt = microtime(true) + $this->cacheTtlSeconds;
+            $this->lastRefreshAt = microtime(true);
 
             return $this->keys;
         } catch (JwksUnavailableException $exception) {
