@@ -34,10 +34,11 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                     $statement = $connection->prepare(<<<'SQL'
                         INSERT INTO offers (
                             tenant_id, offer_id, created_by, status, quote_id, pricing_snapshot,
-                            created_at, expires_at
+                            created_at, expires_at, published_at, accepted_at, rejected_at, expired_at
                         ) VALUES (
                             :tenant_id, :offer_id, :created_by, :status, :quote_id,
-                            CAST(:pricing_snapshot AS JSONB), :created_at, :expires_at
+                            CAST(:pricing_snapshot AS JSONB), :created_at, :expires_at,
+                            :published_at, :accepted_at, :rejected_at, :expired_at
                         )
                         SQL);
                     $statement->execute([
@@ -60,11 +61,19 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                         ], JSON_THROW_ON_ERROR),
                         'created_at' => $offer->createdAt()->format(DATE_ATOM),
                         'expires_at' => $offer->expiresAt()->format(DATE_ATOM),
+                        'published_at' => $offer->publishedAt()?->format(DATE_ATOM),
+                        'accepted_at' => $offer->acceptedAt()?->format(DATE_ATOM),
+                        'rejected_at' => $offer->rejectedAt()?->format(DATE_ATOM),
+                        'expired_at' => $offer->expiredAt()?->format(DATE_ATOM),
                     ]);
                 } else {
                     $update = $connection->prepare(<<<'SQL'
                         UPDATE offers
-                        SET status = :status
+                        SET status = :status,
+                            published_at = :published_at,
+                            accepted_at = :accepted_at,
+                            rejected_at = :rejected_at,
+                            expired_at = :expired_at
                         WHERE tenant_id = :tenant_id
                           AND offer_id = :offer_id
                           AND created_by = :created_by
@@ -76,6 +85,10 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                         'offer_id' => (string) $offer->id(),
                         'created_by' => $offer->createdBy(),
                         'expected_status' => $expectedStatus->value,
+                        'published_at' => $offer->publishedAt()?->format(DATE_ATOM),
+                        'accepted_at' => $offer->acceptedAt()?->format(DATE_ATOM),
+                        'rejected_at' => $offer->rejectedAt()?->format(DATE_ATOM),
+                        'expired_at' => $offer->expiredAt()?->format(DATE_ATOM),
                     ]);
 
                     if ($update->rowCount() !== 1) {
@@ -153,7 +166,8 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
 
                 $update = $connection->prepare(<<<'SQL'
                     UPDATE offers
-                    SET status = :status
+                    SET status = :status,
+                        expired_at = :expired_at
                     WHERE tenant_id = :tenant_id
                       AND offer_id = :offer_id
                       AND status = :expected_status
@@ -166,6 +180,7 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                         'tenant_id' => $tenantId,
                         'offer_id' => (string) $offer->id(),
                         'expected_status' => $offer->persistedStatus()?->value,
+                        'expired_at' => $offer->expiredAt()?->format(DATE_ATOM),
                     ]);
 
                     if ($update->rowCount() !== 1) {
@@ -211,6 +226,10 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
             createdAt: new DateTimeImmutable((string) $row['created_at']),
             expiresAt: new DateTimeImmutable((string) $row['expires_at']),
             status: OfferStatus::from((string) $row['status']),
+            publishedAt: $row['published_at'] !== null ? new DateTimeImmutable((string) $row['published_at']) : null,
+            acceptedAt: $row['accepted_at'] !== null ? new DateTimeImmutable((string) $row['accepted_at']) : null,
+            rejectedAt: $row['rejected_at'] !== null ? new DateTimeImmutable((string) $row['rejected_at']) : null,
+            expiredAt: $row['expired_at'] !== null ? new DateTimeImmutable((string) $row['expired_at']) : null,
         );
     }
 
