@@ -30,7 +30,7 @@ RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-prog
     && composer show autoflow/core-bundle --no-interaction \
     && test -f /packages/core-bundle/src/Security/JwtTokenVerifier.php \
     && test -f vendor/autoflow/core-bundle/src/Security/JwtTokenVerifier.php \
-    && cmp -s /packages/core-bundle/src/Security/JwtTokenVerifier.php vendor/autoflow/core-bundle/src/Security/JwtTokenVerifier.php \
+    && diff -qr /packages/core-bundle/src vendor/autoflow/core-bundle/src \
     || { echo "ERROR: installed autoflow/core-bundle does not match the CoreBundle source copied into the image."; exit 1; }
 
 COPY ${SERVICE_PATH}/ ./
