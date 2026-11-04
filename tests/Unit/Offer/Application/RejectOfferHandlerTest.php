@@ -64,7 +64,7 @@ final class RejectOfferHandlerTest extends TestCase
 
     public function testCannotRejectOfferNotOwnedByCaller(): void
     {
-        $repository = new class implements OfferRepositoryInterface {
+        $repository = new class () implements OfferRepositoryInterface {
             public function save(Offer $offer): void
             {
             }
@@ -72,8 +72,14 @@ final class RejectOfferHandlerTest extends TestCase
             {
                 return null;
             }
-            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array { return []; }
-            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int { return 0; }
+            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+            {
+                return [];
+            }
+            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
+            {
+                return 0;
+            }
         };
 
         $this->expectException(OfferNotFound::class);
