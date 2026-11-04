@@ -60,7 +60,9 @@ final class AcceptOfferHandlerTest extends TestCase
     {
         $offer = $this->createOffer();
         $repository = new class ($offer) implements OfferRepositoryInterface {
-            public function __construct(private Offer $offer) {}
+            public function __construct(private Offer $offer)
+            {
+            }
             public function save(Offer $offer): void
             {
                 $this->offer = $offer;
@@ -69,8 +71,14 @@ final class AcceptOfferHandlerTest extends TestCase
             {
                 return null;
             }
-            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array { return []; }
-            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int { return 0; }
+            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+            {
+                return [];
+            }
+            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
+            {
+                return 0;
+            }
         };
 
         $this->expectException(OfferNotFound::class);
