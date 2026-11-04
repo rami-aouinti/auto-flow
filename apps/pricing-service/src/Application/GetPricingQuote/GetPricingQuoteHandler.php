@@ -14,8 +14,8 @@ final readonly class GetPricingQuoteHandler
     ) {
     }
 
-    public function __invoke(string $tenantId, string $quoteId): ?PricingQuote
+    public function __invoke(string $tenantId, string $quoteId, ?string $ownerId): ?PricingQuote
     {
-        return $this->quoteRepository->findById($tenantId, $quoteId);
+        return $this->quoteRepository->findById($tenantId, $quoteId, $ownerId);
     }
 }
