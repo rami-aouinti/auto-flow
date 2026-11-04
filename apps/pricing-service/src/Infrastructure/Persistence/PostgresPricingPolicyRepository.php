@@ -50,6 +50,11 @@ final readonly class PostgresPricingPolicyRepository implements PricingPolicyRep
         return $this->findOne($tenantId, 'status = :status', ['status' => 'active']);
     }
 
+    public function findLatest(string $tenantId): ?PricingPolicy
+    {
+        return $this->findOne($tenantId, 'TRUE ORDER BY version DESC', []);
+    }
+
     public function findByVersion(string $tenantId, int $version): ?PricingPolicy
     {
         if ($version < 1) {
