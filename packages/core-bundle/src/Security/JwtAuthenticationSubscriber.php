@@ -15,14 +15,14 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
     /**
      * @param list<string> $protectedPrefixes
      * @param list<string> $excludedPaths
-     * @param list<string> $tenantRequiredPrefixes
+     * @param list<string> $tenantPathPrefixes
      */
     public function __construct(
         private JwtTokenVerifier $tokenVerifier,
         private bool $enabled,
         private array $protectedPrefixes,
         private array $excludedPaths,
-        private array $tenantRequiredPrefixes = [],
+        private array $tenantPathPrefixes = [],
     ) {
     }
 
@@ -121,7 +121,7 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
 
     private function requiresTenant(string $path): bool
     {
-        foreach ($this->tenantRequiredPrefixes as $prefix) {
+        foreach ($this->tenantPathPrefixes as $prefix) {
             $normalizedPrefix = rtrim($prefix, '/');
             if ($path === $normalizedPrefix || str_starts_with($path, $normalizedPrefix . '/')) {
                 return true;
