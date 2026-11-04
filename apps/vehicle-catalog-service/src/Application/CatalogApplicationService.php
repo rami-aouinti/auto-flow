@@ -12,18 +12,27 @@ use App\Domain\Entity\VehicleVariant;
 
 final readonly class CatalogApplicationService
 {
-    public function __construct(private VehicleCatalogRepositoryInterface $repository) {}
+    public function __construct(
+        private VehicleCatalogRepositoryInterface $repository,
+    ) {
+    }
 
+    /** @return list<array<string, mixed>> */
     public function listManufacturers(bool $publishedOnly = true): array
     {
         return $this->repository->listManufacturers($publishedOnly);
     }
 
+    /**
+     * @param array<string, scalar|null> $filters
+     * @return array{items: list<array<string, mixed>>, total: int}
+     */
     public function listVehicles(array $filters, int $limit, int $offset): array
     {
         return $this->repository->listVehicles($filters, $limit, $offset);
     }
 
+    /** @return array<string, mixed>|null */
     public function getVehicle(string $id, bool $publishedOnly = true): ?array
     {
         return $this->repository->getVehicle($id, $publishedOnly);
@@ -33,6 +42,7 @@ final readonly class CatalogApplicationService
     {
         $manufacturer = Manufacturer::register($code, $name);
         $this->repository->createManufacturer($manufacturer);
+
         return $manufacturer->id->value;
     }
 
@@ -40,13 +50,19 @@ final readonly class CatalogApplicationService
     {
         $model = VehicleModel::create($manufacturerId, $name);
         $this->repository->createModel($model);
+
         return $model->id->value;
     }
 
-    public function registerGeneration(string $modelId, string $name, ?int $startYear, ?int $endYear): string
-    {
+    public function registerGeneration(
+        string $modelId,
+        string $name,
+        ?int $startYear,
+        ?int $endYear,
+    ): string {
         $generation = VehicleGeneration::create($modelId, $name, $startYear, $endYear);
         $this->repository->createGeneration($generation);
+
         return $generation->id->value;
     }
 
@@ -55,10 +71,12 @@ final readonly class CatalogApplicationService
         return $this->repository->publishVariant($id);
     }
 
+    /** @param array<string, mixed> $data */
     public function registerVariant(array $data): string
     {
         $variant = VehicleVariant::register($data);
         $this->repository->createVariant($variant);
+
         return $variant->id->value;
     }
 }
