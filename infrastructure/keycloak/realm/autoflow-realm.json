@@ -205,6 +205,25 @@
           "tenant-demo"
         ]
       }
+    },
+    {
+      "username": "catalog-admin",
+      "enabled": true,
+      "email": "catalog-admin@autoflow.local",
+      "emailVerified": true,
+      "firstName": "Catalogue",
+      "lastName": "Administrator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "catalog-admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "catalog:read",
+        "catalog:manage"
+      ]
     }
   ],
   "roles": {
