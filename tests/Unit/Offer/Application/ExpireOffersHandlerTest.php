@@ -15,7 +15,7 @@ final class ExpireOffersHandlerTest extends TestCase
 {
     public function testExpiresDueOffersForEveryReturnedTenant(): void
     {
-        $repository = new class implements OfferRepositoryInterface {
+        $repository = new class () implements OfferRepositoryInterface {
             /** @var list<string> */
             public array $queriedTenants = [];
 
@@ -52,10 +52,21 @@ final class ExpireOffersHandlerTest extends TestCase
     public function testRejectsInvalidBatchSizes(): void
     {
         $repository = new class implements OfferRepositoryInterface {
-            public function save(Offer $offer): void {}
-            public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer { return null; }
-            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array { return []; }
-            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int { return 0; }
+            public function save(Offer $offer): void
+            {
+            }
+            public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
+            {
+                return null;
+            }
+            public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+            {
+                return [];
+            }
+            public function expireDueForTenant(string $tenantId, DateTimeImmutable $now, int $limit): int
+            {
+                return 0;
+            }
         };
 
         $this->expectException(\InvalidArgumentException::class);
