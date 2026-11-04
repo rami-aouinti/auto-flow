@@ -11,8 +11,5 @@ final readonly class RequiresScope
 {
     public function __construct(public string $scope)
     {
-        if (trim($scope) === '') {
-            throw new \InvalidArgumentException('A required scope cannot be empty.');
-        }
     }
 }
