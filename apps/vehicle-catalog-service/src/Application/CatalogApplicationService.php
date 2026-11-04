@@ -50,6 +50,11 @@ final readonly class CatalogApplicationService
         return $generation->id->value;
     }
 
+    public function publishVariant(string $id): bool
+    {
+        return $this->repository->publishVariant($id);
+    }
+
     public function registerVariant(array $data): string
     {
         $variant = VehicleVariant::register($data);
