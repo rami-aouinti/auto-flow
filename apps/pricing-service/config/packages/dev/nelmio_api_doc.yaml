@@ -49,15 +49,15 @@ nelmio_api_doc:
                         vehiclePrice:
                             type: string
                             description: Decimal money amount; use a string to avoid floating-point ambiguity.
-                            pattern: '^\\d+(\\.\\d{1,2})?$'
+                            pattern: '^\d+(\.\d{1,2})?$'
                             example: '30000.00'
                         downPayment:
                             type: string
-                            pattern: '^\\d+(\\.\\d{1,2})?$'
+                            pattern: '^\d+(\.\d{1,2})?$'
                             example: '5000.00'
                         residualValue:
                             type: string
-                            pattern: '^\\d+(\\.\\d{1,2})?$'
+                            pattern: '^\d+(\.\d{1,2})?$'
                             example: '12000.00'
                         currency:
                             type: string
