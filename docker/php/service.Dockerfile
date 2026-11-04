@@ -54,6 +54,11 @@ RUN if [ -d proto ]; then \
 RUN APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret PRICING_SERVICE_URL=http://pricing-service:8080 \
     php -r 'require "vendor/autoload.php"; $kernel = new \App\Kernel("prod", false); $kernel->boot(); $kernel->shutdown();'
 
+# Resolve the generated Pricing gRPC adapter through Symfony DI during the image build.
+RUN if [ -f src/Grpc/PricingGrpcService.php ]; then \
+    APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret php -r 'require "vendor/autoload.php"; $kernel = new \App\Kernel("prod", false); $kernel->boot(); $kernel->getContainer()->get(\App\Grpc\PricingGrpcService::class); $kernel->shutdown();'; \
+    fi
+
 # Boot both RoadRunner worker pools during the image build and verify the server config.
 # A clean timeout is expected because the server is intentionally long-running.
 RUN set +e; APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret PRICING_SERVICE_URL=http://pricing-service:8080 \
