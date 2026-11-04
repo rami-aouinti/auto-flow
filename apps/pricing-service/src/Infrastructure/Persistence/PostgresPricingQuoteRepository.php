@@ -7,9 +7,9 @@ namespace App\Infrastructure\Persistence;
 use App\Application\Port\Out\PricingQuoteRepositoryInterface;
 use App\Domain\Model\PricingQuote;
 use App\Domain\ValueObject\Money;
+use DateTimeImmutable;
 use InvalidArgumentException;
 use LogicException;
-use DateTimeImmutable;
 use PDO;
 use Throwable;
 
@@ -226,7 +226,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             createdBy: (string) $row['created_by'],
             vehiclePrice: $row['vehicle_price_minor'] === null ? null : Money::fromMinorUnits((int) $row['vehicle_price_minor'], (string) $row['currency']),
             downPayment: $row['down_payment_minor'] === null ? null : Money::fromMinorUnits((int) $row['down_payment_minor'], (string) $row['currency']),
-            createdAt: new \\DateTimeImmutable((string) $row['created_at']),
+            createdAt: new DateTimeImmutable((string) $row['created_at']),
             expiresAt: new \\DateTimeImmutable((string) $row['expires_at']),
             policyId: $row['policy_id'] === null ? null : (string) $row['policy_id'],
             policyVersion: $row['policy_version'] === null ? null : (int) $row['policy_version'],
