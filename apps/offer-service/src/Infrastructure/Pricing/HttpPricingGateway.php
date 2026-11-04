@@ -28,7 +28,10 @@ final readonly class HttpPricingGateway implements PricingGatewayInterface
             rtrim($this->pricingServiceUrl, '/') . '/api/pricing/quotes',
             [
                 'auth_bearer' => $pricingToken,
-                'headers' => ['Content-Type' => 'application/json'],
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'X-Tenant-ID' => $request->tenantId,
+                ],
                 'json' => [
                     'vehicleId' => $request->vehicleId,
                     'vehiclePrice' => $request->vehiclePrice,
