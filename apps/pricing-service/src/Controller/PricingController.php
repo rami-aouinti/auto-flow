@@ -62,7 +62,10 @@ final class PricingController
         Request $request,
         CalculateQuoteHandler $handler,
         TenantContext $tenantContext,
+        PricingMetrics $metrics,
     ): JsonResponse {
+        $startedAt = hrtime(true);
+        $metricResult = 'error';
         $span = Globals::tracerProvider()
             ->getTracer('autoflow.pricing-service', '1.0.0')
             ->spanBuilder('pricing.calculate')
@@ -86,6 +89,7 @@ final class PricingController
             );
 
             $quote = $handler($command);
+            $metricResult = 'success';
             $span->setAttribute('vehicle.id', $quote->vehicleId);
             $span->setAttribute('pricing.duration_months', $quote->durationMonths);
             $span->setAttribute('pricing.currency', $quote->monthlyAmount->currency);
@@ -113,11 +117,13 @@ final class PricingController
 
             return $response;
         } catch (JsonException) {
+            $metricResult = 'invalid_request';
             return new JsonResponse([
                 'error' => 'invalid_json',
                 'message' => 'Request body must contain valid JSON.',
             ], JsonResponse::HTTP_BAD_REQUEST);
         } catch (InvalidArgumentException $exception) {
+            $metricResult = 'invalid_request';
             return new JsonResponse([
                 'error' => 'invalid_pricing_request',
                 'message' => $exception->getMessage(),
@@ -128,6 +134,7 @@ final class PricingController
 
             throw $exception;
         } finally {
+            $metrics->recordCalculation((hrtime(true) - $startedAt) / 1_000_000, $metricResult);
             $scope->detach();
             $span->end();
         }
