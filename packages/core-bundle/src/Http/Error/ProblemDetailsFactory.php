@@ -30,7 +30,7 @@ final class ProblemDetailsFactory
         ];
 
         return new JsonResponse(
-            array_merge($payload, $extensions),
+            array_merge($extensions, $payload),
             $status,
             ['Content-Type' => 'application/problem+json'],
         );
