@@ -59,12 +59,12 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                             'annualInterestRateBasisPoints' => $snapshot->annualInterestRateBasisPoints,
                             'calculationVersion' => $snapshot->calculationVersion,
                         ], JSON_THROW_ON_ERROR),
-                        'created_at' => $offer->createdAt()->format('Y-m-d\\TH:i:s.uP'),
-                        'expires_at' => $offer->expiresAt()->format('Y-m-d\\TH:i:s.uP'),
-                        'published_at' => $offer->publishedAt()?->format('Y-m-d\\TH:i:s.uP'),
-                        'accepted_at' => $offer->acceptedAt()?->format('Y-m-d\\TH:i:s.uP'),
-                        'rejected_at' => $offer->rejectedAt()?->format('Y-m-d\\TH:i:s.uP'),
-                        'expired_at' => $offer->expiredAt()?->format('Y-m-d\\TH:i:s.uP'),
+                        'created_at' => $offer->createdAt()->format('Y-m-d\TH:i:s.uP'),
+                        'expires_at' => $offer->expiresAt()->format('Y-m-d\TH:i:s.uP'),
+                        'published_at' => $offer->publishedAt()?->format('Y-m-d\TH:i:s.uP'),
+                        'accepted_at' => $offer->acceptedAt()?->format('Y-m-d\TH:i:s.uP'),
+                        'rejected_at' => $offer->rejectedAt()?->format('Y-m-d\TH:i:s.uP'),
+                        'expired_at' => $offer->expiredAt()?->format('Y-m-d\TH:i:s.uP'),
                     ]);
                 } else {
                     $update = $connection->prepare(<<<'SQL'
@@ -85,10 +85,10 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                         'offer_id' => (string) $offer->id(),
                         'created_by' => $offer->createdBy(),
                         'expected_status' => $expectedStatus->value,
-                        'published_at' => $offer->publishedAt()?->format('Y-m-d\\TH:i:s.uP'),
-                        'accepted_at' => $offer->acceptedAt()?->format('Y-m-d\\TH:i:s.uP'),
-                        'rejected_at' => $offer->rejectedAt()?->format('Y-m-d\\TH:i:s.uP'),
-                        'expired_at' => $offer->expiredAt()?->format('Y-m-d\\TH:i:s.uP'),
+                        'published_at' => $offer->publishedAt()?->format('Y-m-d\TH:i:s.uP'),
+                        'accepted_at' => $offer->acceptedAt()?->format('Y-m-d\TH:i:s.uP'),
+                        'rejected_at' => $offer->rejectedAt()?->format('Y-m-d\TH:i:s.uP'),
+                        'expired_at' => $offer->expiredAt()?->format('Y-m-d\TH:i:s.uP'),
                     ]);
 
                     if ($update->rowCount() !== 1) {
@@ -130,7 +130,7 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
         $statement = $this->connection->get()->prepare(
             'SELECT tenant_id FROM offer_expired_tenants(:batch_size, :now)',
         );
-        $statement->execute(['batch_size' => $limit, 'now' => $now->format('Y-m-d\\TH:i:s.uP')]);
+        $statement->execute(['batch_size' => $limit, 'now' => $now->format('Y-m-d\TH:i:s.uP')]);
 
         return array_values(array_map(
             static fn (array $row): string => (string) $row['tenant_id'],
@@ -156,7 +156,7 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                     LIMIT :batch_size
                     FOR UPDATE SKIP LOCKED
                     SQL);
-                $statement->bindValue('now', $now->format('Y-m-d\\TH:i:s.uP'));
+                $statement->bindValue('now', $now->format('Y-m-d\TH:i:s.uP'));
                 $statement->bindValue('batch_size', $limit, PDO::PARAM_INT);
                 $statement->execute();
                 $offers = array_map(
@@ -180,7 +180,7 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                         'tenant_id' => $tenantId,
                         'offer_id' => (string) $offer->id(),
                         'expected_status' => $offer->persistedStatus()?->value,
-                        'expired_at' => $offer->expiredAt()?->format('Y-m-d\\TH:i:s.uP'),
+                        'expired_at' => $offer->expiredAt()?->format('Y-m-d\TH:i:s.uP'),
                     ]);
 
                     if ($update->rowCount() !== 1) {
