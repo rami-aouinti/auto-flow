@@ -22,6 +22,7 @@ final readonly class CreateOfferHandler
     {
         $snapshot = $this->pricingGateway->createQuote(
             new PricingQuoteRequest(
+                tenantId: $command->tenantId,
                 vehicleId: $command->vehicleId,
                 vehiclePrice: $command->vehiclePrice,
                 downPayment: $command->downPayment,
