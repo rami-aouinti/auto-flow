@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\Tests\\CoreBundle;
+namespace AutoFlow\Tests\CoreBundle;
 
-use AutoFlow\\CoreBundle\\Infrastructure\\Clock\\SystemClock;
+use AutoFlow\CoreBundle\Infrastructure\Clock\SystemClock;
 use DateTimeImmutable;
-use PHPUnit\\Framework\\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class SystemClockTest extends TestCase
 {
