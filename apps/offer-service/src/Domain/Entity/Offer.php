@@ -54,6 +54,21 @@ final class Offer
         return new self($id, $tenantId, $createdBy, $pricingSnapshot, $createdAt, $expiresAt);
     }
 
+    public static function reconstitute(
+        OfferId $id,
+        string $tenantId,
+        string $createdBy,
+        PricingSnapshot $pricingSnapshot,
+        DateTimeImmutable $createdAt,
+        DateTimeImmutable $expiresAt,
+        OfferStatus $status,
+    ): self {
+        $offer = self::create($id, $tenantId, $createdBy, $pricingSnapshot, $createdAt, $expiresAt);
+        $offer->status = $status;
+
+        return $offer;
+    }
+
     public function publish(DateTimeImmutable $publishedAt): void
     {
         $this->assertStatus(OfferStatus::Draft);
