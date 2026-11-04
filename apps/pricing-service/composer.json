@@ -7,13 +7,18 @@
     "php": "^8.4",
     "ext-json": "*",
     "ext-opentelemetry": "*",
+    "google/protobuf": "^4.0",
+    "nyholm/psr7": "^1.8",
     "open-telemetry/exporter-otlp": "^1.4",
     "open-telemetry/opentelemetry-auto-symfony": "^1.7",
     "open-telemetry/sdk": "^1.8",
     "php-http/guzzle7-adapter": "^1.0",
+    "roadrunner/grpc": "^3.8",
+    "roadrunner/http": "^4.0",
     "symfony/framework-bundle": "7.4.*",
     "symfony/http-client": "7.4.*",
     "symfony/flex": "^2.7",
+    "symfony/psr-http-message-bridge": "7.4.*",
     "symfony/string": "7.4.*",
     "symfony/yaml": "7.4.*",
     "autoflow/core-bundle": "^2.0"
@@ -35,13 +40,13 @@
   ],
   "autoload": {
     "psr-4": {
-      "App\\": "src/",
-      "App\\Grpc\\Generated\\": "src/App/Grpc/Generated/"
+      "App\\\\": "src/",
+      "App\\\\Grpc\\\\Generated\\\\": "src/App/Grpc/Generated/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "App\\Tests\\": "tests/"
+      "App\\\\Tests\\\\": "tests/"
     }
   },
   "scripts": {
