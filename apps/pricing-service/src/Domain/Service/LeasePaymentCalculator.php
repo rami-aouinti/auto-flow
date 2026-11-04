@@ -29,6 +29,11 @@ final class LeasePaymentCalculator
         }
 
         $monthlyMinorUnits = (int) round($monthlyAmount, 0, PHP_ROUND_HALF_UP);
+
+        if ($monthlyMinorUnits > intdiv(PHP_INT_MAX, $terms->durationMonths)) {
+            throw new InvalidArgumentException('Calculated total exceeds the supported monetary range.');
+        }
+
         $monthlyPayment = Money::fromMinorUnits($monthlyMinorUnits, $terms->vehiclePrice->currency);
         $totalInstallments = Money::fromMinorUnits(
             $monthlyMinorUnits * $terms->durationMonths,
