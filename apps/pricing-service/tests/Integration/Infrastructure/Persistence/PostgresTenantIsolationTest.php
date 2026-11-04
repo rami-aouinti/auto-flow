@@ -10,6 +10,9 @@ use PDOException;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 #[CoversNothing]
 final class PostgresTenantIsolationTest extends TestCase
 {
