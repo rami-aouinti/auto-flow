@@ -33,7 +33,7 @@ final class GrpcMetadataTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        GrpcMetadata::normalize(['payload-bin' => 'encoded']);
+        (new GrpcMetadata())->normalize(['payload-bin' => 'encoded']);
     }
 
     public function testDeadlineMustBePositiveAndFinite(): void
