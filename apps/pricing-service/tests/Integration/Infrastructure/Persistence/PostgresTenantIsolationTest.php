@@ -6,6 +6,7 @@ namespace App\Tests\Integration\Infrastructure\Persistence;
 
 use App\Domain\Model\PricingQuote;
 use App\Domain\ValueObject\Money;
+use App\Infrastructure\Persistence\PostgresConnection;
 use App\Infrastructure\Persistence\PostgresConnectionFactory;
 use App\Infrastructure\Persistence\PostgresPricingQuoteRepository;
 use PDO;
@@ -21,6 +22,8 @@ final class PostgresTenantIsolationTest extends TestCase
 {
     private PDO $connection;
 
+    private string $databaseUrl;
+
     /**
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
@@ -35,6 +38,7 @@ final class PostgresTenantIsolationTest extends TestCase
             self::fail('DATABASE_URL must be configured for PostgreSQL integration tests.');
         }
 
+        $this->databaseUrl = $databaseUrl;
         $this->connection = PostgresConnectionFactory::create($databaseUrl);
     }
 
@@ -109,7 +113,7 @@ final class PostgresTenantIsolationTest extends TestCase
             calculationVersion: 'lease-annuity-v1',
         );
 
-        (new PostgresPricingQuoteRepository($this->connection))->save($quote);
+        (new PostgresPricingQuoteRepository(new PostgresConnection($this->databaseUrl)))->save($quote);
 
         $this->connection->beginTransaction();
 
