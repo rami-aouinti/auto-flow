@@ -11,7 +11,7 @@ final class Configuration implements ConfigurationInterface
 {
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder('autoflow_core');
+        $treeBuilder = new TreeBuilder('core');
         $root = $treeBuilder->getRootNode();
 
         $root
