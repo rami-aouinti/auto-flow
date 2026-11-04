@@ -57,6 +57,33 @@ final class JwtTokenVerifierTest extends TestCase
         self::assertTrue($principal->hasScope('pricing:quote'));
     }
 
+    public function testItRejectsATokenWithoutASubjectClaim(): void
+    {
+        [$verifier, $token] = $this->createVerifier([
+            'iss' => 'https://identity.autoflow.test/realms/autoflow',
+            'aud' => ['autoflow-pricing'],
+            'iat' => time(),
+            'exp' => time() + 300,
+        ]);
+
+        $this->expectException(InvalidTokenException::class);
+        $verifier->verify($token);
+    }
+
+    public function testItRejectsAnEmptySubjectClaim(): void
+    {
+        [$verifier, $token] = $this->createVerifier([
+            'iss' => 'https://identity.autoflow.test/realms/autoflow',
+            'aud' => ['autoflow-pricing'],
+            'sub' => '',
+            'iat' => time(),
+            'exp' => time() + 300,
+        ]);
+
+        $this->expectException(InvalidTokenException::class);
+        $verifier->verify($token);
+    }
+
     public function testItRejectsAnEmptyTenantIdentifier(): void
     {
         $this->assertInvalidTenantIdentifier(' ');
