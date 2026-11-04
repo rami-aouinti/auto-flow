@@ -13,8 +13,8 @@ final readonly class DeletePricingQuoteHandler
     ) {
     }
 
-    public function __invoke(string $tenantId, string $quoteId): bool
+    public function __invoke(string $tenantId, string $quoteId, ?string $ownerId): bool
     {
-        return $this->quoteRepository->delete($tenantId, $quoteId);
+        return $this->quoteRepository->delete($tenantId, $quoteId, $ownerId);
     }
 }
