@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\CoreBundle\\Application\\Transaction;
+namespace AutoFlow\CoreBundle\Application\Transaction;
 
 /**
  * Application port for an atomic persistence boundary.
