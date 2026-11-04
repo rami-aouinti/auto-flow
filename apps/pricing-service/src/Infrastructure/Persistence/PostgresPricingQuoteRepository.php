@@ -28,12 +28,12 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             $statement = $connection->prepare(
                 <<<'SQL'
                 INSERT INTO pricing_quotes (
-                    quote_id, tenant_id, vehicle_id, monthly_amount_minor,
+                    quote_id, tenant_id, created_by, vehicle_id, monthly_amount_minor,
                     total_installments_minor, total_cost_minor, residual_value_minor,
                     currency, duration_months, annual_interest_rate_basis_points,
                     calculation_version
                 ) VALUES (
-                    :quote_id, :tenant_id, :vehicle_id, :monthly_amount_minor,
+                    :quote_id, :tenant_id, :created_by, :vehicle_id, :monthly_amount_minor,
                     :total_installments_minor, :total_cost_minor, :residual_value_minor,
                     :currency, :duration_months, :annual_interest_rate_basis_points,
                     :calculation_version
@@ -44,6 +44,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             $statement->execute([
                 'quote_id' => $quote->quoteId,
                 'tenant_id' => $quote->tenantId,
+                'created_by' => $quote->createdBy,
                 'vehicle_id' => $quote->vehicleId,
                 'monthly_amount_minor' => $quote->monthlyAmount->minorUnits,
                 'total_installments_minor' => $quote->totalInstallmentsAmount->minorUnits,
@@ -57,15 +58,21 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
         });
     }
 
-    public function findById(string $tenantId, string $quoteId): ?PricingQuote
+    public function findById(string $tenantId, string $quoteId, ?string $ownerId): ?PricingQuote
     {
         return $this->withinTenantTransaction(
             $tenantId,
-            static function (PDO $connection) use ($quoteId): ?PricingQuote {
-                $statement = $connection->prepare(
-                    'SELECT * FROM pricing_quotes WHERE quote_id = :quote_id AND deleted_at IS NULL',
-                );
-                $statement->execute(['quote_id' => $quoteId]);
+            static function (PDO $connection) use ($quoteId, $ownerId): ?PricingQuote {
+                $sql = 'SELECT * FROM pricing_quotes WHERE quote_id = :quote_id AND deleted_at IS NULL';
+                $parameters = ['quote_id' => $quoteId];
+
+                if ($ownerId !== null) {
+                    $sql .= ' AND created_by = :created_by';
+                    $parameters['created_by'] = $ownerId;
+                }
+
+                $statement = $connection->prepare($sql);
+                $statement->execute($parameters);
                 $row = $statement->fetch();
 
                 return is_array($row) ? self::hydrate($row) : null;
@@ -76,24 +83,38 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
     /**
      * @return list<PricingQuote>
      */
-    public function findAll(string $tenantId, int $limit = 50, int $offset = 0): array
-    {
+    public function findAll(
+        string $tenantId,
+        ?string $ownerId,
+        int $limit = 50,
+        int $offset = 0,
+    ): array {
         if ($limit < 1 || $limit > 100 || $offset < 0) {
             throw new InvalidArgumentException('Quote pagination must use limit 1-100 and a non-negative offset.');
         }
 
         return $this->withinTenantTransaction(
             $tenantId,
-            static function (PDO $connection) use ($limit, $offset): array {
-                $statement = $connection->prepare(
-                    <<<'SQL'
+            static function (PDO $connection) use ($ownerId, $limit, $offset): array {
+                $sql = <<<'SQL'
                     SELECT *
                     FROM pricing_quotes
                     WHERE deleted_at IS NULL
-                    ORDER BY created_at DESC, quote_id ASC
-                    LIMIT :limit OFFSET :offset
-                    SQL,
-                );
+                    SQL;
+                $parameters = [];
+
+                if ($ownerId !== null) {
+                    $sql .= ' AND created_by = :created_by';
+                    $parameters['created_by'] = $ownerId;
+                }
+
+                $sql .= ' ORDER BY created_at DESC, quote_id ASC LIMIT :limit OFFSET :offset';
+                $statement = $connection->prepare($sql);
+
+                if ($ownerId !== null) {
+                    $statement->bindValue('created_by', $ownerId);
+                }
+
                 $statement->bindValue('limit', $limit, PDO::PARAM_INT);
                 $statement->bindValue('offset', $offset, PDO::PARAM_INT);
                 $statement->execute();
@@ -108,19 +129,25 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
         );
     }
 
-    public function delete(string $tenantId, string $quoteId): bool
+    public function delete(string $tenantId, string $quoteId, ?string $ownerId): bool
     {
         return $this->withinTenantTransaction(
             $tenantId,
-            static function (PDO $connection) use ($quoteId): bool {
-                $statement = $connection->prepare(
-                    <<<'SQL'
+            static function (PDO $connection) use ($quoteId, $ownerId): bool {
+                $sql = <<<'SQL'
                     UPDATE pricing_quotes
                     SET deleted_at = CURRENT_TIMESTAMP
                     WHERE quote_id = :quote_id AND deleted_at IS NULL
-                    SQL,
-                );
-                $statement->execute(['quote_id' => $quoteId]);
+                    SQL;
+                $parameters = ['quote_id' => $quoteId];
+
+                if ($ownerId !== null) {
+                    $sql .= ' AND created_by = :created_by';
+                    $parameters['created_by'] = $ownerId;
+                }
+
+                $statement = $connection->prepare($sql);
+                $statement->execute($parameters);
 
                 return $statement->rowCount() === 1;
             },
@@ -188,6 +215,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
             durationMonths: (int) $row['duration_months'],
             annualInterestRateBasisPoints: (int) $row['annual_interest_rate_basis_points'],
             calculationVersion: (string) $row['calculation_version'],
+            createdBy: (string) $row['created_by'],
         );
     }
 }
