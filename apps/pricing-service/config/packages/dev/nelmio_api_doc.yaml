@@ -82,7 +82,48 @@ nelmio_api_doc:
                         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
                         - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
                     responses:
-                        '200': { description: Paginated quote collection }
+                        '200':
+                            description: Paginated quote collection. Fixture rows are visible to the fixture owner or callers with the tenant read-any scope.
+                            content:
+                                application/json:
+                                    example:
+                                        items:
+                                            - quoteId: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+                                              vehicleId: vehicle-demo-001
+                                              vehiclePrice: '30000.00'
+                                              downPayment: '5000.00'
+                                              monthlyAmount: '455.46'
+                                              totalInstallmentsAmount: '21862.08'
+                                              totalCostIncludingDownPayment: '26862.08'
+                                              residualValue: '12000.00'
+                                              currency: EUR
+                                              durationMonths: 48
+                                              annualInterestRateBasisPoints: 450
+                                              calculationVersion: lease-annuity-v1
+                                              createdAt: '2026-11-04T12:00:00+00:00'
+                                              expiresAt: '2026-11-11T12:00:00+00:00'
+                                              policyId: '123e4567-e89b-42d3-a456-426614174000'
+                                              policyVersion: 1
+                                              expired: false
+                                            - quoteId: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+                                              vehicleId: vehicle-demo-002
+                                              vehiclePrice: '25000.00'
+                                              downPayment: '4000.00'
+                                              monthlyAmount: '389.90'
+                                              totalInstallmentsAmount: '14036.40'
+                                              totalCostIncludingDownPayment: '18036.40'
+                                              residualValue: '7500.00'
+                                              currency: EUR
+                                              durationMonths: 36
+                                              annualInterestRateBasisPoints: 350
+                                              calculationVersion: lease-annuity-v1
+                                              createdAt: '2026-11-04T12:00:00+00:00'
+                                              expiresAt: '2026-11-11T12:00:00+00:00'
+                                              policyId: '123e4567-e89b-42d3-a456-426614174000'
+                                              policyVersion: 1
+                                              expired: false
+                                        limit: 50
+                                        offset: 0
                         '400': { description: Invalid pagination }
             /api/pricing/quotes/{quoteId}:
                 get:
