@@ -134,6 +134,21 @@ The default list is empty to avoid breaking existing non-tenant endpoints. Confi
 
 The bundle supplies the cross-cutting tenant context and scope gate, not tenant membership or resource-level business policy. Each service must still verify that the principal is entitled to access the specific tenant-owned resource.
 
+## Messenger tenant propagation
+
+Register the middleware on each bus that handles tenant-scoped messages:
+
+~~~yaml
+framework:
+    messenger:
+        buses:
+            messenger.bus.default:
+                middleware:
+                    - id: AutoFlow\\CoreBundle\\Infrastructure\\Messenger\\TenantContextMiddleware
+~~~
+
+When dispatching inside a verified tenant context, the middleware adds a TenantStamp. When consuming the message, it restores that tenant in TenantContext for the duration of the handler and always restores the previous value. A message stamp that attempts to switch an already active tenant is rejected. Handlers must still call `requireTenantId()` and enforce tenant constraints in their own repositories. Messages without a tenant remain unscoped; do not use them for tenant-owned operations.
+
 ## Messenger correlation
 
 Enable the middleware on each relevant bus while retaining Symfony's default middleware:
