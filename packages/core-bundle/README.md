@@ -42,6 +42,18 @@ autoflow_core:
 
 This import is required; defining `Resources/config/routes.yaml` inside a bundle does not automatically register the routes.
 
+RoadRunner and Protobuf are **optional adapters**. The base package does not require their runtime libraries. Add the suggested packages only in a service that actually enables those adapters:
+
+```bash
+composer require roadrunner/http nyholm/psr7 symfony/psr-http-message-bridge
+# Add this only when using the RoadRunner gRPC runner:
+composer require roadrunner/grpc
+# Add this only when using Protobuf messages:
+composer require google/protobuf
+```
+
+Their classes are excluded from automatic service discovery so a service that does not install these packages can still compile its Symfony container. Instantiate/register the relevant adapter explicitly in the service that uses it.
+
 The bundle uses the configuration alias `core`:
 
 ```yaml
@@ -76,7 +88,7 @@ The default EventBus adapter dispatches through Symfony Messenger. It is not a T
 
 `SerializerInterface::decode()` returns native values for JSON. `JsonSerializer` deliberately rejects a non-null target class instead of silently ignoring it. Use an explicit DTO mapper or a dedicated Symfony Serializer adapter for typed hydration.
 
-`ProtobufSerializer` requires the expected generated message class when decoding. Never select a PHP class from an untrusted payload. Map generated Protobuf messages to application DTOs at the gRPC transport boundary.
+`ProtobufSerializer` requires the expected generated message class when decoding. It is excluded from automatic service discovery because google/protobuf is optional; register it explicitly in the service that installs google/protobuf. Never select a PHP class from an untrusted payload. Map generated Protobuf messages to application DTOs at the gRPC transport boundary.
 
 ## RoadRunner
 
