@@ -172,6 +172,22 @@ final class PostgresTenantIsolationTest extends TestCase
 
         self::assertTrue($repository->delete('tenant-a', $quoteId));
         self::assertNull($repository->findById('tenant-a', $quoteId));
+
+        $this->connection->beginTransaction();
+
+        try {
+            $this->setTenant('tenant-a');
+            $auditStatement = $this->connection->prepare(
+                'SELECT deleted_at FROM pricing_quotes WHERE quote_id = :quote_id',
+            );
+            $auditStatement->execute(['quote_id' => $quoteId]);
+
+            self::assertNotFalse($auditStatement->fetchColumn());
+        } finally {
+            if ($this->connection->inTransaction()) {
+                $this->connection->rollBack();
+            }
+        }
     }
 
     private function setTenant(string $tenantId): void
