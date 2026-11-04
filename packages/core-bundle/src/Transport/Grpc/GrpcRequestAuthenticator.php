@@ -11,7 +11,6 @@ use AutoFlow\CoreBundle\Security\JwtTokenVerifier;
 use AutoFlow\CoreBundle\Security\MissingScopeException;
 use AutoFlow\CoreBundle\Security\TenantDelegationException;
 use AutoFlow\CoreBundle\Security\TenantPrincipalResolver;
-use Psr\Log\LoggerInterface;
 use Spiral\RoadRunner\GRPC\ContextInterface;
 
 final readonly class GrpcRequestAuthenticator
@@ -19,7 +18,6 @@ final readonly class GrpcRequestAuthenticator
     public function __construct(
         private JwtTokenVerifier $tokenVerifier,
         private TenantPrincipalResolver $tenantPrincipalResolver,
-        private LoggerInterface $logger,
     ) {
     }
 
@@ -34,18 +32,23 @@ final readonly class GrpcRequestAuthenticator
         string $requiredScope,
         bool $tenantRequired = true,
     ): AuthenticatedPrincipal {
-        // RoadRunner's Server builds Context directly from CallContext::context.
-        // Therefore incoming gRPC metadata is exposed as top-level context values.
-        $authorizationValue = $context->getValue('authorization');
-        $authorization = $this->singleMetadataValue($authorizationValue);
+        $authorization = $this->metadataValue($context, 'authorization');
 
-        if ($authorization === null || preg_match('/^Bearer\\s+([^\\s]+)$/iD', $authorization, $matches) !== 1) {
-            $this->logger->warning('gRPC authorization metadata is missing or malformed.', [
-                'context_keys' => array_keys($context->getValues()),
-                'authorization_type' => get_debug_type($authorizationValue),
-                'authorization_value_count' => is_array($authorizationValue) ? count($authorizationValue) : null,
-                'authorization_present' => $authorization !== null,
-            ]);
+        if ($authorization === null || preg_match('/^Bearer\s+([^\s]+)$/iD', trim($authorization), $matches) !== 1) {
+            $values = $context->getValues();
+            $keys = array_map('strval', array_keys($values));
+            $shapes = [];
+            foreach ($values as $key => $value) {
+                $shapes[(string) $key] = is_array($value)
+                    ? ['type' => 'array', 'count' => count($value)]
+                    : ['type' => get_debug_type($value)];
+            }
+
+            error_log(sprintf(
+                '[AutoFlow gRPC auth] Authorization metadata unavailable or malformed; context_keys=%s; value_shapes=%s',
+                json_encode($keys, JSON_UNESCAPED_SLASHES) ?: '[]',
+                json_encode($shapes, JSON_UNESCAPED_SLASHES) ?: '{}',
+            ));
 
             throw new InvalidTokenException('A valid bearer token is required for this gRPC method.');
         }
@@ -66,23 +69,48 @@ final readonly class GrpcRequestAuthenticator
     }
 
     /**
+     * Read RoadRunner metadata without assuming a single key spelling or
+     * whether the transport represents values as strings or string lists.
+     *
      * @param non-empty-string $key
      */
     private function metadataValue(ContextInterface $context, string $key): ?string
     {
-        return $this->singleMetadataValue($context->getValue($key));
-    }
+        $values = $context->getValues();
+        $acceptedKeys = [
+            $key,
+            'grpc-metadata-' . $key,
+            'grpc.metadata.' . $key,
+        ];
 
-    private function singleMetadataValue(mixed $value): ?string
-    {
+        foreach ($values as $contextKey => $value) {
+            $normalizedKey = strtolower((string) $contextKey);
+            if (!in_array($normalizedKey, $acceptedKeys, true)) {
+                continue;
+            }
+
+            if (is_array($value)) {
+                if (count($value) !== 1) {
+                    return null;
+                }
+                $value = reset($value);
+            }
+
+            if (is_string($value) && trim($value) !== '') {
+                return trim($value);
+            }
+        }
+
+        // Keep compatibility with ContextInterface implementations whose
+        // getValues() does not expose metadata but getValue() does.
+        $value = $context->getValue($key);
         if (is_array($value)) {
             if (count($value) !== 1) {
                 return null;
             }
-
             $value = reset($value);
         }
 
-        return is_string($value) ? $value : null;
+        return is_string($value) && trim($value) !== '' ? trim($value) : null;
     }
 }
