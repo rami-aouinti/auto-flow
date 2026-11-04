@@ -21,7 +21,7 @@ $connectRabbit = static function (): array {
         getenv('RABBITMQ_PASSWORD') ?: 'autoflow',
         getenv('RABBITMQ_VHOST') ?: '/',
         false,
-        'AMQPLAIN',
+        'PLAIN',
         null,
         'en_US',
         3.0,
