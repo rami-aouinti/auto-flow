@@ -37,6 +37,26 @@ final class JwtTokenVerifierTest extends TestCase
         self::assertFalse($principal->hasScope('contracts:write'));
     }
 
+
+    public function testItIncludesRealmRolesInTheAuthenticatedPrincipalScopes(): void
+    {
+        [$verifier, $token] = $this->createVerifier([
+            'iss' => 'https://identity.autoflow.test/realms/autoflow',
+            'aud' => ['autoflow-pricing'],
+            'sub' => 'user-roles',
+            'realm_access' => [
+                'roles' => ['offers:read', 'pricing:quote'],
+            ],
+            'iat' => time(),
+            'exp' => time() + 300,
+        ]);
+
+        $principal = $verifier->verify($token);
+
+        self::assertTrue($principal->hasScope('offers:read'));
+        self::assertTrue($principal->hasScope('pricing:quote'));
+    }
+
     public function testItRejectsAnEmptyTenantIdentifier(): void
     {
         $this->assertInvalidTenantIdentifier(' ');
