@@ -42,3 +42,5 @@ DROP POLICY IF EXISTS pricing_quotes_tenant_isolation ON pricing_quotes;
 CREATE POLICY pricing_quotes_tenant_isolation ON pricing_quotes
     USING (tenant_id = current_setting('app.tenant_id', true))
     WITH CHECK (tenant_id = current_setting('app.tenant_id', true));
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE pricing_quotes TO autoflow_pricing;
