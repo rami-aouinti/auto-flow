@@ -24,6 +24,8 @@ final class Offer
 {
     private OfferStatus $status;
 
+    private ?OfferStatus $persistedStatus = null;
+
     /** @var list<DomainEvent> */
     private array $domainEvents = [];
 
@@ -84,6 +86,7 @@ final class Offer
     ): self {
         $offer = self::create($id, $tenantId, $createdBy, $pricingSnapshot, $createdAt, $expiresAt);
         $offer->status = $status;
+        $offer->persistedStatus = $status;
         $offer->clearDomainEvents();
 
         return $offer;
@@ -101,6 +104,7 @@ final class Offer
             throw new InvalidOfferTransition('An expired offer cannot be published.');
         }
 
+        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Published;
         $this->record(new OfferPublished(
             eventId: (string) OfferId::generate(),
@@ -126,6 +130,7 @@ final class Offer
             throw new InvalidOfferTransition('An expired offer cannot be accepted.');
         }
 
+        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Accepted;
     }
 
@@ -137,6 +142,7 @@ final class Offer
             throw new InvalidOfferTransition('An offer can only be rejected during its validity period.');
         }
 
+        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Rejected;
     }
 
@@ -150,6 +156,7 @@ final class Offer
             throw new InvalidOfferTransition('An offer cannot expire before its expiration time.');
         }
 
+        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Expired;
         $this->record(new OfferExpired(
             eventId: (string) OfferId::generate(),
@@ -169,6 +176,7 @@ final class Offer
             throw new InvalidOfferTransition('Only draft or published offers can be withdrawn.');
         }
 
+        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Withdrawn;
     }
 
@@ -176,6 +184,22 @@ final class Offer
     public function domainEvents(): array
     {
         return $this->domainEvents;
+    }
+
+    public function persistedStatus(): ?OfferStatus
+    {
+        return $this->persistedStatus;
+    }
+
+    public function markPersisted(): void
+    {
+        $this->persistedStatus = $this->status;
+        $this->clearDomainEvents();
+    }
+
+    private function rememberPersistedStatus(): void
+    {
+        $this->persistedStatus ??= $this->status;
     }
 
     public function clearDomainEvents(): void
