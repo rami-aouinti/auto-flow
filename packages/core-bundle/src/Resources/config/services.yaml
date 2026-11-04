@@ -3,7 +3,7 @@ services:
         autowire: true
         autoconfigure: true
 
-    AutoFlow\CoreBundle\:
+    AutoFlow\\CoreBundle\\:
         resource: '../../'
         exclude:
             - '../../DependencyInjection/'
@@ -11,16 +11,22 @@ services:
             - '../../Tests/'
             - '../../CoreBundle.php'
 
-    AutoFlow\CoreBundle\Http\Correlation\CorrelationIdSubscriber:
+    AutoFlow\\CoreBundle\\Application\\Clock\\ClockInterface:
+        alias: AutoFlow\\CoreBundle\\Infrastructure\\Clock\\SystemClock
+
+    AutoFlow\\CoreBundle\\Application\\Messaging\\EventBusInterface:
+        alias: AutoFlow\\CoreBundle\\Infrastructure\\Messenger\\MessengerEventBus
+
+    AutoFlow\\CoreBundle\\Http\\Correlation\\CorrelationIdSubscriber:
         arguments:
             $headerName: '%autoflow_core.correlation_header%'
 
-    AutoFlow\CoreBundle\Http\Client\CorrelationIdHttpClient:
+    AutoFlow\\CoreBundle\\Http\\Client\\CorrelationIdHttpClient:
         decorates: http_client
         arguments:
             $inner: '@.inner'
             $headerName: '%autoflow_core.correlation_header%'
 
-    AutoFlow\CoreBundle\Health\HealthController:
+    AutoFlow\\CoreBundle\\Health\\HealthController:
         arguments:
             $checks: !tagged_iterator autoflow_core.health_check
