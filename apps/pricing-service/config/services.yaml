@@ -10,6 +10,7 @@ services:
             - '../src/App/Grpc/Generated/'
 
     PDO:
+        class: PDO
         factory: ['App\Infrastructure\Persistence\PostgresConnectionFactory', 'create']
         arguments:
             - '%env(resolve:DATABASE_URL)%'
