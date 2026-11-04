@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Application\CalculateQuote\CalculateQuoteCommand;
 use App\Application\CalculateQuote\CalculateQuoteHandler;
+use App\Infrastructure\Persistence\PostgresConnection;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
