@@ -14,10 +14,18 @@ final class KeycloakTokenExchangeProviderTest extends TestCase
 {
     public function testExchangesAccessTokenForPricingAudience(): void
     {
-        $captured = [];
+        $method = '';
+        $capturedUrl = '';
+        $capturedOptions = null;
         $client = new MockHttpClient(
-            static function (string $method, string $url, array $options) use (&$captured): MockResponse {
-                $captured = [$method, $url, $options];
+            static function (string $requestMethod, string $url, array|string $options) use (
+                &$method,
+                &$capturedUrl,
+                &$capturedOptions,
+            ): MockResponse {
+                $method = $requestMethod;
+                $capturedUrl = $url;
+                $capturedOptions = $options;
 
                 return new MockResponse(json_encode([
                     'access_token' => 'exchanged.token.value',
@@ -35,15 +43,23 @@ final class KeycloakTokenExchangeProviderTest extends TestCase
         );
 
         self::assertSame('exchanged.token.value', $provider->exchangeForPricing('header.payload.signature'));
-        self::assertSame('POST', $captured[0]);
-        self::assertSame('offer-workload', $captured[2]['auth_basic'][0]);
+        self::assertSame('POST', $method);
+        self::assertSame('https://identity.example.test/token', $capturedUrl);
+        self::assertIsArray($capturedOptions);
+
+        $authBasic = $capturedOptions['auth_basic'] ?? null;
+        self::assertIsArray($authBasic);
+        self::assertSame('offer-workload', $authBasic[0] ?? null);
+
+        $body = $capturedOptions['body'] ?? null;
+        self::assertIsArray($body);
         self::assertSame(
             'urn:ietf:params:oauth:grant-type:token-exchange',
-            $captured[2]['body']['grant_type'],
+            $body['grant_type'] ?? null,
         );
-        self::assertSame('header.payload.signature', $captured[2]['body']['subject_token']);
-        self::assertSame('autoflow-pricing', $captured[2]['body']['audience']);
-        self::assertSame(0, $captured[2]['max_redirects']);
+        self::assertSame('header.payload.signature', $body['subject_token'] ?? null);
+        self::assertSame('autoflow-pricing', $body['audience'] ?? null);
+        self::assertSame(0, $capturedOptions['max_redirects'] ?? null);
     }
 
     public function testRejectsMalformedSubjectTokenBeforeCallingIdentityProvider(): void
