@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence;
 
 use App\Domain\Entity\Offer;
+use App\Domain\Event\DomainEvent;
 use App\Domain\Repository\OfferRepositoryInterface;
 use App\Domain\ValueObject\OfferId;
 use App\Domain\ValueObject\OfferStatus;
@@ -21,7 +22,9 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
 
     public function save(Offer $offer): void
     {
-        $this->withinTenantTransaction($offer->tenantId(), function (PDO $connection) use ($offer): void {
+        $events = $offer->domainEvents();
+
+        $this->withinTenantTransaction($offer->tenantId(), function (PDO $connection) use ($offer, $events): void {
             $snapshot = $offer->pricingSnapshot();
             $statement = $connection->prepare(<<<'SQL'
                 INSERT INTO offers (
@@ -56,7 +59,11 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                 'created_at' => $offer->createdAt()->format(DATE_ATOM),
                 'expires_at' => $offer->expiresAt()->format(DATE_ATOM),
             ]);
+
+            $this->appendOutboxEvents($connection, $events);
         });
+
+        $offer->clearDomainEvents();
     }
 
     public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
@@ -70,38 +77,117 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                 $statement->execute(['offer_id' => (string) $id, 'created_by' => $ownerId]);
                 $row = $statement->fetch();
 
-                if (!is_array($row)) {
-                    return null;
-                }
+                return is_array($row) ? self::hydrate($row) : null;
+            },
+        );
+    }
 
-                $snapshot = json_decode((string) $row['pricing_snapshot'], true, 512, JSON_THROW_ON_ERROR);
+    public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
+    {
+        if ($limit < 1 || $limit > 1000) {
+            throw new \InvalidArgumentException('Expired tenant query limit must be between 1 and 1000.');
+        }
 
-                if (!is_array($snapshot)) {
-                    throw new \UnexpectedValueException('Stored offer pricing snapshot is invalid.');
-                }
+        $statement = $this->connection->get()->prepare(
+            'SELECT tenant_id FROM offer_expired_tenants(:batch_size, :now)',
+        );
+        $statement->execute(['batch_size' => $limit, 'now' => $now->format(DATE_ATOM)]);
 
-                return Offer::reconstitute(
-                    id: OfferId::fromString((string) $row['offer_id']),
-                    tenantId: (string) $row['tenant_id'],
-                    createdBy: (string) $row['created_by'],
-                    pricingSnapshot: new PricingSnapshot(
-                        quoteId: (string) $snapshot['quoteId'],
-                        vehicleId: (string) $snapshot['vehicleId'],
-                        monthlyAmount: (string) $snapshot['monthlyAmount'],
-                        totalInstallmentsAmount: (string) $snapshot['totalInstallmentsAmount'],
-                        totalCostIncludingDownPayment: (string) $snapshot['totalCostIncludingDownPayment'],
-                        residualValue: (string) $snapshot['residualValue'],
-                        currency: (string) $snapshot['currency'],
-                        durationMonths: (int) $snapshot['durationMonths'],
-                        annualInterestRateBasisPoints: (int) $snapshot['annualInterestRateBasisPoints'],
-                        calculationVersion: (string) $snapshot['calculationVersion'],
-                    ),
-                    createdAt: new DateTimeImmutable((string) $row['created_at']),
-                    expiresAt: new DateTimeImmutable((string) $row['expires_at']),
-                    status: OfferStatus::from((string) $row['status']),
+        return array_values(array_map(
+            static fn (array $row): string => (string) $row['tenant_id'],
+            $statement->fetchAll(),
+        ));
+    }
+
+    public function findExpiredForTenant(string $tenantId, DateTimeImmutable $now, int $limit): array
+    {
+        if ($limit < 1 || $limit > 1000) {
+            throw new \InvalidArgumentException('Expired offer query limit must be between 1 and 1000.');
+        }
+
+        return $this->withinTenantTransaction(
+            $tenantId,
+            static function (PDO $connection) use ($now, $limit): array {
+                $statement = $connection->prepare(<<<'SQL'
+                    SELECT *
+                    FROM offers
+                    WHERE status IN ('draft', 'published')
+                      AND expires_at <= :now
+                    ORDER BY expires_at ASC
+                    LIMIT :batch_size
+                    SQL);
+                $statement->bindValue('now', $now->format(DATE_ATOM));
+                $statement->bindValue('batch_size', $limit, PDO::PARAM_INT);
+                $statement->execute();
+
+                return array_map(
+                    static fn (array $row): Offer => self::hydrate($row),
+                    $statement->fetchAll(),
                 );
             },
         );
+    }
+
+    /** @param array<string, mixed> $row */
+    private static function hydrate(array $row): Offer
+    {
+        $snapshot = json_decode((string) $row['pricing_snapshot'], true, 512, JSON_THROW_ON_ERROR);
+
+        if (!is_array($snapshot)) {
+            throw new \UnexpectedValueException('Stored offer pricing snapshot is invalid.');
+        }
+
+        return Offer::reconstitute(
+            id: OfferId::fromString((string) $row['offer_id']),
+            tenantId: (string) $row['tenant_id'],
+            createdBy: (string) $row['created_by'],
+            pricingSnapshot: new PricingSnapshot(
+                quoteId: (string) $snapshot['quoteId'],
+                vehicleId: (string) $snapshot['vehicleId'],
+                monthlyAmount: (string) $snapshot['monthlyAmount'],
+                totalInstallmentsAmount: (string) $snapshot['totalInstallmentsAmount'],
+                totalCostIncludingDownPayment: (string) $snapshot['totalCostIncludingDownPayment'],
+                residualValue: (string) $snapshot['residualValue'],
+                currency: (string) $snapshot['currency'],
+                durationMonths: (int) $snapshot['durationMonths'],
+                annualInterestRateBasisPoints: (int) $snapshot['annualInterestRateBasisPoints'],
+                calculationVersion: (string) $snapshot['calculationVersion'],
+            ),
+            createdAt: new DateTimeImmutable((string) $row['created_at']),
+            expiresAt: new DateTimeImmutable((string) $row['expires_at']),
+            status: OfferStatus::from((string) $row['status']),
+        );
+    }
+
+    /** @param list<DomainEvent> $events */
+    private function appendOutboxEvents(PDO $connection, array $events): void
+    {
+        if ($events === []) {
+            return;
+        }
+
+        $statement = $connection->prepare(<<<'SQL'
+            INSERT INTO offer_outbox_events (
+                event_id, tenant_id, event_type, aggregate_type, aggregate_id, payload, occurred_at
+            ) VALUES (
+                :event_id, :tenant_id, :event_type, :aggregate_type, :aggregate_id,
+                CAST(:payload AS JSONB), :occurred_at
+            )
+            ON CONFLICT (event_id) DO NOTHING
+            SQL);
+
+        foreach ($events as $event) {
+            $envelope = $event->toEnvelope();
+            $statement->execute([
+                'event_id' => $envelope['eventId'],
+                'tenant_id' => $envelope['tenantId'],
+                'event_type' => $envelope['eventType'],
+                'aggregate_type' => $envelope['aggregate']['type'],
+                'aggregate_id' => $envelope['aggregate']['id'],
+                'payload' => json_encode($envelope, JSON_THROW_ON_ERROR),
+                'occurred_at' => $envelope['occurredAt'],
+            ]);
+        }
     }
 
     /**
