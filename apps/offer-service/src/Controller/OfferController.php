@@ -189,6 +189,11 @@ final readonly class OfferController
                 $principal->subject,
                 new DateTimeImmutable(),
             );
+        } catch (InvalidOfferTransition $exception) {
+            return new JsonResponse([
+                'error' => 'invalid_offer_transition',
+                'message' => $exception->getMessage(),
+            ], JsonResponse::HTTP_CONFLICT);
         } catch (OfferNotFound | InvalidArgumentException) {
             return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
         }
