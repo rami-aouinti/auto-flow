@@ -122,8 +122,10 @@ services:
       - "8082:8080"
       - "127.0.0.1:9002:9001"
     environment:
-      APP_ENV: prod
-      APP_DEBUG: "0"
+      # Swagger is available in the local development environment only.
+      # Set PRICING_APP_ENV=prod and PRICING_APP_DEBUG=0 for production deployments.
+      APP_ENV: ${PRICING_APP_ENV:-dev}
+      APP_DEBUG: ${PRICING_APP_DEBUG:-1}
       APP_SECRET: local-only-pricing-service-secret
       DATABASE_URL: ${PRICING_DATABASE_URL:-postgresql://autoflow_pricing:local-only-pricing-password@postgres:5432/autoflow?serverVersion=16&charset=utf8}
       DEFAULT_URI: http://localhost:8082
