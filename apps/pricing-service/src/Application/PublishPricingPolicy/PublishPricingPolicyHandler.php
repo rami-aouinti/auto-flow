@@ -21,6 +21,10 @@ final readonly class PublishPricingPolicyHandler
         if ($policy === null) {
             throw new DomainException('Pricing policy version was not found.');
         }
+        $latest = $this->repository->findLatest($tenantId);
+        if ($latest === null || $latest->policyId !== $policy->policyId) {
+            throw new DomainException('Only the latest tenant pricing policy version can be published.');
+        }
         $active = $policy->activate(new DateTimeImmutable('now'));
         $this->repository->save($active);
         return $active;
