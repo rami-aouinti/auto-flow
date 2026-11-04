@@ -73,6 +73,7 @@ final class PostgresOfferRepositoryIntegrationTest extends TestCase
 
         self::assertNotNull($expired);
         self::assertSame('expired', $expired->status()->value);
+        self::assertEquals($now, $expired->expiredAt());
 
         $event = $this->connection->prepare(<<<'SQL'
             SELECT COUNT(*)
@@ -97,8 +98,12 @@ final class PostgresOfferRepositoryIntegrationTest extends TestCase
         self::assertNotNull($firstRead);
         self::assertNotNull($staleRead);
 
-        $firstRead->publish(new DateTimeImmutable('+1 minute'));
+        $publishedAt = new DateTimeImmutable('+1 minute');
+        $firstRead->publish($publishedAt);
         $this->repository->save($firstRead);
+        $reloaded = $this->repository->findById($offer->id(), $tenantId, $ownerId);
+        self::assertNotNull($reloaded);
+        self::assertEquals($publishedAt, $reloaded->publishedAt());
 
         $publishedEvent = $this->connection->prepare(<<<'SQL'
             SELECT COUNT(*)
