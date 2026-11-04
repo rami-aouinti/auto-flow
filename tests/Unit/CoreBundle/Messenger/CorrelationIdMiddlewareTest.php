@@ -25,7 +25,8 @@ final class CorrelationIdMiddlewareTest extends TestCase
             ->method('handle')
             ->with(
                 self::callback(
-                    static fn (Envelope $envelope): bool => $envelope->last(CorrelationIdStamp::class) instanceof CorrelationIdStamp,
+                    static fn (Envelope $envelope): bool =>
+                        $envelope->last(CorrelationIdStamp::class) instanceof CorrelationIdStamp,
                 ),
                 self::identicalTo($stack),
             )
