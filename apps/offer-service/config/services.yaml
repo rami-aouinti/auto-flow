@@ -3,7 +3,7 @@ parameters:
     app.keycloak_token_url: '%env(resolve:KEYCLOAK_TOKEN_URL)%'
     app.pricing_client_id: '%env(PRICING_CLIENT_ID)%'
     app.pricing_client_secret: '%env(PRICING_CLIENT_SECRET)%'
-    app.pricing_audience: 'autoflow-pricing'
+    app.pricing_audience: 'autoflow-pricing'\n    app.offer_database_url: '%env(resolve:OFFER_DATABASE_URL)%'\n    app.offer_validity_days: 30
 
 services:
     _defaults:
