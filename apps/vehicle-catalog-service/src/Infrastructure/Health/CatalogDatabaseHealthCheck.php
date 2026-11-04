@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\\Infrastructure\\Health;
+namespace App\Infrastructure\Health;
 
-use App\\Infrastructure\\Persistence\\PostgresConnection;
-use AutoFlow\\CoreBundle\\Health\\HealthCheckInterface;
-use AutoFlow\\CoreBundle\\Health\\HealthCheckResult;
+use App\Infrastructure\Persistence\PostgresConnection;
+use AutoFlow\CoreBundle\Health\HealthCheckInterface;
+use AutoFlow\CoreBundle\Health\HealthCheckResult;
 use Throwable;
 
 final readonly class CatalogDatabaseHealthCheck implements HealthCheckInterface
