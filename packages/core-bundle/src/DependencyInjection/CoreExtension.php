@@ -35,6 +35,10 @@ final class CoreExtension extends Extension
             'autoflow_core.jwt.excluded_paths',
             $authentication['excluded_paths'],
         );
+        $container->setParameter(
+            'autoflow_core.jwt.tenant_required_path_prefixes',
+            $authentication['tenant_required_path_prefixes'],
+        );
 
         if ($authentication['enabled']) {
             foreach (['issuer', 'audience', 'jwks_uri'] as $required) {
