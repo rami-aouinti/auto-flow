@@ -11,6 +11,7 @@ use App\Application\GetOffer\GetOfferHandler;
 use App\Application\PublishOffer\PublishOfferHandler;
 use App\Application\RejectOffer\RejectOfferHandler;
 use App\Domain\Entity\Offer;
+use App\Domain\Exception\ConcurrentOfferModification;
 use App\Domain\Exception\InvalidOfferTransition;
 use App\Domain\Exception\OfferNotFound;
 use App\Domain\ValueObject\OfferId;
@@ -194,7 +195,7 @@ final readonly class OfferController
                 $principal->subject,
                 new DateTimeImmutable(),
             );
-        } catch (InvalidOfferTransition $exception) {
+        } catch (InvalidOfferTransition | ConcurrentOfferModification $exception) {
             return new JsonResponse([
                 'error' => 'invalid_offer_transition',
                 'message' => $exception->getMessage(),
