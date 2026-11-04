@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\\Application\\Port;
+namespace App\Application\Port;
 
-use App\\Domain\\Entity\\Manufacturer;
-use App\\Domain\\Entity\\VehicleGeneration;
-use App\\Domain\\Entity\\VehicleModel;
-use App\\Domain\\Entity\\VehicleVariant;
+use App\Domain\Entity\Manufacturer;
+use App\Domain\Entity\VehicleGeneration;
+use App\Domain\Entity\VehicleModel;
+use App\Domain\Entity\VehicleVariant;
 
 interface VehicleCatalogRepositoryInterface
 {
