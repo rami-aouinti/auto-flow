@@ -49,6 +49,19 @@ final class Configuration implements ConfigurationInterface
                             ->requiresAtLeastOneElement()
                             ->defaultValue(['/api/'])
                         ->end()
+                        ->arrayNode('tenant_required_path_prefixes')
+                            ->scalarPrototype()
+                                ->validate()
+                                    ->ifTrue(
+                                        static fn (mixed $value): bool => !is_string($value)
+                                            || $value === ''
+                                            || !str_starts_with($value, '/'),
+                                    )
+                                    ->thenInvalid('Tenant-required path prefixes must be non-empty absolute paths.')
+                                ->end()
+                            ->end()
+                            ->defaultValue([])
+                        ->end()
                         ->arrayNode('excluded_paths')
                             ->scalarPrototype()
                                 ->validate()
