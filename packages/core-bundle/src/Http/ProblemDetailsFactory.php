@@ -50,7 +50,9 @@ final readonly class ProblemDetailsFactory
 
         foreach ($extensions as $name => $value) {
             if (!is_string($name) || $name === '' || in_array($name, self::RESERVED_MEMBERS, true)) {
-                throw new InvalidArgumentException('Problem Details extension members must use non-reserved string names.');
+                throw new InvalidArgumentException(
+                    'Problem Details extension members must use non-reserved string names.',
+                );
             }
 
             $payload[$name] = $value;
