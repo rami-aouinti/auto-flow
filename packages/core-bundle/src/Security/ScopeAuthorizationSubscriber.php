@@ -24,13 +24,9 @@ final class ScopeAuthorizationSubscriber implements EventSubscriberInterface
             return;
         }
 
-        if (is_object($controller[0])) {
-            $method = new ReflectionMethod($controller[0], $controller[1]);
-        } elseif (is_string($controller[0])) {
-            $method = new ReflectionMethod($controller[0], $controller[1]);
-        } else {
-            return;
-        }
+        $method = is_object($controller[0])
+            ? new ReflectionMethod($controller[0], $controller[1])
+            : new ReflectionMethod((string) $controller[0], $controller[1]);
         $attributes = $method->getAttributes(RequiresScope::class);
         if ($attributes === []) {
             return;
