@@ -15,8 +15,12 @@ use InvalidArgumentException;
  */
 final class LeasePaymentCalculator
 {
-    public function calculate(string $vehicleId, LeaseTerms $terms): PricingQuote
+    public function calculate(string $tenantId, string $vehicleId, LeaseTerms $terms): PricingQuote
     {
+        if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenantId)) {
+            throw new InvalidArgumentException('Tenant ID has an invalid format.');
+        }
+
         if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/D', $vehicleId)) {
             throw new InvalidArgumentException('Vehicle ID has an invalid format.');
         }
@@ -45,6 +49,7 @@ final class LeasePaymentCalculator
         );
 
         return new PricingQuote(
+            tenantId: $tenantId,
             vehicleId: $vehicleId,
             monthlyAmount: $monthlyPayment,
             totalInstallmentsAmount: $totalInstallments,
