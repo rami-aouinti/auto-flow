@@ -3,6 +3,13 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.status <> 'draft' OR NEW.published_at IS NOT NULL THEN
+            RAISE EXCEPTION 'Pricing policies must be created as unpublished drafts';
+        END IF;
+        RETURN NEW;
+    END IF;
+
     IF ROW(
         NEW.policy_id, NEW.tenant_id, NEW.version,
         NEW.minimum_duration_months, NEW.maximum_duration_months,
@@ -39,6 +46,6 @@ $$;
 
 DROP TRIGGER IF EXISTS pricing_policies_immutable_version ON pricing_policies;
 CREATE TRIGGER pricing_policies_immutable_version
-    BEFORE UPDATE ON pricing_policies
+    BEFORE INSERT OR UPDATE ON pricing_policies
     FOR EACH ROW
     EXECUTE FUNCTION prevent_pricing_policy_version_mutation();
