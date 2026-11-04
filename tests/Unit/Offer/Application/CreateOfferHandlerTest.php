@@ -57,7 +57,7 @@ final class CreateOfferHandlerTest extends TestCase
                 $this->savedOffer = $offer;
             }
 
-            public function findById(OfferId $id, string $tenantId): ?Offer
+            public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
             {
                 return null;
             }
