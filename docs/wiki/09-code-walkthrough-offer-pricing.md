@@ -87,9 +87,9 @@ The original route is GET /api/pricing/{vehicleId}. It remains temporarily avail
 
 The new route is POST /api/pricing/quotes. It accepts explicit inputs: vehicle ID, vehicle price, down payment, residual value, currency, duration and annual interest rate in basis points.
 
-The request is translated into an application command. The handler creates Money and LeaseTerms value objects, then delegates the calculation to the domain LeasePaymentCalculator. The controller returns monetary values as decimal strings, together with the calculation version.
+The request is translated into an application command. The handler creates Money and LeaseTerms value objects, loads the active tenant PricingPolicy (if one exists), checks the policy guardrails, then delegates to LeasePaymentCalculator. The controller returns decimal-string money values and the immutable quote snapshot, including original vehicle price/down payment, creation/expiry timestamps and the exact policy ID/version used.
 
-The new implementation has real domain validation and a deterministic annuity calculation, but it is still an illustrative fixed-rate model. Pricing policy persistence, taxes, fees, mileage, customer-specific rules, quote expiry and regulated financial validation are not implemented.
+PricingPolicy versions are tenant-scoped and follow draft → active → retired. Publishing a new version retires the previous active version. Quotes default to seven days of validity; an active policy can configure 1–90 days. Expired quote retrieval returns HTTP 410. PostgreSQL RLS and immutable-snapshot triggers protect stored records. The calculation remains an illustrative fixed-rate annuity model, not a regulated APR disclosure or legally binding financing offer; taxes, fees, insurance, mileage and lender-specific rules remain out of scope.
 
 ## 5. Why HTTP is used here
 
@@ -113,19 +113,9 @@ Avoid adding personal data, access tokens or full payloads as span attributes. A
 
 ## 7. What is intentionally missing?
 
-The current controllers do not yet demonstrate:
-- A Domain layer with aggregates and value objects.
-- An Application use case / command handler.
-- A Pricing repository or persistence model.
-- Business validation beyond route-level parameter handling.
-- Authentication and fine-grained authorization.
-- A versioned OpenAPI contract.
-- Explicit timeout and downstream error mapping policy.
-- Resilience controls such as circuit breaker or bulkhead.
-- Application metrics.
-- An Order lifecycle, RabbitMQ consumer or Temporal workflow.
+The current implementation demonstrates a Pricing domain/application/infrastructure split, PostgreSQL persistence with RLS, quote ownership, versioned PricingPolicy, immutable quote snapshots, expiry semantics, JWT/scope checks, HTTP and gRPC contracts, readiness, tracing and calculation metrics instrumentation.
 
-This is not a defect in the tracing proof of concept. It is a boundary between the current milestone and the next engineering milestone.
+Remaining production work includes confirming CI and local PostgreSQL integration runs, configuring and verifying the OTLP metrics exporter, load/restore testing, production secret/role provisioning, and deciding commercial/legal financing inputs. Offer continues to call Pricing synchronously over HTTP because it needs the quote before returning; asynchronous workflows remain separate.
 
 ## 8. Recommended evolution — without overengineering
 
