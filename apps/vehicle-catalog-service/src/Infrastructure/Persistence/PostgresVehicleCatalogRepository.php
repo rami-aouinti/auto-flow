@@ -156,7 +156,7 @@ final readonly class PostgresVehicleCatalogRepository implements VehicleCatalogR
             $db->prepare("UPDATE catalog_vehicle_variants SET status='published',updated_at=CURRENT_TIMESTAMP WHERE variant_id=:id")->execute(['id'=>$variantId]);
             $eventId=bin2hex(random_bytes(16));
             $event=['eventId'=>$eventId,'eventType'=>'catalog.vehicle_variant.published','schemaVersion'=>1,
-                'aggregateId'=>$variantId,'occurredAt'=>(new \\DateTimeImmutable())->format(DATE_ATOM),
+                'aggregateId'=>$variantId,'occurredAt'=>(new \DateTimeImmutable())->format(DATE_ATOM),
                 'payload'=>['variantId'=>$variantId]];
             $insert=$db->prepare('INSERT INTO catalog_outbox(event_id,aggregate_id,event_type,schema_version,payload) VALUES(:id,:aggregate,:type,1,:payload)');
             $insert->execute(['id'=>$eventId,'aggregate'=>$variantId,'type'=>'catalog.vehicle_variant.published','payload'=>json_encode($event,JSON_THROW_ON_ERROR)]);
