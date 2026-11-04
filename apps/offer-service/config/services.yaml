@@ -3,6 +3,7 @@ parameters:
     app.keycloak_token_url: '%env(resolve:KEYCLOAK_TOKEN_URL)%'
     app.pricing_client_id: '%env(PRICING_CLIENT_ID)%'
     app.pricing_client_secret: '%env(PRICING_CLIENT_SECRET)%'
+    app.pricing_client_scope_default: 'pricing:quote tenant:delegate'
 
 services:
     _defaults:
@@ -23,3 +24,4 @@ services:
             $tokenUrl: '%app.keycloak_token_url%'
             $clientId: '%app.pricing_client_id%'
             $clientSecret: '%app.pricing_client_secret%'
+            $scope: '%env(default:app.pricing_client_scope_default:PRICING_CLIENT_SCOPE)%'
