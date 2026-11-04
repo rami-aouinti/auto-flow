@@ -13,6 +13,7 @@ final class ApiResponseFactory
      *
      * @param array<string, mixed>|list<mixed> $data
      * @param array<string, mixed> $meta
+     * @param array<string, string|list<string>> $headers
      */
     public function success(
         array $data,
