@@ -73,6 +73,9 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
         );
     }
 
+    /**
+     * @return list<PricingQuote>
+     */
     public function findAll(string $tenantId, int $limit = 50, int $offset = 0): array
     {
         if ($limit < 1 || $limit > 100 || $offset < 0) {
@@ -115,7 +118,9 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
     }
 
     /**
-     * @param callable(PDO): mixed $operation
+     * @template TResult
+     * @param callable(PDO): TResult $operation
+     * @return TResult
      */
     private function withinTenantTransaction(string $tenantId, callable $operation): mixed
     {
