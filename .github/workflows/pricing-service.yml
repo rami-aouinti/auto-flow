@@ -66,6 +66,9 @@ jobs:
           docker exec -i autoflow-pricing-postgres \
             psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
             < apps/pricing-service/migrations/Version20261104000100CreatePricingQuotes.sql
+          docker exec -i autoflow-pricing-postgres \
+            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            < apps/pricing-service/migrations/Version20261104000200AddPricingQuoteSoftDelete.sql
 
       - name: Run PHPUnit including PostgreSQL row-level security tests
         run: |
