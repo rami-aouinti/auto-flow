@@ -40,7 +40,7 @@ services:
     AutoFlow\CoreBundle\Security\JwtAuthenticationSubscriber:
         arguments:
             $enabled: '%autoflow_core.jwt.enabled%'
-            $protectedPathPrefixes: '%autoflow_core.jwt.protected_path_prefixes%'
+            $protectedPrefixes: '%autoflow_core.jwt.protected_path_prefixes%'
             $excludedPaths: '%autoflow_core.jwt.excluded_paths%'
 
     AutoFlow\CoreBundle\Health\HealthController:

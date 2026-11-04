@@ -35,22 +35,16 @@ final class JwksKeyProvider
             return $this->keys;
         }
 
+        return $this->refreshKeys();
+    }
+
+    /**
+     * @return array<string, Key>
+     */
+    private function refreshKeys(): array
+    {
         try {
-            $response = $this->httpClient->request('GET', $this->jwksUri, [
-                'headers' => ['Accept' => 'application/json'],
-                'timeout' => 3.0,
-            ]);
-
-            if ($response->getStatusCode() !== 200) {
-                throw new JwksUnavailableException('The identity provider returned an unsuccessful JWKS response.');
-            }
-
-            $document = $response->toArray(false);
-            if (!isset($document['keys']) || !is_array($document['keys']) || $document['keys'] === []) {
-                throw new JwksUnavailableException('The identity provider returned an invalid JWKS document.');
-            }
-
-            $keys = JWK::parseKeySet($document, 'RS256');
+            $keys = JWK::parseKeySet($this->fetchJwksDocument(), 'RS256');
             if ($keys === []) {
                 throw new JwksUnavailableException('The JWKS document contains no supported signing keys.');
             }
@@ -68,5 +62,27 @@ final class JwksKeyProvider
                 $exception,
             );
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function fetchJwksDocument(): array
+    {
+        $response = $this->httpClient->request('GET', $this->jwksUri, [
+            'headers' => ['Accept' => 'application/json'],
+            'timeout' => 3.0,
+        ]);
+
+        if ($response->getStatusCode() !== 200) {
+            throw new JwksUnavailableException('The identity provider returned an unsuccessful JWKS response.');
+        }
+
+        $document = $response->toArray(false);
+        if (!isset($document['keys']) || !is_array($document['keys']) || $document['keys'] === []) {
+            throw new JwksUnavailableException('The identity provider returned an invalid JWKS document.');
+        }
+
+        return $document;
     }
 }

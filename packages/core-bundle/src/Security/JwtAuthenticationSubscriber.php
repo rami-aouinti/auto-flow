@@ -6,19 +6,20 @@ namespace AutoFlow\CoreBundle\Security;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class JwtAuthenticationSubscriber implements EventSubscriberInterface
 {
     /**
-     * @param list<string> $protectedPathPrefixes
+     * @param list<string> $protectedPrefixes
      * @param list<string> $excludedPaths
      */
     public function __construct(
         private JwtTokenVerifier $tokenVerifier,
         private bool $enabled,
-        private array $protectedPathPrefixes,
+        private array $protectedPrefixes,
         private array $excludedPaths,
     ) {
     }
@@ -35,35 +36,49 @@ final readonly class JwtAuthenticationSubscriber implements EventSubscriberInter
         }
 
         $request = $event->getRequest();
-        $path = $request->getPathInfo();
-
-        foreach ($this->excludedPaths as $excludedPath) {
-            if ($path === $excludedPath) {
-                return;
-            }
-        }
-
-        $requiresAuthentication = false;
-        foreach ($this->protectedPathPrefixes as $prefix) {
-            if (str_starts_with($path, $prefix)) {
-                $requiresAuthentication = true;
-                break;
-            }
-        }
-
-        if (!$requiresAuthentication) {
+        if (!$this->isProtectedPath($request->getPathInfo())) {
             return;
         }
 
-        $authorization = $request->headers->get('Authorization', '');
-        if (!is_string($authorization) || preg_match('/^Bearer\s+(.+)$/i', $authorization, $matches) !== 1) {
+        $token = $this->extractBearerToken($request);
+        if ($token === null) {
             $event->setResponse($this->unauthorized());
 
             return;
         }
 
+        $this->authenticate($event, $request, $token);
+    }
+
+    private function isProtectedPath(string $path): bool
+    {
+        if (in_array($path, $this->excludedPaths, true)) {
+            return false;
+        }
+
+        foreach ($this->protectedPrefixes as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function extractBearerToken(Request $request): ?string
+    {
+        $authorization = $request->headers->get('Authorization', '');
+        if (!is_string($authorization) || preg_match('/^Bearer\s+(.+)$/i', $authorization, $matches) !== 1) {
+            return null;
+        }
+
+        return trim($matches[1]);
+    }
+
+    private function authenticate(RequestEvent $event, Request $request, string $token): void
+    {
         try {
-            $principal = $this->tokenVerifier->verify(trim($matches[1]));
+            $principal = $this->tokenVerifier->verify($token);
             $request->attributes->set(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal);
         } catch (JwksUnavailableException) {
             $event->setResponse(new JsonResponse([
