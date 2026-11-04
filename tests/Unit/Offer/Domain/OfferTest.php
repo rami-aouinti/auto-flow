@@ -93,6 +93,15 @@ final class OfferTest extends TestCase
         $offer->publish(new DateTimeImmutable('2026-12-01T00:00:00+00:00'));
     }
 
+    public function testPublishedOfferCannotBeRejectedAfterExpiration(): void
+    {
+        $offer = $this->createOffer();
+        $offer->publish(new DateTimeImmutable('2026-11-05T10:00:00+00:00'));
+
+        $this->expectException(InvalidOfferTransition::class);
+        $offer->reject(new DateTimeImmutable('2026-11-12T00:00:00+00:00'));
+    }
+
     public function testOfferCanExpireOnlyAtOrAfterItsExpirationTime(): void
     {
         $offer = $this->createOffer();
