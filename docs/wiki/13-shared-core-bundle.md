@@ -58,7 +58,7 @@ Each gRPC adapter maps a Protobuf request to the same Application command/handle
 
 Application depends on `SerializerInterface`; Infrastructure provides JSON and Protobuf codecs. The Protobuf decoder requires an explicit generated message class and must never instantiate a class name taken from an untrusted payload.
 
-`GrpcMetadata::allowListed()` supports explicit propagation of safe operational metadata. It does not forward credentials implicitly. `GrpcDeadline` represents a validated positive finite timeout; a service-owned client adapter converts it to the concrete gRPC client's deadline API.
+`(new GrpcMetadata())->allowListed()` supports explicit propagation of safe operational metadata. It does not forward credentials implicitly. `GrpcDeadline` represents a validated positive finite timeout; a service-owned client adapter converts it to the concrete gRPC client's deadline API.
 
 ## 5. Asynchronous message flow
 
