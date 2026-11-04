@@ -45,6 +45,9 @@ jobs:
             fi
             sleep 2
           done
+          docker compose exec -T rabbitmq rabbitmq-diagnostics listeners
+          docker compose exec -T rabbitmq rabbitmqctl list_users
+          timeout 2 bash -c '</dev/tcp/127.0.0.1/5672'
       - name: Run Offer PostgreSQL and RabbitMQ integration tests
         env:
           OFFER_TEST_DATABASE_URL: postgresql://autoflow_offer:local-only-offer-password@127.0.0.1:5432/autoflow
@@ -53,6 +56,12 @@ jobs:
           RABBITMQ_TEST_USER: autoflow
           RABBITMQ_TEST_PASSWORD: autoflow
         run: vendor/bin/phpunit --configuration phpunit.xml tests/Integration/Offer
+      - name: Collect RabbitMQ diagnostics on failure
+        if: failure()
+        run: |
+          docker compose logs rabbitmq
+          docker compose exec -T rabbitmq rabbitmq-diagnostics listeners || true
+          docker compose exec -T rabbitmq rabbitmqctl list_users || true
       - name: Run quality checks
         run: composer quality
       - name: Build instrumented Symfony services
