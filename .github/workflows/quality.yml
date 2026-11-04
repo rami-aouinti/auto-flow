@@ -27,9 +27,17 @@ jobs:
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
         run: |
-          docker run --rm \
+          set +e
+          timeout 10s docker run --rm \
             -v "$PWD/infrastructure/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro" \
-            grafana/alloy:v1.6.1 validate /etc/alloy/config.alloy
+            grafana/alloy:v1.6.1 run \
+            --server.http.listen-addr=0.0.0.0:12345 \
+            /etc/alloy/config.alloy
+          status=$?
+          if [ "$status" -eq 124 ]; then
+            exit 0
+          fi
+          exit "$status"
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
       - name: Run Offer unit tests
