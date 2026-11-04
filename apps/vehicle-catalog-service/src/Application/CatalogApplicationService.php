@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\\Application;
+namespace App\Application;
 
-use App\\Application\\Port\\VehicleCatalogRepositoryInterface;
-use App\\Domain\\Entity\\Manufacturer;
-use App\\Domain\\Entity\\VehicleGeneration;
-use App\\Domain\\Entity\\VehicleModel;
-use App\\Domain\\Entity\\VehicleVariant;
+use App\Application\Port\VehicleCatalogRepositoryInterface;
+use App\Domain\Entity\Manufacturer;
+use App\Domain\Entity\VehicleGeneration;
+use App\Domain\Entity\VehicleModel;
+use App\Domain\Entity\VehicleVariant;
 
 final readonly class CatalogApplicationService
 {
