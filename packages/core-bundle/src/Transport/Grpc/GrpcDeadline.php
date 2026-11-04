@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\CoreBundle\\Transport\\Grpc;
+namespace AutoFlow\CoreBundle\Transport\Grpc;
 
 use InvalidArgumentException;
 
