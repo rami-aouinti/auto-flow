@@ -8,6 +8,7 @@ use App\Domain\Entity\Offer;
 use App\Domain\Exception\OfferNotFound;
 use App\Domain\Repository\OfferRepositoryInterface;
 use App\Domain\ValueObject\OfferId;
+use DateTimeImmutable;
 
 final readonly class RejectOfferHandler
 {
