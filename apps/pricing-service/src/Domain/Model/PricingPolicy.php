@@ -7,6 +7,9 @@ namespace App\Domain\Model;
 use DateTimeImmutable;
 use InvalidArgumentException;
 
+/**
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+ */
 final readonly class PricingPolicy
 {
     public function __construct(
