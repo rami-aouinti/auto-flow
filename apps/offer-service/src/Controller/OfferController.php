@@ -256,6 +256,7 @@ final readonly class OfferController
                 OfferId::fromString($offerId),
                 $this->tenantContext->requireTenantId(),
                 $principal->subject,
+                new DateTimeImmutable(),
             );
         } catch (InvalidOfferTransition $exception) {
             return new JsonResponse([
