@@ -11,6 +11,7 @@ use AutoFlow\CoreBundle\Security\JwtTokenVerifier;
 use AutoFlow\CoreBundle\Security\MissingScopeException;
 use AutoFlow\CoreBundle\Security\TenantDelegationException;
 use AutoFlow\CoreBundle\Security\TenantPrincipalResolver;
+use Psr\Log\LoggerInterface;
 use Spiral\RoadRunner\GRPC\ContextInterface;
 
 final readonly class GrpcRequestAuthenticator
@@ -18,6 +19,7 @@ final readonly class GrpcRequestAuthenticator
     public function __construct(
         private JwtTokenVerifier $tokenVerifier,
         private TenantPrincipalResolver $tenantPrincipalResolver,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -32,8 +34,19 @@ final readonly class GrpcRequestAuthenticator
         string $requiredScope,
         bool $tenantRequired = true,
     ): AuthenticatedPrincipal {
-        $authorization = $this->metadataValue($context, 'authorization');
+        // RoadRunner's Server builds Context directly from CallContext::context.
+        // Therefore incoming gRPC metadata is exposed as top-level context values.
+        $authorizationValue = $context->getValue('authorization');
+        $authorization = $this->singleMetadataValue($authorizationValue);
+
         if ($authorization === null || preg_match('/^Bearer\\s+([^\\s]+)$/iD', $authorization, $matches) !== 1) {
+            $this->logger->warning('gRPC authorization metadata is missing or malformed.', [
+                'context_keys' => array_keys($context->getValues()),
+                'authorization_type' => get_debug_type($authorizationValue),
+                'authorization_value_count' => is_array($authorizationValue) ? count($authorizationValue) : null,
+                'authorization_present' => $authorization !== null,
+            ]);
+
             throw new InvalidTokenException('A valid bearer token is required for this gRPC method.');
         }
 
@@ -53,22 +66,10 @@ final readonly class GrpcRequestAuthenticator
     }
 
     /**
-     * RoadRunner stores incoming request headers under the "metadata" context
-     * value. Read that map first; retain direct lookup as a compatibility fallback.
-     *
      * @param non-empty-string $key
      */
     private function metadataValue(ContextInterface $context, string $key): ?string
     {
-        $metadata = $context->getValue('metadata');
-        if (is_array($metadata)) {
-            foreach ($metadata as $metadataKey => $value) {
-                if (is_string($metadataKey) && strcasecmp($metadataKey, $key) === 0) {
-                    return $this->singleMetadataValue($value);
-                }
-            }
-        }
-
         return $this->singleMetadataValue($context->getValue($key));
     }
 
