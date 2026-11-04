@@ -8,6 +8,7 @@ use App\Domain\ValueObject\Money;
 
 /**
  * @SuppressWarnings(PHPMD.LongVariable)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
  */
 final readonly class PricingQuote
 {
