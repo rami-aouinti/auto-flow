@@ -49,7 +49,7 @@ final class CreateOfferHandlerTest extends TestCase
             }
         };
 
-        $repository = new class implements OfferRepositoryInterface {
+        $repository = new class () implements OfferRepositoryInterface {
             public ?Offer $savedOffer = null;
 
             public function save(Offer $offer): void
