@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AutoFlow\CoreBundle\Security;
 
 use Attribute;
-use InvalidArgumentException as ScopeInvalidArgumentException;
 
 #[Attribute(Attribute::TARGET_METHOD)]
 final readonly class RequiresScope
