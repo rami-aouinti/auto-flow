@@ -104,7 +104,6 @@ final class Offer
             throw new InvalidOfferTransition('An expired offer cannot be published.');
         }
 
-        $this->rememberPersistedStatus();
         $this->status = OfferStatus::Published;
         $this->record(new OfferPublished(
             eventId: (string) OfferId::generate(),
@@ -195,11 +194,6 @@ final class Offer
     {
         $this->persistedStatus = $this->status;
         $this->clearDomainEvents();
-    }
-
-    private function rememberPersistedStatus(): void
-    {
-        $this->persistedStatus ??= $this->status;
     }
 
     public function clearDomainEvents(): void
