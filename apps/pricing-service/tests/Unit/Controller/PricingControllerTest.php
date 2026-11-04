@@ -32,7 +32,12 @@ final class PricingControllerTest extends TestCase
             'durationMonths' => 48,
             'annualInterestRateBasisPoints' => 450,
         ], JSON_THROW_ON_ERROR));
-        $response = $controller->calculate($request, $this->handler(true), $this->tenantContext($request), new PricingMetrics());
+        $response = $controller->calculate(
+            $request,
+            $this->handler(true),
+            $this->tenantContext($request),
+            new PricingMetrics(),
+        );
         $payload = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
 
         self::assertSame(200, $response->getStatusCode());
@@ -49,7 +54,12 @@ final class PricingControllerTest extends TestCase
     {
         $controller = new PricingController();
         $request = $this->request('{invalid');
-        $response = $controller->calculate($request, $this->handler(false), $this->tenantContext($request), new PricingMetrics());
+        $response = $controller->calculate(
+            $request,
+            $this->handler(false),
+            $this->tenantContext($request),
+            new PricingMetrics(),
+        );
         $payload = json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
 
         self::assertSame(400, $response->getStatusCode());
@@ -67,7 +77,15 @@ final class PricingControllerTest extends TestCase
 
     private function request(string $content): Request
     {
-        $request = Request::create('/api/pricing/quotes', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $content);
+        $request = Request::create(
+            '/api/pricing/quotes',
+            'POST',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            $content,
+        );
         $request->attributes->set(
             AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
             new AuthenticatedPrincipal('user-demo', 'tenant-demo', ['pricing:quote']),
