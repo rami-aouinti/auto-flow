@@ -46,7 +46,8 @@ final class LeasePaymentCalculatorTest extends TestCase
             annualInterestRateBasisPoints: 500,
         );
 
-        $quote = new LeasePaymentCalculator()->calculate('vehicle-001', $terms);
+        $calculator = new LeasePaymentCalculator();
+        $quote = $calculator->calculate('vehicle-001', $terms);
 
         self::assertGreaterThan(50000, $quote->monthlyAmount->minorUnits);
         self::assertSame('EUR', $quote->monthlyAmount->currency);
