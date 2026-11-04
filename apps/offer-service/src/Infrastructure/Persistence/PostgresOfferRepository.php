@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence;
 
 use App\Domain\Entity\Offer;
-use App\Domain\Exception\ConcurrentOfferModification;
 use App\Domain\Event\DomainEvent;
+use App\Domain\Exception\ConcurrentOfferModification;
 use App\Domain\Repository\OfferRepositoryInterface;
 use App\Domain\ValueObject\OfferId;
 use App\Domain\ValueObject\OfferStatus;
