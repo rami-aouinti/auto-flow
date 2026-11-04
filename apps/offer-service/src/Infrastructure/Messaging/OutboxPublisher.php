@@ -89,7 +89,7 @@ final readonly class OutboxPublisher
                     SQL);
                 $retry->execute([
                     'event_id' => $event['event_id'],
-                    'last_error' => mb_substr($publishFailure->getMessage(), 0, 2000),
+                    'last_error' => substr($publishFailure->getMessage(), 0, 2000),
                 ]);
                 error_log(sprintf(
                     '[Offer Outbox] Publish failed for event %s: %s',
