@@ -37,6 +37,54 @@ final class JwtTokenVerifierTest extends TestCase
         self::assertFalse($principal->hasScope('contracts:write'));
     }
 
+    public function testItRefreshesJwksWhenKeycloakRotatesToANewKeyId(): void
+    {
+        $oldKeyPair = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => 2048,
+        ]);
+        $newKeyPair = openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => 2048,
+        ]);
+        self::assertNotFalse($oldKeyPair);
+        self::assertNotFalse($newKeyPair);
+
+        $oldJwk = $this->createJwk($oldKeyPair, 'old-key');
+        $newJwk = $this->createJwk($newKeyPair, 'rotated-key');
+        $requests = 0;
+        $httpClient = new MockHttpClient(
+            static function () use (&$requests, $oldJwk, $newJwk): MockResponse {
+                ++$requests;
+                $keys = $requests === 1 ? [$oldJwk] : [$oldJwk, $newJwk];
+
+                return new MockResponse(
+                    json_encode(['keys' => $keys], JSON_THROW_ON_ERROR),
+                    ['http_code' => 200, 'response_headers' => ['content-type: application/json']],
+                );
+            },
+        );
+
+        $token = JWT::encode([
+            'iss' => 'https://identity.autoflow.test/realms/autoflow',
+            'aud' => ['autoflow-pricing'],
+            'sub' => 'user-rotated',
+            'iat' => time(),
+            'exp' => time() + 300,
+        ], $newKeyPair, 'RS256', 'rotated-key');
+
+        $verifier = new JwtTokenVerifier(
+            new JwksKeyProvider($httpClient, 'https://identity.autoflow.test/jwks', 300),
+            'https://identity.autoflow.test/realms/autoflow',
+            'autoflow-pricing',
+        );
+
+        $principal = $verifier->verify($token);
+
+        self::assertSame('user-rotated', $principal->subject);
+        self::assertSame(2, $requests, 'An unknown kid should trigger one JWKS refresh.');
+    }
+
     public function testItRejectsATokenForAnotherAudience(): void
     {
         [$verifier, $token] = $this->createVerifier([
@@ -100,6 +148,25 @@ final class JwtTokenVerifierTest extends TestCase
                 'autoflow-pricing',
             ),
             $token,
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function createJwk(\OpenSSLAsymmetricKey $keyPair, string $keyId): array
+    {
+        $details = openssl_pkey_get_details($keyPair);
+        self::assertIsArray($details);
+        self::assertIsArray($details['rsa'] ?? null);
+
+        return [
+            'kty' => 'RSA',
+            'use' => 'sig',
+            'alg' => 'RS256',
+            'kid' => $keyId,
+            'n' => $this->base64UrlEncode($details['rsa']['n']),
+            'e' => $this->base64UrlEncode($details['rsa']['e']),
         ];
     }
 
