@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace AutoFlow\Tests\Unit\Offer\Domain;
 
 use App\Domain\Entity\Offer;
+use App\Domain\Event\OfferCreated;
+use App\Domain\Event\OfferExpired;
+use App\Domain\Event\OfferPublished;
 use App\Domain\Exception\InvalidOfferTransition;
 use App\Domain\ValueObject\OfferId;
 use App\Domain\ValueObject\OfferStatus;
@@ -23,6 +26,43 @@ final class OfferTest extends TestCase
         self::assertSame('quote-123', $offer->pricingSnapshot()->quoteId);
         self::assertSame('vehicle-456', $offer->pricingSnapshot()->vehicleId);
         self::assertSame('tenant-1', $offer->tenantId());
+    }
+
+    public function testCreationRecordsOfferCreatedDomainEvent(): void
+    {
+        $offer = $this->createOffer();
+
+        self::assertCount(1, $offer->domainEvents());
+        self::assertInstanceOf(OfferCreated::class, $offer->domainEvents()[0]);
+    }
+
+    public function testPublishAndExpireRecordTheirDomainEvents(): void
+    {
+        $offer = $this->createOffer();
+        $offer->publish(new DateTimeImmutable('2026-11-05T10:00:00+00:00'));
+
+        self::assertInstanceOf(OfferPublished::class, $offer->domainEvents()[1]);
+
+        $offer->expire(new DateTimeImmutable('2026-11-12T00:00:00+00:00'));
+
+        self::assertCount(3, $offer->domainEvents());
+        self::assertInstanceOf(OfferExpired::class, $offer->domainEvents()[2]);
+    }
+
+    public function testReconstitutedOfferDoesNotEmitCreationEvent(): void
+    {
+        $offer = $this->createOffer();
+        $reconstituted = Offer::reconstitute(
+            $offer->id(),
+            $offer->tenantId(),
+            $offer->createdBy(),
+            $offer->pricingSnapshot(),
+            $offer->createdAt(),
+            $offer->expiresAt(),
+            OfferStatus::Draft,
+        );
+
+        self::assertSame([], $reconstituted->domainEvents());
     }
 
     public function testPublishedOfferCanBeAccepted(): void
