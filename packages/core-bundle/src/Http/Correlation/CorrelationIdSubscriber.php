@@ -13,8 +13,8 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class CorrelationIdSubscriber implements EventSubscriberInterface
 {
-    private const ATTRIBUTE_CORRELATION_ID = '_autoflow_correlation_id';
-    private const ATTRIBUTE_PREVIOUS_CORRELATION_ID = '_autoflow_previous_correlation_id';
+    private const string ATTRIBUTE_CORRELATION_ID = '_autoflow_correlation_id';
+    private const string ATTRIBUTE_PREVIOUS_CORRELATION_ID = '_autoflow_previous_correlation_id';
 
     public function __construct(
         private CorrelationContext $context,
