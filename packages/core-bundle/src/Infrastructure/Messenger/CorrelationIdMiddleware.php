@@ -29,7 +29,7 @@ final readonly class CorrelationIdMiddleware implements MiddlewareInterface
 
         return $this->context->run(
             $correlationId,
-            static fn (): Envelope => $stack->next()->handle($envelope),
+            static fn (): Envelope => $stack->next()->handle($envelope, $stack),
         );
     }
 }
