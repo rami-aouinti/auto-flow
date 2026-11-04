@@ -15,7 +15,7 @@ final class LeasePaymentCalculatorPolicyTest extends TestCase
 {
     public function testQuoteCopiesActivePolicyVersionAndValidityIntoSnapshot(): void
     {
-        $policy = PricingPolicyFixture::draft()->activate(new DateTimeImmutable('2026-11-04T12:00:00+00:00'));
+        $policy = PricingPolicyFixture::draft(validityDays: 14)->activate(new DateTimeImmutable('2026-11-04T12:00:00+00:00'));
         $terms = new LeaseTerms(
             vehiclePrice: Money::fromDecimal('30000.00', 'EUR'),
             downPayment: Money::fromDecimal('5000.00', 'EUR'),
@@ -35,6 +35,6 @@ final class LeasePaymentCalculatorPolicyTest extends TestCase
 
         self::assertSame($policy->policyId, $quote->policyId);
         self::assertSame($policy->version, $quote->policyVersion);
-        self::assertSame(7, (int) $quote->createdAt->diff($quote->expiresAt)->format('%a'));
+        self::assertSame(14, (int) $quote->createdAt->diff($quote->expiresAt)->format('%a'));
     }
 }
