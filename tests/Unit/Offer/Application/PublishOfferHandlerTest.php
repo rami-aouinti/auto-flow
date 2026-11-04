@@ -118,7 +118,7 @@ final class PublishOfferHandlerTest extends TestCase
                 $this->offer = $offer;
             }
 
-            public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
+            public function findById(OfferId $id, string $tenantId, string $ownerId): Offer
             {
                 return $this->offer;
             }
