@@ -1,5 +1,8 @@
 parameters:
     app.pricing_service_url: '%env(resolve:PRICING_SERVICE_URL)%'
+    app.keycloak_token_url: '%env(resolve:KEYCLOAK_TOKEN_URL)%'
+    app.pricing_client_id: '%env(PRICING_CLIENT_ID)%'
+    app.pricing_client_secret: '%env(PRICING_CLIENT_SECRET)%'
 
 services:
     _defaults:
@@ -14,3 +17,9 @@ services:
     App\Controller\OfferController:
         arguments:
             $pricingServiceUrl: '%app.pricing_service_url%'
+
+    App\Security\KeycloakClientCredentialsTokenProvider:
+        arguments:
+            $tokenUrl: '%app.keycloak_token_url%'
+            $clientId: '%app.pricing_client_id%'
+            $clientSecret: '%app.pricing_client_secret%'

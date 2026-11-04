@@ -107,7 +107,8 @@ Correlation IDs, W3C trace IDs, tenant IDs and authenticated principals are diff
 - Transactional Outbox persistence and relay.
 - Broker topology, retry/DLQ policy and business idempotency storage.
 - Temporal workflows and SDK lifecycle.
-- Authentication, authorization, tenant isolation and business-specific rate limits.
+- Identity lifecycle, password storage, token issuance and refresh-token handling.
+- Business authorization policies, tenant membership, tenant isolation and business-specific rate limits.
 - Service-owned gRPC contracts, generated business classes and client implementations.
 
 Temporal is appropriate for durable long-running workflows. Messenger is appropriate for asynchronous messages and jobs; neither should be forced into the other role.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Security\KeycloakClientCredentialsTokenProvider;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,6 +22,7 @@ final readonly class OfferController
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $pricingServiceUrl,
+        private KeycloakClientCredentialsTokenProvider $pricingTokenProvider,
     ) {
     }
 
@@ -53,6 +55,7 @@ final readonly class OfferController
                     rtrim($this->pricingServiceUrl, '/'),
                     rawurlencode($vehicleId),
                 ),
+                ['auth_bearer' => $this->pricingTokenProvider->getAccessToken()],
             );
 
             $pricing = $pricingResponse->toArray();
