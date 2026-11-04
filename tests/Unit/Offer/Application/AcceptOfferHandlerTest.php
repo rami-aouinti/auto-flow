@@ -58,14 +58,9 @@ final class AcceptOfferHandlerTest extends TestCase
 
     public function testCannotAcceptOfferOwnedByAnotherUser(): void
     {
-        $offer = $this->createOffer();
-        $repository = new class ($offer) implements OfferRepositoryInterface {
-            public function __construct(private Offer $offer)
-            {
-            }
+        $repository = new class () implements OfferRepositoryInterface {
             public function save(Offer $offer): void
             {
-                $this->offer = $offer;
             }
             public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
             {
