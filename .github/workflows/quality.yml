@@ -29,6 +29,20 @@ jobs:
         run: composer install --no-interaction --prefer-dist
       - name: Run quality checks
         run: composer quality
+      - name: Start PostgreSQL and apply Offer migrations
+        run: |
+          docker compose --env-file .env.example up -d postgres
+          for attempt in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -U autoflow -d autoflow; then
+              break
+            fi
+            sleep 2
+          done
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.offer_outbox_events') IS NOT NULL AS outbox_ready"
+      - name: Run Offer PostgreSQL integration tests
+        env:
+          OFFER_TEST_DATABASE_URL: postgresql://autoflow_offer:local-only-offer-password@127.0.0.1:5432/autoflow
+        run: vendor/bin/phpunit --configuration phpunit.xml tests/Integration/Offer
       - name: Build instrumented Symfony services
         run: docker compose --env-file .env.example build php offer-service pricing-service
       - name: Validate development OpenAPI generation
