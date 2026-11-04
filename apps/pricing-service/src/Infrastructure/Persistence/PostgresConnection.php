@@ -20,9 +20,7 @@ final class PostgresConnection
      */
     public function get(): PDO
     {
-        if ($this->connection === null) {
-            $this->connection = PostgresConnectionFactory::create($this->databaseUrl);
-        }
+        $this->connection ??= PostgresConnectionFactory::create($this->databaseUrl);
 
         return $this->connection;
     }
