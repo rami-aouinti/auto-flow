@@ -33,13 +33,13 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
                     total_installments_minor, total_cost_minor, residual_value_minor,
                     currency, duration_months, annual_interest_rate_basis_points,
                     calculation_version, vehicle_price_minor, down_payment_minor, expires_at,
-                    policy_id, policy_version
+                    policy_id, policy_version, created_at
                 ) VALUES (
                     :quote_id, :tenant_id, :created_by, :vehicle_id, :monthly_amount_minor,
                     :total_installments_minor, :total_cost_minor, :residual_value_minor,
                     :currency, :duration_months, :annual_interest_rate_basis_points,
                     :calculation_version, :vehicle_price_minor, :down_payment_minor, :expires_at,
-                    :policy_id, :policy_version
+                    :policy_id, :policy_version, :created_at
                 )
                 SQL,
             );
@@ -62,6 +62,7 @@ final readonly class PostgresPricingQuoteRepository implements PricingQuoteRepos
                 'expires_at' => $quote->expiresAt->format('Y-m-d H:i:sP'),
                 'policy_id' => $quote->policyId,
                 'policy_version' => $quote->policyVersion,
+                'created_at' => $quote->createdAt->format('Y-m-d H:i:sP'),
             ]);
         });
     }
