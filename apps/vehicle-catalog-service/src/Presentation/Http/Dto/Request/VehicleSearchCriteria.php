@@ -63,8 +63,9 @@ final readonly class VehicleSearchCriteria
 
     public static function fromRequest(Request $request): self
     {
-        $limit = filter_var($request->query->get('limit', '20'), FILTER_VALIDATE_INT);
-        $offset = filter_var($request->query->get('offset', '0'), FILTER_VALIDATE_INT);
+        $query = $request->query->all();
+        $limit = filter_var($query['limit'] ?? '20', FILTER_VALIDATE_INT);
+        $offset = filter_var($query['offset'] ?? '0', FILTER_VALIDATE_INT);
 
         if (!is_int($limit) || !is_int($offset) || $limit < 1 || $limit > 100 || $offset < 0) {
             throw new InvalidPaginationException('limit must be 1-100 and offset must be non-negative.');
@@ -73,7 +74,7 @@ final readonly class VehicleSearchCriteria
         $filters = [];
 
         foreach (self::FILTER_KEYS as $key) {
-            $value = $request->query->get($key);
+            $value = $query[$key] ?? null;
 
             if ($value === null || $value === '') {
                 continue;
