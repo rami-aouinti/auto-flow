@@ -45,6 +45,23 @@ otelcol.receiver.otlp "autoflow" {
   }
 
   output {
+    metrics = [otelcol.processor.transform.autoflow.input]
+  }
+}
+
+otelcol.processor.transform "autoflow" {
+  error_mode = "ignore"
+
+  metric_statements {
+    context = "datapoint"
+
+    statements = [
+      `set(attributes["service_name"], resource.attributes["service.name"])`,
+      `set(attributes["deployment_environment"], resource.attributes["deployment.environment"])`,
+    ]
+  }
+
+  output {
     metrics = [otelcol.processor.batch.autoflow.input]
   }
 }
