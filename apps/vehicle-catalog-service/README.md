@@ -29,7 +29,7 @@ docker compose ps vehicle-catalog-service
 
 Identifiers are opaque 128-bit random hexadecimal values. A manufacturer-provided variant code is optional metadata and is not the canonical identifier. Measurements use explicit units in field names: kW, cm³, mm, kg and g/km. Fuel, powertrain, body-style and transmission values are controlled vocabularies documented by the API/domain code.
 
-Catalogue status is draft, published, discontinued or archived. New entries are draft. The catalogue-management scope is required to create entries; publishing a variant also publishes its non-archived parent hierarchy. Public read queries return published entries only.
+Catalogue status is draft, published, discontinued or archived. New entries are draft. The catalogue-management scope is required to create entries; publishing a variant promotes eligible draft parents to published; discontinued and archived parents are not reactivated. Public read queries return published entries only.
 
 Pricing, discounts, monthly instalments, customer eligibility, inventory/stock, delivery dates and order state are deliberately excluded. Other contexts store opaque catalogue IDs and their own historical snapshots; they never create cross-database foreign keys.
 
@@ -54,7 +54,7 @@ The local Keycloak `demo` user receives read access only. For local catalogue ad
 | POST | `/api/v1/models` | catalog:manage | Create a draft model |
 | POST | `/api/v1/generations` | catalog:manage | Create a draft generation |
 | POST | `/api/v1/vehicles` | catalog:manage | Create a draft technical variant |
-| POST | `/api/v1/vehicles/{variantId}/publish` | catalog:manage | Publish variant and non-archived parents |
+| POST | `/api/v1/vehicles/{variantId}/publish` | catalog:manage | Publish variant and eligible draft parents |
 
 Vehicle list filters: `q`, `manufacturerId`, `modelId`, `generationId`, `fuelType`, `powertrain`, `bodyStyle`, `transmission`, `minPowerKw`, `maxPowerKw`, `minSeats`, `maxSeats`, `limit` (1-100) and `offset` (0+).
 
@@ -62,10 +62,9 @@ Errors use `application/problem+json`. Invalid data returns 422, malformed pagin
 
 ## PostgreSQL and fixtures
 
-PostgreSQL is authoritative. The service uses the dedicated `autoflow_catalog` login and service-owned tables. Apply the migration and load deterministic fictional examples:
+PostgreSQL is authoritative. Doctrine ORM 3.5 attribute mappings and repository adapters use the dedicated `autoflow_catalog` runtime login and service-owned tables. The Outbox worker uses PDO for its PostgreSQL-specific claim loop. Apply the migration and load deterministic fictional examples:
 
 ```bash
-docker compose exec -T postgres psql -U autoflow -d autoflow < apps/vehicle-catalog-service/migrations/00_create_catalog_database_role.sql
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/vehicle-catalog-service/migrations/00_create_catalog_database_role.sql
 docker compose exec vehicle-catalog-service sh -lc 'DATABASE_URL=postgresql://autoflow:autoflow@postgres:5432/autoflow php bin/console doctrine:migrations:migrate --no-interaction'
 docker compose exec vehicle-catalog-service php bin/load-fixtures.php
@@ -81,13 +80,14 @@ Vehicle Search will own its Elasticsearch projection and consume these events id
 
 ## Quality
 
-Run unit tests in the service container:
+Run the complete unit, API, Doctrine/PostgreSQL and end-to-end suite after PostgreSQL is up and migrations/fixtures are applied:
 
 ```bash
-docker compose run --rm --no-deps vehicle-catalog-service php vendor/bin/phpunit --configuration phpunit.xml.dist
+docker compose up -d postgres
+docker compose run --rm --no-deps -e CATALOG_TEST_DATABASE_URL=postgresql://autoflow_catalog:local-only-catalog-password@postgres:5432/autoflow vehicle-catalog-service php vendor/bin/phpunit --configuration phpunit.xml.dist
 ```
 
-The CI pipeline validates the Composer manifest, boots/builds the Symfony service, runs domain tests, verifies the API OpenAPI document and runs the repository quality gates. PostgreSQL integration tests are enabled when `CATALOG_TEST_DATABASE_URL` is supplied.
+The CI pipeline validates Composer and Docker configuration, builds and boots the Symfony service, applies Doctrine migrations, validates mappings, runs domain/API/PostgreSQL/end-to-end tests, verifies OpenAPI response schemas and runs the repository quality gates.
 
 ## Architecture
 
