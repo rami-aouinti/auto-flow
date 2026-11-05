@@ -51,7 +51,7 @@ final readonly class VehicleVariant
         public string $powertrain,
         public string $bodyStyle,
         public string $transmission,
-        public TechnicalSpecifications $technicalSpecifications,
+        public TechnicalSpecifications $specifications,
         public array $mediaReferences,
         public CatalogStatus $status,
     ) {
@@ -162,7 +162,7 @@ final readonly class VehicleVariant
             $this->powertrain,
             $this->bodyStyle,
             $this->transmission,
-            $this->technicalSpecifications,
+            $this->specifications,
             $this->mediaReferences,
             $this->status->transitionTo($status),
         );
