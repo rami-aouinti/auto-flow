@@ -73,6 +73,7 @@ final class VehicleCatalogJourneyTest extends KernelTestCase
         self::assertSame(1, $result['total']);
         self::assertSame($variantId, $result['items'][0]['variantId']);
     }
+
     public function testDiscontinuedManufacturerCannotReceiveNewGenerationThroughExistingModel(): void
     {
         self::bootKernel();
@@ -126,5 +127,4 @@ final class VehicleCatalogJourneyTest extends KernelTestCase
             'transmission' => 'single_speed',
         ]);
     }
-
 }
