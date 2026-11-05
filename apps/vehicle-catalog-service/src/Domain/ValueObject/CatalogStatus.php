@@ -13,6 +13,11 @@ enum CatalogStatus: string
     case DISCONTINUED = 'discontinued';
     case ARCHIVED = 'archived';
 
+    public function canAcceptChildren(): bool
+    {
+        return $this === self::DRAFT || $this === self::PUBLISHED;
+    }
+
     public function transitionTo(self $next): self
     {
         if ($next === $this) {
