@@ -76,7 +76,7 @@ class VehicleVariantRecord
     private ?int $co2EmissionGPerKm;
 
     /** @var list<array{mediaId: string, usage: string, sortOrder?: int, altText?: string}> */
-    #[ORM\Column(name: 'media_references', type: 'json')]
+    #[ORM\Column(name: 'media_references', type: 'json', options: ['jsonb' => true])]
     private array $mediaReferences;
 
     #[ORM\Column(type: 'string', length: 16, enumType: CatalogStatus::class)]
