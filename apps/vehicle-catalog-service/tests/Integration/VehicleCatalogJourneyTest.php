@@ -6,6 +6,10 @@ namespace App\Tests\Integration;
 
 use App\Application\CatalogApplicationService;
 use App\Application\Security\CatalogActor;
+use App\Infrastructure\Persistence\Doctrine\Entity\ManufacturerRecord;
+use App\Infrastructure\Persistence\Doctrine\Entity\VehicleModelRecord;
+use Doctrine\ORM\EntityManagerInterface;
+use InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class VehicleCatalogJourneyTest extends KernelTestCase
@@ -69,4 +73,54 @@ final class VehicleCatalogJourneyTest extends KernelTestCase
         self::assertSame(1, $result['total']);
         self::assertSame($variantId, $result['items'][0]['variantId']);
     }
+    public function testDiscontinuedManufacturerCannotReceiveNewGenerationThroughExistingModel(): void
+    {
+        self::bootKernel();
+
+        $catalog = static::getContainer()->get(CatalogApplicationService::class);
+        $actor = new CatalogActor('catalog-integration-test', ['catalog:manage']);
+        $suffix = strtoupper(bin2hex(random_bytes(4)));
+        $manufacturerId = $catalog->registerManufacturer($actor, 'TST' . $suffix, 'Ancestor Test ' . $suffix);
+        $modelId = $catalog->registerModel($actor, $manufacturerId, 'Model ' . $suffix);
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $manufacturer = $entityManager->find(ManufacturerRecord::class, $manufacturerId);
+        self::assertInstanceOf(ManufacturerRecord::class, $manufacturer);
+        $manufacturer->setStatus(\App\Domain\ValueObject\CatalogStatus::DISCONTINUED);
+        $entityManager->flush();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $catalog->registerGeneration($actor, $modelId, 'Generation ' . $suffix, 2024, 2026);
+    }
+
+    public function testDiscontinuedModelCannotReceiveNewVariantThroughExistingGeneration(): void
+    {
+        self::bootKernel();
+
+        $catalog = static::getContainer()->get(CatalogApplicationService::class);
+        $actor = new CatalogActor('catalog-integration-test', ['catalog:manage']);
+        $suffix = strtoupper(bin2hex(random_bytes(4)));
+        $manufacturerId = $catalog->registerManufacturer($actor, 'TST' . $suffix, 'Variant Ancestor ' . $suffix);
+        $modelId = $catalog->registerModel($actor, $manufacturerId, 'Model ' . $suffix);
+        $generationId = $catalog->registerGeneration($actor, $modelId, 'Generation ' . $suffix, 2024, 2026);
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $model = $entityManager->find(VehicleModelRecord::class, $modelId);
+        self::assertInstanceOf(VehicleModelRecord::class, $model);
+        $model->setStatus(\App\Domain\ValueObject\CatalogStatus::DISCONTINUED);
+        $entityManager->flush();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $catalog->registerVariant($actor, [
+            'generationId' => $generationId,
+            'name' => 'Blocked Variant ' . $suffix,
+            'fuelType' => 'electric',
+            'powertrain' => 'bev',
+            'bodyStyle' => 'suv',
+            'transmission' => 'single_speed',
+        ]);
+    }
+
 }
