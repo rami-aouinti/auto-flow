@@ -147,10 +147,13 @@ jobs:
               isset($paths["/api/v1/models"]["post"]),
               isset($paths["/api/v1/generations"]["post"]),
               isset($paths["/api/v1/vehicles"]["post"]),
+              isset($paths["/api/v1/vehicles/{variantId}/publish"]["post"]),
+              isset($api["components"]["schemas"]["VehicleResponse"]),
+              isset($api["components"]["schemas"]["ManufacturerResponse"]),
           ];
           $bearer = $api["components"]["securitySchemes"]["bearerAuth"] ?? null;
           if (in_array(false, $required, true) || ($bearer["scheme"] ?? null) !== "bearer") {
-              fwrite(STDERR, "Vehicle Catalog OpenAPI contract is missing required operations or bearer authentication.\\n");
+              fwrite(STDERR, "Vehicle Catalog OpenAPI contract is missing required operations, response schemas or bearer authentication.\\n");
               exit(1);
           }
           '
