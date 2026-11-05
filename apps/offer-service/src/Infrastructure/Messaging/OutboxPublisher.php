@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace App\Infrastructure\Messaging;
 
 use App\Infrastructure\Persistence\PostgresConnection;
+use OpenTelemetry\API\Globals;
+use OpenTelemetry\API\Trace\Propagation\TraceContextPropagator;
+use OpenTelemetry\API\Trace\SpanKind;
+use OpenTelemetry\API\Trace\StatusCode;
 use PDO;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 use Throwable;
 
 final readonly class OutboxPublisher
