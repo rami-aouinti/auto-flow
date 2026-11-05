@@ -80,7 +80,7 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
                 ->andWhere('g.status = :published')
                 ->andWhere('m.status = :published')
                 ->andWhere('mf.status = :published')
-                ->setParameter('published', CatalogStatus::PUBLISHED);
+                ->setParameter('published', CatalogStatus::PUBLISHED->value);
         }
 
         /** @var VehicleVariantRecord|null $record */
@@ -287,6 +287,15 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
         $generation = $variant->getGeneration();
         $model = $generation->getModel();
         $manufacturer = $model->getManufacturer();
+
+        if (
+            $variant->getStatus() === CatalogStatus::PUBLISHED
+            && $generation->getStatus() === CatalogStatus::PUBLISHED
+            && $model->getStatus() === CatalogStatus::PUBLISHED
+            && $manufacturer->getStatus() === CatalogStatus::PUBLISHED
+        ) {
+            return true;
+        }
 
         try {
             $variant->getStatus()->transitionTo(CatalogStatus::PUBLISHED);
