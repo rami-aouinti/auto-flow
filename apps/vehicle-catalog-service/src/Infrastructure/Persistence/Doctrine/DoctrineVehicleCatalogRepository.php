@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persistence\Doctrine;
 
+use App\Application\Exception\CatalogParentNotFoundException;
 use App\Application\Port\VehicleCatalogRepositoryInterface;
 use App\Domain\Entity\Manufacturer;
 use App\Domain\Entity\VehicleGeneration;
@@ -149,7 +150,7 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
         );
 
         if (!$manufacturer instanceof ManufacturerRecord) {
-            throw new InvalidArgumentException('The referenced manufacturer does not exist.');
+            throw new CatalogParentNotFoundException('The referenced manufacturer does not exist.');
         }
 
         if (!$manufacturer->getStatus()->canAcceptChildren()) {
@@ -184,7 +185,7 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
         );
 
         if (!$model instanceof VehicleModelRecord) {
-            throw new InvalidArgumentException('The referenced model does not exist.');
+            throw new CatalogParentNotFoundException('The referenced model does not exist.');
         }
 
         if (!$model->getStatus()->canAcceptChildren()) {
@@ -222,7 +223,7 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
         );
 
         if (!$generation instanceof VehicleGenerationRecord) {
-            throw new InvalidArgumentException('The referenced generation does not exist.');
+            throw new CatalogParentNotFoundException('The referenced generation does not exist.');
         }
 
         if (!$generation->getStatus()->canAcceptChildren()) {
