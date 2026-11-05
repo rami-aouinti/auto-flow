@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pricing-config
+  namespace: autoflow
+  labels:
+    app.kubernetes.io/name: pricing-service
+data:
+  APP_ENV: "dev"
+  APP_DEBUG: "1"
+  DEFAULT_URI: "http://pricing-service:8080"
+  AUTOFLOW_JWT_ISSUER: "http://localhost:8080/realms/autoflow"
+  # Docker Desktop host gateway. Keycloak currently binds to 127.0.0.1 in Compose,
+  # so authenticated API calls need a later networking adjustment.
+  AUTOFLOW_JWT_JWKS_URI: "http://host.docker.internal:8080/realms/autoflow/protocol/openid-connect/certs"
+  OTEL_SERVICE_NAME: "autoflow-pricing-service"
+  OTEL_RESOURCE_ATTRIBUTES: "service.namespace=autoflow,deployment.environment=local-kubernetes"
+  OTEL_PHP_AUTOLOAD_ENABLED: "false"
+  OTEL_TRACES_EXPORTER: "none"
+  OTEL_METRICS_EXPORTER: "none"
+  OTEL_LOGS_EXPORTER: "none"
