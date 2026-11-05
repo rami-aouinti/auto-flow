@@ -18,10 +18,10 @@ interface VehicleCatalogRepositoryInterface
     public function listVehicles(array $filters, int $limit, int $offset): array;
 
     /** @return array<string, mixed>|null */
-    public function getVehicle(string $variantId, bool $publishedOnly = true): ?array;
+    public function getVehicle(string $variantId): ?array;
 
     /** @return list<array<string, mixed>> */
-    public function listManufacturers(bool $publishedOnly = true): array;
+    public function listManufacturers(): array;
 
     public function createManufacturer(Manufacturer $manufacturer): void;
 
