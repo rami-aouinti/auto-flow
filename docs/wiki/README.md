@@ -40,7 +40,7 @@ A professional architecture document must describe reality accurately. A roadmap
 
 The repository currently contains:
 
-- A monorepo with independent Symfony applications for Offer, Pricing and Vehicle Catalog. The Vehicle Catalog implementation is being delivered on the current feature branch; master remains the release baseline until review and merge.
+- A monorepo with independent Symfony applications for Offer, Pricing and Vehicle Catalog. The Vehicle Catalog bounded context is merged into master; its quality and operational hardening continue through the shared CI pipeline.
 - PHP 8.4 and Symfony 7.4 service containers.
 - PostgreSQL, RabbitMQ, Redis and Elasticsearch infrastructure in Docker Compose.
 - A synchronous Offer → Pricing HTTP call using the legacy demonstration endpoint.
