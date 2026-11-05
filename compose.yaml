@@ -49,10 +49,11 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
       OTEL_PHP_AUTOLOAD_ENABLED: "true"
       OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: none
+      OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: none
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
       OTEL_PROPAGATORS: tracecontext,baggage
       OTEL_PHP_EXCLUDED_URLS: ^/health$
     depends_on:
@@ -61,6 +62,8 @@ services:
       pricing-service:
         condition: service_healthy
       tempo:
+        condition: service_started
+      alloy:
         condition: service_started
       keycloak:
         condition: service_started
@@ -370,6 +373,8 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./infrastructure/observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./infrastructure/observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infrastructure/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
       - loki
@@ -382,6 +387,12 @@ services:
     volumes:
       - ./infrastructure/observability/loki/loki.yml:/etc/loki/loki.yml:ro
       - loki-data:/loki
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   alloy:
     image: grafana/alloy:v1.6.1
@@ -401,6 +412,12 @@ services:
     volumes:
       - ./infrastructure/observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
       - tempo-data:/var/tempo
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:3200/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:v0.17.1

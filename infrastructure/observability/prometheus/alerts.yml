@@ -1,0 +1,58 @@
+groups:
+  - name: autoflow-infrastructure
+    interval: 30s
+    rules:
+      - alert: PrometheusScrapeTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Prometheus target is down"
+          description: "Target {{ $labels.job }} at {{ $labels.instance }} has been unavailable for more than 2 minutes."
+      - alert: PrometheusScrapeTargetMissing
+        expr: absent(up{job="rabbitmq"}) or absent(up{job="postgres"}) or absent(up{job="redis"}) or absent(up{job="elasticsearch"}) or absent(up{job="cadvisor"}) or absent(up{job="node-exporter"})
+        for: 3m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "An expected infrastructure scrape target is missing"
+          description: "At least one required infrastructure exporter is missing from Prometheus."
+      - alert: HighHostCpuUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Host CPU usage is above 90%"
+          description: "CPU usage on {{ $labels.instance }} has exceeded 90% for 10 minutes."
+      - alert: HighContainerMemoryUsage
+        expr: (container_memory_working_set_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) > 0.90
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Container memory usage is above 90% of its limit"
+          description: "Container {{ $labels.name }} is using more than 90% of its memory limit."
+      - alert: PostgresConnectionsNearLimit
+        expr: sum(pg_stat_activity_count) / clamp_min(pg_settings_max_connections, 1) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          team: data
+        annotations:
+          summary: "PostgreSQL connections are above 80% of max_connections"
+          description: "PostgreSQL is approaching its configured connection limit."
+      - alert: RabbitMQQueueBacklog
+        expr: sum(rabbitmq_queue_messages_ready) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          team: messaging
+        annotations:
+          summary: "RabbitMQ has a large ready-message backlog"
+          description: "More than 1000 messages have remained ready in RabbitMQ queues for 5 minutes."
