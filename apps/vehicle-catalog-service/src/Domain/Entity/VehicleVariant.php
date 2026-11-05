@@ -6,6 +6,7 @@ namespace App\Domain\Entity;
 
 use App\Domain\ValueObject\CatalogueId;
 use App\Domain\ValueObject\CatalogStatus;
+use App\Domain\ValueObject\TechnicalSpecifications;
 use InvalidArgumentException;
 
 final readonly class VehicleVariant
@@ -50,15 +51,7 @@ final readonly class VehicleVariant
         public string $powertrain,
         public string $bodyStyle,
         public string $transmission,
-        public ?int $powerKw,
-        public ?int $displacementCc,
-        public ?int $seats,
-        public ?int $doors,
-        public ?int $curbWeightKg,
-        public ?int $lengthMm,
-        public ?int $widthMm,
-        public ?int $heightMm,
-        public ?int $co2EmissionGPerKm,
+        public TechnicalSpecifications $technicalSpecifications,
         public array $mediaReferences,
         public CatalogStatus $status,
     ) {
@@ -106,7 +99,9 @@ final readonly class VehicleVariant
             $usage = trim((string) $reference['usage']);
 
             if ($mediaId === '' || mb_strlen($mediaId) > 128 || $usage === '' || mb_strlen($usage) > 40) {
-                throw new InvalidArgumentException('Media reference fields must be non-empty and within their length limits.');
+                throw new InvalidArgumentException(
+                    'Media reference fields must be non-empty and within their length limits.',
+                );
             }
 
             $mediaReference = ['mediaId' => $mediaId, 'usage' => $usage];
@@ -143,18 +138,32 @@ final readonly class VehicleVariant
             $powertrain,
             $body,
             $transmission,
-            self::positiveInt($data, 'powerKw', 10000),
-            self::positiveInt($data, 'displacementCc', 20000),
-            self::boundedInt($data, 'seats', 1, 20),
-            self::boundedInt($data, 'doors', 1, 8),
-            self::positiveInt($data, 'curbWeightKg', 100000),
-            self::positiveInt($data, 'lengthMm', 20000),
-            self::positiveInt($data, 'widthMm', 5000),
-            self::positiveInt($data, 'heightMm', 5000),
-            self::nonNegativeInt($data, 'co2EmissionGPerKm', 2000),
+            TechnicalSpecifications::fromArray($data),
             $mediaReferences,
             CatalogStatus::DRAFT,
         );
+    }
+
+    public function withStatus(CatalogStatus $status): self
+    {
+        return new self(
+            $this->id,
+            $this->generationId,
+            $this->manufacturerCode,
+            $this->name,
+            $this->fuelType,
+            $this->powertrain,
+            $this->bodyStyle,
+            $this->transmission,
+            $this->technicalSpecifications,
+            $this->mediaReferences,
+            $this->status->transitionTo($status),
+        );
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->id->value === $other->id->value;
     }
 
     /**
@@ -168,56 +177,6 @@ final readonly class VehicleVariant
         if (!in_array($value, $allowed, true)) {
             throw new InvalidArgumentException(
                 sprintf('%s must be one of: %s.', $key, implode(', ', $allowed)),
-            );
-        }
-
-        return $value;
-    }
-
-    /** @param array<string, mixed> $data */
-    private static function positiveInt(array $data, string $key, int $max): ?int
-    {
-        if (!array_key_exists($key, $data) || $data[$key] === null || $data[$key] === '') {
-            return null;
-        }
-
-        $value = filter_var($data[$key], FILTER_VALIDATE_INT);
-
-        if (!is_int($value) || $value < 1 || $value > $max) {
-            throw new InvalidArgumentException(
-                sprintf('%s must be an integer between 1 and %d.', $key, $max),
-            );
-        }
-
-        return $value;
-    }
-
-    /** @param array<string, mixed> $data */
-    private static function nonNegativeInt(array $data, string $key, int $max): ?int
-    {
-        if (!array_key_exists($key, $data) || $data[$key] === null || $data[$key] === '') {
-            return null;
-        }
-
-        $value = filter_var($data[$key], FILTER_VALIDATE_INT);
-
-        if (!is_int($value) || $value < 0 || $value > $max) {
-            throw new InvalidArgumentException(
-                sprintf('%s must be an integer between 0 and %d.', $key, $max),
-            );
-        }
-
-        return $value;
-    }
-
-    /** @param array<string, mixed> $data */
-    private static function boundedInt(array $data, string $key, int $min, int $max): ?int
-    {
-        $value = self::positiveInt($data, $key, $max);
-
-        if ($value !== null && $value < $min) {
-            throw new InvalidArgumentException(
-                sprintf('%s must be between %d and %d.', $key, $min, $max),
             );
         }
 
