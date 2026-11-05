@@ -12,7 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(
     name: 'catalog_outbox',
     indexes: [
-        new ORM\Index(name: 'idx_catalog_outbox_pending', columns: ['next_attempt_at', 'occurred_at']),
+        new ORM\Index(name: 'idx_catalog_outbox_pending', columns: ['next_attempt_at', 'occurred_at'], options: ['where' => 'published_at IS NULL']),
     ],
 )]
 class CatalogOutboxRecord
@@ -31,7 +31,7 @@ class CatalogOutboxRecord
     private int $schemaVersion;
 
     /** @var array<string, mixed> */
-    #[ORM\Column(type: 'json')]
+    #[ORM\Column(type: 'json', options: ['jsonb' => true])]
     private array $payload;
 
     #[ORM\Column(name: 'occurred_at', type: 'datetimetz_immutable')]
