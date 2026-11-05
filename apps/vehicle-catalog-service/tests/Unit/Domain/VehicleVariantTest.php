@@ -48,6 +48,20 @@ final class VehicleVariantTest extends TestCase
         ]);
     }
 
+    public function testRejectsContradictoryFuelTypeAndPowertrain(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        VehicleVariant::register([
+            'generationId' => str_repeat('a', 32),
+            'name' => 'Petrol EV',
+            'fuelType' => 'petrol',
+            'powertrain' => 'bev',
+            'bodyStyle' => 'suv',
+            'transmission' => 'automatic',
+        ]);
+    }
+
     public function testRejectsInvalidDimensions(): void
     {
         $this->expectException(InvalidArgumentException::class);
