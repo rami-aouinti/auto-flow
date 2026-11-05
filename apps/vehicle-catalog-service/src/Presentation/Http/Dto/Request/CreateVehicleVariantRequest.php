@@ -29,7 +29,9 @@ final readonly class CreateVehicleVariantRequest
             throw new InvalidArgumentException('manufacturerCode must be a string or null.');
         }
 
-        if (array_key_exists('mediaReferences', $data) && !is_array($data['mediaReferences'])) {
+        if (array_key_exists('mediaReferences', $data)
+            && $data['mediaReferences'] !== null
+            && !is_array($data['mediaReferences'])) {
             throw new InvalidArgumentException('mediaReferences must be an array.');
         }
 
