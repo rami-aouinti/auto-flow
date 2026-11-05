@@ -23,7 +23,7 @@ final readonly class CatalogApplicationService
         private RegisterManufacturerHandler $registerManufacturer,
         private RegisterModelHandler $registerModel,
         private RegisterGenerationHandler $registerGeneration,
-        private RegisterVehicleVariantHandler $registerVariantHandler,
+        private RegisterVehicleVariantHandler $registerVariant,
         private PublishVehicleVariantHandler $publishVehicleVariant,
     ) {
     }
@@ -76,7 +76,7 @@ final readonly class CatalogApplicationService
     /** @param array<string, mixed> $data */
     public function registerVariant(CatalogActor $actor, array $data): string
     {
-        return ($this->registerVariantHandler)($actor, $data);
+        return ($this->registerVariant)($actor, $data);
     }
 
     public function publishVariant(CatalogActor $actor, string $id): bool
