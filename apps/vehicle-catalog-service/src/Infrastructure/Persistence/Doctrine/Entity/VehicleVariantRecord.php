@@ -27,7 +27,12 @@ class VehicleVariantRecord
     private string $id;
 
     #[ORM\ManyToOne(targetEntity: VehicleGenerationRecord::class)]
-    #[ORM\JoinColumn(name: 'generation_id', referencedColumnName: 'generation_id', nullable: false, onDelete: 'RESTRICT')]
+    #[ORM\JoinColumn(
+        name: 'generation_id',
+        referencedColumnName: 'generation_id',
+        nullable: false,
+        onDelete: 'RESTRICT',
+    )]
     private VehicleGenerationRecord $generation;
 
     #[ORM\Column(name: 'manufacturer_code', type: 'string', length: 64, nullable: true, unique: true)]
