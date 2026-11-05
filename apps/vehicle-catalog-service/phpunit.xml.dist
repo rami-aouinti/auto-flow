@@ -2,6 +2,10 @@
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
          bootstrap="vendor/autoload.php" colors="true" cacheDirectory=".phpunit.cache">
+    <php>
+        <env name="APP_ENV" value="test" force="true"/>
+        <env name="KERNEL_CLASS" value="App\\Kernel"/>
+    </php>
     <testsuites>
         <testsuite name="Vehicle Catalog"><directory>tests</directory></testsuite>
     </testsuites>
