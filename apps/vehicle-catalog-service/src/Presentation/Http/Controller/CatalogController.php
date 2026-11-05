@@ -148,7 +148,11 @@ final readonly class CatalogController
         required: true,
         schema: new OA\Schema(type: 'string', pattern: '^[a-f0-9]{32}$'),
     )]
-    #[OA\Response(response: 200, description: 'Vehicle details', content: new OA\JsonContent(ref: '#/components/schemas/VehicleResponse'))]
+    #[OA\Response(
+        response: 200,
+        description: 'Vehicle details',
+        content: new OA\JsonContent(ref: '#/components/schemas/VehicleResponse'),
+    )]
     #[OA\Response(response: 404, description: 'Vehicle not found')]
     #[RequiresScope('catalog:read')]
     #[Route('/vehicles/{variantId}', methods: ['GET'])]
@@ -302,7 +306,17 @@ final readonly class CatalogController
                 new OA\Property(
                     property: 'fuelType',
                     type: 'string',
-                    enum: ['petrol', 'diesel', 'electric', 'hybrid', 'plug_in_hybrid', 'hydrogen', 'lpg', 'cng', 'other'],
+                    enum: [
+                        'petrol',
+                        'diesel',
+                        'electric',
+                        'hybrid',
+                        'plug_in_hybrid',
+                        'hydrogen',
+                        'lpg',
+                        'cng',
+                        'other',
+                    ],
                 ),
                 new OA\Property(
                     property: 'powertrain',
