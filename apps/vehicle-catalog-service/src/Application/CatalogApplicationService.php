@@ -4,79 +4,83 @@ declare(strict_types=1);
 
 namespace App\Application;
 
-use App\Application\Port\VehicleCatalogRepositoryInterface;
-use App\Domain\Entity\Manufacturer;
-use App\Domain\Entity\VehicleGeneration;
-use App\Domain\Entity\VehicleModel;
-use App\Domain\Entity\VehicleVariant;
+use App\Application\Handler\GetVehicleHandler;
+use App\Application\Handler\ListManufacturersHandler;
+use App\Application\Handler\ListVehiclesHandler;
+use App\Application\Handler\PublishVehicleVariantHandler;
+use App\Application\Handler\RegisterGenerationHandler;
+use App\Application\Handler\RegisterManufacturerHandler;
+use App\Application\Handler\RegisterModelHandler;
+use App\Application\Handler\RegisterVehicleVariantHandler;
+use App\Application\Security\CatalogActor;
 
 final readonly class CatalogApplicationService
 {
     public function __construct(
-        private VehicleCatalogRepositoryInterface $repository,
+        private ListManufacturersHandler $listManufacturers,
+        private ListVehiclesHandler $listVehicles,
+        private GetVehicleHandler $getVehicle,
+        private RegisterManufacturerHandler $registerManufacturer,
+        private RegisterModelHandler $registerModel,
+        private RegisterGenerationHandler $registerGeneration,
+        private RegisterVehicleVariantHandler $registerVehicleVariant,
+        private PublishVehicleVariantHandler $publishVehicleVariant,
     ) {
     }
 
     /** @return list<array<string, mixed>> */
-    public function listManufacturers(bool $publishedOnly = true): array
+    public function listManufacturers(CatalogActor $actor): array
     {
-        return $this->repository->listManufacturers($publishedOnly);
+        return ($this->listManufacturers)($actor);
     }
 
     /**
      * @param array<string, scalar|null> $filters
      * @return array{items: list<array<string, mixed>>, total: int}
      */
-    public function listVehicles(array $filters, int $limit, int $offset): array
-    {
-        return $this->repository->listVehicles($filters, $limit, $offset);
+    public function listVehicles(
+        CatalogActor $actor,
+        array $filters,
+        int $limit,
+        int $offset,
+    ): array {
+        return ($this->listVehicles)($actor, $filters, $limit, $offset);
     }
 
     /** @return array<string, mixed>|null */
-    public function getVehicle(string $id, bool $publishedOnly = true): ?array
+    public function getVehicle(CatalogActor $actor, string $id): ?array
     {
-        return $this->repository->getVehicle($id, $publishedOnly);
+        return ($this->getVehicle)($actor, $id);
     }
 
-    public function registerManufacturer(string $code, string $name): string
+    public function registerManufacturer(CatalogActor $actor, string $code, string $name): string
     {
-        $manufacturer = Manufacturer::register($code, $name);
-        $this->repository->createManufacturer($manufacturer);
-
-        return $manufacturer->id->value;
+        return ($this->registerManufacturer)($actor, $code, $name);
     }
 
-    public function registerModel(string $manufacturerId, string $name): string
+    public function registerModel(CatalogActor $actor, string $manufacturerId, string $name): string
     {
-        $model = VehicleModel::create($manufacturerId, $name);
-        $this->repository->createModel($model);
-
-        return $model->id->value;
+        return ($this->registerModel)($actor, $manufacturerId, $name);
     }
 
     public function registerGeneration(
+        CatalogActor $actor,
         string $modelId,
         string $name,
         ?int $startYear,
         ?int $endYear,
     ): string {
-        $generation = VehicleGeneration::create($modelId, $name, $startYear, $endYear);
-        $this->repository->createGeneration($generation);
-
-        return $generation->id->value;
-    }
-
-    public function publishVariant(string $id): bool
-    {
-        return $this->repository->publishVariant($id);
+        return ($this->registerGeneration)($actor, $modelId, $name, $startYear, $endYear);
     }
 
     /** @param array<string, mixed> $data */
-    public function registerVariant(array $data): string
+    public function registerVariant(CatalogActor $actor, array $data): string
     {
-        $variant = VehicleVariant::register($data);
-        $this->repository->createVariant($variant);
+        return ($this->registerVehicleVariant)($actor, $data);
+    }
 
-        return $variant->id->value;
+    public function publishVariant(CatalogActor $actor, string $id): bool
+    {
+        return ($this->publishVehicleVariant)($actor, $id);
     }
 }
