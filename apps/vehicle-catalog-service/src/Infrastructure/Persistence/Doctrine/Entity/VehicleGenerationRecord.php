@@ -69,42 +69,48 @@ class VehicleGenerationRecord
         $this->updatedAt = $now;
     }
 
+
     public function getId(): string
-
     {
-
         return $this->id;
-
     }
+
     public function getModel(): VehicleModelRecord
     {
         return $this->model;
     }
+
     public function getName(): string
     {
         return $this->name;
     }
+
     public function getProductionStartYear(): ?int
     {
         return $this->productionStartYear;
     }
+
     public function getProductionEndYear(): ?int
     {
         return $this->productionEndYear;
     }
+
     public function getStatus(): CatalogStatus
     {
         return $this->status;
     }
+
     public function setStatus(CatalogStatus $status): void
     {
         $this->status = $status;
         $this->touch();
     }
+
     public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
+
     public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
