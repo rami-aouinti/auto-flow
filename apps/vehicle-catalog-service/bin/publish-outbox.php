@@ -5,6 +5,11 @@ declare(strict_types=1);
 use App\Infrastructure\Persistence\PostgresConnection;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
+use OpenTelemetry\API\Globals;
+use OpenTelemetry\API\Trace\Propagation\TraceContextPropagator;
+use OpenTelemetry\API\Trace\SpanKind;
+use OpenTelemetry\API\Trace\StatusCode;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
