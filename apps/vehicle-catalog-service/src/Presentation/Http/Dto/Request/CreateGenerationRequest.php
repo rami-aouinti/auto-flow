@@ -19,15 +19,16 @@ final readonly class CreateGenerationRequest
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
-        foreach (['modelId', 'name'] as $field) {
-            if (!isset($data[$field]) || !is_string($data[$field])) {
-                throw new InvalidArgumentException(sprintf('%s must be a string.', $field));
-            }
+        $modelId = $data['modelId'] ?? null;
+        $name = $data['name'] ?? null;
+
+        if (!is_string($modelId) || !is_string($name)) {
+            throw new InvalidArgumentException('Generation modelId and name must be strings.');
         }
 
         return new self(
-            $data['modelId'],
-            $data['name'],
+            $modelId,
+            $name,
             self::nullableInteger($data, 'productionStartYear'),
             self::nullableInteger($data, 'productionEndYear'),
         );
