@@ -66,7 +66,8 @@ PostgreSQL is authoritative. The service uses the dedicated `autoflow_catalog` l
 
 ```bash
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/vehicle-catalog-service/migrations/00_create_catalog_database_role.sql
-docker compose exec -T postgres psql -U autoflow -d autoflow < apps/vehicle-catalog-service/migrations/Version20261105000100CreateVehicleCatalog.sql
+docker compose exec -T postgres psql -U autoflow -d autoflow < apps/vehicle-catalog-service/migrations/00_create_catalog_database_role.sql
+docker compose exec vehicle-catalog-service sh -lc 'DATABASE_URL=postgresql://autoflow:autoflow@postgres:5432/autoflow php bin/console doctrine:migrations:migrate --no-interaction'
 docker compose exec vehicle-catalog-service php bin/load-fixtures.php
 ```
 
@@ -90,4 +91,4 @@ The CI pipeline validates the Composer manifest, boots/builds the Symfony servic
 
 ## Architecture
 
-Domain and Application code are framework/persistence independent. Infrastructure owns PDO/PostgreSQL and RabbitMQ adapters. Presentation owns HTTP DTO mapping and error translation. CoreBundle is used only for JWT verification, scope authorization, correlation IDs and readiness checks. See Wiki chapters 03, 05, 06, 13, 15 and 16 and ADR-017.
+Domain and Application code are framework/persistence independent. Infrastructure owns Doctrine ORM/PostgreSQL mappings and repository adapters, plus the PDO/RabbitMQ Outbox publisher. Presentation owns HTTP DTO mapping and error translation. CoreBundle is used only for JWT verification, scope authorization, correlation IDs and readiness checks. See Wiki chapters 03, 05, 06, 13, 15 and 16 and ADR-017.
