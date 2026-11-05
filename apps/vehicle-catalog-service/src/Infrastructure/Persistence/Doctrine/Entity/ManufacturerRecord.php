@@ -43,34 +43,38 @@ class ManufacturerRecord
         $this->updatedAt = $now;
     }
 
+
     public function getId(): string
-
     {
-
         return $this->id;
-
     }
+
     public function getCode(): string
     {
         return $this->code;
     }
+
     public function getName(): string
     {
         return $this->name;
     }
+
     public function getStatus(): CatalogStatus
     {
         return $this->status;
     }
+
     public function setStatus(CatalogStatus $status): void
     {
         $this->status = $status;
         $this->touch();
     }
+
     public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
+
     public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
