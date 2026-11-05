@@ -8,6 +8,9 @@ services:
         exclude:
             - '../src/Kernel.php'
             - '../src/Domain/'
+            - '../src/Application/Security/'
+            - '../src/Application/Exception/'
+            - '../src/Presentation/Http/Dto/'
             - '../src/Infrastructure/Persistence/Doctrine/Entity/'
             - '../src/Infrastructure/Persistence/PostgresConnection.php'
 
