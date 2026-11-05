@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 final class CatalogAccessDeniedSubscriberTest extends TestCase
 {
@@ -43,4 +44,36 @@ final class CatalogAccessDeniedSubscriberTest extends TestCase
             (string) $response->getContent(),
         );
     }
+    public function testUnauthenticatedRequestBecomesUnauthorizedProblemResponse(): void
+    {
+        $kernel = new class implements HttpKernelInterface {
+            public function handle(
+                Request $request,
+                int $type = self::MAIN_REQUEST,
+                bool $catch = true,
+            ): Response {
+                return new Response();
+            }
+        };
+
+        $event = new ExceptionEvent(
+            $kernel,
+            Request::create('/api/v1/vehicles'),
+            HttpKernelInterface::MAIN_REQUEST,
+            new UnauthorizedHttpException('Bearer', 'Missing token.'),
+        );
+
+        (new CatalogAccessDeniedSubscriber())->onKernelException($event);
+
+        $response = $event->getResponse();
+        self::assertInstanceOf(Response::class, $response);
+        self::assertSame(401, $response->getStatusCode());
+        self::assertSame(
+            'application/problem+json',
+            $response->headers->get('Content-Type'),
+        );
+        self::assertStringContainsString('UNAUTHENTICATED', (string) $response->getContent());
+        self::assertSame('Bearer', $response->headers->get('WWW-Authenticate'));
+    }
+
 }
