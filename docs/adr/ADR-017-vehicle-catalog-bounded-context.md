@@ -13,7 +13,7 @@ The first increment must be deterministic and useful without pretending that unr
 ## Decision
 
 1. Deploy Vehicle Catalog as an independent Symfony 7.4 / PHP 8.4 application with a service-owned PostgreSQL schema/tables and repository adapter.
-2. Keep Domain and Application independent of Symfony, Doctrine, HTTP, PDO and RabbitMQ. Infrastructure owns PDO persistence and the Outbox relay; Presentation maps HTTP requests and responses.
+2. Keep Domain and Application independent of Symfony, Doctrine, HTTP, PDO and RabbitMQ. Infrastructure owns Doctrine ORM/DBAL mappings and repository adapters; the standalone Outbox relay uses a narrow PDO adapter for atomic row claiming and RabbitMQ publication. Presentation maps HTTP request/response DTOs.
 3. Use generated opaque 128-bit hexadecimal IDs for Manufacturer, Model, Generation and VehicleVariant. Manufacturer-provided variant codes are optional unique metadata, not canonical identity.
 4. Enforce model-name uniqueness within a manufacturer using a normalized name. Enforce generation-label uniqueness within a model.
 5. Treat production year bounds as optional. When both exist, end year must not precede start year.
@@ -31,7 +31,7 @@ The first increment must be deterministic and useful without pretending that unr
 - **Tenant-owned catalogue records:** rejected for the first increment because the Wiki defines one authoritative discoverable catalogue; tenant-specific commercial availability belongs to Offer/Inventory contexts.
 - **Elasticsearch as write store:** rejected because the catalogue requires relational constraints and transactional aggregate changes. Elasticsearch remains a derived Search-owned index.
 - **Direct RabbitMQ publish in the request transaction:** rejected because database commit and broker publication cannot be made atomic with a simple dual write. Use a transactional Outbox.
-- **Doctrine entities in Domain:** rejected to preserve framework-independent business policy. Use PDO as the initial Infrastructure adapter consistent with the current lightweight service runtime.
+- **Doctrine entities in Domain:** rejected to preserve framework-independent business policy. Use Doctrine ORM 3.5 attribute mappings and repository adapters as required by issue #26. Keep the Domain/Application layers independent. The Outbox relay may use PDO for its PostgreSQL-specific SKIP LOCKED claim loop.
 - **Automatic publication on creation:** rejected because draft/review lifecycle must be explicit.
 
 ## Consequences
