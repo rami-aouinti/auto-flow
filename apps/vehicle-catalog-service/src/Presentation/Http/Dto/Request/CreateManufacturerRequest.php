@@ -6,6 +6,8 @@ namespace App\Presentation\Http\Dto\Request;
 
 use InvalidArgumentException;
 
+use InvalidArgumentException;
+
 final readonly class CreateManufacturerRequest
 {
     public function __construct(
