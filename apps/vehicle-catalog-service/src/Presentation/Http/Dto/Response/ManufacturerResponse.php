@@ -4,6 +4,22 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Dto\Response;
 
+use OpenApi\Attributes as OA;
+
+#[OA\Schema(
+    schema: 'ManufacturerResponse',
+    type: 'object',
+    required: ['manufacturerId', 'code', 'name', 'status', 'createdAt', 'updatedAt'],
+    properties: [
+        new OA\Property(property: 'manufacturerId', type: 'string'),
+        new OA\Property(property: 'code', type: 'string'),
+        new OA\Property(property: 'name', type: 'string'),
+        new OA\Property(property: 'status', type: 'string', enum: ['draft', 'published', 'discontinued', 'archived']),
+        new OA\Property(property: 'createdAt', type: 'string', format: 'date-time'),
+        new OA\Property(property: 'updatedAt', type: 'string', format: 'date-time'),
+    ],
+)]
+
 final readonly class ManufacturerResponse
 {
     public function __construct(
