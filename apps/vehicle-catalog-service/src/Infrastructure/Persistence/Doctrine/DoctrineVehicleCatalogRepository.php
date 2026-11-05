@@ -101,7 +101,7 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
         if ($publishedOnly) {
             $queryBuilder
                 ->where('m.status = :published')
-                ->setParameter('published', CatalogStatus::PUBLISHED);
+                ->setParameter('published', CatalogStatus::PUBLISHED->value);
         }
 
         /** @var list<ManufacturerRecord> $records */
@@ -375,7 +375,7 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
             ->andWhere('g.status = :published')
             ->andWhere('m.status = :published')
             ->andWhere('mf.status = :published')
-            ->setParameter('published', CatalogStatus::PUBLISHED);
+            ->setParameter('published', CatalogStatus::PUBLISHED->value);
     }
 
     /**
