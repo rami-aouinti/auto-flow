@@ -19,9 +19,15 @@ final readonly class CreateGenerationRequest
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
+        foreach (['modelId', 'name'] as $field) {
+            if (!isset($data[$field]) || !is_string($data[$field])) {
+                throw new InvalidArgumentException(sprintf('%s must be a string.', $field));
+            }
+        }
+
         return new self(
-            (string) ($data['modelId'] ?? ''),
-            (string) ($data['name'] ?? ''),
+            $data['modelId'],
+            $data['name'],
             self::nullableInteger($data, 'productionStartYear'),
             self::nullableInteger($data, 'productionEndYear'),
         );
@@ -34,7 +40,13 @@ final readonly class CreateGenerationRequest
             return null;
         }
 
-        $value = filter_var($data[$key], FILTER_VALIDATE_INT);
+        $raw = $data[$key];
+
+        if (!is_int($raw) && (!is_string($raw) || preg_match('/^-?\\d+$/D', $raw) !== 1)) {
+            throw new InvalidArgumentException(sprintf('%s must be an integer or null.', $key));
+        }
+
+        $value = filter_var($raw, FILTER_VALIDATE_INT);
 
         if (!is_int($value)) {
             throw new InvalidArgumentException(sprintf('%s must be an integer or null.', $key));
