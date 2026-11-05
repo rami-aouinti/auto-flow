@@ -28,9 +28,9 @@ final class VehicleVariantTest extends TestCase
             'co2EmissionGPerKm' => 0,
         ]);
 
-        self::assertSame(150, $variant->technicalSpecifications->powerKw);
-        self::assertSame(4500, $variant->technicalSpecifications->lengthMm);
-        self::assertSame(0, $variant->technicalSpecifications->co2EmissionGPerKm);
+        self::assertSame(150, $variant->specifications->powerKw);
+        self::assertSame(4500, $variant->specifications->lengthMm);
+        self::assertSame(0, $variant->specifications->co2EmissionGPerKm);
         self::assertSame('electric', $variant->fuelType);
     }
 
