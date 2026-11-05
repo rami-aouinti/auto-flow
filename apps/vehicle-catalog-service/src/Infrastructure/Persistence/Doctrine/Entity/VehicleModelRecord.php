@@ -29,7 +29,12 @@ class VehicleModelRecord
     private string $id;
 
     #[ORM\ManyToOne(targetEntity: ManufacturerRecord::class)]
-    #[ORM\JoinColumn(name: 'manufacturer_id', referencedColumnName: 'manufacturer_id', nullable: false, onDelete: 'RESTRICT')]
+    #[ORM\JoinColumn(
+        name: 'manufacturer_id',
+        referencedColumnName: 'manufacturer_id',
+        nullable: false,
+        onDelete: 'RESTRICT',
+    )]
     private ManufacturerRecord $manufacturer;
 
     #[ORM\Column(type: 'string', length: 120)]
