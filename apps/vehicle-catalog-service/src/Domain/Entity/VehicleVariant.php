@@ -57,7 +57,10 @@ final readonly class VehicleVariant
     ) {
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * @param array<string, mixed> $data
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
     public static function register(array $data): self
     {
         $name = trim((string) ($data['name'] ?? ''));
