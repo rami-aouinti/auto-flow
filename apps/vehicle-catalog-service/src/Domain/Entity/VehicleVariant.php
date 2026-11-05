@@ -73,6 +73,7 @@ final readonly class VehicleVariant
         $powertrain = self::choice($data, 'powertrain', self::POWERTRAINS);
         $body = self::choice($data, 'bodyStyle', self::BODY_STYLES);
         $transmission = self::choice($data, 'transmission', self::TRANSMISSIONS);
+        self::assertCompatiblePowertrain($fuel, $powertrain);
         $manufacturerCode = isset($data['manufacturerCode'])
             ? strtoupper(trim((string) $data['manufacturerCode']))
             : null;
@@ -171,6 +172,24 @@ final readonly class VehicleVariant
     public function equals(self $other): bool
     {
         return $this->id->value === $other->id->value;
+    }
+
+    private static function assertCompatiblePowertrain(string $fuelType, string $powertrain): void
+    {
+        $compatible = match ($powertrain) {
+            'ice' => in_array($fuelType, ['petrol', 'diesel', 'lpg', 'cng', 'other'], true),
+            'mhev', 'hev' => $fuelType === 'hybrid',
+            'phev' => $fuelType === 'plug_in_hybrid',
+            'bev' => $fuelType === 'electric',
+            'fcev' => $fuelType === 'hydrogen',
+            'other' => true,
+        };
+
+        if (!$compatible) {
+            throw new InvalidArgumentException(
+                sprintf('Fuel type %s is not compatible with powertrain %s.', $fuelType, $powertrain),
+            );
+        }
     }
 
     /**
