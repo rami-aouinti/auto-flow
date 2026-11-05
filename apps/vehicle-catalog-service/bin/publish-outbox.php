@@ -69,12 +69,27 @@ try {
             throw new RuntimeException('The claimed catalogue Outbox event is malformed.');
         }
 
+        $span = Globals::tracerProvider()
+            ->getTracer('autoflow.vehicle-catalog-service', '1.0.0')
+            ->spanBuilder('messaging.publish')
+            ->setSpanKind(SpanKind::KIND_PRODUCER)
+            ->startSpan();
+        $scope = $span->activate();
+
         try {
+            $span->setAttribute('messaging.system', 'rabbitmq');
+            $span->setAttribute('messaging.destination.name', 'autoflow.catalog.events');
+            $span->setAttribute('messaging.message.id', $eventId);
+            $span->setAttribute('messaging.message.type', $eventType);
+
+            $traceHeaders = [];
+            TraceContextPropagator::getInstance()->inject($traceHeaders);
             $message = new AMQPMessage($payload, [
                 'content_type' => 'application/json',
                 'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
                 'message_id' => $eventId,
                 'type' => $eventType,
+                'application_headers' => new AMQPTable($traceHeaders),
             ]);
             $channel->basic_publish($message, 'autoflow.catalog.events', $eventType, true);
             $channel->wait_for_pending_acks_returns(5);
@@ -88,6 +103,8 @@ try {
             }
             $done->execute(['id' => $eventId]);
         } catch (Throwable $error) {
+            $span->setStatus(StatusCode::STATUS_ERROR);
+            $span->recordException($error);
             $retry = $db->prepare(<<<'SQL'
                 UPDATE catalog_outbox
                 SET locked_until=NULL,
@@ -102,6 +119,9 @@ try {
             }
             $retry->execute(['id' => $eventId, 'error' => mb_substr($error->getMessage(), 0, 500)]);
             throw $error;
+        } finally {
+            $scope->detach();
+            $span->end();
         }
     }
 } finally {
