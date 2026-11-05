@@ -16,9 +16,9 @@ use App\Infrastructure\Persistence\Doctrine\Entity\VehicleGenerationRecord;
 use App\Infrastructure\Persistence\Doctrine\Entity\VehicleModelRecord;
 use App\Infrastructure\Persistence\Doctrine\Entity\VehicleVariantRecord;
 use DateTimeImmutable;
+use DateTimeZone;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
-use Throwable;
 
 final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogRepositoryInterface
 {
@@ -38,12 +38,6 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
         }
 
         $queryBuilder = $this->createPublishedVehicleQueryBuilder();
-        $countQueryBuilder = clone $queryBuilder;
-        $total = (int) $countQueryBuilder
-            ->select('COUNT(v.id)')
-            ->getQuery()
-            ->getSingleScalarResult();
-
         $this->applyFilters($queryBuilder, $filters);
         $countQueryBuilder = $this->createPublishedVehicleQueryBuilder();
         $this->applyFilters($countQueryBuilder, $filters);
@@ -488,7 +482,7 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
             'eventType' => $eventType,
             'schemaVersion' => 1,
             'aggregateId' => $aggregateId,
-            'occurredAt' => (new DateTimeImmutable())->format(DATE_ATOM),
+            'occurredAt' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
             'payload' => $payload,
         ];
     }
