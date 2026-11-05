@@ -12,7 +12,6 @@ use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
-use JsonException;
 use LogicException;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
