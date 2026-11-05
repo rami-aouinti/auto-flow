@@ -53,12 +53,16 @@ final readonly class CatalogController
     #[Route('/manufacturers', methods: ['GET'])]
     public function manufacturers(Request $request, CatalogApplicationService $catalog): JsonResponse
     {
-        $items = array_map(
-            static fn (array $item): array => ManufacturerResponse::fromArray($item)->toArray(),
-            $catalog->listManufacturers($this->actor($request)),
-        );
+        try {
+            $items = array_map(
+                static fn (array $item): array => ManufacturerResponse::fromArray($item)->toArray(),
+                $catalog->listManufacturers($this->actor($request)),
+            );
 
-        return new JsonResponse(['items' => $items]);
+            return new JsonResponse(['items' => $items]);
+        } catch (DBALException) {
+            return $this->storageError($request);
+        }
     }
 
     #[OA\Get(
@@ -134,6 +138,8 @@ final readonly class CatalogController
             return $this->problem(400, 'INVALID_PAGINATION', $exception->getMessage(), $request);
         } catch (InvalidArgumentException $exception) {
             return $this->problem(400, 'INVALID_FILTER', $exception->getMessage(), $request);
+        } catch (DBALException) {
+            return $this->storageError($request);
         }
     }
 
@@ -165,13 +171,17 @@ final readonly class CatalogController
             return $this->vehicleNotFound($request);
         }
 
-        $vehicle = $catalog->getVehicle($this->actor($request), $variantId);
+        try {
+            $vehicle = $catalog->getVehicle($this->actor($request), $variantId);
 
-        if ($vehicle === null) {
-            return $this->vehicleNotFound($request);
+            if ($vehicle === null) {
+                return $this->vehicleNotFound($request);
+            }
+
+            return new JsonResponse(VehicleResponse::fromArray($vehicle)->toArray());
+        } catch (DBALException) {
+            return $this->storageError($request);
         }
-
-        return new JsonResponse(VehicleResponse::fromArray($vehicle)->toArray());
     }
 
     #[OA\Post(
