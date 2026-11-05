@@ -18,7 +18,7 @@ use App\Presentation\Http\Controller\CatalogController;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 final class CatalogControllerTest extends TestCase
 {
@@ -100,12 +100,12 @@ final class CatalogControllerTest extends TestCase
         self::assertSame('INVALID_MANUFACTURER', json_decode((string) $response->getContent(), true)['errorCode']);
     }
 
-    public function testMissingAuthenticatedPrincipalIsDenied(): void
+    public function testMissingAuthenticatedPrincipalIsUnauthorized(): void
     {
         $repository = $this->createMock(VehicleCatalogRepositoryInterface::class);
         $request = Request::create('/api/v1/manufacturers');
 
-        $this->expectException(AccessDeniedHttpException::class);
+        $this->expectException(UnauthorizedHttpException::class);
 
         (new CatalogController())->manufacturers($request, $this->application($repository));
     }
