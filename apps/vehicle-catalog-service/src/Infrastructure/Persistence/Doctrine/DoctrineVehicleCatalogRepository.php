@@ -304,14 +304,6 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
             return true;
         }
 
-        if (
-            !$generation->getStatus()->canAcceptChildren()
-            || !$model->getStatus()->canAcceptChildren()
-            || !$manufacturer->getStatus()->canAcceptChildren()
-        ) {
-            return false;
-        }
-
         try {
             $variant->getStatus()->transitionTo(CatalogStatus::PUBLISHED);
             $generation->getStatus()->transitionTo(CatalogStatus::PUBLISHED);
