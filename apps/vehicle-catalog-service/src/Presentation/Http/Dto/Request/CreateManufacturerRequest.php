@@ -17,12 +17,12 @@ final readonly class CreateManufacturerRequest
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
-        foreach (['code', 'name'] as $field) {
-            if (!isset($data[$field]) || !is_string($data[$field])) {
-                throw new InvalidArgumentException(sprintf('%s must be a string.', $field));
-            }
+        $code = $data['code'] ?? null;
+        $name = $data['name'] ?? null;
+
+        if (!is_string($code) || !is_string($name)) {
+            throw new InvalidArgumentException('Manufacturer code and name must be strings.');
         }
 
-        return new self($data['code'], $data['name']);
-    }
-}
+        return new self($code, $name);
+    }}
