@@ -21,6 +21,10 @@ use DateTimeZone;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ */
 final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogRepositoryInterface
 {
     public function __construct(
