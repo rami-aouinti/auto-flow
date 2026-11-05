@@ -35,7 +35,19 @@ final readonly class CatalogController
         summary: 'List published manufacturers',
         tags: ['Catalogue'],
     )]
-    #[OA\Response(response: 200, description: 'Published manufacturers')]
+    #[OA\Response(
+        response: 200,
+        description: 'Published manufacturers',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'items',
+                    type: 'array',
+                    items: new OA\Items(ref: '#/components/schemas/ManufacturerResponse'),
+                ),
+            ],
+        ),
+    )]
     #[RequiresScope('catalog:read')]
     #[Route('/manufacturers', methods: ['GET'])]
     public function manufacturers(Request $request, CatalogApplicationService $catalog): JsonResponse
@@ -76,7 +88,22 @@ final readonly class CatalogController
         schema: new OA\Schema(type: 'integer', default: 20, minimum: 1, maximum: 100),
     )]
     #[OA\Parameter(name: 'offset', in: 'query', schema: new OA\Schema(type: 'integer', default: 0, minimum: 0))]
-    #[OA\Response(response: 200, description: 'Paginated vehicle variants')]
+    #[OA\Response(
+        response: 200,
+        description: 'Paginated vehicle variants',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'items',
+                    type: 'array',
+                    items: new OA\Items(ref: '#/components/schemas/VehicleResponse'),
+                ),
+                new OA\Property(property: 'total', type: 'integer'),
+                new OA\Property(property: 'limit', type: 'integer'),
+                new OA\Property(property: 'offset', type: 'integer'),
+            ],
+        ),
+    )]
     #[OA\Response(response: 400, description: 'Invalid search criteria')]
     #[RequiresScope('catalog:read')]
     #[Route('/vehicles', methods: ['GET'])]
@@ -120,7 +147,7 @@ final readonly class CatalogController
         required: true,
         schema: new OA\Schema(type: 'string', pattern: '^[a-f0-9]{32}$'),
     )]
-    #[OA\Response(response: 200, description: 'Vehicle details')]
+    #[OA\Response(response: 200, description: 'Vehicle details', content: new OA\JsonContent(ref: '#/components/schemas/VehicleResponse'))]
     #[OA\Response(response: 404, description: 'Vehicle not found')]
     #[RequiresScope('catalog:read')]
     #[Route('/vehicles/{variantId}', methods: ['GET'])]
