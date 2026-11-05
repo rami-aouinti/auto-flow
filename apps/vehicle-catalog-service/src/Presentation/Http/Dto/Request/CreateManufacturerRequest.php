@@ -25,4 +25,5 @@ final readonly class CreateManufacturerRequest
         }
 
         return new self($code, $name);
-    }}
+    }
+}
