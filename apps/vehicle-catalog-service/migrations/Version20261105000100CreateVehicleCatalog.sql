@@ -1,17 +1,17 @@
 CREATE TABLE IF NOT EXISTS catalog_manufacturers (
- manufacturer_id CHAR(32) PRIMARY KEY, code VARCHAR(40) NOT NULL UNIQUE, name VARCHAR(120) NOT NULL,
+ manufacturer_id VARCHAR(32) PRIMARY KEY, code VARCHAR(40) NOT NULL UNIQUE, name VARCHAR(120) NOT NULL,
  status VARCHAR(16) NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','discontinued','archived')),
  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE IF NOT EXISTS catalog_models (
- model_id CHAR(32) PRIMARY KEY, manufacturer_id CHAR(32) NOT NULL REFERENCES catalog_manufacturers(manufacturer_id) ON DELETE RESTRICT,
+ model_id VARCHAR(32) PRIMARY KEY, manufacturer_id VARCHAR(32) NOT NULL REFERENCES catalog_manufacturers(manufacturer_id) ON DELETE RESTRICT,
  name VARCHAR(120) NOT NULL, normalized_name VARCHAR(120) NOT NULL,
  status VARCHAR(16) NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','discontinued','archived')),
  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
  UNIQUE(manufacturer_id,normalized_name)
 );
 CREATE TABLE IF NOT EXISTS catalog_generations (
- generation_id CHAR(32) PRIMARY KEY, model_id CHAR(32) NOT NULL REFERENCES catalog_models(model_id) ON DELETE RESTRICT,
+ generation_id VARCHAR(32) PRIMARY KEY, model_id VARCHAR(32) NOT NULL REFERENCES catalog_models(model_id) ON DELETE RESTRICT,
  name VARCHAR(80) NOT NULL, production_start_year SMALLINT NULL CHECK(production_start_year BETWEEN 1886 AND 2100),
  production_end_year SMALLINT NULL CHECK(production_end_year BETWEEN 1886 AND 2100),
  status VARCHAR(16) NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','discontinued','archived')),
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS catalog_generations (
  UNIQUE(model_id,name)
 );
 CREATE TABLE IF NOT EXISTS catalog_vehicle_variants (
- variant_id CHAR(32) PRIMARY KEY, generation_id CHAR(32) NOT NULL REFERENCES catalog_generations(generation_id) ON DELETE RESTRICT,
+ variant_id VARCHAR(32) PRIMARY KEY, generation_id VARCHAR(32) NOT NULL REFERENCES catalog_generations(generation_id) ON DELETE RESTRICT,
  manufacturer_code VARCHAR(64) NULL UNIQUE, name VARCHAR(160) NOT NULL,
  fuel_type VARCHAR(24) NOT NULL CHECK(fuel_type IN ('petrol','diesel','electric','hybrid','plug_in_hybrid','hydrogen','lpg','cng','other')),
  powertrain VARCHAR(16) NOT NULL CHECK(powertrain IN ('ice','mhev','hev','phev','bev','fcev','other')),
@@ -40,7 +40,7 @@ CREATE INDEX IF NOT EXISTS idx_catalog_variants_facets ON catalog_vehicle_varian
 CREATE INDEX IF NOT EXISTS idx_catalog_models_manufacturer ON catalog_models(manufacturer_id,status);
 CREATE INDEX IF NOT EXISTS idx_catalog_generations_model ON catalog_generations(model_id,status);
 CREATE TABLE IF NOT EXISTS catalog_outbox (
- event_id CHAR(32) PRIMARY KEY, aggregate_id CHAR(32) NOT NULL, event_type VARCHAR(120) NOT NULL,
+ event_id VARCHAR(32) PRIMARY KEY, aggregate_id VARCHAR(32) NOT NULL, event_type VARCHAR(120) NOT NULL,
  schema_version SMALLINT NOT NULL, payload JSONB NOT NULL, occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
  published_at TIMESTAMPTZ NULL, attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
  locked_until TIMESTAMPTZ NULL, last_error VARCHAR(500) NULL
