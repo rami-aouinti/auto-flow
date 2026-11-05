@@ -25,4 +25,5 @@ final readonly class CreateModelRequest
         }
 
         return new self($manufacturerId, $name);
-    }}
+    }
+}
