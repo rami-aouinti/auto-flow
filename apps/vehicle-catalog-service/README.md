@@ -29,7 +29,7 @@ docker compose ps vehicle-catalog-service
 
 Identifiers are opaque 128-bit random hexadecimal values. A manufacturer-provided variant code is optional metadata and is not the canonical identifier. Measurements use explicit units in field names: kW, cm³, mm, kg and g/km. Fuel, powertrain, body-style and transmission values are controlled vocabularies documented by the API/domain code.
 
-Catalogue status is draft, published, discontinued or archived. New entries are draft. The catalogue-management scope is required to create entries; publishing a variant promotes eligible draft parents to published; discontinued and archived parents are not reactivated. Public read queries return published entries only.
+Catalogue status is draft, published, discontinued or archived. New entries are draft. The catalogue-management scope is required to create entries; publishing a variant promotes its non-archived ancestors to published; archived ancestors remain terminal. Public read queries return published entries only.
 
 Pricing, discounts, monthly instalments, customer eligibility, inventory/stock, delivery dates and order state are deliberately excluded. Other contexts store opaque catalogue IDs and their own historical snapshots; they never create cross-database foreign keys.
 
@@ -54,7 +54,7 @@ The local Keycloak `demo` user receives read access only. For local catalogue ad
 | POST | `/api/v1/models` | catalog:manage | Create a draft model |
 | POST | `/api/v1/generations` | catalog:manage | Create a draft generation |
 | POST | `/api/v1/vehicles` | catalog:manage | Create a draft technical variant |
-| POST | `/api/v1/vehicles/{variantId}/publish` | catalog:manage | Publish variant and eligible draft parents |
+| POST | `/api/v1/vehicles/{variantId}/publish` | catalog:manage | Publish variant and non-archived ancestors |
 
 Vehicle list filters: `q`, `manufacturerId`, `modelId`, `generationId`, `fuelType`, `powertrain`, `bodyStyle`, `transmission`, `minPowerKw`, `maxPowerKw`, `minSeats`, `maxSeats`, `limit` (1-100) and `offset` (0+).
 
