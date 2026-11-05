@@ -13,4 +13,4 @@ services:
             - '%env(resolve:DATABASE_URL)%'
 
     App\Application\Port\VehicleCatalogRepositoryInterface:
-        alias: App\Infrastructure\Persistence\PostgresVehicleCatalogRepository
+        alias: App\Infrastructure\Persistence\Doctrine\DoctrineVehicleCatalogRepository
