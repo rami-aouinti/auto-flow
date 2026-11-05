@@ -88,6 +88,7 @@ services:
       APP_ENV: ${CATALOG_APP_ENV:-dev}
       APP_DEBUG: ${CATALOG_APP_DEBUG:-1}
       APP_SECRET: local-only-catalog-service-secret
+      DEFAULT_URI: http://localhost:8084
       DATABASE_URL: ${CATALOG_DATABASE_URL:-postgresql://autoflow_catalog:local-only-catalog-password@postgres:5432/autoflow}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
