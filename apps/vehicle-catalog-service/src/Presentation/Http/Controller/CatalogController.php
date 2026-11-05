@@ -10,6 +10,7 @@ use App\Presentation\Http\Dto\Request\CreateGenerationRequest;
 use App\Presentation\Http\Dto\Request\CreateManufacturerRequest;
 use App\Presentation\Http\Dto\Request\CreateModelRequest;
 use App\Presentation\Http\Dto\Request\CreateVehicleVariantRequest;
+use App\Presentation\Http\Dto\Request\InvalidPaginationException;
 use App\Presentation\Http\Dto\Request\VehicleSearchCriteria;
 use App\Presentation\Http\Dto\Response\ManufacturerResponse;
 use App\Presentation\Http\Dto\Response\VehicleResponse;
@@ -101,6 +102,8 @@ final readonly class CatalogController
                 'limit' => $criteria->limit,
                 'offset' => $criteria->offset,
             ]);
+        } catch (InvalidPaginationException $exception) {
+            return $this->problem(400, 'INVALID_PAGINATION', $exception->getMessage(), $request);
         } catch (InvalidArgumentException $exception) {
             return $this->problem(400, 'INVALID_FILTER', $exception->getMessage(), $request);
         }
