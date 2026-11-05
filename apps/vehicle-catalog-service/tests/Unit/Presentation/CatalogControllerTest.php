@@ -17,6 +17,7 @@ use App\Application\Port\VehicleCatalogRepositoryInterface;
 use App\Presentation\Http\Controller\CatalogController;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
@@ -39,7 +40,7 @@ final class CatalogControllerTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(
             ['items' => [], 'total' => 0, 'limit' => 20, 'offset' => 0],
-            json_decode((string) $response->getContent(), true, flags: JSON_THROW_ON_ERROR),
+            $this->responseData($response),
         );
     }
 
@@ -53,7 +54,7 @@ final class CatalogControllerTest extends TestCase
         $response = (new CatalogController())->vehicles($request, $this->application($repository));
 
         self::assertSame(400, $response->getStatusCode());
-        self::assertSame('INVALID_PAGINATION', json_decode((string) $response->getContent(), true)['errorCode']);
+        self::assertSame('INVALID_PAGINATION', $this->responseData($response)['errorCode']);
     }
 
     public function testMissingVehicleReturnsNotFound(): void
@@ -108,6 +109,15 @@ final class CatalogControllerTest extends TestCase
         $this->expectException(UnauthorizedHttpException::class);
 
         (new CatalogController())->manufacturers($request, $this->application($repository));
+    }
+
+    /** @return array<string, mixed> */
+    private function responseData(JsonResponse $response): array
+    {
+        $data = json_decode((string) $response->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+
+        return $data;
     }
 
     /** @param list<string> $scopes */
