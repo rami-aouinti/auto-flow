@@ -17,12 +17,12 @@ final readonly class CreateModelRequest
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
-        foreach (['manufacturerId', 'name'] as $field) {
-            if (!isset($data[$field]) || !is_string($data[$field])) {
-                throw new InvalidArgumentException(sprintf('%s must be a string.', $field));
-            }
+        $manufacturerId = $data['manufacturerId'] ?? null;
+        $name = $data['name'] ?? null;
+
+        if (!is_string($manufacturerId) || !is_string($name)) {
+            throw new InvalidArgumentException('Model manufacturerId and name must be strings.');
         }
 
-        return new self($data['manufacturerId'], $data['name']);
-    }
-}
+        return new self($manufacturerId, $name);
+    }}
