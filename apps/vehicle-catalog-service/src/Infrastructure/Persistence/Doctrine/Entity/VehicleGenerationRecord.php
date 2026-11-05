@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\ORM\Mapping as ORM;
 
+/** @SuppressWarnings(PHPMD.TooManyMethods) */
 #[ORM\Entity]
 #[ORM\Table(
     name: 'catalog_generations',
