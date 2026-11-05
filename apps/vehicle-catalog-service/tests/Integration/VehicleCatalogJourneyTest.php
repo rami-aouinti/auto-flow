@@ -96,6 +96,7 @@ final class VehicleCatalogJourneyTest extends KernelTestCase
         $result = $catalog->listVehicles($actor, ['manufacturerId' => $manufacturerId], 10, 0);
 
         self::assertSame(1, $result['total']);
+        self::assertNotEmpty($result['items']);
         self::assertSame($variantId, $result['items'][0]['variantId']);
     }
 
