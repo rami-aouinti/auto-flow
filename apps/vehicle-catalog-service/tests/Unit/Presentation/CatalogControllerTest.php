@@ -116,6 +116,7 @@ final class CatalogControllerTest extends TestCase
     {
         $data = json_decode((string) $response->getContent(), true, flags: JSON_THROW_ON_ERROR);
         self::assertIsArray($data);
+        /** @var array<string, mixed> $data */
 
         return $data;
     }
