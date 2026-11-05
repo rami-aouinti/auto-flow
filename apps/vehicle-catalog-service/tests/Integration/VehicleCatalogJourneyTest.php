@@ -61,6 +61,7 @@ final class VehicleCatalogJourneyTest extends KernelTestCase
         self::assertSame($variantId, $vehicle['variantId']);
         self::assertSame(160, $vehicle['powerKw']);
         self::assertSame('published', $vehicle['status']);
+        self::assertIsArray($vehicle['manufacturer']);
         self::assertSame('AutoFlow Test Manufacturer ' . $suffix, $vehicle['manufacturer']['name']);
 
         $result = $catalog->listVehicles($actor, ['manufacturerId' => $manufacturerId], 10, 0);
