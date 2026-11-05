@@ -120,6 +120,13 @@ jobs:
               exit(1);
           }
           '
+      - name: Apply Vehicle Catalog Doctrine migrations and validate mappings
+        run: |
+          docker compose --env-file .env.example run --rm --no-deps \
+            -e DATABASE_URL=postgresql://autoflow:autoflow@postgres:5432/autoflow \
+            vehicle-catalog-service php bin/console doctrine:migrations:migrate --no-interaction
+          docker compose --env-file .env.example run --rm --no-deps vehicle-catalog-service \
+            php bin/console doctrine:schema:validate --skip-sync
       - name: Run Vehicle Catalog unit and PostgreSQL integration tests
         run: |
           docker compose --env-file .env.example run --rm --no-deps \
