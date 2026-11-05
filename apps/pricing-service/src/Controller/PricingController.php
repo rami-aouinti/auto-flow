@@ -15,6 +15,7 @@ use InvalidArgumentException;
 use LogicException;
 use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
+use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\AsController;
