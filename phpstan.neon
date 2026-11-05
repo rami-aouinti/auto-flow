@@ -25,6 +25,8 @@ parameters:
         - identifier: phpDoc.parseError
           path: apps/vehicle-catalog-service/src/Infrastructure/Persistence/Doctrine/Entity/VehicleVariantRecord.php
         - identifier: phpDoc.parseError
+          path: apps/vehicle-catalog-service/src/Infrastructure/Persistence/Doctrine/Entity/VehicleGenerationRecord.php
+        - identifier: phpDoc.parseError
           path: apps/vehicle-catalog-service/src/Domain/Entity/VehicleVariant.php
         - identifier: phpDoc.parseError
           path: apps/vehicle-catalog-service/src/Presentation/Http/Dto/Request/VehicleSearchCriteria.php
