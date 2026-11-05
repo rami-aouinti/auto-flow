@@ -136,31 +136,104 @@ class VehicleVariantRecord
         $this->updatedAt = $now;
     }
 
-    public function getId(): string { return $this->id; }
-    public function getGeneration(): VehicleGenerationRecord { return $this->generation; }
-    public function getManufacturerCode(): ?string { return $this->manufacturerCode; }
-    public function getName(): string { return $this->name; }
-    public function getFuelType(): string { return $this->fuelType; }
-    public function getPowertrain(): string { return $this->powertrain; }
-    public function getBodyStyle(): string { return $this->bodyStyle; }
-    public function getTransmission(): string { return $this->transmission; }
-    public function getPowerKw(): ?int { return $this->powerKw; }
-    public function getDisplacementCc(): ?int { return $this->displacementCc; }
-    public function getSeats(): ?int { return $this->seats; }
-    public function getDoors(): ?int { return $this->doors; }
-    public function getCurbWeightKg(): ?int { return $this->curbWeightKg; }
-    public function getLengthMm(): ?int { return $this->lengthMm; }
-    public function getWidthMm(): ?int { return $this->widthMm; }
-    public function getHeightMm(): ?int { return $this->heightMm; }
-    public function getCo2EmissionGPerKm(): ?int { return $this->co2EmissionGPerKm; }
+    public function getId(): string
+
+    {
+
+        return $this->id;
+
+    }
+    public function getGeneration(): VehicleGenerationRecord
+    {
+        return $this->generation;
+    }
+    public function getManufacturerCode(): ?string
+    {
+        return $this->manufacturerCode;
+    }
+    public function getName(): string
+    {
+        return $this->name;
+    }
+    public function getFuelType(): string
+    {
+        return $this->fuelType;
+    }
+    public function getPowertrain(): string
+    {
+        return $this->powertrain;
+    }
+    public function getBodyStyle(): string
+    {
+        return $this->bodyStyle;
+    }
+    public function getTransmission(): string
+    {
+        return $this->transmission;
+    }
+    public function getPowerKw(): ?int
+    {
+        return $this->powerKw;
+    }
+    public function getDisplacementCc(): ?int
+    {
+        return $this->displacementCc;
+    }
+    public function getSeats(): ?int
+    {
+        return $this->seats;
+    }
+    public function getDoors(): ?int
+    {
+        return $this->doors;
+    }
+    public function getCurbWeightKg(): ?int
+    {
+        return $this->curbWeightKg;
+    }
+    public function getLengthMm(): ?int
+    {
+        return $this->lengthMm;
+    }
+    public function getWidthMm(): ?int
+    {
+        return $this->widthMm;
+    }
+    public function getHeightMm(): ?int
+    {
+        return $this->heightMm;
+    }
+    public function getCo2EmissionGPerKm(): ?int
+    {
+        return $this->co2EmissionGPerKm;
+    }
 
     /** @return list<array{mediaId: string, usage: string, sortOrder?: int, altText?: string}> */
-    public function getMediaReferences(): array { return $this->mediaReferences; }
+    public function getMediaReferences(): array
+    {
+        return $this->mediaReferences;
+    }
 
-    public function getStatus(): CatalogStatus { return $this->status; }
-    public function setStatus(CatalogStatus $status): void { $this->status = $status; $this->touch(); }
-    public function getCreatedAt(): DateTimeImmutable { return $this->createdAt; }
-    public function getUpdatedAt(): DateTimeImmutable { return $this->updatedAt; }
+    public function getStatus(): CatalogStatus
+
+    {
+
+        return $this->status;
+
+    }
+    public function setStatus(CatalogStatus $status): void
+    {
+        $this->status = $status;
+        $this->touch();
+    }
+    public function getCreatedAt(): DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+    public function getUpdatedAt(): DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
 
     private function touch(): void
     {
