@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Presentation\Http\Controller;
 
 use App\Application\CatalogApplicationService;
+use App\Application\Exception\CatalogParentNotFoundException;
 use App\Application\Security\CatalogActor;
 use App\Presentation\Http\Dto\Request\CreateGenerationRequest;
 use App\Presentation\Http\Dto\Request\CreateManufacturerRequest;
@@ -227,6 +228,8 @@ final readonly class CatalogController
             $id = $catalog->registerModel($this->actor($request), $input->manufacturerId, $input->name);
 
             return new JsonResponse(['modelId' => $id, 'status' => 'draft'], 201);
+        } catch (CatalogParentNotFoundException) {
+            return $this->unknownParent($request);
         } catch (InvalidArgumentException $exception) {
             return $this->problem(422, 'INVALID_MODEL', $exception->getMessage(), $request);
         } catch (UniqueConstraintViolationException) {
@@ -269,6 +272,8 @@ final readonly class CatalogController
             );
 
             return new JsonResponse(['generationId' => $id, 'status' => 'draft'], 201);
+        } catch (CatalogParentNotFoundException) {
+            return $this->unknownParent($request);
         } catch (InvalidArgumentException $exception) {
             return $this->problem(422, 'INVALID_GENERATION', $exception->getMessage(), $request);
         } catch (UniqueConstraintViolationException) {
@@ -343,6 +348,8 @@ final readonly class CatalogController
             $id = $catalog->registerVariant($this->actor($request), $input->toArray());
 
             return new JsonResponse(['variantId' => $id, 'status' => 'draft'], 201);
+        } catch (CatalogParentNotFoundException) {
+            return $this->unknownParent($request);
         } catch (InvalidArgumentException $exception) {
             return $this->problem(422, 'INVALID_VARIANT', $exception->getMessage(), $request);
         } catch (UniqueConstraintViolationException) {
