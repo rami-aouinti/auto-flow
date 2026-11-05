@@ -35,11 +35,12 @@ final class CatalogAccessDeniedSubscriberTest extends TestCase
 
         (new CatalogAccessDeniedSubscriber())->onKernelException($event);
 
-        self::assertNotNull($event->getResponse());
-        self::assertSame(403, $event->getResponse()->getStatusCode());
+        $response = $event->getResponse();
+        self::assertInstanceOf(Response::class, $response);
+        self::assertSame(403, $response->getStatusCode());
         self::assertStringContainsString(
             'INSUFFICIENT_CATALOGUE_SCOPE',
-            (string) $event->getResponse()->getContent(),
+            (string) $response->getContent(),
         );
     }
 }
