@@ -4,7 +4,7 @@
 
 The Vehicle Catalog is the authoritative source for the identity and technical description of vehicles that AutoFlow makes discoverable. It answers: **what vehicle is this?** It does not answer: **what does this customer pay, can this customer order it, or when can it be delivered?**
 
-This is the proposed domain boundary for Sprint 1, not a claim that the complete context is already implemented.
+This is the approved domain boundary for the first increment and is implemented by the Vehicle Catalog microservice.
 
 ## Bounded context
 
@@ -59,27 +59,34 @@ These are AutoFlow project decisions for the first increment, not claims about a
 - Search indexing is eventually consistent. The catalogue database remains the source of truth.
 - Publish integration events only after the catalogue transaction commits; use an Outbox when reliable publication is required.
 
-## Initial API shape
+## Implemented API contract
 
-The exact contract is decided in issue #27. Candidate read operations:
+All endpoints are versioned under `/api/v1` and require a verified bearer JWT from the shared CoreBundle.
 
-- GET /api/v1/manufacturers
-- GET /api/v1/vehicles
-- GET /api/v1/vehicles/{vehicleVariantId}
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/api/v1/manufacturers` | `catalog:read` | List published manufacturers |
+| GET | `/api/v1/vehicles` | `catalog:read` | Search and paginate published variants |
+| GET | `/api/v1/vehicles/{variantId}` | `catalog:read` | Retrieve a published variant |
+| POST | `/api/v1/manufacturers` | `catalog:manage` | Register a draft manufacturer |
+| POST | `/api/v1/models` | `catalog:manage` | Register a draft model |
+| POST | `/api/v1/generations` | `catalog:manage` | Register a draft generation |
+| POST | `/api/v1/vehicles` | `catalog:manage` | Register a draft technical variant |
+| POST | `/api/v1/vehicles/{variantId}/publish` | `catalog:manage` | Publish the variant and its non-archived ancestors |
 
-Administrative write operations must be authenticated and authorized. Do not expose production write endpoints without an explicit identity and authorization decision.
+Request and response DTOs form the HTTP boundary. OpenAPI documents the operations and response schemas. Errors use RFC 9457-style Problem Details with stable catalogue error codes. The catalogue is shared reference data, so it deliberately has no tenant-owned foreign keys or tenant-specific pricing/availability fields.
 
-## Open domain questions
+## Deferred domain questions
 
-Track unresolved decisions in issue #21 rather than guessing:
+These are follow-up product decisions, not blockers for the implemented first increment:
 
-1. Is a variant uniquely identified by an internal catalogue ID, a manufacturer code, or both?
-2. Which specification fields are mandatory for each vehicle category?
-3. How are model years and overlapping generation production periods represented?
-4. Are fuel, powertrain, body style and transmission controlled vocabularies?
-5. How are discontinued, temporarily unavailable and unpublished variants distinguished?
-6. Which locale-specific names and units are required?
-7. What is the source and review process for catalogue imports?
+1. Which specification fields become mandatory for each vehicle category?
+2. How should model years and overlapping generation production periods be represented?
+3. Which locale-specific names and unit conversions are required?
+4. What source provenance, review and bulk-import workflow should be supported?
+5. Should equipment packages and trim-level hierarchies become first-class concepts?
+
+The first increment deliberately keeps optional technical values nullable and uses the controlled vocabularies and explicit units listed above.
 
 ## Definition of a good boundary
 
@@ -87,4 +94,15 @@ The boundary is healthy when Pricing can calculate a quote without importing cat
 
 ## Implementation status
 
-**Status:** implementation is on `feature/vehicle-catalog-service`; final acceptance remains pending CI, integration verification and merge. The Wiki describes the approved first-increment decisions, not a claim that the feature is already deployed.
+**Status:** implemented on `feature/vehicle-catalog-service`, PR #46, with final acceptance gated on the current CI run and merge.
+
+The implementation includes:
+
+- Pure Domain aggregates/value objects and lifecycle rules, with no Doctrine or Symfony dependency.
+- Application command/query handlers, repository port and explicit `catalog:read` / `catalog:manage` scope enforcement.
+- Doctrine ORM 3.5 entities and repository adapter in Infrastructure, PostgreSQL migration, dedicated runtime role and deterministic SQL demo fixtures.
+- Transactional catalogue writes with an Outbox record; a standalone PDO/RabbitMQ publisher claims pending events with `FOR UPDATE SKIP LOCKED` and publisher confirms.
+- Symfony REST controllers, request/response DTOs, OpenAPI schemas, Problem Details and the shared CoreBundle JWT authentication.
+- Unit tests, API/controller tests, PostgreSQL repository tests and a create → publish → retrieve integration journey.
+
+The catalogue is the global source of truth for vehicle identity and technical data. Offer, Pricing, Search, Order and Media retain ownership of their respective commercial, search, order and binary-media concerns.
