@@ -44,7 +44,11 @@ try {
             WHERE outbox.event_id = candidate.event_id
             RETURNING outbox.event_id, outbox.event_type, outbox.payload, outbox.attempts
             SQL);
-        $event = $claim->fetch();
+        if (!$claim instanceof PDOStatement) {
+            throw new RuntimeException('Unable to claim pending catalogue Outbox events.');
+        }
+
+        $event = $claim->fetch(PDO::FETCH_ASSOC);
         $db->commit();
 
         if (!is_array($event)) {
@@ -52,21 +56,32 @@ try {
             continue;
         }
 
+        $eventId = (string) ($event['event_id'] ?? '');
+        $eventType = (string) ($event['event_type'] ?? '');
+        $payload = $event['payload'] ?? null;
+
+        if ($eventId === '' || $eventType === '' || !is_string($payload)) {
+            throw new RuntimeException('The claimed catalogue Outbox event is malformed.');
+        }
+
         try {
-            $message = new AMQPMessage((string) $event['payload'], [
+            $message = new AMQPMessage($payload, [
                 'content_type' => 'application/json',
                 'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
-                'message_id' => trim((string) $event['event_id']),
-                'type' => (string) $event['event_type'],
+                'message_id' => $eventId,
+                'type' => $eventType,
             ]);
-            $channel->basic_publish($message, 'autoflow.catalog.events', (string) $event['event_type'], true);
+            $channel->basic_publish($message, 'autoflow.catalog.events', $eventType, true);
             $channel->wait_for_pending_acks_returns(5);
             $done = $db->prepare(
                 'UPDATE catalog_outbox '
                 . 'SET published_at = CURRENT_TIMESTAMP, locked_until = NULL, last_error = NULL '
                 . 'WHERE event_id = :id',
             );
-            $done->execute(['id' => $event['event_id']]);
+            if (!$done instanceof PDOStatement) {
+                throw new RuntimeException('Unable to acknowledge the published catalogue Outbox event.');
+            }
+            $done->execute(['id' => $eventId]);
         } catch (Throwable $error) {
             $retry = $db->prepare(<<<'SQL'
                 UPDATE catalog_outbox
@@ -77,7 +92,10 @@ try {
                     last_error=:error
                 WHERE event_id=:id
                 SQL);
-            $retry->execute(['id' => $event['event_id'], 'error' => mb_substr($error->getMessage(), 0, 500)]);
+            if (!$retry instanceof PDOStatement) {
+                throw new RuntimeException('Unable to schedule catalogue Outbox retry.', previous: $error);
+            }
+            $retry->execute(['id' => $eventId, 'error' => mb_substr($error->getMessage(), 0, 500)]);
             throw $error;
         }
     }
