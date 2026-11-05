@@ -8,3 +8,6 @@
 /coverage/
 /build/
 .idea/
+
+# Local Kubernetes secrets
+/k8s/pricing/secret.yaml
