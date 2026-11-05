@@ -74,6 +74,10 @@ final readonly class VehicleVariant
             ? strtoupper(trim((string) $data['manufacturerCode']))
             : null;
 
+        if ($manufacturerCode === '') {
+            $manufacturerCode = null;
+        }
+
         if (
             $manufacturerCode !== null
             && preg_match('/^[A-Z0-9][A-Z0-9._-]{0,63}$/D', $manufacturerCode) !== 1
