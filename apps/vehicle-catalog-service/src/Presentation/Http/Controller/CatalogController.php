@@ -380,11 +380,15 @@ final readonly class CatalogController
             return $this->vehicleNotFound($request);
         }
 
-        if (!$catalog->publishVariant($this->actor($request), $variantId)) {
-            return $this->vehicleNotFound($request);
-        }
+        try {
+            if (!$catalog->publishVariant($this->actor($request), $variantId)) {
+                return $this->vehicleNotFound($request);
+            }
 
-        return new JsonResponse(['variantId' => $variantId, 'status' => 'published']);
+            return new JsonResponse(['variantId' => $variantId, 'status' => 'published']);
+        } catch (DBALException) {
+            return $this->storageError($request);
+        }
     }
 
     private function actor(Request $request): CatalogActor
