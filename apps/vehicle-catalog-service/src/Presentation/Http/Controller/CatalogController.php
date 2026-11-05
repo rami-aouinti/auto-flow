@@ -176,7 +176,9 @@ final readonly class CatalogController
                 isset($data['productionEndYear'])?(int)$data['productionEndYear']:null);
             return new JsonResponse(['generationId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_GENERATION',$e->getMessage(),$request); }
-        catch (PDOException $e) { return $this->databaseProblem($e,$request); }
+        catch (UniqueConstraintViolationException) { return $this->problem(409, 'CATALOGUE_CONFLICT', 'A catalogue entry with the same canonical code or name already exists.', $request); }
+        catch (ForeignKeyConstraintViolationException) { return $this->problem(422, 'UNKNOWN_PARENT', 'The referenced catalogue parent does not exist.', $request); }
+        catch (DBALException) { return $this->problem(500, 'CATALOGUE_STORAGE_ERROR', 'The catalogue operation could not be completed.', $request); }
         catch (JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
@@ -212,7 +214,9 @@ final readonly class CatalogController
             $id=$catalog->registerVariant($this->actor($request), $request->toArray());
             return new JsonResponse(['variantId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_VARIANT',$e->getMessage(),$request); }
-        catch (PDOException $e) { return $this->databaseProblem($e,$request); }
+        catch (UniqueConstraintViolationException) { return $this->problem(409, 'CATALOGUE_CONFLICT', 'A catalogue entry with the same canonical code or name already exists.', $request); }
+        catch (ForeignKeyConstraintViolationException) { return $this->problem(422, 'UNKNOWN_PARENT', 'The referenced catalogue parent does not exist.', $request); }
+        catch (DBALException) { return $this->problem(500, 'CATALOGUE_STORAGE_ERROR', 'The catalogue operation could not be completed.', $request); }
         catch (JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
