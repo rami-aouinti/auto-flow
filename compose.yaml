@@ -136,7 +136,18 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
       RABBITMQ_VHOST: /
+      OTEL_SERVICE_NAME: autoflow-vehicle-catalog-outbox-publisher
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_PROPAGATORS: tracecontext,baggage
     depends_on:
+      tempo:
+        condition: service_started
       postgres:
         condition: service_healthy
       rabbitmq:
@@ -175,7 +186,18 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
       RABBITMQ_VHOST: /
+      OTEL_SERVICE_NAME: autoflow-offer-outbox-publisher
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_PROPAGATORS: tracecontext,baggage
     depends_on:
+      tempo:
+        condition: service_started
       postgres:
         condition: service_healthy
       rabbitmq:
