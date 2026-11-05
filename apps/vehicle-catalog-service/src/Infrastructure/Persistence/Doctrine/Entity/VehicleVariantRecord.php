@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persistence\Doctrine\Entity;
 
+use App\Domain\Entity\VehicleVariant;
 use App\Domain\ValueObject\CatalogStatus;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -93,54 +94,31 @@ class VehicleVariantRecord
     #[ORM\Column(name: 'updated_at', type: 'datetimetz_immutable')]
     private DateTimeImmutable $updatedAt;
 
-    /**
-     * @param list<array{mediaId: string, usage: string, sortOrder?: int, altText?: string}> $mediaReferences
-     */
-    public function __construct(
-        string $id,
-        VehicleGenerationRecord $generation,
-        ?string $manufacturerCode,
-        string $name,
-        string $fuelType,
-        string $powertrain,
-        string $bodyStyle,
-        string $transmission,
-        ?int $powerKw,
-        ?int $displacementCc,
-        ?int $seats,
-        ?int $doors,
-        ?int $curbWeightKg,
-        ?int $lengthMm,
-        ?int $widthMm,
-        ?int $heightMm,
-        ?int $co2EmissionGPerKm,
-        array $mediaReferences,
-        CatalogStatus $status,
-    ) {
+    public function __construct(VehicleGenerationRecord $generation, VehicleVariant $variant)
+    {
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $this->id = $id;
+        $this->id = $variant->id->value;
         $this->generation = $generation;
-        $this->manufacturerCode = $manufacturerCode;
-        $this->name = $name;
-        $this->fuelType = $fuelType;
-        $this->powertrain = $powertrain;
-        $this->bodyStyle = $bodyStyle;
-        $this->transmission = $transmission;
-        $this->powerKw = $powerKw;
-        $this->displacementCc = $displacementCc;
-        $this->seats = $seats;
-        $this->doors = $doors;
-        $this->curbWeightKg = $curbWeightKg;
-        $this->lengthMm = $lengthMm;
-        $this->widthMm = $widthMm;
-        $this->heightMm = $heightMm;
-        $this->co2EmissionGPerKm = $co2EmissionGPerKm;
-        $this->mediaReferences = $mediaReferences;
-        $this->status = $status;
+        $this->manufacturerCode = $variant->manufacturerCode;
+        $this->name = $variant->name;
+        $this->fuelType = $variant->fuelType;
+        $this->powertrain = $variant->powertrain;
+        $this->bodyStyle = $variant->bodyStyle;
+        $this->transmission = $variant->transmission;
+        $this->powerKw = $variant->technicalSpecifications->powerKw;
+        $this->displacementCc = $variant->technicalSpecifications->displacementCc;
+        $this->seats = $variant->technicalSpecifications->seats;
+        $this->doors = $variant->technicalSpecifications->doors;
+        $this->curbWeightKg = $variant->technicalSpecifications->curbWeightKg;
+        $this->lengthMm = $variant->technicalSpecifications->lengthMm;
+        $this->widthMm = $variant->technicalSpecifications->widthMm;
+        $this->heightMm = $variant->technicalSpecifications->heightMm;
+        $this->co2EmissionGPerKm = $variant->technicalSpecifications->co2EmissionGPerKm;
+        $this->mediaReferences = $variant->mediaReferences;
+        $this->status = $variant->status;
         $this->createdAt = $now;
         $this->updatedAt = $now;
     }
-
 
     public function getId(): string
     {
