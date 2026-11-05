@@ -9,7 +9,18 @@ use OpenApi\Attributes as OA;
 #[OA\Schema(
     schema: 'VehicleResponse',
     type: 'object',
-    required: ['variantId', 'manufacturer', 'model', 'generation', 'name', 'fuelType', 'powertrain', 'bodyStyle', 'transmission', 'status'],
+    required: [
+        'variantId',
+        'manufacturer',
+        'model',
+        'generation',
+        'name',
+        'fuelType',
+        'powertrain',
+        'bodyStyle',
+        'transmission',
+        'status',
+    ],
     properties: [
         new OA\Property(property: 'variantId', type: 'string'),
         new OA\Property(property: 'manufacturer', type: 'object', properties: [
