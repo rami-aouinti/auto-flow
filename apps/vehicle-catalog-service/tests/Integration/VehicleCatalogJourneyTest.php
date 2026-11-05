@@ -78,12 +78,14 @@ final class VehicleCatalogJourneyTest extends KernelTestCase
         self::bootKernel();
 
         $catalog = static::getContainer()->get(CatalogApplicationService::class);
+        self::assertInstanceOf(CatalogApplicationService::class, $catalog);
         $actor = new CatalogActor('catalog-integration-test', ['catalog:manage']);
         $suffix = strtoupper(bin2hex(random_bytes(4)));
         $manufacturerId = $catalog->registerManufacturer($actor, 'TST' . $suffix, 'Ancestor Test ' . $suffix);
         $modelId = $catalog->registerModel($actor, $manufacturerId, 'Model ' . $suffix);
 
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
         $manufacturer = $entityManager->find(ManufacturerRecord::class, $manufacturerId);
         self::assertInstanceOf(ManufacturerRecord::class, $manufacturer);
         $manufacturer->setStatus(\App\Domain\ValueObject\CatalogStatus::DISCONTINUED);
@@ -99,6 +101,7 @@ final class VehicleCatalogJourneyTest extends KernelTestCase
         self::bootKernel();
 
         $catalog = static::getContainer()->get(CatalogApplicationService::class);
+        self::assertInstanceOf(CatalogApplicationService::class, $catalog);
         $actor = new CatalogActor('catalog-integration-test', ['catalog:manage']);
         $suffix = strtoupper(bin2hex(random_bytes(4)));
         $manufacturerId = $catalog->registerManufacturer($actor, 'TST' . $suffix, 'Variant Ancestor ' . $suffix);
@@ -106,6 +109,7 @@ final class VehicleCatalogJourneyTest extends KernelTestCase
         $generationId = $catalog->registerGeneration($actor, $modelId, 'Generation ' . $suffix, 2024, 2026);
 
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
         $model = $entityManager->find(VehicleModelRecord::class, $modelId);
         self::assertInstanceOf(VehicleModelRecord::class, $model);
         $model->setStatus(\App\Domain\ValueObject\CatalogStatus::DISCONTINUED);
