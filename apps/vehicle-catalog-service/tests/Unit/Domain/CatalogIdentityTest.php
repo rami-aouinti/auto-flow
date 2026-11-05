@@ -7,6 +7,8 @@ namespace App\Tests\Unit\Domain;
 use App\Domain\Entity\Manufacturer;
 use App\Domain\Entity\VehicleGeneration;
 use App\Domain\Entity\VehicleModel;
+use App\Domain\ValueObject\CatalogueId;
+use App\Domain\ValueObject\CatalogStatus;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -35,4 +37,32 @@ final class CatalogIdentityTest extends TestCase
 
         VehicleGeneration::create($model->id->value, 'G20', 2024, 2018);
     }
+    public function testManufacturerEqualityUsesCanonicalIdentity(): void
+    {
+        $manufacturer = Manufacturer::register('bmw', 'BMW');
+        $reconstituted = Manufacturer::reconstitute(
+            CatalogueId::fromString($manufacturer->id->value),
+            'BMW',
+            'BMW',
+            CatalogStatus::DRAFT,
+        );
+
+        self::assertTrue($manufacturer->equals($reconstituted));
+    }
+
+    public function testArchivedStatusIsTerminal(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        CatalogStatus::ARCHIVED->transitionTo(CatalogStatus::PUBLISHED);
+    }
+
+    public function testPublishedStatusCanBeDiscontinued(): void
+    {
+        self::assertSame(
+            CatalogStatus::DISCONTINUED,
+            CatalogStatus::PUBLISHED->transitionTo(CatalogStatus::DISCONTINUED),
+        );
+    }
+
 }
