@@ -244,27 +244,7 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
             );
         }
 
-        $record = new VehicleVariantRecord(
-            $variant->id->value,
-            $generation,
-            $variant->manufacturerCode,
-            $variant->name,
-            $variant->fuelType,
-            $variant->powertrain,
-            $variant->bodyStyle,
-            $variant->transmission,
-            $variant->technicalSpecifications->powerKw,
-            $variant->technicalSpecifications->displacementCc,
-            $variant->technicalSpecifications->seats,
-            $variant->technicalSpecifications->doors,
-            $variant->technicalSpecifications->curbWeightKg,
-            $variant->technicalSpecifications->lengthMm,
-            $variant->technicalSpecifications->widthMm,
-            $variant->technicalSpecifications->heightMm,
-            $variant->technicalSpecifications->co2EmissionGPerKm,
-            $variant->mediaReferences,
-            $variant->status,
-        );
+        $record = new VehicleVariantRecord($generation, $variant);
 
         $this->persistWithEvent(
             $record,
