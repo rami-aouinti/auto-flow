@@ -91,4 +91,4 @@ The CI pipeline validates the Composer manifest, boots/builds the Symfony servic
 
 ## Architecture
 
-Domain and Application code are framework/persistence independent. Infrastructure owns Doctrine ORM/PostgreSQL mappings and repository adapters, plus the PDO/RabbitMQ Outbox publisher. Presentation owns HTTP DTO mapping and error translation. CoreBundle is used only for JWT verification, scope authorization, correlation IDs and readiness checks. See Wiki chapters 03, 05, 06, 13, 15 and 16 and ADR-017.
+Domain and Application code are framework/persistence independent. Application use cases are explicit command/query handlers over repository ports, with catalogue scopes checked at the application boundary. Infrastructure owns Doctrine ORM/PostgreSQL mappings and repository adapters, plus the narrow PDO/RabbitMQ Outbox publisher. HTTP request/response DTOs keep persistence entities out of the API. Presentation owns HTTP DTO mapping and error translation. CoreBundle is used only for JWT verification, scope authorization, correlation IDs and readiness checks. See Wiki chapters 03, 05, 06, 13, 15 and 16 and ADR-017.
