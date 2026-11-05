@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Presentation\Http\Controller;
 
 use App\Application\CatalogApplicationService;
+use App\Application\Security\CatalogActor;
+use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
 use PDOException;
@@ -12,6 +14,7 @@ use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use OpenApi\Attributes as OA;
 
 #[Route('/api/v1')]
@@ -21,9 +24,9 @@ final readonly class CatalogController
     #[OA\Response(response: 200, description: 'Published manufacturers')]
     #[RequiresScope('catalog:read')]
     #[Route('/manufacturers', methods: ['GET'])]
-    public function manufacturers(CatalogApplicationService $catalog): JsonResponse
+    public function manufacturers(Request $request, CatalogApplicationService $catalog): JsonResponse
     {
-        return new JsonResponse(['items'=>$catalog->listManufacturers()]);
+        return new JsonResponse(['items'=>$catalog->listManufacturers($this->actor($request))]);
     }
 
     #[OA\Get(path: '/api/v1/vehicles', summary: 'Search published vehicle variants', tags: ['Catalogue'])]
@@ -83,7 +86,7 @@ final readonly class CatalogController
             return $this->problem(400,'INVALID_FILTER','minSeats cannot exceed maxSeats.',$request);
         }
         try {
-            $result=$catalog->listVehicles($filters,$limit,$offset);
+            $result=$catalog->listVehicles($this->actor($request), $filters, $limit, $offset);
             return new JsonResponse(['items'=>$result['items'],'total'=>$result['total'],'limit'=>$limit,'offset'=>$offset]);
         } catch (InvalidArgumentException $e) {
             return $this->problem(400,'INVALID_FILTER',$e->getMessage(),$request);
@@ -101,7 +104,7 @@ final readonly class CatalogController
         if (preg_match('/^[a-f0-9]{32}$/D',$variantId)!==1) {
             return $this->problem(404,'VEHICLE_NOT_FOUND','The requested vehicle does not exist.',$request);
         }
-        $vehicle=$catalog->getVehicle($variantId);
+        $vehicle=$catalog->getVehicle($this->actor($request), $variantId);
         return $vehicle===null
             ? $this->problem(404,'VEHICLE_NOT_FOUND','The requested vehicle does not exist.',$request)
             : new JsonResponse($vehicle);
@@ -119,7 +122,7 @@ final readonly class CatalogController
     {
         try {
             $data=$request->toArray();
-            $id=$catalog->registerManufacturer((string)($data['code']??''),(string)($data['name']??''));
+            $id=$catalog->registerManufacturer($this->actor($request), (string) ($data['code'] ?? ''), (string) ($data['name'] ?? ''));
             return new JsonResponse(['manufacturerId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) {
             return $this->problem(422,'INVALID_MANUFACTURER',$e->getMessage(),$request);
@@ -141,7 +144,7 @@ final readonly class CatalogController
     {
         try {
             $data=$request->toArray();
-            $id=$catalog->registerModel((string)($data['manufacturerId']??''),(string)($data['name']??''));
+            $id=$catalog->registerModel($this->actor($request), (string) ($data['manufacturerId'] ?? ''), (string) ($data['name'] ?? ''));
             return new JsonResponse(['modelId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_MODEL',$e->getMessage(),$request); }
         catch (PDOException $e) { return $this->databaseProblem($e,$request); }
@@ -160,7 +163,7 @@ final readonly class CatalogController
     {
         try {
             $data=$request->toArray();
-            $id=$catalog->registerGeneration((string)($data['modelId']??''),(string)($data['name']??''),
+            $id=$catalog->registerGeneration($this->actor($request), (string) ($data['modelId'] ?? ''), (string) ($data['name'] ?? ''),
                 isset($data['productionStartYear'])?(int)$data['productionStartYear']:null,
                 isset($data['productionEndYear'])?(int)$data['productionEndYear']:null);
             return new JsonResponse(['generationId'=>$id,'status'=>'draft'],201);
@@ -198,7 +201,7 @@ final readonly class CatalogController
     public function createVariant(Request $request, CatalogApplicationService $catalog): JsonResponse
     {
         try {
-            $id=$catalog->registerVariant($request->toArray());
+            $id=$catalog->registerVariant($this->actor($request), $request->toArray());
             return new JsonResponse(['variantId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_VARIANT',$e->getMessage(),$request); }
         catch (PDOException $e) { return $this->databaseProblem($e,$request); }
@@ -212,10 +215,21 @@ final readonly class CatalogController
     #[Route('/vehicles/{variantId}/publish', methods: ['POST'])]
     public function publishVariant(string $variantId, Request $request, CatalogApplicationService $catalog): JsonResponse
     {
-        if (!$catalog->publishVariant($variantId)) {
+        if (!$catalog->publishVariant($this->actor($request), $variantId)) {
             return $this->problem(404,'VEHICLE_NOT_FOUND','The requested vehicle does not exist.',$request);
         }
         return new JsonResponse(['variantId'=>$variantId,'status'=>'published']);
+    }
+
+    private function actor(Request $request): CatalogActor
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new AccessDeniedHttpException('An authenticated catalogue principal is required.');
+        }
+
+        return new CatalogActor($principal->subject, $principal->scopes);
     }
 
     private function databaseProblem(PDOException $e, Request $request): JsonResponse
