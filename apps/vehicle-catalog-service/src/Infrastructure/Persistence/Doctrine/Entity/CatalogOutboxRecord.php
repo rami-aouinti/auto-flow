@@ -12,7 +12,11 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(
     name: 'catalog_outbox',
     indexes: [
-        new ORM\Index(name: 'idx_catalog_outbox_pending', columns: ['next_attempt_at', 'occurred_at'], options: ['where' => 'published_at IS NULL']),
+        new ORM\Index(
+            name: 'idx_catalog_outbox_pending',
+            columns: ['next_attempt_at', 'occurred_at'],
+            options: ['where' => 'published_at IS NULL'],
+        ),
     ],
 )]
 class CatalogOutboxRecord
