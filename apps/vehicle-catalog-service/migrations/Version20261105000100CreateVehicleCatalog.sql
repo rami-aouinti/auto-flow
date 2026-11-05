@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS catalog_manufacturers (
  manufacturer_id VARCHAR(32) PRIMARY KEY, code VARCHAR(40) NOT NULL UNIQUE, name VARCHAR(120) NOT NULL,
  status VARCHAR(16) NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','discontinued','archived')),
- created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+ created_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE IF NOT EXISTS catalog_models (
  model_id VARCHAR(32) PRIMARY KEY, manufacturer_id VARCHAR(32) NOT NULL REFERENCES catalog_manufacturers(manufacturer_id) ON DELETE RESTRICT,
  name VARCHAR(120) NOT NULL, normalized_name VARCHAR(120) NOT NULL,
  status VARCHAR(16) NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','discontinued','archived')),
- created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ created_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
  UNIQUE(manufacturer_id,normalized_name)
 );
 CREATE TABLE IF NOT EXISTS catalog_generations (
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS catalog_generations (
  name VARCHAR(80) NOT NULL, production_start_year SMALLINT NULL CHECK(production_start_year BETWEEN 1886 AND 2100),
  production_end_year SMALLINT NULL CHECK(production_end_year BETWEEN 1886 AND 2100),
  status VARCHAR(16) NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','discontinued','archived')),
- created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ created_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
  CHECK(production_end_year IS NULL OR production_start_year IS NULL OR production_end_year >= production_start_year),
  UNIQUE(model_id,name)
 );
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS catalog_vehicle_variants (
  co2_emission_g_per_km INTEGER NULL CHECK(co2_emission_g_per_km BETWEEN 0 AND 2000),
  media_references JSONB NOT NULL DEFAULT '[]'::jsonb,
  status VARCHAR(16) NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','discontinued','archived')),
- created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+ created_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_catalog_variants_generation ON catalog_vehicle_variants(generation_id);
 CREATE INDEX IF NOT EXISTS idx_catalog_variants_facets ON catalog_vehicle_variants(status,fuel_type,powertrain,body_style,transmission);
@@ -41,9 +41,9 @@ CREATE INDEX IF NOT EXISTS idx_catalog_models_manufacturer ON catalog_models(man
 CREATE INDEX IF NOT EXISTS idx_catalog_generations_model ON catalog_generations(model_id,status);
 CREATE TABLE IF NOT EXISTS catalog_outbox (
  event_id VARCHAR(32) PRIMARY KEY, aggregate_id VARCHAR(32) NOT NULL, event_type VARCHAR(120) NOT NULL,
- schema_version SMALLINT NOT NULL, payload JSONB NOT NULL, occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
- published_at TIMESTAMPTZ NULL, attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
- locked_until TIMESTAMPTZ NULL, last_error VARCHAR(500) NULL
+ schema_version SMALLINT NOT NULL, payload JSONB NOT NULL, occurred_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ published_at TIMESTAMPTZ(0) NULL, attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ locked_until TIMESTAMPTZ(0) NULL, last_error VARCHAR(500) NULL
 );
 CREATE INDEX IF NOT EXISTS idx_catalog_outbox_pending ON catalog_outbox(next_attempt_at,occurred_at) WHERE published_at IS NULL;
 GRANT SELECT,INSERT,UPDATE,DELETE ON catalog_manufacturers,catalog_models,catalog_generations,catalog_vehicle_variants,catalog_outbox TO autoflow_catalog;
