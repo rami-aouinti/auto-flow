@@ -13,7 +13,7 @@ The target is a service-oriented / microservice architecture with clear business
 The platform can be understood in four areas:
 
 - **Experience and entry points:** web/mobile clients and public APIs.
-- **Business capabilities:** Offer, Pricing and future domain services.
+- **Business capabilities:** Vehicle Catalog, Offer, Pricing and future domain services.
 - **Integration and workflow:** synchronous HTTP, asynchronous messaging and durable orchestration.
 - **Platform capabilities:** persistence, cache, search, observability and runtime.
 
