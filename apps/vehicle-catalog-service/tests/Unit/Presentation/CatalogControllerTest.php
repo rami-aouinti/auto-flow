@@ -62,7 +62,7 @@ final class CatalogControllerTest extends TestCase
         $repository
             ->expects(self::once())
             ->method('getVehicle')
-            ->with('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', true)
+            ->with('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
             ->willReturn(null);
 
         $request = Request::create('/api/v1/vehicles/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
