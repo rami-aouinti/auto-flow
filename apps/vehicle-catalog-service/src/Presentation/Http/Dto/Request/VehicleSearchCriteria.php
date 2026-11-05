@@ -61,6 +61,7 @@ final readonly class VehicleSearchCriteria
     ) {
     }
 
+    /** @SuppressWarnings(PHPMD.CyclomaticComplexity) */
     public static function fromRequest(Request $request): self
     {
         $query = $request->query->all();
