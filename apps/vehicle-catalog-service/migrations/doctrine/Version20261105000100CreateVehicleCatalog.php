@@ -23,8 +23,8 @@ final class Version20261105000100CreateVehicleCatalog extends AbstractMigration
                 name VARCHAR(120) NOT NULL,
                 status VARCHAR(16) NOT NULL DEFAULT 'draft'
                     CHECK (status IN ('draft', 'published', 'discontinued', 'archived')),
-                created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             SQL);
 
@@ -37,8 +37,8 @@ final class Version20261105000100CreateVehicleCatalog extends AbstractMigration
                 normalized_name VARCHAR(120) NOT NULL,
                 status VARCHAR(16) NOT NULL DEFAULT 'draft'
                     CHECK (status IN ('draft', 'published', 'discontinued', 'archived')),
-                created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE (manufacturer_id, normalized_name)
             )
             SQL);
@@ -55,8 +55,8 @@ final class Version20261105000100CreateVehicleCatalog extends AbstractMigration
                     CHECK (production_end_year BETWEEN 1886 AND 2100),
                 status VARCHAR(16) NOT NULL DEFAULT 'draft'
                     CHECK (status IN ('draft', 'published', 'discontinued', 'archived')),
-                created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 CHECK (
                     production_end_year IS NULL
                     OR production_start_year IS NULL
@@ -93,8 +93,8 @@ final class Version20261105000100CreateVehicleCatalog extends AbstractMigration
                 media_references JSONB NOT NULL DEFAULT '[]'::jsonb,
                 status VARCHAR(16) NOT NULL DEFAULT 'draft'
                     CHECK (status IN ('draft', 'published', 'discontinued', 'archived')),
-                created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             SQL);
 
@@ -105,11 +105,11 @@ final class Version20261105000100CreateVehicleCatalog extends AbstractMigration
                 event_type VARCHAR(120) NOT NULL,
                 schema_version SMALLINT NOT NULL,
                 payload JSONB NOT NULL,
-                occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                published_at TIMESTAMPTZ NULL,
+                occurred_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                published_at TIMESTAMPTZ(0) NULL,
                 attempts INTEGER NOT NULL DEFAULT 0,
-                next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                locked_until TIMESTAMPTZ NULL,
+                next_attempt_at TIMESTAMPTZ(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                locked_until TIMESTAMPTZ(0) NULL,
                 last_error VARCHAR(500) NULL
             )
             SQL);
