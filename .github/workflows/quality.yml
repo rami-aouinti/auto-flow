@@ -24,6 +24,7 @@ jobs:
           composer validate --strict --working-dir=apps/offer-service
           composer validate --strict --working-dir=apps/pricing-service
           composer validate --strict --working-dir=apps/vehicle-catalog-service
+          composer validate --strict --working-dir=apps/vehicle-catalog-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
