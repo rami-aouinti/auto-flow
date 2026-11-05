@@ -41,6 +41,12 @@ jobs:
           exit "$status"
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
+      - name: Install Offer Service dependencies for integration tests
+        run: |
+          composer install \
+            --working-dir=apps/offer-service \
+            --ignore-platform-req=ext-opentelemetry \
+            --no-interaction --prefer-dist --no-progress
       - name: Run Offer unit tests
         run: vendor/bin/phpunit --configuration phpunit.xml tests/Unit/Offer
       - name: Start PostgreSQL and apply Offer migrations
