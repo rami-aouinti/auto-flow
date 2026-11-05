@@ -13,7 +13,7 @@ The target is a service-oriented / microservice architecture with clear business
 The platform can be understood in four areas:
 
 - **Experience and entry points:** web/mobile clients and public APIs.
-- **Business capabilities:** Offer, Pricing and future domain services.
+- **Business capabilities:** Vehicle Catalog, Offer, Pricing and future domain services.
 - **Integration and workflow:** synchronous HTTP, asynchronous messaging and durable orchestration.
 - **Platform capabilities:** persistence, cache, search, observability and runtime.
 
@@ -21,7 +21,7 @@ These are logical responsibility groups. They do not require every group to beco
 
 ## 3. Current runtime demonstration
 
-The implemented HTTP path is:
+The initial implemented HTTP path is:
 
 ~~~text
 Client
@@ -47,7 +47,7 @@ Inside Docker Compose, Offer calls Pricing using the Docker DNS name pricing-ser
 
 Each application has its own Symfony application and Composer project. They do not call one another's PHP classes directly; the integration boundary is HTTP.
 
-The pricing response is static demo data. It validates service communication and tracing, not a production pricing engine.
+The pricing response is static demo data. It validates service communication and tracing, not a production pricing engine. The Vehicle Catalog is a separate authoritative service on host port 8084; it owns manufacturer/model/generation/variant records and publishes versioned catalogue events through its Outbox. It does not participate in the Offer → Pricing request path.
 
 ## 4. Local platform components
 

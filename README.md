@@ -36,9 +36,10 @@ docker compose up -d --build
 docker compose ps
 docker compose exec php composer install
 docker compose exec php php -v
+docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher
 ~~~
 
-The first local build of the two Symfony services installs their independent Composer dependencies, including development-only Swagger UI tooling. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` to export both generated OpenAPI specifications.
+The first local build of the three Symfony services installs their independent Composer dependencies, including development-only Swagger UI tooling. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` to export all three generated OpenAPI specifications.
 Subsequent starts reuse the built images unless their source or Dockerfile changes.
 
 ## Local interfaces and endpoints
@@ -48,9 +49,12 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
 | Offer Swagger UI | http://localhost:8081/api/doc | Interactive Offer REST API documentation (dev only) |
 | Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
-| Pricing Service | http://localhost:8082 | Demo pricing API |
+| Pricing Service | http://localhost:8082 | Tenant-scoped quote calculation API |
+| Vehicle Catalog Service | http://localhost:8084 | Authoritative manufacturers, models, generations and vehicle variants |
 | Pricing Swagger UI | http://localhost:8082/api/doc | Interactive Pricing REST API documentation (dev only) |
 | Pricing OpenAPI JSON | http://localhost:8082/api/doc.json | Machine-readable Pricing API contract (dev only) |
+| Vehicle Catalog Swagger UI | http://localhost:8084/api/doc | Interactive Vehicle Catalog REST API documentation (dev only) |
+| Vehicle Catalog OpenAPI JSON | http://localhost:8084/api/doc.json | Machine-readable Vehicle Catalog API contract (dev only) |
 | Offer Service gRPC | localhost:9001 | Internal gRPC listener (platform Ping smoke check) |
 | Pricing Service gRPC | localhost:9002 | `PricingService.CalculateQuote` plus platform Ping |
 | RabbitMQ Management | http://localhost:15672 | Exchanges, queues, consumers, message rates and connections |

@@ -21,12 +21,14 @@
       "redirectUris": [
         "http://localhost:3000/*",
         "http://localhost:8081/*",
-        "http://localhost:8082/*"
+        "http://localhost:8082/*",
+        "http://localhost:8084/*"
       ],
       "webOrigins": [
         "http://localhost:3000",
         "http://localhost:8081",
-        "http://localhost:8082"
+        "http://localhost:8082",
+        "http://localhost:8084"
       ],
       "protocolMappers": [
         {
@@ -73,6 +75,17 @@
             "id.token.claim": "false",
             "access.token.claim": "true",
             "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "vehicle-catalog-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-catalog",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
           }
         }
       ],
@@ -154,6 +167,16 @@
         "roles"
       ],
       "fullScopeAllowed": true
+    },
+    {
+      "clientId": "autoflow-catalog",
+      "name": "Vehicle Catalog Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -174,13 +197,33 @@
       "realmRoles": [
         "offers:read",
         "offers:quote",
-        "pricing:quote"
+        "pricing:quote",
+        "catalog:read"
       ],
       "attributes": {
         "tenant_id": [
           "tenant-demo"
         ]
       }
+    },
+    {
+      "username": "catalog-admin",
+      "enabled": true,
+      "email": "catalog-admin@autoflow.local",
+      "emailVerified": true,
+      "firstName": "Catalogue",
+      "lastName": "Administrator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "catalog-admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "catalog:read",
+        "catalog:manage"
+      ]
     }
   ],
   "roles": {
@@ -196,6 +239,14 @@
       {
         "name": "pricing:quote",
         "description": "Calculate and access pricing quotes"
+      },
+      {
+        "name": "catalog:read",
+        "description": "Read published vehicle catalogue data"
+      },
+      {
+        "name": "catalog:manage",
+        "description": "Manage and publish vehicle catalogue entries"
       }
     ]
   }

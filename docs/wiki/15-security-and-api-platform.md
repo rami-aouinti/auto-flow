@@ -112,7 +112,7 @@ Pact verifies consumer/provider expectations for important REST interactions. Op
 | Pact REST contracts | Planned |
 | Buf Protobuf compatibility checks | Planned |
 
-The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Pricing quote writes, reads, pagination, and deletion are tenant-bound and protected by PostgreSQL row-level security. The next increments are tenant membership validation at identity issuance, explicit ownership propagation for delegated user workflows, update semantics for immutable quote snapshots, and equivalent isolation for other services. See ADR-016 for decisions and trade-offs.
+The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Vehicle Catalog adds its own `autoflow-catalog` audience with `catalog:read` and `catalog:manage` scopes; its global reference dataset is not tenant-owned in Sprint 1. Pricing quote writes, reads, pagination, and deletion are tenant-bound and protected by PostgreSQL row-level security. The next increments are tenant membership validation at identity issuance, explicit ownership propagation for delegated user workflows, update semantics for immutable quote snapshots, and equivalent isolation for other services. See ADR-016 for decisions and trade-offs.
 
 
 ## 10. Pricing quote persistence and PostgreSQL RLS

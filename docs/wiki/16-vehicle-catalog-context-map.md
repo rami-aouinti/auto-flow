@@ -4,7 +4,7 @@
 
 The Vehicle Catalog is the authoritative source for the identity and technical description of vehicles that AutoFlow makes discoverable. It answers: **what vehicle is this?** It does not answer: **what does this customer pay, can this customer order it, or when can it be delivered?**
 
-This is the proposed domain boundary for Sprint 1, not a claim that the complete context is already implemented.
+This is the approved domain boundary for the first increment and is implemented by the Vehicle Catalog microservice.
 
 ## Bounded context
 
@@ -19,7 +19,20 @@ This is the proposed domain boundary for Sprint 1, not a claim that the complete
 | VehicleVariant | A concrete technical configuration within a generation | Variant identity, engine, transmission, body style and measured specifications |
 | VehicleMediaReference | A reference to an image or other media asset | Media identifier and usage metadata; binary storage belongs to Media |
 
-The exact attributes and invariants must be decided in issue #21 before implementation. Do not invent business rules from assumptions about a real leasing provider.
+## Sprint 1 domain decisions (issue #21)
+
+The initial implementation uses the following deliberately conservative decisions:
+
+- A variant is identified by a generated opaque 128-bit catalogue ID. A manufacturer variant code is optional metadata with a uniqueness constraint when present; it is not the primary identity.
+- Model identity is unique within a manufacturer by normalized model name. Generation identity is unique within a model by generation label.
+- Production start/end years are optional because historical catalogue sources may be incomplete. If both are known, end year cannot precede start year.
+- Fuel type, powertrain, body style and transmission use explicit controlled vocabularies. The first vocabulary set is intentionally small and can evolve through an API/schema versioning decision.
+- Technical values use explicit units in field names: power kW, displacement cm³, dimensions mm, curb weight kg and CO₂ g/km. Optional values remain nullable when the source is unknown.
+- Lifecycle states are draft, published, discontinued and archived. New records are draft. A catalogue manager explicitly publishes a variant; publication also publishes non-archived ancestors. Archived variants cannot be republished.
+- Media is stored as references with usage metadata; binary content is owned by Media.
+- Pricing, discounts, stock/inventory, customer eligibility, commercial availability and delivery promises are not catalogue fields.
+
+These are AutoFlow project decisions for the first increment, not claims about another company's catalogue. They are recorded in ADR-017. Unknown future requirements (localized labels, model-year semantics, source provenance and equipment packages) remain open rather than being guessed.
 
 ## Context map
 
@@ -46,27 +59,34 @@ The exact attributes and invariants must be decided in issue #21 before implemen
 - Search indexing is eventually consistent. The catalogue database remains the source of truth.
 - Publish integration events only after the catalogue transaction commits; use an Outbox when reliable publication is required.
 
-## Initial API shape
+## Implemented API contract
 
-The exact contract is decided in issue #27. Candidate read operations:
+All endpoints are versioned under `/api/v1` and require a verified bearer JWT from the shared CoreBundle.
 
-- GET /api/v1/manufacturers
-- GET /api/v1/vehicles
-- GET /api/v1/vehicles/{vehicleVariantId}
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/api/v1/manufacturers` | `catalog:read` | List published manufacturers |
+| GET | `/api/v1/vehicles` | `catalog:read` | Search and paginate published variants |
+| GET | `/api/v1/vehicles/{variantId}` | `catalog:read` | Retrieve a published variant |
+| POST | `/api/v1/manufacturers` | `catalog:manage` | Register a draft manufacturer |
+| POST | `/api/v1/models` | `catalog:manage` | Register a draft model |
+| POST | `/api/v1/generations` | `catalog:manage` | Register a draft generation |
+| POST | `/api/v1/vehicles` | `catalog:manage` | Register a draft technical variant |
+| POST | `/api/v1/vehicles/{variantId}/publish` | `catalog:manage` | Publish the variant and its non-archived ancestors |
 
-Administrative write operations must be authenticated and authorized. Do not expose production write endpoints without an explicit identity and authorization decision.
+Request and response DTOs form the HTTP boundary. OpenAPI documents the operations and response schemas. Errors use RFC 9457-style Problem Details with stable catalogue error codes. The catalogue is shared reference data, so it deliberately has no tenant-owned foreign keys or tenant-specific pricing/availability fields.
 
-## Open domain questions
+## Deferred domain questions
 
-Track unresolved decisions in issue #21 rather than guessing:
+These are follow-up product decisions, not blockers for the implemented first increment:
 
-1. Is a variant uniquely identified by an internal catalogue ID, a manufacturer code, or both?
-2. Which specification fields are mandatory for each vehicle category?
-3. How are model years and overlapping generation production periods represented?
-4. Are fuel, powertrain, body style and transmission controlled vocabularies?
-5. How are discontinued, temporarily unavailable and unpublished variants distinguished?
-6. Which locale-specific names and units are required?
-7. What is the source and review process for catalogue imports?
+1. Which specification fields become mandatory for each vehicle category?
+2. How should model years and overlapping generation production periods be represented?
+3. Which locale-specific names and unit conversions are required?
+4. What source provenance, review and bulk-import workflow should be supported?
+5. Should equipment packages and trim-level hierarchies become first-class concepts?
+
+The first increment deliberately keeps optional technical values nullable and uses the controlled vocabularies and explicit units listed above.
 
 ## Definition of a good boundary
 
@@ -74,4 +94,15 @@ The boundary is healthy when Pricing can calculate a quote without importing cat
 
 ## Implementation status
 
-**Status:** domain design / Sprint 1 work in progress. The concepts above are a proposed model. Update this section after issue #21 is reviewed and the implementation is merged.
+**Status:** implemented on `feature/vehicle-catalog-service`, PR #46, with final acceptance gated on the current CI run and merge.
+
+The implementation includes:
+
+- Pure Domain aggregates/value objects and lifecycle rules, with no Doctrine or Symfony dependency.
+- Application command/query handlers, repository port and explicit `catalog:read` / `catalog:manage` scope enforcement.
+- Doctrine ORM 3.5 entities and repository adapter in Infrastructure, PostgreSQL migration, dedicated runtime role and deterministic SQL demo fixtures.
+- Transactional catalogue writes with an Outbox record; a standalone PDO/RabbitMQ publisher claims pending events with `FOR UPDATE SKIP LOCKED` and publisher confirms.
+- Symfony REST controllers, request/response DTOs, OpenAPI schemas, Problem Details and the shared CoreBundle JWT authentication.
+- Unit tests, API/controller tests, PostgreSQL repository tests and a create → publish → retrieve integration journey.
+
+The catalogue is the global source of truth for vehicle identity and technical data. Offer, Pricing, Search, Order and Media retain ownership of their respective commercial, search, order and binary-media concerns.

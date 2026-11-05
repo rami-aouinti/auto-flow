@@ -23,6 +23,8 @@ jobs:
         run: |
           composer validate --strict --working-dir=apps/offer-service
           composer validate --strict --working-dir=apps/pricing-service
+          composer validate --strict --working-dir=apps/vehicle-catalog-service
+          composer validate --strict --working-dir=apps/vehicle-catalog-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
@@ -51,6 +53,11 @@ jobs:
             fi
             sleep 2
           done
+          if ! docker compose exec -T postgres pg_isready -U autoflow -d autoflow; then
+            docker compose ps -a
+            docker compose logs postgres
+            exit 1
+          fi
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.offer_outbox_events') IS NOT NULL AS outbox_ready"
           for attempt in $(seq 1 30); do
             if docker compose exec -T rabbitmq rabbitmq-diagnostics -q listeners >/dev/null 2>&1; then
@@ -76,7 +83,7 @@ jobs:
           docker compose exec -T rabbitmq rabbitmq-diagnostics listeners || true
           docker compose exec -T rabbitmq rabbitmqctl list_users || true
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service offer-expiration-worker offer-outbox-publisher pricing-service
+        run: docker compose --env-file .env.example build php offer-service offer-expiration-worker offer-outbox-publisher pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
@@ -111,6 +118,43 @@ jobs:
               || $healthSecurity !== []
               || $readySecurity !== []) {
               fwrite(STDERR, "Generated OpenAPI is missing required Offer/Pricing operations, Pricing schemas, JWT bearer auth, or public health/readiness definitions.\n");
+              exit(1);
+          }
+          '
+      - name: Apply Vehicle Catalog Doctrine migrations and validate mappings
+        run: |
+          docker compose --env-file .env.example run --rm --no-deps \
+            -e DATABASE_URL=postgresql://autoflow:autoflow@postgres:5432/autoflow \
+            vehicle-catalog-service php bin/console doctrine:migrations:migrate --no-interaction
+          docker compose --env-file .env.example run --rm --no-deps vehicle-catalog-service \
+            php bin/console doctrine:schema:validate --skip-sync
+      - name: Run Vehicle Catalog unit and PostgreSQL integration tests
+        run: |
+          docker compose --env-file .env.example run --rm --no-deps \
+            -e CATALOG_TEST_DATABASE_URL=postgresql://autoflow_catalog:local-only-catalog-password@postgres:5432/autoflow \
+            vehicle-catalog-service php vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Validate Vehicle Catalog OpenAPI contract
+        run: |
+          docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev vehicle-catalog-service \
+            php bin/console nelmio:apidoc:dump --format=json > /tmp/catalog-openapi.json
+          php -r '
+          $api = json_decode(file_get_contents("/tmp/catalog-openapi.json"), true, flags: JSON_THROW_ON_ERROR);
+          $paths = $api["paths"] ?? [];
+          $required = [
+              isset($paths["/api/v1/manufacturers"]["get"]),
+              isset($paths["/api/v1/vehicles"]["get"]),
+              isset($paths["/api/v1/vehicles/{variantId}"]["get"]),
+              isset($paths["/api/v1/manufacturers"]["post"]),
+              isset($paths["/api/v1/models"]["post"]),
+              isset($paths["/api/v1/generations"]["post"]),
+              isset($paths["/api/v1/vehicles"]["post"]),
+              isset($paths["/api/v1/vehicles/{variantId}/publish"]["post"]),
+              isset($api["components"]["schemas"]["VehicleResponse"]),
+              isset($api["components"]["schemas"]["ManufacturerResponse"]),
+          ];
+          $bearer = $api["components"]["securitySchemes"]["bearerAuth"] ?? null;
+          if (in_array(false, $required, true) || ($bearer["scheme"] ?? null) !== "bearer") {
+              fwrite(STDERR, "Vehicle Catalog OpenAPI contract is missing required operations, response schemas or bearer authentication.\\n");
               exit(1);
           }
           '
