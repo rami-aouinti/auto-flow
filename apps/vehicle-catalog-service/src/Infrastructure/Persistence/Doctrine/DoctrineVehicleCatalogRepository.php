@@ -68,7 +68,7 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
         ];
     }
 
-    public function getVehicle(string $variantId, bool $publishedOnly = true): ?array
+    public function getVehicle(string $variantId): ?array
     {
         $queryBuilder = $this->entityManager->createQueryBuilder()
             ->select('v', 'g', 'm', 'mf')
@@ -79,14 +79,12 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
             ->where('v.id = :id')
             ->setParameter('id', $variantId);
 
-        if ($publishedOnly) {
-            $queryBuilder
-                ->andWhere('v.status = :published')
-                ->andWhere('g.status = :published')
-                ->andWhere('m.status = :published')
-                ->andWhere('mf.status = :published')
-                ->setParameter('published', CatalogStatus::PUBLISHED->value);
-        }
+        $queryBuilder
+            ->andWhere('v.status = :published')
+            ->andWhere('g.status = :published')
+            ->andWhere('m.status = :published')
+            ->andWhere('mf.status = :published')
+            ->setParameter('published', CatalogStatus::PUBLISHED->value);
 
         /** @var VehicleVariantRecord|null $record */
         $record = $queryBuilder->getQuery()->getOneOrNullResult();
@@ -95,18 +93,16 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
     }
 
     /** @return list<array<string, mixed>> */
-    public function listManufacturers(bool $publishedOnly = true): array
+    public function listManufacturers(): array
     {
         $queryBuilder = $this->entityManager->createQueryBuilder()
             ->select('m')
             ->from(ManufacturerRecord::class, 'm')
             ->orderBy('m.name', 'ASC');
 
-        if ($publishedOnly) {
-            $queryBuilder
-                ->where('m.status = :published')
-                ->setParameter('published', CatalogStatus::PUBLISHED->value);
-        }
+        $queryBuilder
+            ->where('m.status = :published')
+            ->setParameter('published', CatalogStatus::PUBLISHED->value);
 
         /** @var list<ManufacturerRecord> $records */
         $records = $queryBuilder->getQuery()->getResult();
