@@ -37,4 +37,33 @@ final class DoctrineVehicleCatalogRepositoryTest extends KernelTestCase
         self::assertSame(110, $vehicle['powerKw']);
         self::assertSame('Volkswagen', $vehicle['manufacturer']['name']);
     }
+    public function testSearchTermCannotBypassManufacturerFilter(): void
+    {
+        self::bootKernel();
+
+        $repository = static::getContainer()->get(VehicleCatalogRepositoryInterface::class);
+        self::assertInstanceOf(VehicleCatalogRepositoryInterface::class, $repository);
+
+        $result = $repository->listVehicles([
+            'manufacturerId' => '10000000000000000000000000000001',
+            'q' => 'BMW',
+        ], 20, 0);
+
+        self::assertSame(0, $result['total']);
+        self::assertSame([], $result['items']);
+    }
+
+    public function testPublishedManufacturerQueryUsesDoctrineEnumMapping(): void
+    {
+        self::bootKernel();
+
+        $repository = static::getContainer()->get(VehicleCatalogRepositoryInterface::class);
+        self::assertInstanceOf(VehicleCatalogRepositoryInterface::class, $repository);
+
+        $manufacturers = $repository->listManufacturers();
+
+        self::assertCount(4, $manufacturers);
+        self::assertSame('published', $manufacturers[0]['status']);
+    }
+
 }
