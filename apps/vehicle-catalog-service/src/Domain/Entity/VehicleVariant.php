@@ -63,7 +63,14 @@ final readonly class VehicleVariant
      */
     public static function register(array $data): self
     {
-        $name = trim((string) ($data['name'] ?? ''));
+        $rawName = $data['name'] ?? null;
+        $generationId = $data['generationId'] ?? null;
+
+        if (!is_string($rawName) || !is_string($generationId)) {
+            throw new InvalidArgumentException('Variant name and generationId must be strings.');
+        }
+
+        $name = trim($rawName);
 
         if ($name === '' || mb_strlen($name) > 160) {
             throw new InvalidArgumentException('Variant name must contain 1-160 characters.');
@@ -74,8 +81,14 @@ final readonly class VehicleVariant
         $body = self::choice($data, 'bodyStyle', self::BODY_STYLES);
         $transmission = self::choice($data, 'transmission', self::TRANSMISSIONS);
         self::assertCompatiblePowertrain($fuel, $powertrain);
-        $manufacturerCode = isset($data['manufacturerCode'])
-            ? strtoupper(trim((string) $data['manufacturerCode']))
+        $rawManufacturerCode = $data['manufacturerCode'] ?? null;
+
+        if ($rawManufacturerCode !== null && !is_string($rawManufacturerCode)) {
+            throw new InvalidArgumentException('Manufacturer variant code must be a string or null.');
+        }
+
+        $manufacturerCode = $rawManufacturerCode !== null
+            ? strtoupper(trim($rawManufacturerCode))
             : null;
 
         if ($manufacturerCode === '') {
@@ -99,12 +112,17 @@ final readonly class VehicleVariant
         $mediaReferences = [];
 
         foreach ($media as $reference) {
-            if (!is_array($reference) || !isset($reference['mediaId'], $reference['usage'])) {
-                throw new InvalidArgumentException('Each media reference requires mediaId and usage.');
+            if (
+                !is_array($reference)
+                || !isset($reference['mediaId'], $reference['usage'])
+                || !is_string($reference['mediaId'])
+                || !is_string($reference['usage'])
+            ) {
+                throw new InvalidArgumentException('Each media reference requires string mediaId and usage fields.');
             }
 
-            $mediaId = trim((string) $reference['mediaId']);
-            $usage = trim((string) $reference['usage']);
+            $mediaId = trim($reference['mediaId']);
+            $usage = trim($reference['usage']);
 
             if ($mediaId === '' || mb_strlen($mediaId) > 128 || $usage === '' || mb_strlen($usage) > 40) {
                 throw new InvalidArgumentException(
@@ -125,7 +143,11 @@ final readonly class VehicleVariant
             }
 
             if (isset($reference['altText'])) {
-                $altText = trim((string) $reference['altText']);
+                if (!is_string($reference['altText'])) {
+                    throw new InvalidArgumentException('Media reference altText must be a string.');
+                }
+
+                $altText = trim($reference['altText']);
 
                 if (mb_strlen($altText) > 255) {
                     throw new InvalidArgumentException('Media reference altText cannot exceed 255 characters.');
@@ -139,7 +161,7 @@ final readonly class VehicleVariant
 
         return new self(
             CatalogueId::generate(),
-            CatalogueId::fromString((string) ($data['generationId'] ?? '')),
+            CatalogueId::fromString($generationId),
             $manufacturerCode,
             $name,
             $fuel,
@@ -198,9 +220,9 @@ final readonly class VehicleVariant
      */
     private static function choice(array $data, string $key, array $allowed): string
     {
-        $value = (string) ($data[$key] ?? '');
+        $value = $data[$key] ?? null;
 
-        if (!in_array($value, $allowed, true)) {
+        if (!is_string($value) || !in_array($value, $allowed, true)) {
             throw new InvalidArgumentException(
                 sprintf('%s must be one of: %s.', $key, implode(', ', $allowed)),
             );
