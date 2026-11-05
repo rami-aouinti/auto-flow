@@ -59,6 +59,31 @@ final class VehicleCatalogJourneyTest extends KernelTestCase
 
         self::assertTrue($catalog->publishVariant($actor, $variantId));
 
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
+        $connection = $entityManager->getConnection();
+
+        self::assertSame(1, (int) $connection->fetchOne(
+            'SELECT COUNT(*) FROM catalog_outbox WHERE aggregate_id = :id',
+            ['id' => $manufacturerId],
+        ));
+        self::assertSame(1, (int) $connection->fetchOne(
+            'SELECT COUNT(*) FROM catalog_outbox WHERE aggregate_id = :id',
+            ['id' => $modelId],
+        ));
+        self::assertSame(1, (int) $connection->fetchOne(
+            'SELECT COUNT(*) FROM catalog_outbox WHERE aggregate_id = :id',
+            ['id' => $generationId],
+        ));
+        self::assertSame(2, (int) $connection->fetchOne(
+            'SELECT COUNT(*) FROM catalog_outbox WHERE aggregate_id = :id',
+            ['id' => $variantId],
+        ));
+        self::assertSame(1, (int) $connection->fetchOne(
+            "SELECT COUNT(*) FROM catalog_outbox WHERE aggregate_id = :id AND event_type = 'catalog.vehicle_variant.published'",
+            ['id' => $variantId],
+        ));
+
         $vehicle = $catalog->getVehicle($actor, $variantId);
 
         self::assertNotNull($vehicle);
