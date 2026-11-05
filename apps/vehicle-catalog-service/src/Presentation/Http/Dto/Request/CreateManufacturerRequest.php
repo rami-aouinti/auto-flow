@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Dto\Request;
 
+use InvalidArgumentException;
+
 final readonly class CreateManufacturerRequest
 {
     public function __construct(
@@ -15,9 +17,12 @@ final readonly class CreateManufacturerRequest
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
-        return new self(
-            (string) ($data['code'] ?? ''),
-            (string) ($data['name'] ?? ''),
-        );
+        foreach (['code', 'name'] as $field) {
+            if (!isset($data[$field]) || !is_string($data[$field])) {
+                throw new InvalidArgumentException(sprintf('%s must be a string.', $field));
+            }
+        }
+
+        return new self($data['code'], $data['name']);
     }
 }
