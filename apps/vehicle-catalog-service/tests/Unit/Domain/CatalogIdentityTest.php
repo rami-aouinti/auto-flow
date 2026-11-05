@@ -37,6 +37,7 @@ final class CatalogIdentityTest extends TestCase
 
         VehicleGeneration::create($model->id->value, 'G20', 2024, 2018);
     }
+
     public function testManufacturerEqualityUsesCanonicalIdentity(): void
     {
         $manufacturer = Manufacturer::register('bmw', 'BMW');
@@ -65,4 +66,11 @@ final class CatalogIdentityTest extends TestCase
         );
     }
 
+    public function testOnlyDraftAndPublishedParentsCanReceiveChildren(): void
+    {
+        self::assertTrue(CatalogStatus::DRAFT->canAcceptChildren());
+        self::assertTrue(CatalogStatus::PUBLISHED->canAcceptChildren());
+        self::assertFalse(CatalogStatus::DISCONTINUED->canAcceptChildren());
+        self::assertFalse(CatalogStatus::ARCHIVED->canAcceptChildren());
+    }
 }
