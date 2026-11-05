@@ -74,11 +74,17 @@ final class Version20261105000100CreateVehicleCatalog extends AbstractMigration
                 manufacturer_code VARCHAR(64) NULL UNIQUE,
                 name VARCHAR(160) NOT NULL,
                 fuel_type VARCHAR(24) NOT NULL
-                    CHECK (fuel_type IN ('petrol', 'diesel', 'electric', 'hybrid', 'plug_in_hybrid', 'hydrogen', 'lpg', 'cng', 'other')),
+                    CHECK (fuel_type IN (
+                    'petrol', 'diesel', 'electric', 'hybrid', 'plug_in_hybrid',
+                    'hydrogen', 'lpg', 'cng', 'other'
+                )),
                 powertrain VARCHAR(16) NOT NULL
                     CHECK (powertrain IN ('ice', 'mhev', 'hev', 'phev', 'bev', 'fcev', 'other')),
                 body_style VARCHAR(20) NOT NULL
-                    CHECK (body_style IN ('suv', 'sedan', 'hatchback', 'estate', 'coupe', 'convertible', 'van', 'pickup', 'other')),
+                    CHECK (body_style IN (
+                    'suv', 'sedan', 'hatchback', 'estate', 'coupe',
+                    'convertible', 'van', 'pickup', 'other'
+                )),
                 transmission VARCHAR(20) NOT NULL
                     CHECK (transmission IN ('manual', 'automatic', 'single_speed', 'other')),
                 power_kw INTEGER NULL CHECK (power_kw BETWEEN 1 AND 10000),
@@ -114,12 +120,27 @@ final class Version20261105000100CreateVehicleCatalog extends AbstractMigration
             )
             SQL);
 
-        $this->addSql('CREATE INDEX IF NOT EXISTS idx_catalog_variants_generation ON catalog_vehicle_variants (generation_id)');
-        $this->addSql('CREATE INDEX IF NOT EXISTS idx_catalog_variants_facets ON catalog_vehicle_variants (status, fuel_type, powertrain, body_style, transmission)');
-        $this->addSql('CREATE INDEX IF NOT EXISTS idx_catalog_models_manufacturer ON catalog_models (manufacturer_id, status)');
-        $this->addSql('CREATE INDEX IF NOT EXISTS idx_catalog_generations_model ON catalog_generations (model_id, status)');
-        $this->addSql('CREATE INDEX IF NOT EXISTS idx_catalog_outbox_pending ON catalog_outbox (next_attempt_at, occurred_at) WHERE published_at IS NULL');
-        $this->addSql('GRANT SELECT, INSERT, UPDATE, DELETE ON catalog_manufacturers, catalog_models, catalog_generations, catalog_vehicle_variants, catalog_outbox TO autoflow_catalog');
+        $this->addSql(
+            'CREATE INDEX IF NOT EXISTS idx_catalog_variants_generation ON catalog_vehicle_variants (generation_id)',
+        );
+        $this->addSql(
+            'CREATE INDEX IF NOT EXISTS idx_catalog_variants_facets '
+            . 'ON catalog_vehicle_variants (status, fuel_type, powertrain, body_style, transmission)',
+        );
+        $this->addSql(
+            'CREATE INDEX IF NOT EXISTS idx_catalog_models_manufacturer ON catalog_models (manufacturer_id, status)',
+        );
+        $this->addSql(
+            'CREATE INDEX IF NOT EXISTS idx_catalog_generations_model ON catalog_generations (model_id, status)',
+        );
+        $this->addSql(
+            'CREATE INDEX IF NOT EXISTS idx_catalog_outbox_pending '
+            . 'ON catalog_outbox (next_attempt_at, occurred_at) WHERE published_at IS NULL',
+        );
+        $this->addSql(
+            'GRANT SELECT, INSERT, UPDATE, DELETE ON catalog_manufacturers, catalog_models, '
+            . 'catalog_generations, catalog_vehicle_variants, catalog_outbox TO autoflow_catalog',
+        );
     }
 
     public function down(Schema $schema): void
