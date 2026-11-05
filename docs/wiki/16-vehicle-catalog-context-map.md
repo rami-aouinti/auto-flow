@@ -94,7 +94,7 @@ The boundary is healthy when Pricing can calculate a quote without importing cat
 
 ## Implementation status
 
-**Status:** implemented on `feature/vehicle-catalog-service`, PR #46, with final acceptance gated on the current CI run and merge.
+**Status:** merged into `master` through PR #46. The merge is complete; CI quality and operational hardening are tracked independently.
 
 The implementation includes:
 
