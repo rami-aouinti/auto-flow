@@ -188,8 +188,13 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
             throw new CatalogParentNotFoundException('The referenced model does not exist.');
         }
 
-        if (!$model->getStatus()->canAcceptChildren()) {
-            throw new InvalidArgumentException('A discontinued or archived model cannot receive new generations.');
+        if (
+            !$model->getStatus()->canAcceptChildren()
+            || !$model->getManufacturer()->getStatus()->canAcceptChildren()
+        ) {
+            throw new InvalidArgumentException(
+                'A discontinued or archived model or manufacturer cannot receive new generations.',
+            );
         }
 
         $record = new VehicleGenerationRecord(
@@ -226,8 +231,17 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
             throw new CatalogParentNotFoundException('The referenced generation does not exist.');
         }
 
-        if (!$generation->getStatus()->canAcceptChildren()) {
-            throw new InvalidArgumentException('A discontinued or archived generation cannot receive new variants.');
+        $model = $generation->getModel();
+        $manufacturer = $model->getManufacturer();
+
+        if (
+            !$generation->getStatus()->canAcceptChildren()
+            || !$model->getStatus()->canAcceptChildren()
+            || !$manufacturer->getStatus()->canAcceptChildren()
+        ) {
+            throw new InvalidArgumentException(
+                'A discontinued or archived generation, model or manufacturer cannot receive new variants.',
+            );
         }
 
         $record = new VehicleVariantRecord(
