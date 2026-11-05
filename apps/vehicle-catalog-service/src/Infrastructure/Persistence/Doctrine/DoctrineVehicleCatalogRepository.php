@@ -418,7 +418,11 @@ final readonly class DoctrineVehicleCatalogRepository implements VehicleCatalogR
         if (isset($filters['q']) && trim((string) $filters['q']) !== '') {
             $queryBuilder
                 ->andWhere(
-                    'LOWER(v.name) LIKE :q OR LOWER(m.name) LIKE :q OR LOWER(mf.name) LIKE :q',
+                    $queryBuilder->expr()->orX(
+                        'LOWER(v.name) LIKE :q',
+                        'LOWER(m.name) LIKE :q',
+                        'LOWER(mf.name) LIKE :q',
+                    ),
                 )
                 ->setParameter('q', '%' . mb_strtolower(trim((string) $filters['q'])) . '%');
         }
