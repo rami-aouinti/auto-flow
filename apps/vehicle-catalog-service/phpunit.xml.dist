@@ -4,7 +4,7 @@
          bootstrap="vendor/autoload.php" colors="true" cacheDirectory=".phpunit.cache">
     <php>
         <env name="APP_ENV" value="test" force="true"/>
-        <env name="KERNEL_CLASS" value="App\\Kernel"/>
+        <env name="KERNEL_CLASS" value="App\Kernel"/>
     </php>
     <testsuites>
         <testsuite name="Vehicle Catalog"><directory>tests</directory></testsuite>
