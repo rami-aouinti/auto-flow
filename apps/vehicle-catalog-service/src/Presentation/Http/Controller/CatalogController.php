@@ -24,7 +24,7 @@ use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/v1')]
@@ -365,7 +365,7 @@ final readonly class CatalogController
         $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
 
         if (!$principal instanceof AuthenticatedPrincipal) {
-            throw new AccessDeniedHttpException('An authenticated catalogue principal is required.');
+            throw new UnauthorizedHttpException('Bearer', 'An authenticated catalogue principal is required.');
         }
 
         return new CatalogActor($principal->subject, $principal->scopes);
