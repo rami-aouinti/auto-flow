@@ -130,14 +130,14 @@ final readonly class VehicleSearchCriteria
 
         if (
             isset($filters['minPowerKw'], $filters['maxPowerKw'])
-            && $filters['minPowerKw'] > $filters['maxPowerKw']
+            && (int) $filters['minPowerKw'] > (int) $filters['maxPowerKw']
         ) {
             throw new InvalidArgumentException('minPowerKw cannot exceed maxPowerKw.');
         }
 
         if (
             isset($filters['minSeats'], $filters['maxSeats'])
-            && $filters['minSeats'] > $filters['maxSeats']
+            && (int) $filters['minSeats'] > (int) $filters['maxSeats']
         ) {
             throw new InvalidArgumentException('minSeats cannot exceed maxSeats.');
         }
