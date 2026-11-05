@@ -35,6 +35,7 @@ final class DoctrineVehicleCatalogRepositoryTest extends KernelTestCase
         self::assertNotNull($vehicle);
         self::assertSame('Golf 2.0 TDI 110 kW', $vehicle['name']);
         self::assertSame(110, $vehicle['powerKw']);
+        self::assertIsArray($vehicle['manufacturer']);
         self::assertSame('Volkswagen', $vehicle['manufacturer']['name']);
     }
     public function testSearchTermCannotBypassManufacturerFilter(): void
