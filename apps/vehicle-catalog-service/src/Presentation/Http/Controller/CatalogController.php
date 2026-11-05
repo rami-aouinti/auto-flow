@@ -9,7 +9,9 @@ use App\Application\Security\CatalogActor;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use InvalidArgumentException;
-use PDOException;
+use Doctrine\DBAL\Exception as DBALException;
+use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Component\HttpFoundation\Exception\JsonException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -126,8 +128,12 @@ final readonly class CatalogController
             return new JsonResponse(['manufacturerId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) {
             return $this->problem(422,'INVALID_MANUFACTURER',$e->getMessage(),$request);
-        } catch (PDOException $e) {
-            return $this->databaseProblem($e,$request);
+        } catch (UniqueConstraintViolationException) {
+            return $this->problem(409, 'CATALOGUE_CONFLICT', 'A catalogue entry with the same canonical code or name already exists.', $request);
+        } catch (ForeignKeyConstraintViolationException) {
+            return $this->problem(422, 'UNKNOWN_PARENT', 'The referenced catalogue parent does not exist.', $request);
+        } catch (DBALException) {
+            return $this->problem(500, 'CATALOGUE_STORAGE_ERROR', 'The catalogue operation could not be completed.', $request);
         } catch (JsonException) {
             return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request);
         }
@@ -147,7 +153,9 @@ final readonly class CatalogController
             $id=$catalog->registerModel($this->actor($request), (string) ($data['manufacturerId'] ?? ''), (string) ($data['name'] ?? ''));
             return new JsonResponse(['modelId'=>$id,'status'=>'draft'],201);
         } catch (InvalidArgumentException $e) { return $this->problem(422,'INVALID_MODEL',$e->getMessage(),$request); }
-        catch (PDOException $e) { return $this->databaseProblem($e,$request); }
+        catch (UniqueConstraintViolationException) { return $this->problem(409, 'CATALOGUE_CONFLICT', 'A catalogue entry with the same canonical code or name already exists.', $request); }
+        catch (ForeignKeyConstraintViolationException) { return $this->problem(422, 'UNKNOWN_PARENT', 'The referenced catalogue parent does not exist.', $request); }
+        catch (DBALException) { return $this->problem(500, 'CATALOGUE_STORAGE_ERROR', 'The catalogue operation could not be completed.', $request); }
         catch (JsonException) { return $this->problem(400,'INVALID_JSON','Request body must contain valid JSON.',$request); }
     }
 
@@ -230,14 +238,6 @@ final readonly class CatalogController
         }
 
         return new CatalogActor($principal->subject, $principal->scopes);
-    }
-
-    private function databaseProblem(PDOException $e, Request $request): JsonResponse
-    {
-        $state=(string)($e->errorInfo[0]??$e->getCode());
-        if ($state==='23505') return $this->problem(409,'CATALOGUE_CONFLICT','A catalogue entry with the same canonical code or name already exists.',$request);
-        if ($state==='23503') return $this->problem(422,'UNKNOWN_PARENT','The referenced catalogue parent does not exist.',$request);
-        return $this->problem(500,'CATALOGUE_STORAGE_ERROR','The catalogue operation could not be completed.',$request);
     }
 
     private function problem(int $status,string $code,string $detail,Request $request): JsonResponse
