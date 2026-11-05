@@ -61,13 +61,19 @@ try {
             ]);
             $channel->basic_publish($message, 'autoflow.catalog.events', (string) $event['event_type'], true);
             $channel->wait_for_pending_acks_returns(5);
-            $done = $db->prepare('UPDATE catalog_outbox SET published_at=CURRENT_TIMESTAMP,locked_until=NULL,last_error=NULL WHERE event_id=:id');
+            $done = $db->prepare(
+                'UPDATE catalog_outbox '
+                . 'SET published_at = CURRENT_TIMESTAMP, locked_until = NULL, last_error = NULL '
+                . 'WHERE event_id = :id',
+            );
             $done->execute(['id' => $event['event_id']]);
         } catch (Throwable $error) {
             $retry = $db->prepare(<<<'SQL'
                 UPDATE catalog_outbox
                 SET locked_until=NULL,
-                    next_attempt_at=CURRENT_TIMESTAMP + make_interval(secs => LEAST(300, POWER(2, LEAST(attempts, 8))::integer)),
+                    next_attempt_at = CURRENT_TIMESTAMP + make_interval(
+                        secs => LEAST(300, POWER(2, LEAST(attempts, 8))::integer)
+                    ),
                     last_error=:error
                 WHERE event_id=:id
                 SQL);
