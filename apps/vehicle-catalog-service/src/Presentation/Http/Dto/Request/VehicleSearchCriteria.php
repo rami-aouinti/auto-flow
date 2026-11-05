@@ -67,7 +67,7 @@ final readonly class VehicleSearchCriteria
         $offset = filter_var($request->query->get('offset', '0'), FILTER_VALIDATE_INT);
 
         if (!is_int($limit) || !is_int($offset) || $limit < 1 || $limit > 100 || $offset < 0) {
-            throw new InvalidArgumentException('limit must be 1-100 and offset must be non-negative.');
+            throw new InvalidPaginationException('limit must be 1-100 and offset must be non-negative.');
         }
 
         $filters = [];
