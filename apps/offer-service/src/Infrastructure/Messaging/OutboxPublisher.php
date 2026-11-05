@@ -68,16 +68,40 @@ final readonly class OutboxPublisher
 
                 $eventType = (string) $event['event_type'];
                 $suffix = strtolower((string) preg_replace('/^Offer/', '', $eventType));
-                $message = new AMQPMessage($payload, [
-                    'content_type' => 'application/json',
-                    'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
-                    'message_id' => (string) $event['event_id'],
-                    'type' => $eventType,
-                    'timestamp' => time(),
-                ]);
+                $span = Globals::tracerProvider()
+                    ->getTracer('autoflow.offer-service', '1.0.0')
+                    ->spanBuilder('messaging.publish')
+                    ->setSpanKind(SpanKind::KIND_PRODUCER)
+                    ->startSpan();
+                $scope = $span->activate();
 
-                $this->channel->basic_publish($message, $this->exchange, 'offer.' . $suffix);
-                $this->channel->wait_for_pending_acks_returns(5.0);
+                try {
+                    $span->setAttribute('messaging.system', 'rabbitmq');
+                    $span->setAttribute('messaging.destination.name', $this->exchange);
+                    $span->setAttribute('messaging.message.id', (string) $event['event_id']);
+                    $span->setAttribute('messaging.message.type', $eventType);
+
+                    $traceHeaders = [];
+                    TraceContextPropagator::getInstance()->inject($traceHeaders);
+                    $message = new AMQPMessage($payload, [
+                        'content_type' => 'application/json',
+                        'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                        'message_id' => (string) $event['event_id'],
+                        'type' => $eventType,
+                        'timestamp' => time(),
+                        'application_headers' => new AMQPTable($traceHeaders),
+                    ]);
+
+                    $this->channel->basic_publish($message, $this->exchange, 'offer.' . $suffix);
+                    $this->channel->wait_for_pending_acks_returns(5.0);
+                } catch (Throwable $publishFailure) {
+                    $span->setStatus(StatusCode::STATUS_ERROR);
+                    $span->recordException($publishFailure);
+                    throw $publishFailure;
+                } finally {
+                    $scope->detach();
+                    $span->end();
+                }
 
                 $mark = $connection->prepare(
                     'UPDATE offer_outbox_events SET published_at = NOW(), last_error = NULL WHERE event_id = :event_id',
