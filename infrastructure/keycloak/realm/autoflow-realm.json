@@ -288,7 +288,10 @@
       "realmRoles": [
         "orders:read",
         "orders:write",
-        "orders:manage"
+        "orders:manage",
+        "offers:read",
+        "pricing:quote",
+        "catalog:read"
       ],
       "attributes": {
         "tenant_id": [
