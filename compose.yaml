@@ -65,21 +65,16 @@ services:
         condition: service_started
       alloy:
         condition: service_started
-      # Local development only: Temporal CLI server with persistent SQLite state.
-  temporal:
+      temporal:
+    # Local development server backed by persistent SQLite. For production use
+    # Temporal Server with PostgreSQL/MySQL and external visibility storage.
     image: temporalio/temporal:1.6.2
-    command:
-      - server
-      - start-dev
-      - --ip
-      - 0.0.0.0
-      - --db-filename
-      - /home/temporal/temporal.db
+    command: ["server", "start-dev", "--ip", "0.0.0.0", "--db-filename", "/var/lib/temporal/temporal.db"]
     ports:
       - "127.0.0.1:7233:7233"
       - "127.0.0.1:8233:8233"
     volumes:
-      - temporal-data:/home/temporal
+      - temporal-data:/var/lib/temporal
     healthcheck:
       test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
       interval: 10s
@@ -92,7 +87,7 @@ services:
   keycloak:
         condition: service_started
     healthcheck:
-      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -137,7 +132,7 @@ services:
       keycloak:
         condition: service_started
     healthcheck:
-      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
