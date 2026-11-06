@@ -57,6 +57,7 @@ final readonly class OfferController
         private RejectOfferHandler $rejectOfferHandler,
         private int $offerValidityDays,
         private OfferPdfGenerator $offerPdfGenerator,
+        private \App\Observability\OfferMetrics $offerMetrics,
     ) {
     }
 
@@ -116,6 +117,8 @@ final readonly class OfferController
                 createdAt: $createdAt,
                 expiresAt: $expiresAt,
             ));
+
+            $this->offerMetrics->recordLifecycleEvent('created');
 
             $span->setAttribute('offer.id', (string) $offer->id());
             $span->setAttribute('vehicle.id', $vehicleId);
@@ -344,6 +347,7 @@ final readonly class OfferController
             return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
+        $this->offerMetrics->recordLifecycleEvent('published');
         $response = new JsonResponse($this->offerPayload($offer));
         $response->headers->set('Cache-Control', 'no-store');
 
@@ -376,6 +380,7 @@ final readonly class OfferController
             return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
+        $this->offerMetrics->recordLifecycleEvent('accepted');
         $response = new JsonResponse($this->offerPayload($offer));
         $response->headers->set('Cache-Control', 'no-store');
 
@@ -408,6 +413,7 @@ final readonly class OfferController
             return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
         }
 
+        $this->offerMetrics->recordLifecycleEvent('rejected');
         $response = new JsonResponse($this->offerPayload($offer));
         $response->headers->set('Cache-Control', 'no-store');
 
