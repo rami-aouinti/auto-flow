@@ -26,6 +26,11 @@ final class GetPaymentHandlerTest extends TestCase
 
                 return $this->payment;
             }
+
+            public function listByTenant(string $tenantId, int $limit, int $offset): array
+            {
+                return ['items' => [], 'total' => 0];
+            }
         };
 
         self::assertSame($payment, (new GetPaymentHandler($repository))('tenant-1', 'payment-1'));
@@ -37,6 +42,11 @@ final class GetPaymentHandlerTest extends TestCase
             public function findByTenantAndId(string $tenantId, string $paymentId): ?array
             {
                 return null;
+            }
+
+            public function listByTenant(string $tenantId, int $limit, int $offset): array
+            {
+                return ['items' => [], 'total' => 0];
             }
         };
 
