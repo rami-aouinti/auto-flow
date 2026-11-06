@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vehicle-catalog-config
+  namespace: autoflow
+  labels:
+    app.kubernetes.io/name: vehicle-catalog-service
+    app.kubernetes.io/part-of: autoflow
+data:
+  APP_ENV: "prod"
+  APP_DEBUG: "0"
+  DEFAULT_URI: "http://vehicle-catalog-service:8080"
+  AUTOFLOW_JWT_ISSUER: "http://host.docker.internal:8080/realms/autoflow"
+  AUTOFLOW_JWT_JWKS_URI: "http://host.docker.internal:8080/realms/autoflow/protocol/openid-connect/certs"
+  RABBITMQ_HOST: "host.docker.internal"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: "autoflow"
+  RABBITMQ_VHOST: "/"
+  OTEL_SERVICE_NAME: "autoflow-vehicle-catalog-service"
+  OTEL_RESOURCE_ATTRIBUTES: "service.namespace=autoflow,deployment.environment=local-kubernetes"
+  OTEL_PHP_AUTOLOAD_ENABLED: "false"
+  OTEL_TRACES_EXPORTER: "none"
+  OTEL_METRICS_EXPORTER: "none"
+  OTEL_LOGS_EXPORTER: "none"
