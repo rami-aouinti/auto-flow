@@ -34,7 +34,7 @@ final readonly class InternalPaymentContextController
 
         try {
             $result = ($this->getPaymentContext)($tenantId, $orderId);
-        } catch (\\Throwable) {
+        } catch (\Throwable) {
             return new JsonResponse(['detail' => 'The order payment context is unavailable.'], 503);
         }
 
