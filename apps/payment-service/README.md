@@ -17,14 +17,14 @@ Payment accepts only an order ID from the caller. Before contacting Stripe it ca
 Set PAYMENT_DATABASE_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, AUTOFLOW_JWT_ISSUER and AUTOFLOW_JWT_JWKS_URI. Use Stripe test keys locally; never commit live credentials.
 
 ## API
-- POST /api/v1/payments (scope payments:write; Idempotency-Key required)
+- POST /api/v1/payments (scope payments:write; body contains orderId only; Idempotency-Key required)
 - GET /api/v1/payments/{paymentId} (scope payments:read)
 - POST /api/v1/payments/{paymentId}/capture (scope payments:capture; Idempotency-Key required)
 - POST /api/v1/payments/{paymentId}/cancel (scope payments:write; Idempotency-Key required)
 - POST /api/v1/payments/{paymentId}/refund (scope payments:refund; Idempotency-Key required)
 - POST /api/v1/payments/webhooks/stripe (public route excluded from JWT; Stripe signature required)
 
-Amounts are integers in minor units (e.g. EUR 1299 = €12.99). Capture and refunds are idempotent at both AutoFlow and Stripe layers.
+Amounts are integers in minor units (e.g. EUR 1299 = €12.99) and are resolved by Order from its quote snapshot. Payment publishes versioned PaymentAuthorized, PaymentCaptured, PaymentFailed, PaymentRefunded and PaymentCancelled integration events through its transactional Outbox.
 
 ## Local Stripe test setup
 
