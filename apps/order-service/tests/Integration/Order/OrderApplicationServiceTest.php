@@ -62,7 +62,7 @@ final class OrderApplicationServiceTest extends TestCase
             $tenant, $actor, $created['orderId'], OrderStatus::SUBMITTED, $transitionKey,
         );
         self::assertSame('submitted', $submitted['status']);
-        self::assertSame($submitted, $replayedTransition);
+        self::assertSame($this->sortKeysRecursively($submitted), $this->sortKeysRecursively($replayedTransition));
 
         $history = $this->orders->history($tenant, $created['orderId']);
         self::assertCount(2, $history);
@@ -144,6 +144,27 @@ final class OrderApplicationServiceTest extends TestCase
 
         $this->expectException(IdempotencyConflictException::class);
         $this->orders->transition($tenant, $actor, $created['orderId'], OrderStatus::CANCELLED, $key);
+    }
+
+
+    /**
+     * JSONB does not preserve object key order. Compare the persisted replay
+     * with the original response by value, independently of associative-key order.
+     *
+     * @param array<string, mixed> $value
+     * @return array<string, mixed>
+     */
+    private function sortKeysRecursively(array $value): array
+    {
+        foreach ($value as $key => $item) {
+            if (is_array($item) && !array_is_list($item)) {
+                $value[$key] = $this->sortKeysRecursively($item);
+            }
+        }
+
+        ksort($value);
+
+        return $value;
     }
 
     /** @return array<string, mixed> */
