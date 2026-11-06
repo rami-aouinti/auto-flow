@@ -23,5 +23,7 @@ COPY composer.json ./
 RUN composer install --no-interaction --prefer-dist --no-progress
 
 COPY . .
+RUN chown -R www-data:www-data /var/www/auto-flow
+USER www-data
 
 CMD ["sh", "-lc", "while :; do sleep 3600; done"]

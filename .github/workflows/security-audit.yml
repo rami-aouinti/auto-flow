@@ -74,7 +74,9 @@ jobs:
 
   dependency-review:
     name: Dependency review
-    if: github.event_name == 'pull_request'
+    # GitHub's dependency-review API requires the repository Dependency Graph feature.
+    # Enable it and set DEPENDENCY_GRAPH_ENABLED=true to activate this optional gate.
+    if: github.event_name == 'pull_request' && vars.DEPENDENCY_GRAPH_ENABLED == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

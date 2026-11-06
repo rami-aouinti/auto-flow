@@ -13,7 +13,6 @@ data:
   PRICING_SERVICE_URL: "http://pricing-service:8080"
   AUTOFLOW_JWT_ISSUER: "http://localhost:8080/realms/autoflow"
   AUTOFLOW_JWT_JWKS_URI: "http://host.docker.internal:8080/realms/autoflow/protocol/openid-connect/certs"
-  KEYCLOAK_TOKEN_URL: "http://host.docker.internal:8080/realms/autoflow/protocol/openid-connect/token"
   PRICING_CLIENT_ID: "autoflow-offer-to-pricing"
   RABBITMQ_HOST: "host.docker.internal"
   RABBITMQ_PORT: "5672"

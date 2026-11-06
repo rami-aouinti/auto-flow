@@ -4,26 +4,28 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/temporal"
-\t"go.temporal.io/sdk/workflow"
+	"go.temporal.io/sdk/workflow"
 )
 
 const LifecycleSignal = "order.lifecycle"
 
 type WorkflowInput struct {
-	TenantID string
-	OrderID  string
+	TenantID      string
+	OrderID       string
+	CorrelationID string
 }
 
 type SLAAlert struct {
-	TenantID string
-	OrderID  string
-	Phase    string
-	After    string
+	TenantID      string
+	OrderID       string
+	CorrelationID string
+	Phase         string
+	After         string
 }
 
 func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	logger := workflow.GetLogger(ctx)
-	logger.Info("Order lifecycle workflow started", "tenantId", input.TenantID, "orderId", input.OrderID)
+	logger.Info("Order lifecycle workflow started", "tenantId", input.TenantID, "orderId", input.OrderID, "correlationId", input.CorrelationID)
 
 	activityCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 15 * time.Second,
@@ -31,7 +33,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 			InitialInterval: time.Second,
 			BackoffCoefficient: 2,
 			MaximumInterval: time.Minute,
-			MaximumAttempts: 8,
+			MaximumAttempts: 0,
 		},
 	})
 
@@ -43,7 +45,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	}
 	if decision == "" {
 		if err := workflow.ExecuteActivity(activityCtx, "PublishSLAAlert", SLAAlert{
-			TenantID: input.TenantID, OrderID: input.OrderID, Phase: "human_review", After: "48h",
+			TenantID: input.TenantID, OrderID: input.OrderID, CorrelationID: input.CorrelationID, Phase: "human_review", After: "48h",
 		}).Get(ctx, nil); err != nil {
 			return err
 		}
@@ -67,7 +69,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	}
 	if contractState == "" {
 		if err := workflow.ExecuteActivity(activityCtx, "PublishSLAAlert", SLAAlert{
-			TenantID: input.TenantID, OrderID: input.OrderID, Phase: "contract_preparation", After: "24h",
+			TenantID: input.TenantID, OrderID: input.OrderID, CorrelationID: input.CorrelationID, Phase: "contract_preparation", After: "24h",
 		}).Get(ctx, nil); err != nil {
 			return err
 		}
@@ -90,7 +92,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	}
 	if fulfilment == "" {
 		return workflow.ExecuteActivity(activityCtx, "PublishSLAAlert", SLAAlert{
-			TenantID: input.TenantID, OrderID: input.OrderID, Phase: "contract_fulfilment", After: "168h",
+			TenantID: input.TenantID, OrderID: input.OrderID, CorrelationID: input.CorrelationID, Phase: "contract_fulfilment", After: "168h",
 		}).Get(ctx, nil)
 	}
 	logger.Info("Order lifecycle workflow finished", "orderId", input.OrderID, "finalEvent", fulfilment)

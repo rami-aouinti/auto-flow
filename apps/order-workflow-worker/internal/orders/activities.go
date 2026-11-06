@@ -40,7 +40,7 @@ func (a *Activities) PublishSLAAlert(ctx context.Context, alert SLAAlert) error 
 	confirmations := channel.NotifyPublish(make(chan amqp.Confirmation, 1))
 
 	now := time.Now().UTC()
-	eventID := fmt.Sprintf("sla-%s-%d", alert.OrderID, now.UnixNano())
+	eventID := fmt.Sprintf("sla-%s-%s", alert.OrderID, alert.Phase)
 	envelope := map[string]any{
 		"eventId": eventID,
 		"eventType": "OrderWorkflowSlaBreached",
@@ -48,6 +48,7 @@ func (a *Activities) PublishSLAAlert(ctx context.Context, alert SLAAlert) error 
 		"producer": "order-workflow-worker",
 		"aggregate": map[string]string{"type": "Order", "id": alert.OrderID},
 		"tenantId": alert.TenantID,
+		"correlationId": alert.CorrelationID,
 		"occurredAt": now.Format(time.RFC3339Nano),
 		"data": map[string]string{"phase": alert.Phase, "threshold": alert.After},
 	}

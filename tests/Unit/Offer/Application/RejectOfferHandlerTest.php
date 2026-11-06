@@ -64,7 +64,7 @@ final class RejectOfferHandlerTest extends TestCase
                 return ['items' => [], 'total' => 0];
             }
 
-            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
+            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): array
             {
                 return [];
             }
@@ -111,7 +111,7 @@ final class RejectOfferHandlerTest extends TestCase
                 return ['items' => [], 'total' => 0];
             }
 
-            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
+            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): array
             {
                 return [];
             }
