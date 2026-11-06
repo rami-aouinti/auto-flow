@@ -17,7 +17,10 @@ use Throwable;
 #[Route('/api/v1/payments')]
 final readonly class PaymentController
 {
-    public function __construct(private PaymentApplicationService $payments)
+    public function __construct(
+        private PaymentApplicationService $payments,
+        private GetPaymentHandler $getPayment,
+    )
     {
     }
 
@@ -43,7 +46,7 @@ final readonly class PaymentController
     {
         try {
             $principal = $this->principal($request, 'payments:read');
-            return new JsonResponse($this->payments->get($this->tenant($principal), $paymentId), 200, ['Cache-Control'=>'no-store']);
+            return new JsonResponse(($this->getPayment)($this->tenant($principal), $paymentId), 200, ['Cache-Control'=>'no-store']);
         } catch (PaymentNotFoundException) {
             return $this->problem(404, 'Payment not found.');
         } catch (\Throwable) {
