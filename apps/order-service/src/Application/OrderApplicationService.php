@@ -163,6 +163,22 @@ final readonly class OrderApplicationService
         });
     }
 
+    /** @return list<array<string,mixed>> */
+    public function history(string $tenantId, string $orderId): array
+    {
+        return $this->connection->transactional(function (Connection $db) use ($tenantId, $orderId): array {
+            $this->setTenant($db, $tenantId);
+            if (!$db->fetchOne('SELECT 1 FROM orders WHERE tenant_id = :tenant AND order_id = :id', ['tenant' => $tenantId, 'id' => $orderId])) {
+                throw new OrderNotFoundException('Order not found.');
+            }
+            return $db->fetchAllAssociative(
+                'SELECT from_status, to_status, actor, reason, occurred_at
+                 FROM order_history WHERE tenant_id = :tenant AND order_id = :id ORDER BY occurred_at ASC, history_id ASC',
+                ['tenant' => $tenantId, 'id' => $orderId],
+            );
+        });
+    }
+
     private function setTenant(Connection $db, string $tenantId): void
     {
         $db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant' => $tenantId]);
