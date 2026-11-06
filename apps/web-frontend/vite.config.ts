@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
@@ -20,6 +21,14 @@ export default defineConfig(({ mode }) => {
         '/pricing': proxy('/pricing', env.PRICING_PROXY_TARGET || 'http://pricing-service:8080'),
         '/orders': proxy('/orders', env.ORDER_PROXY_TARGET || 'http://order-service:8080'),
         '/payments': proxy('/payments', env.PAYMENT_PROXY_TARGET || 'http://payment-service:8080'),
+      },
+    },
+    build: {
+      rollupOptions: {
+        input: {
+          main: resolve(process.cwd(), 'index.html'),
+          operations: resolve(process.cwd(), 'operations.html'),
+        },
       },
     },
   };
