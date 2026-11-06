@@ -23,6 +23,7 @@ final class OfferPdfGenerator
             ['', 10, false],
             ['COMMERCIAL TERMS', 12, true],
             ['Total amount incl. down payment: ' . $this->money((string) $p['totalCostIncludingDownPayment'], (string) $p['currency']), 10, false],
+            ['Down payment: ' . $this->money(number_format((float) $p['totalCostIncludingDownPayment'] - (float) $p['totalInstallmentsAmount'], 2, '.', ''), (string) $p['currency']), 10, false],
             ['Monthly instalment: ' . $this->money((string) $p['monthlyAmount'], (string) $p['currency']), 10, true],
             ['Duration: ' . (int) $p['durationMonths'] . ' months', 10, false],
             ['Residual value: ' . $this->money((string) $p['residualValue'], (string) $p['currency']), 10, false],
