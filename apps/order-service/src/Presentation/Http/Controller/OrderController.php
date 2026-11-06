@@ -7,6 +7,7 @@ namespace App\\Presentation\\Http\\Controller;
 use App\\Application\\OrderApplicationService;
 use App\\Application\\OrderNotFoundException;
 use App\\Domain\\OrderStatus;
+use App\\Infrastructure\\Observability\\OrderMetrics;
 use AutoFlow\\CoreBundle\\Security\\AuthenticatedPrincipal;
 use DomainException;
 use Symfony\\Component\\HttpFoundation\\JsonResponse;
@@ -18,7 +19,7 @@ use Throwable;
 #[Route('/api/v1/orders')]
 final readonly class OrderController
 {
-    public function __construct(private OrderApplicationService $orders)
+    public function __construct(private OrderApplicationService $orders, private OrderMetrics $metrics)
     {
     }
 
@@ -31,8 +32,10 @@ final readonly class OrderController
             if (!is_string($key) || $key === '') {
                 return $this->problem(400, 'Idempotency-Key is required.');
             }
+            $result = $this->orders->create($this->tenant($principal), $principal->subject, $this->jsonBody($request), $key);
+            $this->metrics->recordCreated();
             return new JsonResponse(
-                $this->orders->create($this->tenant($principal), $principal->subject, $this->jsonBody($request), $key),
+                $result,
                 JsonResponse::HTTP_CREATED,
                 ['Cache-Control' => 'no-store'],
             );
@@ -132,8 +135,10 @@ final readonly class OrderController
             $scope = in_array($target, [OrderStatus::ACCEPTED, OrderStatus::REJECTED, OrderStatus::UNDER_REVIEW, OrderStatus::CONTRACT_PENDING, OrderStatus::COMPLETED], true)
                 ? 'orders:manage' : 'orders:write';
             $principal = $this->principal($request, $scope);
+            $result = $this->orders->transition($this->tenant($principal), $principal->subject, $orderId, $target, $reason);
+            $this->metrics->recordTransition($target->value);
             return new JsonResponse(
-                $this->orders->transition($this->tenant($principal), $principal->subject, $orderId, $target, $reason),
+                $result,
                 200,
                 ['Cache-Control' => 'no-store'],
             );
