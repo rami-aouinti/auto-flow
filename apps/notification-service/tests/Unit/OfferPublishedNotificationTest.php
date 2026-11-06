@@ -14,6 +14,7 @@ final class OfferPublishedNotificationTest extends TestCase
         $event = OfferPublishedNotification::fromEnvelope([
             'eventId' => 'evt-1',
             'eventType' => 'OfferPublished',
+            'schemaVersion' => 2,
             'tenantId' => 'tenant-demo',
             'aggregate' => ['id' => 'offer-1'],
             'data' => [
