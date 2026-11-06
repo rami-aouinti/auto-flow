@@ -6,6 +6,7 @@ namespace App\Application\CreatePayment;
 
 use App\Application\Port\PaymentGatewayInterface;
 use App\Application\Port\OrderPaymentContextProviderInterface;
+use AutoFlow\CoreBundle\Application\Clock\ClockInterface;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Uuid;
 use DomainException;
@@ -14,6 +15,7 @@ use RuntimeException;
 final readonly class CreatePaymentHandler
 {
     public function __construct(
+        private ClockInterface $clock,
         private Connection $db,
         private PaymentGatewayInterface $gateway,
         private OrderPaymentContextProviderInterface $orderContext,
@@ -145,7 +147,7 @@ final readonly class CreatePaymentHandler
             'producer' => 'payment-service',
             'aggregate' => ['type' => 'Payment', 'id' => $paymentId],
             'tenantId' => $tenant,
-            'occurredAt' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(DATE_ATOM),
+            'occurredAt' => $this->clock->now()->setTimezone(new \DateTimeZone('UTC'))->format(DATE_ATOM),
             'data' => $payload,
         ];
         $this->db->insert('payment_outbox', [
