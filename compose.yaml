@@ -295,6 +295,7 @@ services:
       - ./apps/pricing-service/migrations/Version20261104000100CreatePricingQuotes.sql:/docker-entrypoint-initdb.d/20-pricing-quotes.sql:ro
       - ./apps/pricing-service/migrations/Version20261104000200AddPricingQuoteSoftDelete.sql:/docker-entrypoint-initdb.d/30-pricing-quote-soft-delete.sql:ro
       - ./apps/pricing-service/migrations/Version20261104000300AddPricingQuoteOwner.sql:/docker-entrypoint-initdb.d/40-pricing-quote-owner.sql:ro
+      - ./apps/pricing-service/migrations/Version20261106000100CreatePricingPoliciesAndQuoteSnapshots.sql:/docker-entrypoint-initdb.d/45-pricing-policy-snapshots.sql:ro
       - ./apps/offer-service/migrations/00_create_offer_database_role.sql:/docker-entrypoint-initdb.d/50-offer-role.sql:ro
       - ./apps/offer-service/migrations/Version20261104000400CreateOffers.sql:/docker-entrypoint-initdb.d/60-offers.sql:ro
       - ./apps/offer-service/migrations/Version20261104000500CreateOfferOutbox.sql:/docker-entrypoint-initdb.d/70-offer-outbox.sql:ro
