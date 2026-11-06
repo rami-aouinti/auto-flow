@@ -87,10 +87,6 @@ final readonly class RabbitMqOfferEventConsumer
                     'error' => $exception->getMessage(),
                 ]);
 
-                if ($eventId !== 'unknown') {
-                    // Delivery state is also persisted by the application handler/repository.
-                }
-
                 $headers = new AMQPTable(['x-autoflow-attempt' => $attempt + 1]);
                 $retry = new AMQPMessage($message->getBody(), [
                     'content_type' => 'application/json',
