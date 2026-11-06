@@ -1,0 +1,29 @@
+parameters:
+    app.stripe_secret_key: '%env(STRIPE_SECRET_KEY)%'
+    app.stripe_webhook_secret: '%env(STRIPE_WEBHOOK_SECRET)%'
+    app.stripe_api_base: 'https://api.stripe.com'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\\:
+        resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+
+    App\\Infrastructure\\Stripe\\StripePaymentGateway:
+        arguments:
+            $secretKey: '%app.stripe_secret_key%'
+            $apiBase: '%app.stripe_api_base%'
+
+    App\\Application\\Port\\PaymentGatewayInterface:
+        alias: App\\Infrastructure\\Stripe\\StripePaymentGateway
+
+    App\\Infrastructure\\Webhook\\StripeWebhookVerifier:
+        arguments:
+            $webhookSecret: '%app.stripe_webhook_secret%'
+
+    App\\Infrastructure\\Health\\PaymentDatabaseHealthCheck:
+        tags: ['autoflow_core.health_check']
