@@ -27,14 +27,13 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	activityCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 15 * time.Second,
 		RetryPolicy: &workflow.RetryPolicy{
-			InitialInterval:    time.Second,
+			InitialInterval: time.Second,
 			BackoffCoefficient: 2,
-			MaximumInterval:    time.Minute,
-			MaximumAttempts:    8,
+			MaximumInterval: time.Minute,
+			MaximumAttempts: 8,
 		},
 	})
 
-	// Human review is intentionally represented as a durable wait, not a busy poll.
 	decision, err := waitForLifecycleEvent(ctx, map[string]bool{
 		"OrderAccepted": true, "OrderRejected": true, "OrderCancelled": true,
 	}, 48*time.Hour)
@@ -42,7 +41,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 		return err
 	}
 	if decision == "" {
-		if err := workflow.ExecuteActivity(activityCtx, PublishSLAAlert, SLAAlert{
+		if err := workflow.ExecuteActivity(activityCtx, "PublishSLAAlert", SLAAlert{
 			TenantID: input.TenantID, OrderID: input.OrderID, Phase: "human_review", After: "48h",
 		}).Get(ctx, nil); err != nil {
 			return err
@@ -66,7 +65,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 		return err
 	}
 	if contractState == "" {
-		if err := workflow.ExecuteActivity(activityCtx, PublishSLAAlert, SLAAlert{
+		if err := workflow.ExecuteActivity(activityCtx, "PublishSLAAlert", SLAAlert{
 			TenantID: input.TenantID, OrderID: input.OrderID, Phase: "contract_preparation", After: "24h",
 		}).Get(ctx, nil); err != nil {
 			return err
@@ -89,7 +88,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 		return err
 	}
 	if fulfilment == "" {
-		return workflow.ExecuteActivity(activityCtx, PublishSLAAlert, SLAAlert{
+		return workflow.ExecuteActivity(activityCtx, "PublishSLAAlert", SLAAlert{
 			TenantID: input.TenantID, OrderID: input.OrderID, Phase: "contract_fulfilment", After: "168h",
 		}).Get(ctx, nil)
 	}
@@ -99,15 +98,18 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 
 func waitForLifecycleEvent(ctx workflow.Context, accepted map[string]bool, timeout time.Duration) (string, error) {
 	signals := workflow.GetSignalChannel(ctx, LifecycleSignal)
+	var timer workflow.Future
+	if timeout > 0 {
+		timer = workflow.NewTimer(ctx, timeout)
+	}
 	for {
 		var event Event
 		if timeout <= 0 {
 			signals.Receive(ctx, &event)
 		} else {
-			timer := workflow.NewTimer(ctx, timeout)
-			selector := workflow.NewSelector(ctx)
 			received := false
 			timedOut := false
+			selector := workflow.NewSelector(ctx)
 			selector.AddReceive(signals, func(channel workflow.ReceiveChannel, more bool) {
 				channel.Receive(ctx, &event)
 				received = true
