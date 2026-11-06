@@ -172,14 +172,14 @@
       },
       "targets": [
         {
-          "expr": "sum by (result) (rate({__name__=~\"pricing_quote_calculations(_quotes)?_total\"}[5m]))",
+          "expr": "sum by (result) ({__name__=~\"pricing_quote_calculations.*\"})",
           "legendFormat": "{{result}}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -355,7 +355,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (name) (container_memory_working_set_bytes{name!=\"\"})",
+          "expr": "sum by (name) (container_memory_working_set_bytes)",
           "refId": "A",
           "legendFormat": "{{name}}"
         }
@@ -431,7 +431,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (result) (rate({__name__=~\"pricing_quote_calculations(_quotes)?_total\"}[5m]))",
+          "expr": "sum by (result) (rate({__name__=~\"pricing_quote_calculations.*\"}[5m]))",
           "refId": "A",
           "legendFormat": "{{result}}"
         }
@@ -471,5 +471,5 @@
   "timezone": "browser",
   "title": "AutoFlow - Platform Overview",
   "uid": "autoflow-platform-overview",
-  "version": 2
+  "version": 3
 }
