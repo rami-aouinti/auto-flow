@@ -245,6 +245,39 @@ docker compose exec -e XDEBUG_MODE=debug -e XDEBUG_TRIGGER=1 php php -v
 
 For coverage, the Composer coverage script activates XDEBUG_MODE=coverage.
 
+## Background workers, scheduling and Temporal
+
+Docker Compose runs the two long-lived Offer processes under Supervisor:
+- `offer-expiration` polls for due offers every 30 seconds.
+- `offer-outbox-publisher` publishes committed Outbox events to RabbitMQ.
+
+Kubernetes uses native controllers instead of nesting Supervisor inside Pods:
+- Offer API and Offer Outbox publisher are Deployments.
+- Offer expiration is a one-shot CronJob (`*/1 * * * *`) using `php bin/expire-offers.php --once`, with `concurrencyPolicy: Forbid`.
+- Vehicle Catalog API and its Outbox publisher are separate Deployments.
+
+Temporal is added as a local development server using the official Temporal CLI container image. State is persisted in the `temporal-data` Docker volume. The gRPC endpoint is `localhost:7233`; the UI is `http://localhost:8233`. This is a development server, not a production Temporal cluster. The PHP SDK Workflow/Worker implementation is a separate step; adding the server does not mean a Workflow is already running.
+
+Start the relevant services:
+
+~~~bash
+docker compose up -d --build offer-service vehicle-catalog-service offer-workers vehicle-catalog-outbox-publisher temporal
+docker compose ps offer-workers temporal
+docker compose logs -f offer-workers temporal
+~~~
+
+Apply Kubernetes workloads after building and tagging local images:
+
+~~~bash
+kubectl apply -f k8s/pricing/namespace.yaml
+kubectl apply -f k8s/offer/
+kubectl apply -f k8s/vehicle-catalog/
+kubectl -n autoflow get deployments,pods,services,cronjobs
+kubectl -n autoflow get jobs
+~~~
+
+Kubernetes Secret manifests are templates only. Copy each `secret.example.yaml` to `secret.yaml`, replace local credentials, and apply the generated Secret. Never commit real credentials. These local Kubernetes examples reach Compose-hosted PostgreSQL, RabbitMQ and Keycloak through `host.docker.internal`; replace those addresses with in-cluster Services or managed endpoints in a real cluster.
+
 ## Architecture direction
 
 This repository contains independently deployable Symfony services in a monorepo.
