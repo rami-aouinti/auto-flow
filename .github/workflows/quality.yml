@@ -33,6 +33,7 @@ jobs:
           timeout 10s docker run --rm \
             -v "$PWD/infrastructure/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro" \
             grafana/alloy:v1.6.1 run \
+            --stability.level=experimental \
             --server.http.listen-addr=0.0.0.0:12345 \
             /etc/alloy/config.alloy
           status=$?
