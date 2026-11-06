@@ -2,6 +2,8 @@ parameters:
     app.stripe_secret_key: '%env(STRIPE_SECRET_KEY)%'
     app.stripe_webhook_secret: '%env(STRIPE_WEBHOOK_SECRET)%'
     app.stripe_api_base: 'https://api.stripe.com'
+    app.order_service_url: '%env(resolve:ORDER_PAYMENT_CONTEXT_URL)%'
+    app.order_payment_shared_secret: '%env(ORDER_PAYMENT_SHARED_SECRET)%'
 
 services:
     _defaults:
@@ -27,3 +29,11 @@ services:
 
     App\\Infrastructure\\Health\\PaymentDatabaseHealthCheck:
         tags: ['autoflow_core.health_check']
+
+    App\\Infrastructure\\Order\\HttpOrderPaymentContextProvider:
+        arguments:
+            $orderServiceUrl: '%app.order_service_url%'
+            $sharedSecret: '%app.order_payment_shared_secret%'
+
+    App\\Application\\Port\\OrderPaymentContextProviderInterface:
+        alias: App\\Infrastructure\\Order\\HttpOrderPaymentContextProvider
