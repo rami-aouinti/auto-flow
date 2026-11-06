@@ -42,6 +42,37 @@ final class GetPaymentHandlerTest extends TestCase
         );
     }
 
+
+    public function testItRejectsMissingTenantAndInvalidPagination(): void
+    {
+        $repository = new class implements PaymentRepositoryInterface {
+            public function findByTenantAndId(string $tenantId, string $paymentId): ?array
+            {
+                return null;
+            }
+
+            public function listByTenant(string $tenantId, int $limit, int $offset): array
+            {
+                throw new \\LogicException('Repository must not be called for invalid input.');
+            }
+        };
+        $handler = new GetPaymentHandler($repository);
+
+        try {
+            $handler->list('', 20, 0);
+            self::fail('An empty tenant must be rejected.');
+        } catch (\\DomainException) {
+            self::assertTrue(true);
+        }
+
+        try {
+            $handler->list('tenant-1', 101, 0);
+            self::fail('A limit above 100 must be rejected.');
+        } catch (\\DomainException) {
+            self::assertTrue(true);
+        }
+    }
+
     public function testItThrowsWhenThePaymentDoesNotExistInTheTenant(): void
     {
         $repository = new class implements PaymentRepositoryInterface {
