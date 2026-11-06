@@ -46,9 +46,9 @@ final class AcceptOfferHandlerTest extends TestCase
             ): array {
                 return ['items' => [], 'total' => 0];
             }
-            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
+            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): array
             {
-                return null;
+                return [];
             }
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
             {
@@ -91,9 +91,9 @@ final class AcceptOfferHandlerTest extends TestCase
             ): array {
                 return ['items' => [], 'total' => 0];
             }
-            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
+            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): array
             {
-                return null;
+                return [];
             }
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
             {
