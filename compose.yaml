@@ -133,6 +133,7 @@ services:
       args:
         SERVICE_PATH: apps/payment-service
         COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
     command: ["php", "bin/publish-outbox.php"]
     environment:
       APP_ENV: prod
@@ -214,6 +215,7 @@ services:
       args:
         SERVICE_PATH: apps/order-service
         COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
     command: ["php", "bin/consume-payment-events.php"]
     environment:
       APP_ENV: prod
@@ -245,6 +247,7 @@ services:
       args:
         SERVICE_PATH: apps/order-service
         COMPOSER_NO_DEV: ""
+        ROADRUNNER_BOOT_CHECK: "0"
     command: ["php", "bin/publish-outbox.php"]
     environment:
       APP_ENV: prod
@@ -350,6 +353,7 @@ services:
       args:
         SERVICE_PATH: apps/vehicle-catalog-service
         COMPOSER_NO_DEV: ""
+        ROADRUNNER_BOOT_CHECK: "0"
     command: ["php", "bin/publish-outbox.php"]
     environment:
       APP_ENV: prod
@@ -384,6 +388,7 @@ services:
       args:
         SERVICE_PATH: apps/offer-service
         COMPOSER_NO_DEV: ""
+        ROADRUNNER_BOOT_CHECK: "0"
     command: ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/offer-workers.conf"]
     environment:
       APP_ENV: prod
