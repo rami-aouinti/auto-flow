@@ -47,7 +47,7 @@ func (a *Activities) PublishSLAAlert(ctx context.Context, alert SLAAlert) error 
 		"schemaVersion": 1,
 		"producer": "order-workflow-worker",
 		"aggregate": map[string]string{"type": "Order", "id": alert.OrderID},
-		"tenantId": alert.TenantID,
+		"tenantId": alert.TenantID,\n\t\t"correlationId": alert.CorrelationID,
 		"occurredAt": now.Format(time.RFC3339Nano),
 		"data": map[string]string{"phase": alert.Phase, "threshold": alert.After},
 	}
