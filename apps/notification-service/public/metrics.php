@@ -14,6 +14,21 @@ $pdo = new PDO(
     rawurldecode((string) ($parts['pass'] ?? 'autoflow')),
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
 );
+$pdo->exec(<<<'SQL'
+    CREATE TABLE IF NOT EXISTS notification_deliveries (
+        event_id VARCHAR(64) PRIMARY KEY,
+        tenant_id VARCHAR(128) NOT NULL,
+        aggregate_id VARCHAR(64) NOT NULL,
+        notification_type VARCHAR(80) NOT NULL,
+        recipient_email VARCHAR(320) NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        attempt_count INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        sent_at TIMESTAMPTZ NULL
+    )
+    SQL);
 $rows = $pdo->query("SELECT status, COUNT(*) AS total FROM notification_deliveries GROUP BY status")->fetchAll(PDO::FETCH_KEY_PAIR);
 header('Content-Type: text/plain; version=0.0.4; charset=utf-8');
 echo "# HELP autoflow_notification_deliveries_total Number of persisted notification deliveries by state.\n";
