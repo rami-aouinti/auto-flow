@@ -31,7 +31,7 @@ final readonly class DoctrinePaymentRepository implements PaymentRepositoryInter
             $this->connection->commit();
 
             return $row === false ? null : $row;
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->connection->isTransactionActive()) {
                 $this->connection->rollBack();
             }
