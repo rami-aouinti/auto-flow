@@ -41,7 +41,7 @@ docker compose exec php php -v
 docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher
 ~~~
 
-The first local build of the Symfony services installs their independent Composer dependencies, including development-only Swagger UI tooling. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` to export all three generated OpenAPI specifications.
+The first local build installs each service's independent Composer dependencies. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
 Subsequent starts reuse the built images unless their source or Dockerfile changes.
 
 ## Local interfaces and endpoints
@@ -82,7 +82,7 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 
 Offer, Pricing, Vehicle Catalog and Order Management validate RS256 access tokens locally using Keycloak's JWKS endpoint. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog` and `autoflow-order`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
 
-The imported `demo` user and password `demo`, and the local password-grant client below, are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
+The imported `demo` user/password `demo`, `order-operator` user/password `order-operator`, and the local password-grant client below are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
 
 ~~~bash
 TOKEN=$(curl -fsS -X POST http://localhost:8080/realms/autoflow/protocol/openid-connect/token \\
@@ -107,6 +107,7 @@ curl -i http://localhost:8082/api/pricing/quotes \\
   -d '{"vehicleId":"vehicle-001","vehiclePrice":"30000.00","downPayment":"3000.00","residualValue":"9000.00","currency":"EUR","durationMonths":36,"annualInterestRateBasisPoints":500}'
 ~~~
 
+~~~bash
 # Order Management demo token (order-operator has read/write/manage permissions).
 ORDER_TOKEN=$(curl -fsS -X POST http://localhost:8080/realms/autoflow/protocol/openid-connect/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
@@ -120,6 +121,7 @@ curl -i -X POST http://localhost:8085/api/v1/orders \
   -H 'Idempotency-Key: local-order-demo-001' \
   -H 'Content-Type: application/json' \
   -d '{"offerId":"offer-123","quoteId":"quote-456","vehicleId":"variant-789","offerSnapshot":{"offerVersion":1},"quoteSnapshot":{"currency":"EUR","monthlyAmount":"329.00","durationMonths":48},"vehicleSnapshot":{"manufacturer":"Example Motors","model":"E-1"}}'
+~~~
 
 Offer validates the incoming user access token, then exchanges it with Keycloak using the confidential `autoflow-offer-to-pricing` client and the standard OAuth 2.0 Token Exchange grant. The exchanged token is downscoped to the `autoflow-pricing` audience and sent to Pricing. Pricing therefore validates its own audience while retaining the user's `sub`; quote ownership is based on that verified subject. The local realm gives the demo user the `offers:read`, `offers:quote` and `pricing:quote` realm roles, assigns the `tenant-demo` tenant attribute, and includes the Offer workload client in the original token audience. Both the original and exchanged token receive the `tenant_id` claim from the user's Keycloak attribute. For a production realm, enable Standard Token Exchange on the confidential requester client, allow that client to exchange to the Pricing audience, and map only the appropriate user roles/permissions. Do not use the deprecated legacy token-exchange feature.
 
