@@ -23,7 +23,7 @@ final readonly class PaymentApplicationService
      */
     public function create(string $tenant, string $actor, string $key, array $input): array
     {
-        $orderId = $this->requiredString($input, 'orderId');
+        $orderId = $this->requiredString($input, 'orderId');\n        if (!Uuid::isValid($orderId)) {\n            throw new DomainException('orderId must be a valid UUID.');\n        }
         $amount = $input['amountMinor'] ?? null;
         $currency = strtoupper((string) ($input['currency'] ?? ''));
         if (!is_int($amount) || $amount < 50 || $amount > 99_999_999 || preg_match('/^[A-Z]{3}$/D', $currency) !== 1) {
@@ -59,7 +59,7 @@ final readonly class PaymentApplicationService
                 throw new RuntimeException('Payment provider did not return a payment intent identifier.');
             }
             $status = match ($intent['status'] ?? '') {
-                'requires_action', 'requires_payment_method', 'requires_confirmation' => 'requires_action',
+                'requires_action', 'requires_confirmation' => 'requires_action',\n                'requires_payment_method' => 'pending',
                 'requires_capture' => 'authorized',
                 'succeeded' => 'captured',
                 default => 'pending',
@@ -92,15 +92,24 @@ final readonly class PaymentApplicationService
     /** @return array<string,mixed> */
     public function get(string $tenant, string $paymentId): array
     {
-        $this->setTenantOutsideTransaction($tenant);
-        $row = $this->db->fetchAssociative(
-            'SELECT payment_id,order_id,provider,provider_payment_id,amount_minor,currency,status,amount_refunded_minor,created_at,updated_at FROM payments WHERE tenant_id=:tenant AND payment_id=:id',
-            ['tenant'=>$tenant,'id'=>$paymentId],
-        );
-        if ($row === false) {
-            throw new PaymentNotFoundException();
+        $this->db->beginTransaction();
+        try {
+            $this->setTenant($tenant);
+            $row = $this->db->fetchAssociative(
+                'SELECT payment_id,order_id,provider,provider_payment_id,amount_minor,currency,status,amount_refunded_minor,created_at,updated_at FROM payments WHERE tenant_id=:tenant AND payment_id=:id',
+                ['tenant'=>$tenant,'id'=>$paymentId],
+            );
+            $this->db->commit();
+            if ($row === false) {
+                throw new PaymentNotFoundException();
+            }
+            return $row;
+        } catch (\\Throwable $exception) {
+            if ($this->db->isTransactionActive()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
         }
-        return $row;
     }
 
     /** @return array<string,mixed> */
@@ -231,14 +240,6 @@ final readonly class PaymentApplicationService
     private function setTenant(string $tenant): void
     {
         $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant'=>$tenant]);
-    }
-
-    private function setTenantOutsideTransaction(string $tenant): void
-    {
-        $this->db->beginTransaction();
-        $this->setTenant($tenant);
-        $this->db->commit();
-        $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, false)", ['tenant'=>$tenant]);
     }
 
     /** @param array<string,mixed> $payload */
