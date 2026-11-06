@@ -291,7 +291,11 @@
         "orders:manage",
         "offers:read",
         "pricing:quote",
-        "catalog:read"
+        "catalog:read",
+        "payments:read",
+        "payments:write",
+        "payments:capture",
+        "payments:refund"
       ],
       "attributes": {
         "tenant_id": [
@@ -333,6 +337,22 @@
       {
         "name": "orders:manage",
         "description": "Review and decide orders within the authenticated tenant"
+      },
+      {
+        "name": "payments:read",
+        "description": "Read payment records within the authenticated tenant"
+      },
+      {
+        "name": "payments:write",
+        "description": "Create and cancel payments within the authenticated tenant"
+      },
+      {
+        "name": "payments:capture",
+        "description": "Capture authorized payments within the authenticated tenant"
+      },
+      {
+        "name": "payments:refund",
+        "description": "Refund captured payments within the authenticated tenant"
       }
     ]
   }
