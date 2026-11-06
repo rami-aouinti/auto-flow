@@ -53,7 +53,7 @@ final class GetPaymentHandlerTest extends TestCase
 
             public function listByTenant(string $tenantId, int $limit, int $offset): array
             {
-                throw new \\LogicException('Repository must not be called for invalid input.');
+                throw new \LogicException('Repository must not be called for invalid input.');
             }
         };
         $handler = new GetPaymentHandler($repository);
@@ -61,14 +61,14 @@ final class GetPaymentHandlerTest extends TestCase
         try {
             $handler->list('', 20, 0);
             self::fail('An empty tenant must be rejected.');
-        } catch (\\DomainException) {
+        } catch (\DomainException) {
             self::assertTrue(true);
         }
 
         try {
             $handler->list('tenant-1', 101, 0);
             self::fail('A limit above 100 must be rejected.');
-        } catch (\\DomainException) {
+        } catch (\DomainException) {
             self::assertTrue(true);
         }
     }
