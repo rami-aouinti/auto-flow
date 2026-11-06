@@ -68,18 +68,41 @@ $handler = static function (AMQPMessage $message) use ($db): void {
             return;
         }
         $exists = $db->fetchOne(
-            'SELECT 1 FROM orders WHERE tenant_id = :tenant AND order_id = :order',
+            'SELECT status, payment_status FROM orders WHERE tenant_id = :tenant AND order_id = :order',
             ['tenant' => $tenantId, 'order' => $orderId],
         );
-        if ($exists === false) {
+        if (!is_array($exists)) {
             throw new RuntimeException('Payment event references an unknown order; message will be retried.');
         }
+        $currentStatus = (string) $exists['payment_status'];
+        $allowed = match ($currentStatus) {
+            'not_started' => ['authorized', 'failed', 'cancelled'],
+            'authorized' => ['captured', 'failed', 'partially_refunded', 'refunded', 'cancelled'],
+            'failed' => ['authorized', 'cancelled'],
+            'captured' => ['partially_refunded', 'refunded'],
+            'partially_refunded' => ['partially_refunded', 'refunded'],
+            default => [],
+        };
+        if (!in_array($paymentStatus, $allowed, true)) {
+            return;
+        }
         $updated = $db->executeStatement(
-            'UPDATE orders SET payment_status = :status, updated_at = CURRENT_TIMESTAMP WHERE tenant_id = :tenant AND order_id = :order AND payment_status IS DISTINCT FROM :status',
+            'UPDATE orders SET payment_status = :status, updated_at = CURRENT_TIMESTAMP WHERE tenant_id = :tenant AND order_id = :order',
             ['status' => $paymentStatus, 'tenant' => $tenantId, 'order' => $orderId],
         );
-        if ($updated === 0) {
-            return;
+        if ($updated !== 1) {
+            throw new RuntimeException('Order payment state could not be updated.');
+        }
+        if ($paymentStatus === 'authorized' && $exists['status'] === 'accepted') {
+            $db->executeStatement(
+                "UPDATE orders SET status = 'contract_pending' WHERE tenant_id = :tenant AND order_id = :order AND status = 'accepted'",
+                ['tenant' => $tenantId, 'order' => $orderId],
+            );
+            $db->executeStatement(
+                "INSERT INTO order_history (tenant_id, order_id, from_status, to_status, actor, reason, occurred_at)
+                 VALUES (:tenant, :order, 'accepted', 'contract_pending', 'system:payment-service', 'PaymentAuthorized', CURRENT_TIMESTAMP)",
+                ['tenant' => $tenantId, 'order' => $orderId],
+            );
         }
         $outboxEvent = 'Order' . match ($paymentStatus) {
             'authorized' => 'PaymentAuthorized',
