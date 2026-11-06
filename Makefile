@@ -38,3 +38,4 @@ api-docs:
 	docker compose exec offer-service php bin/console nelmio:apidoc:dump --format=json
 	docker compose exec pricing-service php bin/console nelmio:apidoc:dump --format=json
 	docker compose exec vehicle-catalog-service php bin/console nelmio:apidoc:dump --format=json
+	@echo "Order Management OpenAPI contract: apps/order-service/docs/openapi.yaml"
