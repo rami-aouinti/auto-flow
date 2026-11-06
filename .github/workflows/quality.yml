@@ -24,6 +24,7 @@ jobs:
           composer validate --strict --working-dir=apps/offer-service
           composer validate --strict --working-dir=apps/pricing-service
           composer validate --strict --working-dir=apps/vehicle-catalog-service
+          composer validate --strict --working-dir=apps/order-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
@@ -87,8 +88,12 @@ jobs:
           docker compose logs rabbitmq
           docker compose exec -T rabbitmq rabbitmq-diagnostics listeners || true
           docker compose exec -T rabbitmq rabbitmqctl list_users || true
+      - name: Install Order Service dependencies and run domain tests
+        run: |
+          composer install --working-dir=apps/order-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
+          apps/order-service/vendor/bin/phpunit --configuration apps/order-service/phpunit.xml.dist
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher
+        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
