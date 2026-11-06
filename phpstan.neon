@@ -9,6 +9,8 @@ parameters:
             - apps/order-service/*
             - apps/offer-service/*
             - apps/pricing-service/*
+    bootstrapFiles:
+        - apps/vehicle-catalog-service/vendor/autoload.php
     tmpDir: var/phpstan
 
     ignoreErrors:
