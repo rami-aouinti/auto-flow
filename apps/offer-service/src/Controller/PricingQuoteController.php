@@ -24,9 +24,7 @@ use Throwable;
 final readonly class PricingQuoteController
 {
     public function __construct(
-        private HttpClientInterface $httpClient,
-        private string $pricingServiceUrl,
-        private KeycloakTokenExchangeProvider $pricingTokenExchange,
+        private PricingQuoteProxyInterface $pricingQuoteProxy,
         private TenantContext $tenantContext,
     ) {
     }
@@ -56,26 +54,17 @@ final readonly class PricingQuoteController
                 ),
             ];
 
-            $pricingToken = $this->pricingTokenExchange->exchangeForPricing(
+            $pricingResponse = $this->pricingQuoteProxy->requestQuote(
+                $vehicleId,
+                $pricingPayload,
                 $this->requireBearerToken($request),
-            );
-            $pricingResponse = $this->httpClient->request(
-                'POST',
-                rtrim($this->pricingServiceUrl, '/') . '/api/pricing/quotes',
-                [
-                    'auth_bearer' => $pricingToken,
-                    'headers' => [
-                        'X-Tenant-ID' => $this->tenantContext->requireTenantId(),
-                        'Content-Type' => 'application/json',
-                    ],
-                    'json' => $pricingPayload,
-                ],
+                $this->tenantContext->requireTenantId(),
             );
 
-            $upstreamStatus = $pricingResponse->getStatusCode();
+            $upstreamStatus = $pricingResponse->statusCode;
             try {
                 $upstreamPayload = json_decode(
-                    $pricingResponse->getContent(false),
+                    $pricingResponse->content,
                     true,
                     512,
                     JSON_THROW_ON_ERROR,
