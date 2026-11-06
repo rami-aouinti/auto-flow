@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Upstream;
 
 use App\Application\OrderReferenceValidationException;
+use App\Application\OrderUpstreamAuthorizationException;
+use App\Application\OrderUpstreamUnavailableException;
 use App\Application\Port\OrderReferenceValidatorInterface;
 use DateTimeImmutable;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -94,23 +96,23 @@ final readonly class HttpOrderReferenceValidator implements OrderReferenceValida
             ]);
             $status = $response->getStatusCode();
             if ($status === 401 || $status === 403) {
-                throw new OrderReferenceValidationException('The caller is not authorized to verify an upstream order reference.');
+                throw new OrderUpstreamAuthorizationException('The caller is not authorized to verify upstream order references.');
             }
             if ($status === 404 || $status === 410) {
                 throw new OrderReferenceValidationException('An upstream order reference does not exist or is no longer valid.');
             }
             if ($status < 200 || $status >= 300) {
-                throw new OrderReferenceValidationException('An upstream service is temporarily unavailable for order validation.');
+                throw new OrderUpstreamUnavailableException('An upstream service is temporarily unavailable for order validation.');
             }
             $payload = $response->toArray(false);
             if (!is_array($payload) || array_is_list($payload) || $payload === []) {
                 throw new OrderReferenceValidationException('An upstream service returned an invalid reference representation.');
             }
             return $payload;
-        } catch (OrderReferenceValidationException $exception) {
+        } catch (OrderReferenceValidationException|OrderUpstreamAuthorizationException|OrderUpstreamUnavailableException $exception) {
             throw $exception;
         } catch (Throwable) {
-            throw new OrderReferenceValidationException('An upstream service could not be reached to validate the order.');
+            throw new OrderUpstreamUnavailableException('An upstream service could not be reached to validate the order.');
         }
     }
 
