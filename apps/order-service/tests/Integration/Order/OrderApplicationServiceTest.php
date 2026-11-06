@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\\Tests\\Integration\\Order;
+namespace App\Tests\Integration\Order;
 
-use App\\Application\\IdempotencyConflictException;
-use App\\Application\\OrderApplicationService;
-use App\\Application\\OrderNotFoundException;
-use App\\Domain\\OrderStatus;
-use AutoFlow\\CoreBundle\\Context\\CorrelationContext;
-use App\\Infrastructure\\Persistence\\Doctrine\\DoctrineOrderRepository;
-use Doctrine\\DBAL\\DriverManager;
-use PHPUnit\\Framework\\TestCase;
-use Symfony\\Component\\Uid\\Uuid;
+use App\Application\IdempotencyConflictException;
+use App\Application\OrderApplicationService;
+use App\Application\OrderNotFoundException;
+use App\Domain\OrderStatus;
+use AutoFlow\CoreBundle\Context\CorrelationContext;
+use App\Infrastructure\Persistence\Doctrine\DoctrineOrderRepository;
+use Doctrine\DBAL\DriverManager;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Uid\Uuid;
 
 final class OrderApplicationServiceTest extends TestCase
 {
