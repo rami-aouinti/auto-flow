@@ -14,7 +14,7 @@ Implemented capabilities:
 - Domain lifecycle aggregate and explicit transition policy.
 - REST API for create, list, retrieve, submit, review, accept, reject, cancel, contract-pending and complete.
 - Tenant-scoped PostgreSQL tables with forced row-level security.
-- Immutable offer, quote and vehicle JSONB snapshots.
+- Immutable offer, quote and vehicle JSONB snapshots; PostgreSQL column-level grants prevent the API role from updating snapshot columns.
 - Append-only lifecycle history.
 - Create-request idempotency using a tenant-and-actor-scoped key, request hash and transaction-scoped PostgreSQL advisory lock.
 - Transactional Outbox: state, history and event intent commit in the same local transaction.
