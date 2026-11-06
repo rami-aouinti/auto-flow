@@ -37,6 +37,9 @@ $connect = static function (): array {
 };
 
 [$connection, $channel] = $connect();
+$meter = Globals::meterProvider()->getMeter('autoflow.order-outbox-publisher', '1.0.0');
+$publishedEvents = $meter->createCounter('order_outbox.published', '{event}', 'Outbox events published');
+$publishFailures = $meter->createCounter('order_outbox.publish_failures', '{attempt}', 'Outbox publication attempts that failed');
 
 try {
     while (true) {
@@ -89,6 +92,7 @@ try {
             $channel->basic_publish($message, 'autoflow.order.events', $eventType, true);
             $channel->wait_for_pending_acks_returns(5);
             $db->executeQuery('SELECT public.order_outbox_mark_published(:id)', ['id' => $eventId]);
+            $publishedEvents->add(1, ['event_type' => $eventType]);
         } catch (Throwable $error) {
             $span->setStatus(StatusCode::STATUS_ERROR);
             $span->recordException($error);
@@ -96,6 +100,7 @@ try {
                 'SELECT public.order_outbox_schedule_retry(:id, :error)',
                 ['id' => $eventId, 'error' => mb_substr($error->getMessage(), 0, 500)],
             );
+            $publishFailures->add(1, ['event_type' => $eventType]);
             try { $connection->checkHeartBeat(); } catch (Throwable) {
                 try { if ($channel->is_open()) { $channel->close(); } } catch (Throwable) {}
                 try { if ($connection->isConnected()) { $connection->close(); } } catch (Throwable) {}
