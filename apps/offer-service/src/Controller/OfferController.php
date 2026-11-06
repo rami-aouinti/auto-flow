@@ -8,6 +8,7 @@ use App\Application\AcceptOffer\AcceptOfferHandler;
 use App\Application\CreateOffer\CreateOfferCommand;
 use App\Application\CreateOffer\CreateOfferHandler;
 use App\Application\GetOffer\GetOfferHandler;
+use App\Application\ListOffers\ListOffersHandler;
 use App\Application\PublishOffer\PublishOfferHandler;
 use App\Application\RejectOffer\RejectOfferHandler;
 use App\Domain\Entity\Offer;
@@ -15,6 +16,7 @@ use App\Domain\Exception\ConcurrentOfferModification;
 use App\Domain\Exception\InvalidOfferTransition;
 use App\Domain\Exception\OfferNotFound;
 use App\Domain\ValueObject\OfferId;
+use App\Domain\ValueObject\OfferStatus;
 use App\Security\KeycloakTokenExchangeProvider;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
@@ -45,6 +47,7 @@ final readonly class OfferController
         private TenantContext $tenantContext,
         private CreateOfferHandler $createOfferHandler,
         private GetOfferHandler $getOfferHandler,
+        private ListOffersHandler $listOffersHandler,
         private PublishOfferHandler $publishOfferHandler,
         private AcceptOfferHandler $acceptOfferHandler,
         private RejectOfferHandler $rejectOfferHandler,
@@ -147,6 +150,67 @@ final readonly class OfferController
             $scope->detach();
             $span->end();
         }
+    }
+
+    #[RequiresScope('offers:read')]
+    #[Route('/api/offers', name: 'offer_list', methods: ['GET'])]
+    public function list(Request $request): JsonResponse
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new LogicException('A verified authenticated principal is required.');
+        }
+
+        $limit = $request->query->getInt('limit', 20);
+        $offset = $request->query->getInt('offset', 0);
+        $statusValue = $request->query->get('status');
+        $searchValue = $request->query->get('search');
+
+        if ($limit < 1 || $limit > 100 || $offset < 0 || $offset > 1000000) {
+            return new JsonResponse([
+                'error' => 'invalid_pagination',
+                'message' => 'Limit must be between 1 and 100; offset must be between 0 and 1000000.',
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $status = null;
+        if (is_string($statusValue) && trim($statusValue) !== '') {
+            $status = OfferStatus::tryFrom(trim($statusValue));
+            if ($status === null) {
+                return new JsonResponse([
+                    'error' => 'invalid_offer_status',
+                    'message' => 'The requested offer status is not supported.',
+                ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            }
+        }
+
+        $search = is_string($searchValue) ? trim($searchValue) : null;
+        if ($search !== null && strlen($search) > 100) {
+            return new JsonResponse([
+                'error' => 'invalid_search',
+                'message' => 'Search must not exceed 100 characters.',
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $result = ($this->listOffersHandler)(
+            $this->tenantContext->requireTenantId(),
+            $principal->subject,
+            $status,
+            $search !== '' ? $search : null,
+            $limit,
+            $offset,
+        );
+
+        $response = new JsonResponse([
+            'items' => array_map($this->offerPayload(...), $result['items']),
+            'total' => $result['total'],
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     #[RequiresScope('offers:read')]
