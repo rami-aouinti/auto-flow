@@ -7,6 +7,7 @@ namespace App\Presentation\Http\Controller;
 use App\Application\IdempotencyConflictException;
 use App\Application\OrderApplicationService;
 use App\Application\OrderNotFoundException;
+use App\Application\Port\OrderReferenceValidatorInterface;
 use App\Domain\OrderStatus;
 use App\Infrastructure\Observability\OrderMetrics;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
@@ -28,7 +29,11 @@ use Throwable;
 )]
 final readonly class OrderController
 {
-    public function __construct(private OrderApplicationService $orders, private OrderMetrics $metrics)
+    public function __construct(
+        private OrderApplicationService $orders,
+        private OrderMetrics $metrics,
+        private OrderReferenceValidatorInterface $referenceValidator,
+    )
     {
     }
 
@@ -41,10 +46,28 @@ final readonly class OrderController
             if (!is_string($key) || $key === '') {
                 return $this->problem(400, 'Idempotency-Key is required.');
             }
+            $tenantId = $this->tenant($principal);
+            $input = $this->jsonBody($request);
+            foreach (['offerId', 'quoteId', 'vehicleId'] as $field) {
+                if (!isset($input[$field]) || !is_string($input[$field])) {
+                    throw new \\InvalidArgumentException(sprintf('Field "%s" must be a string.', $field));
+                }
+            }
+            $verifiedSnapshots = $this->referenceValidator->validate(
+                $input['offerId'],
+                $input['quoteId'],
+                $input['vehicleId'],
+                $tenantId,
+                $this->bearerToken($request),
+            );
+            // Snapshots are resolved from the authoritative services, never accepted from the browser.
+            $input['offerSnapshot'] = $verifiedSnapshots['offerSnapshot'];
+            $input['quoteSnapshot'] = $verifiedSnapshots['quoteSnapshot'];
+            $input['vehicleSnapshot'] = $verifiedSnapshots['vehicleSnapshot'];
             $result = $this->orders->create(
-                $this->tenant($principal),
+                $tenantId,
                 $principal->subject,
-                $this->jsonBody($request),
+                $input,
                 $key,
             );
             $this->metrics->recordCreated();
@@ -212,6 +235,16 @@ final readonly class OrderController
         } catch (Throwable) {
             return $this->problem(500, 'Order state could not be changed.');
         }
+    }
+
+    private function bearerToken(Request $request): string
+    {
+        $authorization = $request->headers->get('Authorization', '');
+        if (!is_string($authorization)
+            || preg_match('/^Bearer ([A-Za-z0-9._~-]+)$/D', $authorization, $matches) !== 1) {
+            throw new AccessDeniedHttpException();
+        }
+        return $matches[1];
     }
 
     private function principal(Request $request, string $scope): AuthenticatedPrincipal
