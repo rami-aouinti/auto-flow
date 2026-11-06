@@ -17,7 +17,7 @@ Implemented capabilities:
 - Tenant-scoped PostgreSQL tables with forced row-level security.
 - Immutable offer, quote and vehicle JSONB snapshots; PostgreSQL column-level grants prevent the API role from updating snapshot columns.
 - Append-only lifecycle history.
-- Create-request idempotency using a tenant-and-actor-scoped key, request hash and transaction-scoped PostgreSQL advisory lock.
+- Create-request idempotency using a tenant-and-actor-scoped key, a stable Offer/quote/vehicle reference fingerprint, a preflight replay lookup and a transaction-scoped PostgreSQL advisory lock. A retry replays the original response before contacting upstream services.
 - Transactional Outbox: state, history and event intent commit in the same local transaction.
 - Narrow SECURITY DEFINER functions for cross-tenant Outbox claim/ack/retry; the service login does not have BYPASSRLS.
 - RabbitMQ topic exchange plus a durable holding queue `autoflow.order.events`, persistent messages, publisher confirms and bounded exponential retry.
@@ -79,13 +79,7 @@ OpenTelemetry instruments:
 
 The API's HTTP spans are correlated by W3C Trace Context. The publisher creates producer spans and injects trace context into RabbitMQ message headers. CoreBundle's correlation ID remains a separate operational identifier.
 
-Recommended dashboards:
-- Order create requests and lifecycle transitions.
-- Order API 4xx/5xx and p95 latency.
-- Outbox pending count and oldest pending age.
-- Publisher retries and failures.
-- RabbitMQ ready/unacked messages.
-- Database connection saturation and query latency.
+The provisioned Grafana dashboard is `AutoFlow — Order Management` (`autoflow-order-management`). It displays create and transition rates, Outbox publications/failures, Temporal queue backlog, dead-letter count, SLA alert backlog and Order API 5xx rate. Prometheus rules alert on workflow backlog, malformed dead-letter events, retained SLA alerts and Outbox publication failures.
 
 ## Deliberate boundaries and remaining work
 
