@@ -26,7 +26,7 @@ $exchange = 'autoflow.payment.events';
 $queue = 'autoflow.order.payment-events';
 $channel->exchange_declare($exchange, 'topic', false, true, false);
 $channel->queue_declare($queue, false, true, false, false);
-foreach (['PaymentAuthorized', 'PaymentCaptured', 'PaymentFailed', 'PaymentRefunded', 'PaymentCancelled'] as $eventType) {
+foreach (['PaymentAuthorized', 'PaymentCaptured', 'PaymentFailed', 'PaymentRefunded', 'PaymentPartiallyRefunded', 'PaymentCancelled'] as $eventType) {
     $channel->queue_bind($queue, $exchange, $eventType);
 }
 $channel->basic_qos(null, 20, null);
@@ -51,7 +51,8 @@ $handler = static function (AMQPMessage $message) use ($db): void {
         'PaymentAuthorized' => 'authorized',
         'PaymentCaptured' => 'captured',
         'PaymentFailed' => 'failed',
-        'PaymentRefunded' => (($data['status'] ?? null) === 'partially_refunded' ? 'partially_refunded' : 'refunded'),
+        'PaymentRefunded' => 'refunded',
+        'PaymentPartiallyRefunded' => 'partially_refunded',
         'PaymentCancelled' => 'cancelled',
         default => null,
     };
@@ -109,6 +110,7 @@ $handler = static function (AMQPMessage $message) use ($db): void {
             'captured' => 'PaymentCaptured',
             'failed' => 'PaymentFailed',
             'refunded' => 'PaymentRefunded',
+            'partially_refunded' => 'PaymentPartiallyRefunded',
             'cancelled' => 'PaymentCancelled',
         };
         $payload = [
