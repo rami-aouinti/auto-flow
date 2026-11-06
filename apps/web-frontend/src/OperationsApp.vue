@@ -12,7 +12,6 @@ const keycloak = inject<Keycloak>('keycloak');
       <a class="logo" href="/">A<span>AUTOFLOW<small>MOBILITY PLATFORM</small></span></a>
       <nav>
         <a href="/">Fahrzeuge</a>
-        <a href="/#offers">Meine Angebote</a>
         <a href="/operations.html">Aufträge & Payments</a>
       </nav>
       <div class="account">
