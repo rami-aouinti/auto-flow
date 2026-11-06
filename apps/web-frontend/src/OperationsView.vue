@@ -108,20 +108,32 @@ async function createPayment(order: Order) {
   } catch (error) { paymentError.value = errorMessage(error); }
   finally { paymentBusy.value = false; }
 }
+function normalizePayment(data: any): Payment {
+  return {
+    paymentId: data.paymentId ?? data.payment_id,
+    orderId: data.orderId ?? data.order_id,
+    status: data.status,
+    amountMinor: Number(data.amountMinor ?? data.amount_minor ?? 0),
+    currency: data.currency,
+    provider: data.provider,
+    clientSecret: data.clientSecret ?? null,
+  };
+}
 async function loadPayment() {
   if (!paymentIdInput.value.trim()) return;
   paymentBusy.value = true; paymentError.value = '';
-  try { paymentRecord.value = (await payments.get(paymentIdInput.value.trim())).data; }
+  try { paymentRecord.value = normalizePayment((await payments.get(paymentIdInput.value.trim())).data); }
   catch (error) { paymentError.value = errorMessage(error); paymentRecord.value = null; }
   finally { paymentBusy.value = false; }
 }
 async function paymentAction(action: 'capture'|'cancel'|'refund') {
-  if (!paymentRecord.value) return;
+  const currentPayment = paymentRecord.value;
+  if (!currentPayment) return;
   paymentBusy.value = true; paymentError.value = '';
   try {
     const amountMinor = action === 'refund' ? Math.round(Number(refundAmount.value)) : undefined;
-    const response = await payments.transition(paymentRecord.value.paymentId, action, idempotencyKey(), amountMinor);
-    if (response.data?.paymentId) paymentRecord.value = { ...paymentRecord.value, ...response.data };
+    const response = await payments.transition(currentPayment.paymentId, action, idempotencyKey(), amountMinor);
+    if (response.data?.paymentId) paymentRecord.value = { ...currentPayment, ...response.data };
     else await loadPayment();
   } catch (error) { paymentError.value = errorMessage(error); }
   finally { paymentBusy.value = false; }
