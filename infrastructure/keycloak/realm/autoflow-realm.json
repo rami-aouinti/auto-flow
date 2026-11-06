@@ -233,8 +233,7 @@
         "offers:quote",
         "pricing:quote",
         "catalog:read",
-        "orders:read",
-        "orders:write"
+        "orders:read"
       ],
       "attributes": {
         "tenant_id": [
