@@ -10,8 +10,9 @@ import (
 const LifecycleSignal = "order.lifecycle"
 
 type WorkflowInput struct {
-	TenantID string
-	OrderID  string
+	TenantID      string
+	OrderID       string
+	CorrelationID string
 }
 
 type SLAAlert struct {
