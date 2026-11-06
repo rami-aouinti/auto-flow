@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: offer-config
+  namespace: autoflow
+  labels:
+    app.kubernetes.io/name: offer-service
+    app.kubernetes.io/part-of: autoflow
+data:
+  APP_ENV: "prod"
+  APP_DEBUG: "0"
+  DEFAULT_URI: "http://offer-service:8080"
+  PRICING_SERVICE_URL: "http://pricing-service:8080"
+  AUTOFLOW_JWT_ISSUER: "http://host.docker.internal:8080/realms/autoflow"
+  AUTOFLOW_JWT_JWKS_URI: "http://host.docker.internal:8080/realms/autoflow/protocol/openid-connect/certs"
+  KEYCLOAK_TOKEN_URL: "http://host.docker.internal:8080/realms/autoflow/protocol/openid-connect/token"
+  PRICING_CLIENT_ID: "autoflow-offer-to-pricing"
+  RABBITMQ_HOST: "host.docker.internal"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_USER: "autoflow"
+  RABBITMQ_VHOST: "/"
+  TEMPORAL_ADDRESS: "host.docker.internal:7233"
+  TEMPORAL_NAMESPACE: "default"
+  OTEL_SERVICE_NAME: "autoflow-offer-service"
+  OTEL_RESOURCE_ATTRIBUTES: "service.namespace=autoflow,deployment.environment=local-kubernetes"
+  OTEL_PHP_AUTOLOAD_ENABLED: "false"
+  OTEL_TRACES_EXPORTER: "none"
+  OTEL_METRICS_EXPORTER: "none"
+  OTEL_LOGS_EXPORTER: "none"
