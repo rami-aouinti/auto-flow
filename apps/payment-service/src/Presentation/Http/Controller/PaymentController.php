@@ -7,6 +7,7 @@ namespace App\Presentation\Http\Controller;
 use App\Application\PaymentApplicationService;
 use App\Application\PaymentNotFoundException;
 use App\Application\GetPayment\GetPaymentHandler;
+use App\Application\CreatePayment\CreatePaymentHandler;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use DomainException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,6 +22,7 @@ final readonly class PaymentController
     public function __construct(
         private PaymentApplicationService $payments,
         private GetPaymentHandler $getPayment,
+        private CreatePaymentHandler $createPayment,
     )
     {
     }
@@ -31,7 +33,7 @@ final readonly class PaymentController
         try {
             $principal = $this->principal($request, 'payments:write');
             $key = $request->headers->get('Idempotency-Key', '');
-            $result = $this->payments->create($this->tenant($principal), $principal->subject, $key, $this->body($request));
+            $result = ($this->createPayment)($this->tenant($principal), $principal->subject, $key, $this->body($request));
             return new JsonResponse($result, 201, ['Cache-Control'=>'no-store']);
         } catch (AccessDeniedHttpException) {
             return $this->problem(403, 'Payment permission or tenant context is missing.');
