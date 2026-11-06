@@ -1,0 +1,4 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:PAYMENT_DATABASE_URL)%'
+        server_version: '16'
