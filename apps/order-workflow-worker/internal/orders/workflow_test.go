@@ -2,11 +2,13 @@ package orders
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/testsuite"
+	"go.temporal.io/sdk/workflow"
 )
 
 func TestOrderLifecycleWorkflowCompletesFromAuthoritativeEvents(t *testing.T) {
