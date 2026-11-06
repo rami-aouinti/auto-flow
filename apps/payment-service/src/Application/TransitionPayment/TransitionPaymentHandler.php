@@ -15,7 +15,7 @@ final readonly class TransitionPaymentHandler
     public function __construct(private Connection $db, private PaymentGatewayInterface $gateway) {}
 
     /** @return array<string,mixed> */
-    public function transition(string $tenant, string $actor, string $paymentId, string $key, string $operation, ?int $refundAmount = null): array
+    public function __invoke(string $tenant, string $actor, string $paymentId, string $key, string $operation, ?int $refundAmount = null): array
     {
         $this->assertKey($key);
         $requestHash = hash('sha256', json_encode([$paymentId, $operation, $refundAmount], JSON_THROW_ON_ERROR));
