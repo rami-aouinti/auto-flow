@@ -49,7 +49,7 @@ final readonly class PaymentApplicationService
                 return $response;
             }
             $this->db->commit();
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->db->isTransactionActive()) {
                 $this->db->rollBack();
             }
@@ -322,7 +322,7 @@ final readonly class PaymentApplicationService
             'producer' => 'payment-service',
             'aggregate' => ['type' => 'Payment', 'id' => $paymentId],
             'tenantId' => $tenant,
-            'occurredAt' => (new \\DateTimeImmutable('now', new \\DateTimeZone('UTC')))->format(DATE_ATOM),
+            'occurredAt' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(DATE_ATOM),
             'data' => $payload,
         ];
         $this->db->insert('payment_outbox', [
