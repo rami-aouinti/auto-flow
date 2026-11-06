@@ -38,14 +38,28 @@ function emptyForm(): Record<string, any> {
 }
 function resetForm() { editingId.value = ''; form.value = emptyForm(); }
 function cleanPayload(): Record<string, unknown> {
-  const payload: Record<string, unknown> = { ...form.value };
+  const allowed: Record<Resource, string[]> = {
+    manufacturers: ['code', 'name'],
+    models: ['manufacturerId', 'name'],
+    generations: ['modelId', 'name', 'productionStartYear', 'productionEndYear'],
+    variants: [
+      'generationId', 'manufacturerCode', 'name', 'fuelType', 'powertrain', 'bodyStyle', 'transmission',
+      'powerKw', 'displacementCc', 'seats', 'doors', 'curbWeightKg', 'lengthMm', 'widthMm', 'heightMm',
+      'co2EmissionGPerKm', 'mediaReferences',
+    ],
+  };
+  const payload: Record<string, unknown> = {};
+  for (const key of allowed[resource.value]) payload[key] = form.value[key];
+
+  if (editingId.value) payload.status = form.value.status;
+
   if (resource.value === 'generations') {
     payload.productionStartYear = payload.productionStartYear === '' ? null : Number(payload.productionStartYear);
     payload.productionEndYear = payload.productionEndYear === '' ? null : Number(payload.productionEndYear);
   }
   if (resource.value === 'variants') {
     for (const key of ['powerKw','displacementCc','seats','doors','curbWeightKg','lengthMm','widthMm','heightMm','co2EmissionGPerKm']) {
-      payload[key] = payload[key] === '' ? null : Number(payload[key]);
+      payload[key] = payload[key] === '' || payload[key] === undefined ? null : Number(payload[key]);
     }
     if (typeof payload.manufacturerCode === 'string' && payload.manufacturerCode.trim() === '') payload.manufacturerCode = null;
   }
