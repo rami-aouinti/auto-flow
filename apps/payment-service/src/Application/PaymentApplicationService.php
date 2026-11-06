@@ -197,7 +197,12 @@ final readonly class PaymentApplicationService
             }
             $this->db->update('payments', ['status'=>$newStatus,'updated_at'=>date('c')], ['tenant_id'=>$tenant,'payment_id'=>$paymentId]);
             $payload = ['paymentId'=>$paymentId,'orderId'=>$row['order_id'],'status'=>$newStatus,'operation'=>$operation];
-            $this->recordEvent($tenant, $paymentId, 'Payment' . ucfirst($operation) . 'd', $payload);
+            $eventType = match ($operation) {
+                'capture' => 'PaymentCaptured',
+                'refund' => 'PaymentRefunded',
+                'cancel' => 'PaymentCancelled',
+            };
+            $this->recordEvent($tenant, $paymentId, $eventType, $payload);
             $this->db->insert('payment_operation_idempotency', [
                 'tenant_id'=>$tenant,'actor'=>$actor,'idempotency_key'=>$key,'request_hash'=>$requestHash,
                 'payment_id'=>$paymentId,'response_json'=>json_encode($payload, JSON_THROW_ON_ERROR),
@@ -253,7 +258,13 @@ final readonly class PaymentApplicationService
                 $this->db->update('payments', ['status'=>$status,'updated_at'=>date('c')], [
                     'tenant_id'=>$row['tenant_id'],'payment_id'=>$row['payment_id'],
                 ]);
-                $this->recordEvent((string)$row['tenant_id'], (string)$row['payment_id'], 'PaymentStatusChanged', [
+                $eventType = match ($status) {
+                    'authorized' => 'PaymentAuthorized',
+                    'captured' => 'PaymentCaptured',
+                    'failed' => 'PaymentFailed',
+                    'cancelled' => 'PaymentCancelled',
+                };
+                $this->recordEvent((string)$row['tenant_id'], (string)$row['payment_id'], $eventType, [
                     'paymentId'=>$row['payment_id'],'orderId'=>$row['order_id'],'status'=>$status,'providerEventId'=>$eventId,
                 ]);
             }
