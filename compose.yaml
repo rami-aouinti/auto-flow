@@ -467,6 +467,7 @@ services:
       - ./apps/vehicle-catalog-service/fixtures/vehicle_catalog_demo.sql:/docker-entrypoint-initdb.d/110-catalog-demo.sql:ro
       - ./apps/order-service/migrations/00_create_order_database_role.sql:/docker-entrypoint-initdb.d/120-order-role.sql:ro
       - ./apps/order-service/migrations/Version20261106000100CreateOrders.sql:/docker-entrypoint-initdb.d/130-order-schema.sql:ro
+      - ./apps/order-service/migrations/Version20261106000200AddOrderTransitionIdempotency.sql:/docker-entrypoint-initdb.d/140-order-transition-idempotency.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
