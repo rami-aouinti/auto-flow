@@ -44,9 +44,6 @@ use Throwable;
 final readonly class OfferController
 {
     public function __construct(
-        private HttpClientInterface $httpClient,
-        private string $pricingServiceUrl,
-        private KeycloakTokenExchangeProvider $pricingTokenExchange,
         private TenantContext $tenantContext,
         private CreateOfferHandler $createOfferHandler,
         private GetOfferHandler $getOfferHandler,
