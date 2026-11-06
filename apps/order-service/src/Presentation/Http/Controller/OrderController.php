@@ -7,6 +7,8 @@ namespace App\Presentation\Http\Controller;
 use App\Application\IdempotencyConflictException;
 use App\Application\OrderApplicationService;
 use App\Application\OrderNotFoundException;
+use App\Application\OrderUpstreamAuthorizationException;
+use App\Application\OrderUpstreamUnavailableException;
 use App\Application\Port\OrderReferenceValidatorInterface;
 use App\Domain\OrderStatus;
 use App\Infrastructure\Observability\OrderMetrics;
@@ -76,8 +78,10 @@ final readonly class OrderController
                 JsonResponse::HTTP_CREATED,
                 ['Cache-Control' => 'no-store'],
             );
-        } catch (AccessDeniedHttpException) {
+        } catch (AccessDeniedHttpException|OrderUpstreamAuthorizationException) {
             return $this->problem(403, 'The required permission and tenant context are required.');
+        } catch (OrderUpstreamUnavailableException) {
+            return $this->problem(503, 'An upstream service is temporarily unavailable; no order was created.');
         } catch (IdempotencyConflictException $exception) {
             return $this->problem(409, $exception->getMessage());
         } catch (DomainException $exception) {
@@ -278,7 +282,7 @@ final readonly class OrderController
     {
         $title = match ($status) {
             400 => 'Bad Request', 403 => 'Forbidden', 404 => 'Not Found',
-            409 => 'Conflict', 422 => 'Unprocessable Entity', default => 'Internal Server Error',
+            409 => 'Conflict', 422 => 'Unprocessable Entity', 503 => 'Service Unavailable', default => 'Internal Server Error',
         };
         return new JsonResponse([
             'type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail,
