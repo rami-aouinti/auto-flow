@@ -207,6 +207,37 @@ services:
       start_period: 60s
     restart: unless-stopped
 
+  order-payment-event-consumer:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/order-service
+        COMPOSER_NO_DEV: "--no-dev"
+    command: ["php", "bin/consume-payment-events.php"]
+    environment:
+      APP_ENV: prod
+      ORDER_DATABASE_URL: ${ORDER_DATABASE_URL:-postgresql://autoflow_order:local-only-order-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+      OTEL_SERVICE_NAME: autoflow-order-payment-event-consumer
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_PROPAGATORS: tracecontext,baggage
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      payment-outbox-publisher: {condition: service_started}
+    restart: unless-stopped
+
   order-outbox-publisher:
     build:
       context: .
@@ -548,7 +579,7 @@ services:
       - ./apps/order-service/migrations/Version20261106000100CreateOrders.sql:/docker-entrypoint-initdb.d/130-order-schema.sql:ro
       - ./apps/order-service/migrations/Version20261106000200AddOrderTransitionIdempotency.sql:/docker-entrypoint-initdb.d/140-order-transition-idempotency.sql:ro
       - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/docker-entrypoint-initdb.d/150-payment-role.sql:ro
-      - ./apps/payment-service/migrations/140-payment-schema.sql:/docker-entrypoint-initdb.d/160-payment-schema.sql:ro
+      - ./apps/order-service/migrations/Version20261106000300AddPaymentLifecycle.sql:/docker-entrypoint-initdb.d/145-order-payment-lifecycle.sql:ro
       - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/docker-entrypoint-initdb.d/150-payment-role.sql:ro
       - ./apps/payment-service/migrations/140-payment-schema.sql:/docker-entrypoint-initdb.d/160-payment-schema.sql:ro
     healthcheck:
