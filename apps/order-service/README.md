@@ -27,14 +27,11 @@ Example create body:
 {
   "offerId": "offer-123",
   "quoteId": "quote-456",
-  "vehicleId": "variant-789",
-  "offerSnapshot": { "offerVersion": 1, "validUntil": "2026-11-13T12:00:00Z" },
-  "quoteSnapshot": { "currency": "EUR", "monthlyAmount": "329.00", "durationMonths": 48 },
-  "vehicleSnapshot": { "manufacturer": "Example Motors", "model": "E-1", "variant": "Long Range" }
+  "vehicleId": "variant-789"
 }
 ```
 
-The snapshots preserve the submitted commercial and vehicle facts even if upstream data changes later. **Current boundary:** this first increment accepts snapshots from its trusted caller; it does not yet call Offer/Pricing/Catalog to verify quote ownership, validity or tenant consistency. Do not expose this endpoint to an untrusted public client until that orchestration/validation boundary is implemented.
+Order Management now resolves all three snapshots itself before persisting the order. It calls Offer, Pricing and Vehicle Catalog with the caller's verified bearer token and tenant context. The offer must be accepted and unexpired, the quote must belong to the same vehicle and remain valid, and the catalogue variant must be published. Client-supplied snapshots are overwritten and never trusted. The local `order-operator` therefore needs `offers:read`, `pricing:quote` and `catalog:read` in addition to the order roles; the local token client already carries the three upstream audiences. A 503 means an upstream dependency could not be reached and no order was created.
 
 ## Domain lifecycle
 
