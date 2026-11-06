@@ -154,6 +154,7 @@ services:
       postgres: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
       tempo: {condition: service_started}
+      alloy: {condition: service_started}
     restart: unless-stopped
 
   vehicle-catalog-service:
