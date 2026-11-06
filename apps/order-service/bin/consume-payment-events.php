@@ -77,9 +77,9 @@ $handler = static function (AMQPMessage $message) use ($db): void {
         }
         $currentStatus = (string) $exists['payment_status'];
         $allowed = match ($currentStatus) {
-            'not_started' => ['authorized', 'failed', 'cancelled'],
+            'not_started' => ['authorized', 'captured', 'failed', 'cancelled'],
             'authorized' => ['captured', 'failed', 'partially_refunded', 'refunded', 'cancelled'],
-            'failed' => ['authorized', 'cancelled'],
+            'failed' => ['authorized', 'captured', 'cancelled'],
             'captured' => ['partially_refunded', 'refunded'],
             'partially_refunded' => ['partially_refunded', 'refunded'],
             default => [],
