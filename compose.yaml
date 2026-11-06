@@ -132,7 +132,7 @@ services:
     command: ["php", "bin/publish-outbox.php"]
     environment:
       APP_ENV: prod
-      ORDER_DATABASE_URL: ${ORDER_DATABASE_URL:-postgresql://autoflow_order:local-only-order-password@postgres:5432/autoflow}
+      ORDER_PUBLISHER_DATABASE_URL: ${ORDER_PUBLISHER_DATABASE_URL:-postgresql://autoflow_order_publisher:local-only-order-publisher-password@postgres:5432/autoflow}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
