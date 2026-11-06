@@ -21,6 +21,19 @@ Required JSON fields:
 
 Requires `offers:quote`. Pricing is calculated by Pricing Service. Offer Service stores the returned quote identifier and an immutable pricing snapshot. New offers start in `draft` state and are valid for 30 days by default.
 
+### List offers
+
+`GET /api/offers`
+
+Requires `offers:read`. Returns only offers created by the authenticated subject in the current tenant. Supports optional query parameters:
+
+- `status` — one of `draft`, `published`, `accepted`, `rejected`, `expired` or `withdrawn`.
+- `search` — partial match against offer ID, quote ID or vehicle ID (maximum 100 characters).
+- `limit` — page size from 1 to 100 (default 20).
+- `offset` — zero-based result offset (default 0).
+
+The response contains `items`, `total`, `limit` and `offset`, ordered newest first. Reads are tenant-isolated by PostgreSQL row-level security and additionally restricted to the offer creator.
+
 ### Retrieve an offer
 
 `GET /api/offers/{offerId}`
