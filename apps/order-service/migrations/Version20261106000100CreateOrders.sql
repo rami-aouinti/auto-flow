@@ -47,10 +47,13 @@ CREATE TABLE IF NOT EXISTS order_outbox (
     attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
     next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     locked_until TIMESTAMPTZ NULL,
+    failed_at TIMESTAMPTZ NULL,
     last_error VARCHAR(500) NULL,
     FOREIGN KEY (tenant_id, order_id) REFERENCES orders (tenant_id, order_id) ON DELETE RESTRICT
 );
-CREATE INDEX IF NOT EXISTS idx_order_outbox_pending ON order_outbox (next_attempt_at, occurred_at) WHERE published_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_order_outbox_pending
+    ON order_outbox (next_attempt_at, occurred_at)
+    WHERE published_at IS NULL AND failed_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS order_idempotency (
     tenant_id VARCHAR(128) NOT NULL,
@@ -93,6 +96,7 @@ AS $function$
     WITH candidate AS (
         SELECT o.event_id FROM public.order_outbox o
         WHERE o.published_at IS NULL
+          AND o.failed_at IS NULL
           AND o.next_attempt_at <= CURRENT_TIMESTAMP
           AND (o.locked_until IS NULL OR o.locked_until < CURRENT_TIMESTAMP)
         ORDER BY o.occurred_at
@@ -128,10 +132,27 @@ SET row_security = off
 AS $function$
     UPDATE public.order_outbox
     SET locked_until = NULL,
-        next_attempt_at = CURRENT_TIMESTAMP + make_interval(secs => LEAST(300, POWER(2, LEAST(attempts, 8))::integer)),
+        failed_at = CASE WHEN attempts >= 10 THEN CURRENT_TIMESTAMP ELSE NULL END,
+        next_attempt_at = CASE
+            WHEN attempts >= 10 THEN next_attempt_at
+            ELSE CURRENT_TIMESTAMP + make_interval(secs => LEAST(300, POWER(2, LEAST(attempts, 8))::integer))
+        END,
         last_error = p_error
     WHERE event_id = p_event_id
 $function$;
+
+DO $
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'autoflow_order_outbox_owner') THEN
+        CREATE ROLE autoflow_order_outbox_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE BYPASSRLS;
+    END IF;
+END
+$;
+GRANT USAGE ON SCHEMA public TO autoflow_order_outbox_owner;
+GRANT SELECT, UPDATE ON TABLE order_outbox TO autoflow_order_outbox_owner;
+ALTER FUNCTION public.order_outbox_claim() OWNER TO autoflow_order_outbox_owner;
+ALTER FUNCTION public.order_outbox_mark_published(UUID) OWNER TO autoflow_order_outbox_owner;
+ALTER FUNCTION public.order_outbox_schedule_retry(UUID, VARCHAR) OWNER TO autoflow_order_outbox_owner;
 
 REVOKE ALL ON FUNCTION public.order_outbox_claim() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.order_outbox_mark_published(UUID) FROM PUBLIC;
