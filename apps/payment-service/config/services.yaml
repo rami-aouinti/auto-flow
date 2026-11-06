@@ -10,33 +10,33 @@ services:
         autowire: true
         autoconfigure: true
 
-    App\\:
+    App\:
         resource: '../src/'
         exclude:
             - '../src/Kernel.php'
 
-    App\\Infrastructure\\Stripe\\StripePaymentGateway:
+    App\Infrastructure\Stripe\StripePaymentGateway:
         arguments:
             $secretKey: '%app.stripe_secret_key%'
             $apiBase: '%app.stripe_api_base%'
 
-    App\\Application\\Port\\PaymentGatewayInterface:
-        alias: App\\Infrastructure\\Stripe\\StripePaymentGateway
+    App\Application\Port\PaymentGatewayInterface:
+        alias: App\Infrastructure\Stripe\StripePaymentGateway
 
-    App\\Infrastructure\\Webhook\\StripeWebhookVerifier:
+    App\Infrastructure\Webhook\StripeWebhookVerifier:
         arguments:
             $webhookSecret: '%app.stripe_webhook_secret%'
 
-    App\\Infrastructure\\Health\\PaymentDatabaseHealthCheck:
+    App\Infrastructure\Health\PaymentDatabaseHealthCheck:
         tags: ['autoflow_core.health_check']
 
-    App\\Infrastructure\\Order\\HttpOrderPaymentContextProvider:
+    App\Infrastructure\Order\HttpOrderPaymentContextProvider:
         arguments:
             $orderServiceUrl: '%app.order_service_url%'
             $sharedSecret: '%app.order_payment_shared_secret%'
 
-    App\\Application\\Port\\OrderPaymentContextProviderInterface:
-        alias: App\\Infrastructure\\Order\\HttpOrderPaymentContextProvider
+    App\Application\Port\OrderPaymentContextProviderInterface:
+        alias: App\Infrastructure\Order\HttpOrderPaymentContextProvider
 
-    App\\Application\\Port\\PaymentRepositoryInterface:
-        alias: App\\Infrastructure\\Persistence\\DoctrinePaymentRepository
+    App\Application\Port\PaymentRepositoryInterface:
+        alias: App\Infrastructure\Persistence\DoctrinePaymentRepository
