@@ -45,32 +45,29 @@ final readonly class HttpOrderReferenceValidator implements OrderReferenceValida
         ];
 
         $offer = $this->getJson($this->offerServiceUrl, '/api/offers/' . rawurlencode($offerId), $headers);
-        $quote = $this->getJson($this->pricingServiceUrl, '/api/pricing/quotes/' . rawurlencode($quoteId), $headers);
-        $vehicle = $this->getJson($this->catalogServiceUrl, '/api/v1/vehicles/' . rawurlencode($vehicleId), $headers);
-
         if (($offer['offerId'] ?? null) !== $offerId
             || ($offer['quoteId'] ?? null) !== $quoteId
             || ($offer['vehicleId'] ?? null) !== $vehicleId
             || ($offer['status'] ?? null) !== 'accepted') {
             throw new OrderReferenceValidationException('The referenced offer is not accepted or does not match the order.');
         }
-
         $offerExpiry = $this->date($offer['expiresAt'] ?? null);
         if ($offerExpiry === null || $offerExpiry <= new DateTimeImmutable()) {
             throw new OrderReferenceValidationException('The referenced offer has expired or has no valid expiry date.');
         }
 
+        $quote = $this->getJson($this->pricingServiceUrl, '/api/pricing/quotes/' . rawurlencode($quoteId), $headers);
         if (($quote['quoteId'] ?? null) !== $quoteId
             || ($quote['vehicleId'] ?? null) !== $vehicleId
             || ($quote['expired'] ?? true) !== false) {
             throw new OrderReferenceValidationException('The referenced pricing quote is expired or does not match the order.');
         }
-
         $quoteExpiry = $this->date($quote['expiresAt'] ?? null);
         if ($quoteExpiry === null || $quoteExpiry <= new DateTimeImmutable()) {
             throw new OrderReferenceValidationException('The referenced pricing quote has expired or has no valid expiry date.');
         }
 
+        $vehicle = $this->getJson($this->catalogServiceUrl, '/api/v1/vehicles/' . rawurlencode($vehicleId), $headers);
         if (($vehicle['variantId'] ?? null) !== $vehicleId || ($vehicle['status'] ?? null) !== 'published') {
             throw new OrderReferenceValidationException('The referenced vehicle is not published in the catalogue.');
         }
