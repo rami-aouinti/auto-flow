@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\\Infrastructure\\Stripe;
+namespace App\Infrastructure\Stripe;
 
-use App\\Application\\Port\\PaymentGatewayInterface;
-use Symfony\\Contracts\\HttpClient\\HttpClientInterface;
-use Symfony\\Contracts\\HttpClient\\Exception\\TransportExceptionInterface;
+use App\Application\Port\PaymentGatewayInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use RuntimeException;
 use Throwable;
 
@@ -28,7 +28,8 @@ final readonly class StripePaymentGateway implements PaymentGatewayInterface
             'amount' => $amountMinor,
             'currency' => strtolower($currency),
             'capture_method' => 'manual',
-            'metadata[payment_id]' => $paymentId,\n            'metadata[tenant_id]' => $tenantId,
+            'metadata[payment_id]' => $paymentId,
+            'metadata[tenant_id]' => $tenantId,
         ], $idempotencyKey);
     }
 
