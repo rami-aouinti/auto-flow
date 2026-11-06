@@ -476,7 +476,7 @@ services:
 
   alloy:
     image: grafana/alloy:v1.6.1
-    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy"]
+    command: ["run", "--stability.level=experimental", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy"]
     ports: ["12345:12345"]
     volumes:
       - ./infrastructure/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
