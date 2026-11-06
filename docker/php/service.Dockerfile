@@ -60,11 +60,14 @@ RUN if [ -f src/Grpc/PricingGrpcService.php ]; then \
     APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret DATABASE_URL=postgresql://autoflow_pricing:build-only@127.0.0.1:5432/autoflow OFFER_DATABASE_URL=postgresql://autoflow_offer:build-only@127.0.0.1:5432/autoflow ORDER_DATABASE_URL=postgresql://autoflow_order:build-only@127.0.0.1:5432/autoflow ORDER_OFFER_SERVICE_URL=http://offer-service:8080 ORDER_PRICING_SERVICE_URL=http://pricing-service:8080 ORDER_CATALOG_SERVICE_URL=http://vehicle-catalog-service:8080 AUTOFLOW_JWT_ISSUER=https://identity-build.invalid/realms/autoflow AUTOFLOW_JWT_JWKS_URI=http://127.0.0.1:8080/realms/autoflow/protocol/openid-connect/certs KEYCLOAK_TOKEN_URL=http://127.0.0.1:8080/token PRICING_CLIENT_ID=build-only PRICING_CLIENT_SECRET=build-only php -r 'require "vendor/autoload.php"; $kernel = new \App\Kernel("prod", false); $kernel->boot(); $kernel->getContainer()->get(\App\Grpc\PricingGrpcService::class); $kernel->shutdown();'; \
     fi
 
-# Boot both RoadRunner worker pools during the image build and verify the server config.
-# A clean timeout is expected because the server is intentionally long-running.
-RUN set +e; APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret DATABASE_URL=postgresql://autoflow_pricing:build-only@127.0.0.1:5432/autoflow OFFER_DATABASE_URL=postgresql://autoflow_offer:build-only@127.0.0.1:5432/autoflow ORDER_DATABASE_URL=postgresql://autoflow_order:build-only@127.0.0.1:5432/autoflow ORDER_OFFER_SERVICE_URL=http://offer-service:8080 ORDER_PRICING_SERVICE_URL=http://pricing-service:8080 ORDER_CATALOG_SERVICE_URL=http://vehicle-catalog-service:8080 PRICING_SERVICE_URL=http://pricing-service:8080 AUTOFLOW_JWT_ISSUER=https://identity-build.invalid/realms/autoflow AUTOFLOW_JWT_JWKS_URI=http://127.0.0.1:8080/realms/autoflow/protocol/openid-connect/certs KEYCLOAK_TOKEN_URL=http://127.0.0.1:8080/token PRICING_CLIENT_ID=build-only PRICING_CLIENT_SECRET=build-only \
-    timeout --signal=TERM --kill-after=3s 8s rr serve -c .rr.yaml; status=$?; \
-    if [ "$status" -ne 124 ] && [ "$status" -ne 137 ]; then exit "$status"; fi
+# Only HTTP/gRPC service images contain a RoadRunner configuration.
+# Outbox publishers and event consumers reuse this image but run CLI commands,
+# so they must not be forced to boot a long-running RoadRunner server at build time.
+RUN if [ -f .rr.yaml ]; then \
+    set +e; APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret DATABASE_URL=postgresql://autoflow_pricing:build-only@127.0.0.1:5432/autoflow OFFER_DATABASE_URL=postgresql://autoflow_offer:build-only@127.0.0.1:5432/autoflow ORDER_DATABASE_URL=postgresql://autoflow_order:build-only@127.0.0.1:5432/autoflow ORDER_OFFER_SERVICE_URL=http://offer-service:8080 ORDER_PRICING_SERVICE_URL=http://pricing-service:8080 ORDER_CATALOG_SERVICE_URL=http://vehicle-catalog-service:8080 PRICING_SERVICE_URL=http://pricing-service:8080 AUTOFLOW_JWT_ISSUER=https://identity-build.invalid/realms/autoflow AUTOFLOW_JWT_JWKS_URI=http://127.0.0.1:8080/realms/autoflow/protocol/openid-connect/certs KEYCLOAK_TOKEN_URL=http://127.0.0.1:8080/token PRICING_CLIENT_ID=build-only PRICING_CLIENT_SECRET=build-only \
+        timeout --signal=TERM --kill-after=3s 8s rr serve -c .rr.yaml; status=$?; \
+    if [ "$status" -ne 124 ] && [ "$status" -ne 137 ]; then exit "$status"; fi; \
+    else echo "Skipping RoadRunner boot check: this is a CLI worker image."; fi
 
 RUN mkdir -p /app/var/cache /app/var/log /app/var/sessions \
     && chown -R www-data:www-data /app /packages/core-bundle
