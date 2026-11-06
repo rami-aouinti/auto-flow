@@ -6,7 +6,6 @@ namespace App\\Infrastructure\\Persistence\\Doctrine;
 
 use App\\Application\\OrderNotFoundException;
 use App\\Application\\Port\\OrderRepositoryInterface;
-
 use App\\Domain\\Order;
 use App\\Domain\\OrderStatus;
 use Doctrine\\DBAL\\Connection;
@@ -96,7 +95,12 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                             tenant_id, actor, idempotency_key, request_hash, order_id, response_json, created_at
                         ) VALUES (:tenant, :actor, :key, :hash, :id, CAST(:response AS JSONB), :now)
                         SQL,
-                    ['tenant' => $tenantId, 'actor' => $actor, 'key' => $idempotencyKey, 'hash' => $requestHash, 'id' => $order->id,
+                    [
+                        'tenant' => $tenantId,
+                        'actor' => $actor,
+                        'key' => $idempotencyKey,
+                        'hash' => $requestHash,
+                        'id' => $order->id,
                      'response' => json_encode($response, JSON_THROW_ON_ERROR), 'now' => $now],
                 );
                 return $response;
