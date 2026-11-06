@@ -11,3 +11,6 @@ services:
 
     App\\Infrastructure\\Health\\OrderDatabaseHealthCheck:
         tags: ['autoflow_core.health_check']
+
+    App\\Application\\Port\\OrderRepositoryInterface:
+        alias: App\\Infrastructure\\Persistence\\Doctrine\\DoctrineOrderRepository
