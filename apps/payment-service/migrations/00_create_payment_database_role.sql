@@ -5,7 +5,8 @@ BEGIN
             NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
     END IF;
 END
-$$;
+$;
+ALTER ROLE autoflow_payment WITH LOGIN PASSWORD 'local-only-payment-password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
 GRANT CONNECT ON DATABASE autoflow TO autoflow_payment;
 GRANT USAGE ON SCHEMA public TO autoflow_payment;
 
@@ -16,6 +17,7 @@ BEGIN
             NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
     END IF;
 END
-$$;
+$;
+ALTER ROLE autoflow_payment_publisher WITH LOGIN PASSWORD 'local-only-payment-publisher-password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
 GRANT CONNECT ON DATABASE autoflow TO autoflow_payment_publisher;
 GRANT USAGE ON SCHEMA public TO autoflow_payment_publisher;
