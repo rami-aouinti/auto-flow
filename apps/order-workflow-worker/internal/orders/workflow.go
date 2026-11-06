@@ -3,7 +3,7 @@ package orders
 import (
 	"time"
 
-	"go.temporal.io/sdk/workflow"
+	"go.temporal.io/sdk/temporal"\n\t"go.temporal.io/sdk/workflow"
 )
 
 const LifecycleSignal = "order.lifecycle"
@@ -26,7 +26,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 
 	activityCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 15 * time.Second,
-		RetryPolicy: &workflow.RetryPolicy{
+		RetryPolicy: &temporal.RetryPolicy{
 			InitialInterval: time.Second,
 			BackoffCoefficient: 2,
 			MaximumInterval: time.Minute,
