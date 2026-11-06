@@ -82,7 +82,9 @@ final readonly class PaymentApplicationService
                 'tenant_id'=>$tenant,'actor'=>$actor,'idempotency_key'=>$key,'request_hash'=>$hash,
                 'payment_id'=>$paymentId,'response_json'=>json_encode($response, JSON_THROW_ON_ERROR),
             ]);
-            $eventPayload = $response;\n            unset($eventPayload['clientSecret']);\n            $this->recordEvent($tenant, $paymentId, 'PaymentCreated', $eventPayload);
+            $eventPayload = $response;
+            unset($eventPayload['clientSecret']);
+            $this->recordEvent($tenant, $paymentId, 'PaymentCreated', $eventPayload);
             $this->db->commit();
             return $response;
         } catch (\\Throwable $exception) {
