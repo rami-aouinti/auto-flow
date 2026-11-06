@@ -114,3 +114,26 @@ curl --fail --silent http://localhost:8082/api/doc.json | head -c 1000
 ## Production note
 
 Swagger UI is intentionally registered only in the Symfony `dev` environment. Keep it disabled in production, set `PRICING_APP_ENV=prod` and `PRICING_APP_DEBUG=0`, and expose API documentation through a separately secured documentation environment if required.
+
+## Aligned local demo fixtures
+
+The local demo dataset is shared across Vehicle Catalog, Pricing and Offer. The seven curated catalogue variant IDs are the source of truth; Pricing quotes reference those exact IDs, and each Offer fixture references the corresponding Pricing quote ID and immutable calculation snapshot.
+
+From the repository root, run:
+
+```bash
+chmod +x bin/load-demo-fixtures.sh
+./bin/load-demo-fixtures.sh
+```
+
+The script starts the required local services, applies the additive Pricing migration (including when PostgreSQL already has a persistent volume), loads the curated and generated catalogue records, obtains the local Keycloak demo user's actual `sub`, then loads seven Pricing quotes and five Offer lifecycle examples. It is safe to rerun: stable IDs are upserted, existing unrelated data is preserved, and nothing is truncated or deleted.
+
+The default tenant is `tenant-demo`. Override it with `DEMO_TENANT_ID=...` when needed. The script uses `.env.example` for Compose by default; set `COMPOSE_ENV_FILE=.env` to use a local `.env` file instead.
+
+For manual Pricing-only loading after obtaining the demo user's subject:
+
+```bash
+docker compose --env-file .env.example exec -T postgres psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+  -v tenant_id=tenant-demo -v created_by="$DEMO_SUBJECT" \
+  < apps/pricing-service/fixtures/pricing_quotes_demo.sql
+```
