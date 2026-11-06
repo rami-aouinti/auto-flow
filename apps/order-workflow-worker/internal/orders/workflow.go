@@ -99,7 +99,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 		}
 		recovery, err := waitForLifecycleEvent(ctx, map[string]bool{
 			"OrderPaymentAuthorized": true, "OrderPaymentRefunded": true, "OrderCancelled": true,
-		}, 24*time.Hour, seenEventIDs)
+		}, 0, seenEventIDs)
 		if err != nil || recovery == "OrderPaymentRefunded" || recovery == "OrderCancelled" {
 			return err
 		}
@@ -109,11 +109,15 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	var fulfilment string
 	for {
 		fulfilment, err = waitForLifecycleEvent(ctx, map[string]bool{
-			"OrderCompleted": true, "OrderCancelled": true, "OrderPaymentCaptured": true,
+			"OrderCompleted": true, "OrderCancelled": true, "OrderPaymentAuthorized": true, "OrderPaymentCaptured": true,
 			"OrderPaymentFailed": true, "OrderPaymentRefunded": true,
 		}, 7*24*time.Hour, seenEventIDs)
 		if err != nil {
 			return err
+		}
+		if fulfilment == "OrderPaymentAuthorized" {
+			logger.Info("Payment re-authorized; continuing order workflow", "orderId", input.OrderID)
+			continue
 		}
 		if fulfilment == "OrderPaymentCaptured" {
 			logger.Info("Payment captured; awaiting order fulfilment", "orderId", input.OrderID)
