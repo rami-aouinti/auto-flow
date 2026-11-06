@@ -108,6 +108,9 @@ final readonly class OrderApplicationService
                 (string) $row['offer_id'], (string) $row['quote_id'], (string) $row['vehicle_id'],
                 $this->decodeObject($row['offer_snapshot']), $this->decodeObject($row['quote_snapshot']),
                 $this->decodeObject($row['vehicle_snapshot']), $from,
+                $row['submitted_at'] === null ? null : new \\DateTimeImmutable((string) $row['submitted_at']),
+                $row['decided_at'] === null ? null : new \\DateTimeImmutable((string) $row['decided_at']),
+                $row['decision_reason'] === null ? null : (string) $row['decision_reason'],
             );
             $order->transitionTo($target, $reason);
             $now = $this->now();
