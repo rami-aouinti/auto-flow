@@ -1,6 +1,6 @@
 FROM golang:1.23-alpine AS build
 WORKDIR /src
-COPY apps/order-workflow-worker/go.mod apps/order-workflow-worker/go.sum* ./
+COPY apps/order-workflow-worker/go.mod ./
 RUN go mod download
 COPY apps/order-workflow-worker/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/order-workflow-worker ./cmd/worker
