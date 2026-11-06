@@ -93,7 +93,7 @@ final readonly class InternalPaymentContextController
         if (isset($snapshot['totalAmount'])) {
             return $minor;
         }
-        $months = $snapshot['durationMonths'] ?? null;
-        return is_int($months) && $months > 0 && $months <= 120 ? $minor * $months : $minor;
+        // monthlyAmount represents one payable installment; never multiply it by the lease duration.
+        return $minor;
     }
 }
