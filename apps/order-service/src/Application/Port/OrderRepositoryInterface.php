@@ -8,6 +8,16 @@ use App\Domain\OrderStatus;
 
 interface OrderRepositoryInterface
 {
+    /** @return array<string, mixed>|null */
+    public function findIdempotentCreate(
+        string $tenantId,
+        string $actor,
+        string $idempotencyKey,
+        string $offerId,
+        string $quoteId,
+        string $vehicleId,
+    ): ?array;
+
     /** @param array<string, mixed> $input
      * @return array<string, mixed>
      */
