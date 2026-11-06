@@ -278,11 +278,21 @@ final readonly class PaymentApplicationService
             ]);
             $this->setTenant($tenantId);
             $row = $this->db->fetchAssociative(
-                'SELECT tenant_id,payment_id,order_id FROM payments WHERE tenant_id=:tenant AND payment_id=:payment AND provider_payment_id=:provider',
+                'SELECT tenant_id,payment_id,order_id,status FROM payments WHERE tenant_id=:tenant AND payment_id=:payment AND provider_payment_id=:provider FOR UPDATE',
                 ['tenant'=>$tenantId,'payment'=>$paymentId,'provider'=>$providerId],
             );
-            if ($row !== false) {
-                $this->setTenant((string)$row['tenant_id']);
+            if ($row === false) {
+                throw new RuntimeException('Payment intent is not persisted yet; Stripe webhook must be retried.');
+            }
+            $this->setTenant((string)$row['tenant_id']);
+            $currentStatus = (string) $row['status'];
+            $allowed = match ($currentStatus) {
+                'pending', 'requires_action' => ['authorized', 'captured', 'failed', 'cancelled'],
+                'authorized' => ['captured', 'failed', 'cancelled'],
+                'failed' => ['authorized', 'captured', 'cancelled'],
+                default => [],
+            };
+            if (in_array($status, $allowed, true)) {
                 $this->db->update('payments', ['status'=>$status,'updated_at'=>date('c')], [
                     'tenant_id'=>$row['tenant_id'],'payment_id'=>$row['payment_id'],
                 ]);
