@@ -29,6 +29,8 @@ final readonly class PaymentController
             $key = $request->headers->get('Idempotency-Key', '');
             $result = $this->payments->create($this->tenant($principal), $principal->subject, $key, $this->body($request));
             return new JsonResponse($result, 201, ['Cache-Control'=>'no-store']);
+        } catch (AccessDeniedHttpException) {
+            return $this->problem(403, 'Payment permission or tenant context is missing.');
         } catch (DomainException $e) {
             return $this->problem(422, $e->getMessage());
         } catch (\Throwable) {
@@ -83,6 +85,8 @@ final readonly class PaymentController
             $key = $request->headers->get('Idempotency-Key', '');
             $result = $this->payments->transition($this->tenant($principal), $principal->subject, $paymentId, $key, $operation, $amount);
             return new JsonResponse($result, 200, ['Cache-Control'=>'no-store']);
+        } catch (AccessDeniedHttpException) {
+            return $this->problem(403, 'Payment permission or tenant context is missing.');
         } catch (PaymentNotFoundException) {
             return $this->problem(404, 'Payment not found.');
         } catch (DomainException $e) {
