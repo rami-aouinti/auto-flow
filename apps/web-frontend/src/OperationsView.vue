@@ -150,6 +150,7 @@ function normalizePayment(data: any): Payment {
     currency: data.currency,
     provider: data.provider,
     clientSecret: data.clientSecret ?? (paymentRecord.value?.paymentId === (data.paymentId ?? data.payment_id) ? paymentRecord.value.clientSecret : null),
+    createdAt: data.createdAt ?? data.created_at,
   };
 }
 async function loadPayment() {
