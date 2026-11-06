@@ -58,12 +58,13 @@ CREATE INDEX IF NOT EXISTS idx_order_outbox_pending
 
 CREATE TABLE IF NOT EXISTS order_idempotency (
     tenant_id VARCHAR(128) NOT NULL,
+    actor VARCHAR(255) NOT NULL,
     idempotency_key VARCHAR(128) NOT NULL,
     request_hash CHAR(64) NOT NULL,
     order_id UUID NOT NULL,
     response_json JSONB NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (tenant_id, idempotency_key),
+    PRIMARY KEY (tenant_id, actor, idempotency_key),
     FOREIGN KEY (tenant_id, order_id) REFERENCES orders (tenant_id, order_id) ON DELETE RESTRICT
 );
 
