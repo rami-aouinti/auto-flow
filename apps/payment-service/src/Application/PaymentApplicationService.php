@@ -23,7 +23,10 @@ final readonly class PaymentApplicationService
      */
     public function create(string $tenant, string $actor, string $key, array $input): array
     {
-        $orderId = $this->requiredString($input, 'orderId');\n        if (!Uuid::isValid($orderId)) {\n            throw new DomainException('orderId must be a valid UUID.');\n        }
+        $orderId = $this->requiredString($input, 'orderId');
+        if (!Uuid::isValid($orderId)) {
+            throw new DomainException('orderId must be a valid UUID.');
+        }
         $amount = $input['amountMinor'] ?? null;
         $currency = strtoupper((string) ($input['currency'] ?? ''));
         if (!is_int($amount) || $amount < 50 || $amount > 99_999_999 || preg_match('/^[A-Z]{3}$/D', $currency) !== 1) {
@@ -59,7 +62,8 @@ final readonly class PaymentApplicationService
                 throw new RuntimeException('Payment provider did not return a payment intent identifier.');
             }
             $status = match ($intent['status'] ?? '') {
-                'requires_action', 'requires_confirmation' => 'requires_action',\n                'requires_payment_method' => 'pending',
+                'requires_action', 'requires_confirmation' => 'requires_action',
+                'requires_payment_method' => 'pending',
                 'requires_capture' => 'authorized',
                 'succeeded' => 'captured',
                 default => 'pending',
