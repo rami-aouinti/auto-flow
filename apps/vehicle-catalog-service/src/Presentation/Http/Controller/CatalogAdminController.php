@@ -90,6 +90,7 @@ final readonly class CatalogAdminController
                     return $catalog->registerGeneration($actor, $data->modelId, $data->name, $data->productionStartYear, $data->productionEndYear);
                 })(),
                 'variants' => $catalog->registerVariant($actor, CreateVehicleVariantRequest::fromArray($input)->toArray()),
+                default => throw new \\InvalidArgumentException('Unsupported catalogue resource.'),
             };
 
             return new JsonResponse(['id' => $id, 'status' => 'draft'], 201, ['Cache-Control' => 'no-store']);
