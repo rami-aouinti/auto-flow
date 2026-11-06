@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\\Presentation\\Http\\Controller;
 
+use App\\Application\\IdempotencyConflictException;
 use App\\Application\\OrderApplicationService;
 use App\\Application\\OrderNotFoundException;
 use App\\Domain\\OrderStatus;
@@ -54,6 +55,8 @@ final readonly class OrderController
             );
         } catch (AccessDeniedHttpException) {
             return $this->problem(403, 'The required permission and tenant context are required.');
+        } catch (IdempotencyConflictException $exception) {
+            return $this->problem(409, $exception->getMessage());
         } catch (DomainException $exception) {
             return $this->problem(422, $exception->getMessage());
         } catch (\\JsonException|\\InvalidArgumentException) {
