@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"net/url"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
