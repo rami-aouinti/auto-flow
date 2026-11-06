@@ -8,6 +8,7 @@ use App\Application\PaymentApplicationService;
 use App\Application\PaymentNotFoundException;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use DomainException;
+use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -35,6 +36,73 @@ final readonly class PaymentController
             return $this->problem(422, $e->getMessage());
         } catch (\Throwable) {
             return $this->problem(503, 'Payment could not be created. Check provider status before retrying.');
+        }
+    }
+
+    #[Route('', methods: ['GET'])]
+    public function list(Request $request, Connection $db): JsonResponse
+    {
+        try {
+            $principal = $this->principal($request, 'payments:read');
+            $tenant = $this->tenant($principal);
+            $limit = filter_var($request->query->get('limit', '20'), FILTER_VALIDATE_INT);
+            $offset = filter_var($request->query->get('offset', '0'), FILTER_VALIDATE_INT);
+            if (!is_int($limit) || $limit < 1 || $limit > 100 || !is_int($offset) || $offset < 0) {
+                return $this->problem(400, 'limit must be 1..100 and offset must be >= 0.');
+            }
+
+            $where = ['tenant_id = :tenant'];
+            $params = ['tenant' => $tenant];
+            $orderId = $request->query->get('orderId');
+            if (is_string($orderId) && $orderId !== '') {
+                if (!\Symfony\Component\Uid\Uuid::isValid($orderId)) {
+                    return $this->problem(400, 'orderId must be a valid UUID.');
+                }
+                $where[] = 'order_id = :orderId';
+                $params['orderId'] = $orderId;
+            }
+            $status = $request->query->get('status');
+            if (is_string($status) && $status !== '') {
+                if (!in_array($status, ['pending','requires_action','authorized','captured','failed','cancelled','partially_refunded','refunded'], true)) {
+                    return $this->problem(400, 'Unsupported payment status filter.');
+                }
+                $where[] = 'status = :status';
+                $params['status'] = $status;
+            }
+            $predicate = implode(' AND ', $where);
+            $db->beginTransaction();
+            try {
+                $db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant' => $tenant]);
+                $total = (int) $db->fetchOne('SELECT COUNT(*) FROM payments WHERE ' . $predicate, $params);
+                $rows = $db->fetchAllAssociative(
+                    'SELECT payment_id, order_id, provider, amount_minor, amount_refunded_minor, currency, status, created_at, updated_at
+                     FROM payments WHERE ' . $predicate . ' ORDER BY created_at DESC, payment_id DESC LIMIT :limit OFFSET :offset',
+                    $params + ['limit' => $limit, 'offset' => $offset],
+                    ['limit' => \Doctrine\DBAL\ParameterType::INTEGER, 'offset' => \Doctrine\DBAL\ParameterType::INTEGER],
+                );
+                $db->commit();
+            } catch (\Throwable $exception) {
+                if ($db->isTransactionActive()) $db->rollBack();
+                throw $exception;
+            }
+
+            $items = array_map(static fn (array $row): array => [
+                'paymentId' => (string) $row['payment_id'],
+                'orderId' => (string) $row['order_id'],
+                'provider' => (string) $row['provider'],
+                'amountMinor' => (int) $row['amount_minor'],
+                'amountRefundedMinor' => (int) $row['amount_refunded_minor'],
+                'currency' => (string) $row['currency'],
+                'status' => (string) $row['status'],
+                'createdAt' => (new \DateTimeImmutable((string) $row['created_at']))->format(DATE_ATOM),
+                'updatedAt' => (new \DateTimeImmutable((string) $row['updated_at']))->format(DATE_ATOM),
+            ], $rows);
+
+            return new JsonResponse(['items' => $items, 'total' => $total, 'limit' => $limit, 'offset' => $offset], 200, ['Cache-Control'=>'no-store']);
+        } catch (AccessDeniedHttpException) {
+            return $this->problem(403, 'Payment permission or tenant context is missing.');
+        } catch (\Throwable) {
+            return $this->problem(500, 'Payment history could not be loaded.');
         }
     }
 
