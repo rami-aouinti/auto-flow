@@ -39,10 +39,13 @@ Subscribe to these PaymentIntent events in the Stripe webhook endpoint:
 - `payment_intent.payment_failed`
 - `payment_intent.canceled`
 
-For an existing PostgreSQL volume, Docker init scripts do not rerun automatically. Apply the two mounted SQL files once:
+Compose now runs the one-shot `postgres-bootstrap` service after PostgreSQL is healthy and before the Order/Payment APIs and workers start. It reapplies the idempotent Order and Payment role/schema migrations on both fresh and existing PostgreSQL volumes, and reconciles the local runtime/publisher role passwords with the connection URLs in `.env.example`.
+
+To rerun the bootstrap explicitly after changing one of these SQL files:
 ```bash
-docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/150-payment-role.sql
-docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/160-payment-schema.sql
+docker compose --env-file .env.example run --rm postgres-bootstrap
 ```
+
+This operation does not delete or recreate the PostgreSQL volume.
 
 The payment outbox publishes durable events to the `autoflow.payment.events` topic exchange. Publication retries use exponential backoff and stop after ten attempts for manual inspection.
