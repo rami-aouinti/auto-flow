@@ -19,6 +19,7 @@ use App\Domain\Exception\OfferNotFound;
 use App\Domain\ValueObject\OfferId;
 use App\Domain\ValueObject\OfferStatus;
 use App\Security\KeycloakTokenExchangeProvider;
+use App\Infrastructure\Pdf\OfferPdfGenerator;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
@@ -30,6 +31,7 @@ use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -54,6 +56,7 @@ final readonly class OfferController
         private AcceptOfferHandler $acceptOfferHandler,
         private RejectOfferHandler $rejectOfferHandler,
         private int $offerValidityDays,
+        private OfferPdfGenerator $offerPdfGenerator,
     ) {
     }
 
@@ -275,6 +278,42 @@ final readonly class OfferController
 
         $response = new JsonResponse($this->offerPayload($offer));
         $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    #[RequiresScope('offers:read')]
+    #[Route('/api/offers/{offerId}/pdf', name: 'offer_pdf', methods: ['GET'])]
+    public function pdf(string $offerId, Request $request): Response
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new LogicException('A verified authenticated principal is required.');
+        }
+
+        try {
+            $offer = ($this->getOfferHandler)(
+                OfferId::fromString($offerId),
+                $this->tenantContext->requireTenantId(),
+                $principal->subject,
+            );
+        } catch (InvalidArgumentException) {
+            $offer = null;
+        }
+
+        if ($offer === null) {
+            return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $response = new Response($this->offerPdfGenerator->generate($offer));
+        $response->headers->set('Content-Type', 'application/pdf');
+        $response->headers->set(
+            'Content-Disposition',
+            sprintf('attachment; filename="autoflow-offer-%s.pdf"', (string) $offer->id()),
+        );
+        $response->headers->set('Cache-Control', 'private, no-store');
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
 
         return $response;
     }
