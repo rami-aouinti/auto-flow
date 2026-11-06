@@ -93,7 +93,10 @@ jobs:
             psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
             < apps/pricing-service/migrations/Version20261104000900ConstrainPricingCalculationVersion.sql
           docker exec -i autoflow-pricing-postgres \
-            psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+            psql -v ON_ERROR_STOP=1 \
+              -v tenant_id=tenant-demo \
+              -v created_by=00000000-0000-4000-8000-000000000001 \
+              -U autoflow -d autoflow \
             < apps/pricing-service/fixtures/pricing_quotes_demo.sql
 
       - name: Run PHPUnit including PostgreSQL row-level security tests
