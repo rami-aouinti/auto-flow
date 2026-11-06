@@ -38,7 +38,7 @@ docker compose up -d --build
 docker compose ps
 docker compose exec php composer install
 docker compose exec php php -v
-docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-workflow-worker
+docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher payment-service payment-outbox-publisher order-payment-event-consumer order-workflow-worker
 ~~~
 
 The first local build installs each service's independent Composer dependencies. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
@@ -53,7 +53,8 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
 | Pricing Service | http://localhost:8082 | Tenant-scoped quote calculation API |
 | Vehicle Catalog Service | http://localhost:8084 | Authoritative manufacturers, models, generations and vehicle variants |
-| Order Management Service | http://localhost:8085 | Tenant-scoped order lifecycle, audit history and immutable commercial snapshots |
+| Order Management Service | http://localhost:8085 | Tenant-scoped order lifecycle, audit history, immutable commercial snapshots and payment state |
+| Payment Service | http://localhost:8086 | Stripe PaymentIntents, capture/refund lifecycle and payment events |
 | Pricing Swagger UI | http://localhost:8082/api/doc | Interactive Pricing REST API documentation (dev only) |
 | Pricing OpenAPI JSON | http://localhost:8082/api/doc.json | Machine-readable Pricing API contract (dev only) |
 | Vehicle Catalog Swagger UI | http://localhost:8084/api/doc | Interactive Vehicle Catalog REST API documentation (dev only) |
@@ -124,6 +125,21 @@ curl -i -X POST http://localhost:8085/api/v1/orders \
 ~~~
 
 Offer validates the incoming user access token, then exchanges it with Keycloak using the confidential `autoflow-offer-to-pricing` client and the standard OAuth 2.0 Token Exchange grant. The exchanged token is downscoped to the `autoflow-pricing` audience and sent to Pricing. Pricing therefore validates its own audience while retaining the user's `sub`; quote ownership is based on that verified subject. The local realm gives the demo user the `offers:read`, `offers:quote` and `pricing:quote` realm roles, assigns the `tenant-demo` tenant attribute, and includes the Offer workload client in the original token audience. Both the original and exchanged token receive the `tenant_id` claim from the user's Keycloak attribute. For a production realm, enable Standard Token Exchange on the confidential requester client, allow that client to exchange to the Pricing audience, and map only the appropriate user roles/permissions. Do not use the deprecated legacy token-exchange feature.
+
+## Order and Payment distributed lifecycle
+
+Payment creation accepts an `orderId` only. Payment Service asks Order Service for the accepted order's payable context over the private Docker network; Order verifies the tenant, requires `status=accepted`, and derives amount/currency from its immutable quote snapshot. Configure the same high-entropy `ORDER_PAYMENT_SHARED_SECRET` in both services (the checked-in `.env.example` value is development-only).
+
+Payment commits lifecycle events to its transactional Outbox. The publisher sends versioned events to the durable `autoflow.payment.events` exchange. The `order-payment-event-consumer` uses a tenant-scoped inbox for deduplication, updates `orders.payment_status`, and writes corresponding `OrderPayment*` events to the Order Outbox. The Temporal worker consumes those events: `OrderPaymentAuthorized` advances the accepted order into contract preparation; capture is recorded while fulfilment remains a separate business decision; failure raises a payment SLA alert; refund/cancellation ends the active lifecycle.
+
+For an existing PostgreSQL volume, apply the new Order payment lifecycle migration once:
+```bash
+docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/145-order-payment-lifecycle.sql
+```
+Then rebuild/start the integrated services:
+```bash
+docker compose --env-file .env up -d --build order-service payment-service payment-outbox-publisher order-payment-event-consumer order-outbox-publisher order-workflow-worker
+```
 
 ## CoreBundle quick check
 
