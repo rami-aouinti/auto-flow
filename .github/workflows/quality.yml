@@ -11,6 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Setup Node.js for Vue frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web-frontend/package-lock.json
+      - name: Build and type-check Vue frontend
+        working-directory: apps/web-frontend
+        run: |
+          npm ci
+          npm run build
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
