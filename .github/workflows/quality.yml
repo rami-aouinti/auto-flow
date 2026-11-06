@@ -18,6 +18,19 @@ jobs:
           coverage: xdebug
           extensions: pdo_pgsql, mbstring
           tools: composer:v2
+      - name: Setup Go for Temporal Order worker
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+          cache-dependency-path: apps/order-workflow-worker/go.mod
+      - name: Test and build Temporal Order worker
+        working-directory: apps/order-workflow-worker
+        run: |
+          gofmt -w ./cmd ./internal
+          go mod download
+          go test ./...
+          go build ./cmd/worker
       - name: Validate Composer
         run: composer validate --strict
       - name: Validate service Composer manifests
