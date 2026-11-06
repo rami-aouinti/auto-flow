@@ -66,6 +66,11 @@ RUN set +e; APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret DATABASE_URL=p
     timeout --signal=TERM --kill-after=3s 8s rr serve -c .rr.yaml; status=$?; \
     if [ "$status" -ne 124 ] && [ "$status" -ne 137 ]; then exit "$status"; fi
 
+RUN mkdir -p /app/var/cache /app/var/log /app/var/sessions \
+    && chown -R www-data:www-data /app /packages/core-bundle
+
+USER www-data
+
 ENV APP_ENV=prod
 ENV APP_DEBUG=0
 
