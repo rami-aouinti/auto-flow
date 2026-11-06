@@ -328,7 +328,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         return [
             'orderId' => $row['order_id'], 'tenantId' => $row['tenant_id'], 'createdBy' => $row['created_by'],
             'offerId' => $row['offer_id'], 'quoteId' => $row['quote_id'], 'vehicleId' => $row['vehicle_id'],
-            'status' => $row['status'], 'offerSnapshot' => $this->decodeObject($row['offer_snapshot']),
+            'status' => $row['status'], 'paymentStatus' => $row['payment_status'] ?? 'not_started', 'offerSnapshot' => $this->decodeObject($row['offer_snapshot']),
             'quoteSnapshot' => $this->decodeObject($row['quote_snapshot']),
             'vehicleSnapshot' => $this->decodeObject($row['vehicle_snapshot']),
             'decisionReason' => $row['decision_reason'],
