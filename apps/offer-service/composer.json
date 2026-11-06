@@ -7,7 +7,7 @@
     "php": "^8.4",
     "ext-json": "*",
     "ext-opentelemetry": "*",
-    "google/protobuf": "^4.0",
+    "google/protobuf": "^5.36",
     "nyholm/psr7": "^1.8",
     "open-telemetry/exporter-otlp": "^1.4",
     "open-telemetry/opentelemetry-auto-symfony": "^1.7",
