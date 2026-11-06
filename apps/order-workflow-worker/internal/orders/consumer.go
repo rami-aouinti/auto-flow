@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 	"os"
-	"net/url"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -28,14 +27,7 @@ func ConsumeOrderEvents(ctx context.Context, temporal client.Client) {
 }
 
 func consumeOnce(ctx context.Context, temporal client.Client) error {
-	brokerURL := env("RABBITMQ_URL", "")
-	if url == "" {
-		url = "amqp://" + env("RABBITMQ_USER", "autoflow") + ":" +
-			env("RABBITMQ_PASSWORD", "autoflow") + "@" +
-			env("RABBITMQ_HOST", "rabbitmq") + ":" + env("RABBITMQ_PORT", "5672") +
-			"/" + env("RABBITMQ_VHOST", "")
-	}
-	connection, err := amqp.Dial(brokerURL)
+	connection, err := amqp.Dial(rabbitURL())
 	if err != nil {
 		return err
 	}
@@ -49,7 +41,19 @@ func consumeOnce(ctx context.Context, temporal client.Client) error {
 	if err := channel.ExchangeDeclare("autoflow.order.events", "topic", true, false, false, false, nil); err != nil {
 		return err
 	}
-	if err := channel.ExchangeDeclare("autoflow.order.workflow.dlx", "direct", true, false, false, false, nil); err != nil {\n\t\treturn err\n\t}\n\tif _, err := channel.QueueDeclare("autoflow.order.workflow.dead", true, false, false, false, nil); err != nil {\n\t\treturn err\n\t}\n\tif err := channel.QueueBind("autoflow.order.workflow.dead", "malformed", "autoflow.order.workflow.dlx", false, nil); err != nil {\n\t\treturn err\n\t}\n\tqueue, err := channel.QueueDeclare("autoflow.order.workflow", true, false, false, false, amqp.Table{"x-dead-letter-exchange": "autoflow.order.workflow.dlx", "x-dead-letter-routing-key": "malformed"})
+	if err := channel.ExchangeDeclare("autoflow.order.workflow.dlx", "direct", true, false, false, false, nil); err != nil {
+		return err
+	}
+	if _, err := channel.QueueDeclare("autoflow.order.workflow.dead", true, false, false, false, nil); err != nil {
+		return err
+	}
+	if err := channel.QueueBind("autoflow.order.workflow.dead", "malformed", "autoflow.order.workflow.dlx", false, nil); err != nil {
+		return err
+	}
+	queue, err := channel.QueueDeclare("autoflow.order.workflow", true, false, false, false, amqp.Table{
+		"x-dead-letter-exchange": "autoflow.order.workflow.dlx",
+		"x-dead-letter-routing-key": "malformed",
+	})
 	if err != nil {
 		return err
 	}
@@ -100,7 +104,9 @@ func forwardToTemporal(ctx context.Context, temporal client.Client, event Event)
 	input := WorkflowInput{TenantID: event.TenantID, OrderID: event.Aggregate.ID}
 	if event.EventType == "OrderSubmitted" {
 		_, err := temporal.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
-			ID: id, TaskQueue: env("TEMPORAL_TASK_QUEUE", "autoflow-order-workflows"),\n\t\t\tWorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
+			ID: id,
+			TaskQueue: env("TEMPORAL_TASK_QUEUE", "autoflow-order-workflows"),
+			WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
 		}, OrderLifecycleWorkflow, input)
 		if err != nil && !isAlreadyStarted(err) {
 			return err
@@ -110,7 +116,7 @@ func forwardToTemporal(ctx context.Context, temporal client.Client, event Event)
 	return temporal.SignalWorkflow(ctx, id, "", LifecycleSignal, event)
 }
 
-func urlpkgEscape(value string) string {\n\treturn url.QueryEscape(value)\n}\n\nfunc isAlreadyStarted(err error) bool {
+func isAlreadyStarted(err error) bool {
 	if err == nil {
 		return false
 	}
@@ -124,5 +130,3 @@ func env(key, fallback string) string {
 	}
 	return fallback
 }
-
-var _ = json.Valid
