@@ -7,7 +7,7 @@ namespace App\\Application\\Port;
 interface PaymentGatewayInterface
 {
     /** @return array<string,mixed> */
-    public function createIntent(int $amountMinor, string $currency, string $paymentId, string $idempotencyKey): array;
+    public function createIntent(int $amountMinor, string $currency, string $paymentId, string $tenantId, string $idempotencyKey): array;
 
     /** @return array<string,mixed> */
     public function capture(string $providerPaymentId, string $idempotencyKey): array;
