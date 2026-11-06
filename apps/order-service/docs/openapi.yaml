@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: AutoFlow Order Management API
   version: 1.0.0
-  description: Tenant-scoped order lifecycle API. All routes require a verified JWT bearer token.
+  description: Tenant-scoped order lifecycle API. All routes require a verified JWT bearer token. Order creation additionally requires Offer, Pricing and Catalog read permissions.
 servers:
   - url: http://localhost:8085
 security:
