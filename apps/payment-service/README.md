@@ -10,8 +10,8 @@ Symfony 7.4 / PHP 8.4 bounded context for payment lifecycle management. Stripe i
 - Persist payment changes and domain events in PostgreSQL.
 - Never store PAN, CVC, expiry or raw card data. Stripe.js/Payment Element handles payment details.
 
-## Important integration boundary
-The create endpoint accepts an order ID, amount in minor units and ISO currency for the current integration stage. Before production, replace the amount input with a server-to-server lookup of the authoritative order/quote total and verify the order is accepted and payable. Never trust a browser-provided amount in production.
+## Order integration boundary
+Payment accepts only an order ID from the caller. Before contacting Stripe it calls Order Service over the private network, authenticates with `X-Autoflow-Service-Token`, verifies the tenant and requires the order status to be `accepted`. Order derives `amountMinor` and `currency` from its immutable quote snapshot; request-supplied amounts are ignored. Configure `ORDER_PAYMENT_CONTEXT_URL` and the same high-entropy `ORDER_PAYMENT_SHARED_SECRET` in both services. The local default in Compose is for development only.
 
 ## Configuration
 Set PAYMENT_DATABASE_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, AUTOFLOW_JWT_ISSUER and AUTOFLOW_JWT_JWKS_URI. Use Stripe test keys locally; never commit live credentials.
