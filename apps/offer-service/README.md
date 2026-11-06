@@ -117,11 +117,11 @@ The development-only fixture loader creates five deterministic offers for the lo
 
 | Offer ID | Vehicle | Initial status |
 | --- | --- | --- |
-| `demo-offer-draft-001` | BMW i4 | `draft` |
-| `demo-offer-published-001` | Tesla Model 3 | `published` |
-| `demo-offer-accepted-001` | Volvo EX30 | `accepted` |
-| `demo-offer-rejected-001` | Audi Q4 | `rejected` |
-| `demo-offer-expired-001` | Mercedes EQA | `expired` |
+| `demo-offer-draft-001` | BMW 320d | `draft` |
+| `demo-offer-published-001` | VW ID.4 Pro | `published` |
+| `demo-offer-accepted-001` | BMW 330e | `accepted` |
+| `demo-offer-rejected-001` | Audi A4 40 TDI | `rejected` |
+| `demo-offer-expired-001` | Mercedes C 220 d | `expired` |
 
 The loader is idempotent, requires `APP_ENV=dev`, and uses the `autoflow_offer` database role with the tenant RLS context set to `tenant-demo` by default. It requires the Keycloak user's actual `sub` claim so the existing owner-only authorization rule works. It does not create Outbox rows or publish RabbitMQ messages.
 
