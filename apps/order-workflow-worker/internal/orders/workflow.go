@@ -36,10 +36,13 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 			MaximumAttempts: 0,
 		},
 	})
+	// Temporal replays this deterministic state from workflow history. Keeping event IDs
+	// here makes RabbitMQ redelivery safe across every lifecycle phase.
+	seenEventIDs := make(map[string]struct{})
 
 	decision, err := waitForLifecycleEvent(ctx, map[string]bool{
 		"OrderAccepted": true, "OrderRejected": true, "OrderCancelled": true,
-	}, 48*time.Hour)
+	}, 48*time.Hour, seenEventIDs)
 	if err != nil {
 		return err
 	}
@@ -51,7 +54,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 		}
 		decision, err = waitForLifecycleEvent(ctx, map[string]bool{
 			"OrderAccepted": true, "OrderRejected": true, "OrderCancelled": true,
-		}, 0)
+		}, 0, seenEventIDs)
 		if err != nil {
 			return err
 		}
@@ -63,7 +66,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 
 	contractState, err := waitForLifecycleEvent(ctx, map[string]bool{
 		"OrderContractPending": true, "OrderCancelled": true,
-	}, 24*time.Hour)
+	}, 24*time.Hour, seenEventIDs)
 	if err != nil {
 		return err
 	}
@@ -75,7 +78,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 		}
 		contractState, err = waitForLifecycleEvent(ctx, map[string]bool{
 			"OrderContractPending": true, "OrderCancelled": true,
-		}, 0)
+		}, 0, seenEventIDs)
 		if err != nil {
 			return err
 		}
@@ -86,7 +89,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 
 	fulfilment, err := waitForLifecycleEvent(ctx, map[string]bool{
 		"OrderCompleted": true, "OrderCancelled": true,
-	}, 7*24*time.Hour)
+	}, 7*24*time.Hour, seenEventIDs)
 	if err != nil {
 		return err
 	}
@@ -99,7 +102,12 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	return nil
 }
 
-func waitForLifecycleEvent(ctx workflow.Context, accepted map[string]bool, timeout time.Duration) (string, error) {
+func waitForLifecycleEvent(
+	ctx workflow.Context,
+	accepted map[string]bool,
+	timeout time.Duration,
+	seenEventIDs map[string]struct{},
+) (string, error) {
 	signals := workflow.GetSignalChannel(ctx, LifecycleSignal)
 	var timer workflow.Future
 	if timeout > 0 {
@@ -124,6 +132,13 @@ func waitForLifecycleEvent(ctx workflow.Context, accepted map[string]bool, timeo
 			if timedOut && !received {
 				return "", nil
 			}
+		}
+
+		if event.EventID != "" {
+			if _, duplicate := seenEventIDs[event.EventID]; duplicate {
+				continue
+			}
+			seenEventIDs[event.EventID] = struct{}{}
 		}
 		if accepted[event.EventType] {
 			return event.EventType, nil
