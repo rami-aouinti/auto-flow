@@ -10,7 +10,7 @@ For example:
 
 Naming them correctly makes ownership and failure handling clearer.
 
-This chapter defines a target event model. The current Offer/Pricing demonstration does not yet publish these business events.
+This chapter defines the cross-context event model. Order Management now writes order lifecycle events to its own Transactional Outbox and publishes them to the durable RabbitMQ topic exchange `autoflow.order.events`. The downstream consumers remain a later increment; the Offer/Pricing demonstration does not yet publish its candidate business events.
 
 ## 2. Candidate event catalogue
 
@@ -21,6 +21,11 @@ This chapter defines a target event model. The current Offer/Pricing demonstrati
 | `OrderSubmitted` | Order | Workflow, analytics | A customer submitted an order |
 | `OrderAccepted` | Order | Contract, notification | The order passed acceptance rules |
 | `OrderRejected` | Order | Notification, analytics | The order was rejected |
+| `OrderCreated` | Order | Workflow, analytics | A draft order was created |
+| `OrderUnderReview` | Order | Workflow, operations | Manual review started |
+| `OrderCancelled` | Order | Workflow, analytics | The order was cancelled |
+| `OrderContractPending` | Order | Contract | Contract preparation is pending |
+| `OrderCompleted` | Order | Analytics, fulfilment | The order lifecycle completed |
 | `ContractPrepared` | Contract | Order, notification | A contract version is ready |
 | `ContractSigned` | Contract | Order, fulfilment | A signature was confirmed |
 | `NotificationRequested` | Owning business context | Notification | A communication should be attempted |
@@ -133,6 +138,6 @@ For each event type, monitor:
 
 Propagate trace context through message headers where supported. Use event ID and correlation ID as structured log attributes. Do not confuse a correlation ID with a distributed trace ID.
 
-## 10. Implementation gate
+## 10. Current Order Management event publication\n\nThe Order service records the order state change and Outbox event in one PostgreSQL transaction. Its publisher claims one pending row using `FOR UPDATE SKIP LOCKED` through narrowly scoped SECURITY DEFINER functions, publishes a persistent RabbitMQ message with publisher confirms, then marks it published. Failed publication is rescheduled with bounded exponential backoff. A crash after broker confirmation but before the database acknowledgement can produce a duplicate; consumers must deduplicate by `eventId`. The publisher does not create or own downstream consumer queues.\n\n## 11. Implementation gate
 
 Before implementing an event, identify its owner, business meaning, schema, consumers, privacy classification, delivery guarantee, idempotency key, retry policy, replay policy and operational owner. An event without a clear owner is an integration risk.
