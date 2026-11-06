@@ -13,7 +13,7 @@ The target is a service-oriented / microservice architecture with clear business
 The platform can be understood in four areas:
 
 - **Experience and entry points:** web/mobile clients and public APIs.
-- **Business capabilities:** Vehicle Catalog, Offer, Pricing and future domain services.
+- **Business capabilities:** Vehicle Catalog, Offer, Pricing, Order Management and future domain services.
 - **Integration and workflow:** synchronous HTTP, asynchronous messaging and durable orchestration.
 - **Platform capabilities:** persistence, cache, search, observability and runtime.
 
@@ -47,7 +47,7 @@ Inside Docker Compose, Offer calls Pricing using the Docker DNS name pricing-ser
 
 Each application has its own Symfony application and Composer project. They do not call one another's PHP classes directly; the integration boundary is HTTP.
 
-The pricing response is static demo data. It validates service communication and tracing, not a production pricing engine. The Vehicle Catalog is a separate authoritative service on host port 8084; it owns manufacturer/model/generation/variant records and publishes versioned catalogue events through its Outbox. It does not participate in the Offer → Pricing request path.
+The pricing response is static demo data. It validates service communication and tracing, not a production pricing engine. The Vehicle Catalog is a separate authoritative service on host port 8084; it owns manufacturer/model/generation/variant records and publishes versioned catalogue events through its Outbox. Order Management is a separate service on host port 8085; it owns order lifecycle, immutable upstream snapshots, tenant-scoped history, idempotency and a transactional Outbox. It is not yet wired into the Offer → Pricing demo request path.
 
 ## 4. Local platform components
 
