@@ -474,6 +474,30 @@ services:
     volumes:
       - /:/host:ro
 
+
+  web-frontend:
+    image: node:22-alpine
+    working_dir: /app
+    command: ["sh", "-lc", "npm install && npm run dev -- --host 0.0.0.0"]
+    ports: ["3000:3000"]
+    volumes:
+      - ./apps/web-frontend:/app
+      - web-frontend-node-modules:/app/node_modules
+    environment:
+      VITE_KEYCLOAK_URL: http://localhost:8080
+      VITE_KEYCLOAK_REALM: autoflow
+      VITE_KEYCLOAK_CLIENT_ID: autoflow-local-client
+      CATALOG_PROXY_TARGET: http://vehicle-catalog-service:8080
+      OFFER_PROXY_TARGET: http://offer-service:8080
+      PRICING_PROXY_TARGET: http://pricing-service:8080
+    depends_on:
+      vehicle-catalog-service: {condition: service_healthy}
+      offer-service: {condition: service_healthy}
+      pricing-service: {condition: service_healthy}
+      keycloak: {condition: service_started}
+    init: true
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   rabbitmq-data:
@@ -487,3 +511,4 @@ volumes:
   loki-data:
   tempo-data:
   temporal-data:
+  web-frontend-node-modules:
