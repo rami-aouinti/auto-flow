@@ -25,7 +25,19 @@ final class OrderApplicationServiceTest extends TestCase
             self::markTestSkipped('ORDER_TEST_DATABASE_URL is required for PostgreSQL integration tests.');
         }
 
-        $connection = DriverManager::getConnection(['url' => $databaseUrl]);
+        $parts = parse_url($databaseUrl);
+        if (!is_array($parts)) {
+            self::fail('ORDER_TEST_DATABASE_URL is not a valid database URL.');
+        }
+
+        $connection = DriverManager::getConnection([
+            'driver' => 'pdo_pgsql',
+            'host' => $parts['host'] ?? '127.0.0.1',
+            'port' => $parts['port'] ?? 5432,
+            'dbname' => ltrim($parts['path'] ?? '/autoflow', '/'),
+            'user' => rawurldecode($parts['user'] ?? ''),
+            'password' => rawurldecode($parts['pass'] ?? ''),
+        ]);
         $this->orders = new OrderApplicationService(new DoctrineOrderRepository($connection, new CorrelationContext()));
     }
 
