@@ -12,7 +12,19 @@ $url = getenv('PAYMENT_PUBLISHER_DATABASE_URL') ?: '';
 if ($url === '') {
     throw new RuntimeException('PAYMENT_PUBLISHER_DATABASE_URL is required.');
 }
-$db = DriverManager::getConnection(['url' => $url]);
+/** @var array{scheme?:string,host?:string,port?:int,user?:string,pass?:string,path?:string,query?:string}|false $parts */
+$parts = parse_url($url);
+if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['postgres', 'postgresql'], true)) {
+    throw new RuntimeException('A valid PostgreSQL database URL is required.');
+}
+$db = DriverManager::getConnection([
+    'driver' => 'pdo_pgsql',
+    'host' => $parts['host'] ?? 'localhost',
+    'port' => $parts['port'] ?? 5432,
+    'user' => isset($parts['user']) ? rawurldecode($parts['user']) : '',
+    'password' => isset($parts['pass']) ? rawurldecode($parts['pass']) : '',
+    'dbname' => rawurldecode(ltrim($parts['path'] ?? '', '/')),
+]);
 
 $connect = static function (): array {
     $connection = new AMQPStreamConnection(
