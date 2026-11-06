@@ -31,7 +31,7 @@ final readonly class PaymentController
             return new JsonResponse($result, 201, ['Cache-Control'=>'no-store']);
         } catch (DomainException $e) {
             return $this->problem(422, $e->getMessage());
-        } catch (\\Throwable) {
+        } catch (\Throwable) {
             return $this->problem(503, 'Payment could not be created. Check provider status before retrying.');
         }
     }
@@ -44,7 +44,7 @@ final readonly class PaymentController
             return new JsonResponse($this->payments->get($this->tenant($principal), $paymentId), 200, ['Cache-Control'=>'no-store']);
         } catch (PaymentNotFoundException) {
             return $this->problem(404, 'Payment not found.');
-        } catch (\\Throwable) {
+        } catch (\Throwable) {
             return $this->problem(403, 'Payment access denied.');
         }
     }
