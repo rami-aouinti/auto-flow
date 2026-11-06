@@ -30,6 +30,32 @@ final readonly class PaymentApplicationService
             throw new DomainException('orderId must be a valid UUID.');
         }
         $this->assertKey($key);
+        // Idempotent retries must still return the original result after Order advances
+        // from accepted to contract_pending.
+        $hash = hash('sha256', json_encode([$orderId], JSON_THROW_ON_ERROR));
+        $this->db->beginTransaction();
+        try {
+            $this->setTenant($tenant);
+            $existing = $this->db->fetchAssociative(
+                'SELECT request_hash, response_json FROM payment_idempotency WHERE tenant_id=:tenant AND actor=:actor AND idempotency_key=:key',
+                ['tenant'=>$tenant,'actor'=>$actor,'key'=>$key],
+            );
+            if ($existing !== false) {
+                if (!hash_equals((string) $existing['request_hash'], $hash)) {
+                    throw new DomainException('Idempotency-Key was already used for a different payment request.');
+                }
+                $response = json_decode((string) $existing['response_json'], true, 512, JSON_THROW_ON_ERROR);
+                $this->db->commit();
+                return $response;
+            }
+            $this->db->commit();
+        } catch (\\Throwable $exception) {
+            if ($this->db->isTransactionActive()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
+
         // Order owns the immutable commercial snapshot and is the only source of payable amount.
         $orderContext = $this->orderContext->getPayableContext($tenant, $orderId);
         $amount = $orderContext['amountMinor'];
@@ -37,7 +63,6 @@ final readonly class PaymentApplicationService
         if ($amount < 50 || $amount > 99_999_999 || preg_match('/^[A-Z]{3}$/D', $currency) !== 1) {
             throw new DomainException('The accepted order has an invalid payable amount or currency.');
         }
-        $hash = hash('sha256', json_encode([$orderId, $amount, $currency], JSON_THROW_ON_ERROR));
 
         $this->db->beginTransaction();
         try {
