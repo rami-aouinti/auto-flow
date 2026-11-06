@@ -26,6 +26,7 @@ AutoFlow is an independent portfolio and learning project inspired by publicly o
 | [16 — Vehicle Catalog context map](16-vehicle-catalog-context-map.md) | Vehicle domain, ownership boundaries, context map and open questions |
 | [17 — Engineering delivery and agents](17-engineering-delivery-and-agents.md) | Issue-to-PR workflow, quality gates and AI agent rules |
 | [18 — Order Management](18-order-management-service.md) | Order lifecycle, tenant isolation, idempotency, Outbox and observability |
+| [Security hardening plan](../security-hardening-plan.md) | Implemented controls, remaining production gates and acceptance criteria |
 
 ## How to interpret this documentation
 
