@@ -17,6 +17,8 @@ final readonly class OfferPublished implements DomainEvent
         public string $vehicleId,
         public DateTimeImmutable $occurredAt,
         public DateTimeImmutable $expiresAt,
+        /** @var array<string, string|int> */
+        public array $pricing,
     ) {
     }
 
@@ -36,6 +38,7 @@ final readonly class OfferPublished implements DomainEvent
                 'quoteId' => $this->quoteId,
                 'vehicleId' => $this->vehicleId,
                 'expiresAt' => $this->expiresAt->format(DATE_ATOM),
+                'pricing' => $this->pricing,
             ],
         ];
     }
