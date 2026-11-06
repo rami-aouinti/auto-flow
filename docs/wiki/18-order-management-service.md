@@ -8,7 +8,7 @@ The order captures immutable snapshots of the offer, quote and vehicle facts acc
 
 ## Implemented increment
 
-The new independently deployable Symfony 7.4 application lives at `apps/order-service` and listens on host port 8085 in local Compose.
+The new independently deployable Symfony 7.4 application lives at `apps/order-service` and listens on host port 8085 in local Compose. The Application layer depends on `OrderRepositoryInterface`; the Doctrine DBAL adapter owns transactions and SQL so persistence does not leak into the use-case layer.
 
 Implemented capabilities:
 - Domain lifecycle aggregate and explicit transition policy.
