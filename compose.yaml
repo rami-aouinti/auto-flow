@@ -79,6 +79,51 @@ services:
     restart: unless-stopped
 
 
+  payment-service:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/payment-service
+        COMPOSER_NO_DEV: ""
+    ports:
+      - "8086:8080"
+    environment:
+      APP_ENV: ${PAYMENT_APP_ENV:-prod}
+      APP_DEBUG: ${PAYMENT_APP_DEBUG:-0}
+      APP_SECRET: local-only-payment-service-secret
+      DEFAULT_URI: http://localhost:8086
+      PAYMENT_DATABASE_URL: ${PAYMENT_DATABASE_URL:-postgresql://autoflow_payment:local-only-payment-password@postgres:5432/autoflow}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      OTEL_SERVICE_NAME: autoflow-payment-service
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_PHP_EXCLUDED_URLS: ^/health
+    depends_on:
+      postgres: {condition: service_healthy}
+      tempo: {condition: service_started}
+      alloy: {condition: service_started}
+      keycloak: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
   order-service:
     build:
       context: .
@@ -468,6 +513,8 @@ services:
       - ./apps/order-service/migrations/00_create_order_database_role.sql:/docker-entrypoint-initdb.d/120-order-role.sql:ro
       - ./apps/order-service/migrations/Version20261106000100CreateOrders.sql:/docker-entrypoint-initdb.d/130-order-schema.sql:ro
       - ./apps/order-service/migrations/Version20261106000200AddOrderTransitionIdempotency.sql:/docker-entrypoint-initdb.d/140-order-transition-idempotency.sql:ro
+      - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/docker-entrypoint-initdb.d/150-payment-role.sql:ro
+      - ./apps/payment-service/migrations/140-payment-schema.sql:/docker-entrypoint-initdb.d/160-payment-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
