@@ -18,7 +18,6 @@ use App\Domain\Exception\InvalidOfferTransition;
 use App\Domain\Exception\OfferNotFound;
 use App\Domain\ValueObject\OfferId;
 use App\Domain\ValueObject\OfferStatus;
-use App\Security\KeycloakTokenExchangeProvider;
 use App\Infrastructure\Pdf\OfferPdfGenerator;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
@@ -34,7 +33,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
 
 /**
