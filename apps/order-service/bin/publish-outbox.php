@@ -58,9 +58,19 @@ try {
         $payload = is_string($event['payload'])
             ? $event['payload']
             : json_encode($event['payload'], JSON_THROW_ON_ERROR);
-        json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
-        $span = Globals::tracerProvider()->getTracer('autoflow.order-service', '1.0.0')
-            ->spanBuilder('messaging.publish')->setSpanKind(SpanKind::KIND_PRODUCER)->startSpan();
+        $eventEnvelope = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+        $traceContext = is_array($eventEnvelope['traceContext'] ?? null)
+            ? $eventEnvelope['traceContext']
+            : [];
+        unset($eventEnvelope['traceContext']);
+        $payload = json_encode($eventEnvelope, JSON_THROW_ON_ERROR);
+        $spanBuilder = Globals::tracerProvider()->getTracer('autoflow.order-service', '1.0.0')
+            ->spanBuilder('messaging.publish')
+            ->setSpanKind(SpanKind::KIND_PRODUCER);
+        if ($traceContext !== []) {
+            $spanBuilder->setParent(TraceContextPropagator::getInstance()->extract($traceContext));
+        }
+        $span = $spanBuilder->startSpan();
         $scope = $span->activate();
         try {
             $span->setAttribute('messaging.system', 'rabbitmq');
