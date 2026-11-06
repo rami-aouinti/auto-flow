@@ -142,10 +142,13 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
       OTEL_PHP_AUTOLOAD_ENABLED: "true"
       OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: none
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
       OTEL_PROPAGATORS: tracecontext,baggage
     depends_on:
       postgres: {condition: service_healthy}
