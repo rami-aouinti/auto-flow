@@ -15,6 +15,7 @@ use App\Application\Handler\RegisterModelHandler;
 use App\Application\Handler\RegisterVehicleVariantHandler;
 use App\Application\Port\VehicleCatalogRepositoryInterface;
 use App\Presentation\Http\Controller\CatalogController;
+use App\Presentation\Http\Controller\CatalogManagementController;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -92,7 +93,7 @@ final class CatalogControllerTest extends TestCase
         );
         $this->authenticate($request, ['catalog:manage']);
 
-        $response = (new CatalogController())->createManufacturer(
+        $response = (new CatalogManagementController())->createManufacturer(
             $request,
             $this->application($repository),
         );
