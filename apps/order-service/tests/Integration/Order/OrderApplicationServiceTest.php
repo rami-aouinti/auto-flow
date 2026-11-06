@@ -7,6 +7,7 @@ namespace App\\Tests\\Integration\\Order;
 use App\\Application\\OrderApplicationService;
 use App\\Application\\OrderNotFoundException;
 use App\\Domain\\OrderStatus;
+use App\\Infrastructure\\Persistence\\Doctrine\\DoctrineOrderRepository;
 use Doctrine\\DBAL\\DriverManager;
 use DomainException;
 use PHPUnit\\Framework\\TestCase;
@@ -24,7 +25,7 @@ final class OrderApplicationServiceTest extends TestCase
         }
 
         $connection = DriverManager::getConnection(['url' => $databaseUrl]);
-        $this->orders = new OrderApplicationService($connection);
+        $this->orders = new OrderApplicationService(new DoctrineOrderRepository($connection));
     }
 
     public function testCreationIsIdempotentAndLifecycleIsAudited(): void
