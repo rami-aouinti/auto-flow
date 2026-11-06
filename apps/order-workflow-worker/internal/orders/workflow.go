@@ -23,7 +23,7 @@ type SLAAlert struct {
 
 func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	logger := workflow.GetLogger(ctx)
-	logger.Info("Order lifecycle workflow started", "tenantId", input.TenantID, "orderId", input.OrderID)
+	logger.Info("Order lifecycle workflow started", "tenantId", input.TenantID, "orderId", input.OrderID, "correlationId", input.CorrelationID)
 
 	activityCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 15 * time.Second,
