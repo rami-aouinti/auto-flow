@@ -19,8 +19,11 @@ services:
 
     App\Controller\OfferController:
         arguments:
-            $pricingServiceUrl: '%app.pricing_service_url%'
             $offerValidityDays: '%app.offer_validity_days%'
+
+    App\Controller\PricingQuoteController:
+        arguments:
+            $pricingServiceUrl: '%app.pricing_service_url%'
 
     App\Infrastructure\Pricing\HttpPricingGateway:
         arguments:
