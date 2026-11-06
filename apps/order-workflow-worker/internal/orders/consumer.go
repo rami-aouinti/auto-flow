@@ -90,6 +90,11 @@ func consumeOnce(ctx context.Context, temporal client.Client) error {
 			if err := forwardToTemporal(ctx, temporal, event); err != nil {
 				log.Printf("could not forward event %s to Temporal: %v", event.EventID, err)
 				_ = delivery.Nack(false, true)
+				select {
+				case <-ctx.Done():
+					return nil
+				case <-time.After(time.Second):
+				}
 				continue
 			}
 			if err := delivery.Ack(false); err != nil {
