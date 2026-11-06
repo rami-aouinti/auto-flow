@@ -31,7 +31,7 @@ final class OfferPdfGenerator
             ['Valid until: ' . $this->date($offer->expiresAt()), 9, false],
             ['', 10, false],
             ['COMMERCIAL TERMS', 12, true],
-            ['Vehicle price: ' . $this->money($snapshot->totalCostIncludingDownPayment, $snapshot->currency), 10, false],
+            ['Total amount incl. down payment: ' . $this->money($snapshot->totalCostIncludingDownPayment, $snapshot->currency), 10, false],
             ['Down payment: ' . $this->money($this->downPayment($snapshot->totalCostIncludingDownPayment, $snapshot->totalInstallmentsAmount), $snapshot->currency), 10, false],
             ['Monthly instalment: ' . $this->money($snapshot->monthlyAmount, $snapshot->currency), 10, true],
             ['Duration: ' . $snapshot->durationMonths . ' months', 10, false],
@@ -107,7 +107,7 @@ final class OfferPdfGenerator
 
     private function date(DateTimeImmutable $date): string
     {
-        return $date->format('d.m.Y H:i') . ' UTC';
+        return $date->format('d.m.Y H:i T');
     }
 
     private function money(string $amount, string $currency): string
