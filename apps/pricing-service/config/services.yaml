@@ -22,5 +22,8 @@ services:
     App\Application\Port\Out\QuoteIdGeneratorInterface:
         alias: App\Infrastructure\Persistence\RandomQuoteIdGenerator
 
+    App\Infrastructure\Health\PricingDatabaseHealthCheck:
+        tags: ['autoflow_core.health_check']
+
     App\Grpc\PricingGrpcService:
         public: true
