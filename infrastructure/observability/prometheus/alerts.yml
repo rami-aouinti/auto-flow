@@ -12,7 +12,7 @@ groups:
           summary: "Prometheus target is down"
           description: "Target {{ $labels.job }} at {{ $labels.instance }} has been unavailable for more than 2 minutes."
       - alert: PrometheusScrapeTargetMissing
-        expr: absent(up{job="rabbitmq"}) or absent(up{job="postgres"}) or absent(up{job="redis"}) or absent(up{job="elasticsearch"}) or absent(up{job="cadvisor"}) or absent(up{job="node-exporter"})
+        expr: absent(up{job="rabbitmq"}) or absent(up{job="postgres"}) or absent(up{job="redis"}) or absent(up{job="elasticsearch"}) or absent(up{job="cadvisor"}) or absent(up{job="node-exporter"}) or absent(up{job="notification-service"})
         for: 3m
         labels:
           severity: critical
