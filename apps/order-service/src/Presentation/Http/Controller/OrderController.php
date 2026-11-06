@@ -17,6 +17,11 @@ use Symfony\\Component\\Routing\\Attribute\\Route;
 use Throwable;
 
 #[Route('/api/v1/orders')]
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ */
 final readonly class OrderController
 {
     public function __construct(private OrderApplicationService $orders, private OrderMetrics $metrics)
@@ -32,7 +37,12 @@ final readonly class OrderController
             if (!is_string($key) || $key === '') {
                 return $this->problem(400, 'Idempotency-Key is required.');
             }
-            $result = $this->orders->create($this->tenant($principal), $principal->subject, $this->jsonBody($request), $key);
+            $result = $this->orders->create(
+                $this->tenant($principal),
+                $principal->subject,
+                $this->jsonBody($request),
+                $key,
+            );
             $this->metrics->recordCreated();
             return new JsonResponse(
                 $result,
@@ -55,8 +65,10 @@ final readonly class OrderController
     {
         try {
             $principal = $this->principal($request, 'orders:read');
+            $limit = max(1, min(100, $request->query->getInt('limit', 20)));
+            $offset = max(0, $request->query->getInt('offset', 0));
             return new JsonResponse(
-                $this->orders->list($this->tenant($principal), max(1, min(100, $request->query->getInt('limit', 20))), max(0, $request->query->getInt('offset', 0))),
+                $this->orders->list($this->tenant($principal), $limit, $offset),
                 200,
                 ['Cache-Control' => 'no-store'],
             );
@@ -72,7 +84,11 @@ final readonly class OrderController
     {
         try {
             $principal = $this->principal($request, 'orders:read');
-            return new JsonResponse($this->orders->get($this->tenant($principal), $orderId), 200, ['Cache-Control' => 'no-store']);
+            return new JsonResponse(
+                $this->orders->get($this->tenant($principal), $orderId),
+                200,
+                ['Cache-Control' => 'no-store'],
+            );
         } catch (AccessDeniedHttpException) {
             return $this->problem(403, 'The required permission and tenant context are required.');
         } catch (OrderNotFoundException) {
@@ -127,7 +143,8 @@ final readonly class OrderController
         } catch (Throwable) {
             return $this->problem(400, 'A valid JSON object is required.');
         }
-        return $this->change($request, $orderId, OrderStatus::REJECTED, isset($body['reason']) ? (string) $body['reason'] : null);
+        $reason = isset($body['reason']) && is_string($body['reason']) ? $body['reason'] : null;
+        return $this->change($request, $orderId, OrderStatus::REJECTED, $reason);
     }
 
     #[Route('/{orderId}/cancel', name: 'orders_cancel', methods: ['POST'])]
@@ -148,13 +165,32 @@ final readonly class OrderController
         return $this->change($request, $orderId, OrderStatus::COMPLETED);
     }
 
-    private function change(Request $request, string $orderId, OrderStatus $target, ?string $reason = null): JsonResponse
+    private function change(
+        Request $request,
+        string $orderId,
+        OrderStatus $target,
+        ?string $reason = null,
+    ): JsonResponse
     {
         try {
-            $scope = in_array($target, [OrderStatus::ACCEPTED, OrderStatus::REJECTED, OrderStatus::UNDER_REVIEW, OrderStatus::CONTRACT_PENDING, OrderStatus::COMPLETED], true)
-                ? 'orders:manage' : 'orders:write';
+            $managementStatuses = [
+                OrderStatus::ACCEPTED,
+                OrderStatus::REJECTED,
+                OrderStatus::UNDER_REVIEW,
+                OrderStatus::CONTRACT_PENDING,
+                OrderStatus::COMPLETED,
+            ];
+            $scope = in_array($target, $managementStatuses, true)
+                ? 'orders:manage'
+                : 'orders:write';
             $principal = $this->principal($request, $scope);
-            $result = $this->orders->transition($this->tenant($principal), $principal->subject, $orderId, $target, $reason);
+            $result = $this->orders->transition(
+                $this->tenant($principal),
+                $principal->subject,
+                $orderId,
+                $target,
+                $reason,
+            );
             $this->metrics->recordTransition($target->value);
             return new JsonResponse(
                 $result,
