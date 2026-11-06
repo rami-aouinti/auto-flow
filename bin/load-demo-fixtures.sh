@@ -15,6 +15,18 @@ TENANT_ID="${DEMO_TENANT_ID:-tenant-demo}"
 echo "==> Starting the services required by the demo journey"
 "${COMPOSE[@]}" up -d --build postgres keycloak pricing-service offer-service vehicle-catalog-service
 
+echo "==> Waiting for PostgreSQL"
+for attempt in $(seq 1 60); do
+    if "${COMPOSE[@]}" exec -T postgres pg_isready -U autoflow -d autoflow >/dev/null 2>&1; then
+        break
+    fi
+    if [[ "$attempt" -eq 60 ]]; then
+        echo "PostgreSQL did not become ready." >&2
+        exit 1
+    fi
+    sleep 2
+done
+
 echo "==> Applying the additive Pricing schema migration (safe for an existing volume)"
 "${COMPOSE[@]}" exec -T postgres psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
     < apps/pricing-service/migrations/Version20261106000100CreatePricingPoliciesAndQuoteSnapshots.sql
@@ -46,7 +58,7 @@ echo "==> Generating the larger deterministic Vehicle Catalog dataset"
 echo "==> Obtaining the local Keycloak demo user's subject"
 TOKEN_RESPONSE=""
 for attempt in $(seq 1 30); do
-    if TOKEN_RESPONSE="$(curl --silent --show-error --fail -X POST \
+    if TOKEN_RESPONSE="$(curl --silent --show-error --fail --max-time 10 -X POST \
         http://localhost:8080/realms/autoflow/protocol/openid-connect/token \
         -H 'Content-Type: application/x-www-form-urlencoded' \
         --data-urlencode 'grant_type=password' \
