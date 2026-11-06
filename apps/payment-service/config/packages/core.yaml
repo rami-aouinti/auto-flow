@@ -8,4 +8,4 @@ core:
         jwks_cache_ttl: 300
         protected_path_prefixes: ['/api/']
         tenant_required_path_prefixes: ['/api/v1/payments']
-        excluded_paths: ['/api/doc', '/api/doc.json']
+        excluded_paths: ['/api/doc', '/api/doc.json', '/api/v1/payments/webhooks/stripe']
