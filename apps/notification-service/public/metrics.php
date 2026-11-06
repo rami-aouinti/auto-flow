@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+$databaseUrl = getenv('NOTIFICATION_DATABASE_URL') ?: 'postgresql://autoflow:autoflow@postgres:5432/autoflow';
+$parts = parse_url($databaseUrl);
+if (!is_array($parts)) {
+    http_response_code(503);
+    exit;
+}
+$pdo = new PDO(
+    sprintf('pgsql:host=%s;port=%d;dbname=%s', $parts['host'] ?? 'postgres', $parts['port'] ?? 5432, ltrim((string) ($parts['path'] ?? '/autoflow'), '/')),
+    rawurldecode((string) ($parts['user'] ?? 'autoflow')),
+    rawurldecode((string) ($parts['pass'] ?? 'autoflow')),
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+);
+$rows = $pdo->query("SELECT status, COUNT(*) AS total FROM notification_deliveries GROUP BY status")->fetchAll(PDO::FETCH_KEY_PAIR);
+header('Content-Type: text/plain; version=0.0.4; charset=utf-8');
+echo "# HELP autoflow_notification_deliveries_total Number of persisted notification deliveries by state.\n";
+echo "# TYPE autoflow_notification_deliveries_total gauge\n";
+foreach (['pending', 'processing', 'sent', 'failed', 'dead'] as $status) {
+    printf("autoflow_notification_deliveries_total{status=\"%s\"} %d\n", $status, (int) ($rows[$status] ?? 0));
+}
