@@ -115,6 +115,7 @@ services:
       OTEL_PHP_EXCLUDED_URLS: ^/health
     depends_on:
       postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
       tempo: {condition: service_started}
       alloy: {condition: service_started}
       keycloak: {condition: service_started}
@@ -154,6 +155,7 @@ services:
       OTEL_PROPAGATORS: tracecontext,baggage
     depends_on:
       postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
       rabbitmq: {condition: service_healthy}
       tempo: {condition: service_started}
     restart: unless-stopped
@@ -194,6 +196,7 @@ services:
       OTEL_PHP_EXCLUDED_URLS: ^/health
     depends_on:
       postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
       offer-service: {condition: service_healthy}
       pricing-service: {condition: service_healthy}
       vehicle-catalog-service: {condition: service_healthy}
@@ -236,6 +239,7 @@ services:
       OTEL_PROPAGATORS: tracecontext,baggage
     depends_on:
       postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
       rabbitmq: {condition: service_healthy}
       payment-outbox-publisher: {condition: service_started}
     restart: unless-stopped
@@ -271,6 +275,7 @@ services:
       OTEL_PROPAGATORS: tracecontext,baggage
     depends_on:
       postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
       rabbitmq: {condition: service_healthy}
       tempo: {condition: service_started}
       alloy: {condition: service_started}
@@ -592,6 +597,33 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # Reapply idempotent Order/Payment SQL on both fresh and existing PostgreSQL volumes.
+  postgres-bootstrap:
+    image: postgres:16-alpine
+    entrypoint: ["/bin/sh", "-ec"]
+    command: |
+      for migration in /migrations/*.sql; do
+        echo "Applying ${migration##*/}"
+        psql -v ON_ERROR_STOP=1 -f "$migration"
+      done
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-autoflow}
+      PGUSER: ${POSTGRES_USER:-autoflow}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-autoflow}
+    volumes:
+      - ./apps/order-service/migrations/00_create_order_database_role.sql:/migrations/120-order-role.sql:ro
+      - ./apps/order-service/migrations/Version20261106000100CreateOrders.sql:/migrations/130-order-schema.sql:ro
+      - ./apps/order-service/migrations/Version20261106000200AddOrderTransitionIdempotency.sql:/migrations/140-order-transition-idempotency.sql:ro
+      - ./apps/order-service/migrations/Version20261106000300AddPaymentLifecycle.sql:/migrations/145-order-payment-lifecycle.sql:ro
+      - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/migrations/150-payment-role.sql:ro
+      - ./apps/payment-service/migrations/140-payment-schema.sql:/migrations/160-payment-schema.sql:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   rabbitmq:
     image: rabbitmq:4-management-alpine
