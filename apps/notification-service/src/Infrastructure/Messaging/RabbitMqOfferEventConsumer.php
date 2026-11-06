@@ -7,6 +7,7 @@ namespace AutoFlow\Notification\Infrastructure\Messaging;
 use AutoFlow\Notification\Application\HandleOfferPublished;
 use AutoFlow\Notification\Domain\Notification\OfferPublishedNotification;
 use AutoFlow\Notification\Infrastructure\Observability\StructuredLogger;
+use AutoFlow\Notification\Infrastructure\Persistence\NotificationDeliveryRepository;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
@@ -18,6 +19,7 @@ final readonly class RabbitMqOfferEventConsumer
         private AMQPChannel $channel,
         private HandleOfferPublished $handler,
         private StructuredLogger $logger,
+        private NotificationDeliveryRepository $deliveries,
         private string $exchange = 'autoflow.events',
         private string $queue = 'notification.offer-published',
         private int $maxAttempts = 5,
@@ -74,6 +76,10 @@ final readonly class RabbitMqOfferEventConsumer
                 $message->ack();
             } catch (Throwable $exception) {
                 $dead = ($attempt + 1) >= $this->maxAttempts;
+                if ($eventId !== 'unknown') {
+                    $persistedAttempts = $this->deliveries->markFailed($eventId, $exception->getMessage(), $dead);
+                    $dead = $persistedAttempts >= $this->maxAttempts;
+                }
                 $this->logger->error('Offer notification delivery failed.', [
                     'event_id' => $eventId,
                     'attempt' => $attempt + 1,
