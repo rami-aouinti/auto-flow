@@ -21,7 +21,10 @@ final readonly class OrderApplicationService
     {
     }
 
-    /** @param array<string, mixed> $input */
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
     public function create(string $tenantId, string $actor, array $input, string $idempotencyKey): array
     {
         $this->assertIdentifier($tenantId, 'tenantId');
@@ -115,6 +118,7 @@ final readonly class OrderApplicationService
         });
     }
 
+    /** @return array<string, mixed> */
     public function transition(
         string $tenantId,
         string $actor,
@@ -167,6 +171,7 @@ final readonly class OrderApplicationService
         });
     }
 
+    /** @return array<string, mixed> */
     public function get(string $tenantId, string $orderId): array
     {
         return $this->connection->transactional(function (Connection $db) use ($tenantId, $orderId): array {
@@ -247,6 +252,9 @@ final readonly class OrderApplicationService
     }
 
     /** @param array<string,mixed> $row */
+    /** @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
     private function map(array $row): array
     {
         return [
@@ -267,6 +275,7 @@ final readonly class OrderApplicationService
         ];
     }
 
+    /** @return array<string, mixed> */
     private function decodeObject(mixed $value): array
     {
         $decoded = is_array($value)
