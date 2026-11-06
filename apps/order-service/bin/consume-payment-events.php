@@ -51,7 +51,7 @@ $handler = static function (AMQPMessage $message) use ($db): void {
         'PaymentAuthorized' => 'authorized',
         'PaymentCaptured' => 'captured',
         'PaymentFailed' => 'failed',
-        'PaymentRefunded' => 'refunded',
+        'PaymentRefunded' => (($data['status'] ?? null) === 'partially_refunded' ? 'partially_refunded' : 'refunded'),
         'PaymentCancelled' => 'cancelled',
         default => null,
     };
