@@ -67,3 +67,44 @@ func TestOrderLifecycleWorkflowPublishesReviewSLAAfter48Hours(t *testing.T) {
 		t.Fatalf("unexpected SLA alert: %+v", alerts[0])
 	}
 }
+
+
+func TestWaitForLifecycleEventDeduplicatesRabbitRedelivery(t *testing.T) {
+	var suite testsuite.WorkflowTestSuite
+	env := suite.NewTestWorkflowEnvironment()
+
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(LifecycleSignal, Event{EventID: "evt-contract", EventType: "OrderContractPending"})
+	}, time.Second)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(LifecycleSignal, Event{EventID: "evt-contract", EventType: "OrderContractPending"})
+	}, 2*time.Second)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(LifecycleSignal, Event{EventID: "evt-accepted", EventType: "OrderAccepted"})
+	}, 3*time.Second)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(LifecycleSignal, Event{EventID: "evt-contract-2", EventType: "OrderContractPending"})
+	}, 4*time.Second)
+
+	env.ExecuteWorkflow(func(ctx workflow.Context) error {
+		seen := make(map[string]struct{})
+		first, err := waitForLifecycleEvent(ctx, map[string]bool{"OrderAccepted": true}, 0, seen)
+		if err != nil {
+			return err
+		}
+		if first != "OrderAccepted" {
+			return fmt.Errorf("expected OrderAccepted, got %q", first)
+		}
+		second, err := waitForLifecycleEvent(ctx, map[string]bool{"OrderContractPending": true}, 0, seen)
+		if err != nil {
+			return err
+		}
+		if second != "OrderContractPending" {
+			return fmt.Errorf("expected OrderContractPending, got %q", second)
+		}
+		return nil
+	})
+	if err := env.GetWorkflowError(); err != nil {
+		t.Fatalf("workflow returned an error: %v", err)
+	}
+}
