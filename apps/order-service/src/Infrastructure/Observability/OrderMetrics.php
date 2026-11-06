@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\\Infrastructure\\Observability;
+namespace App\Infrastructure\Observability;
 
-use OpenTelemetry\\API\\Globals;
-use OpenTelemetry\\API\\Metrics\\CounterInterface;
+use OpenTelemetry\API\Globals;
+use OpenTelemetry\API\Metrics\CounterInterface;
 
 final class OrderMetrics
 {
