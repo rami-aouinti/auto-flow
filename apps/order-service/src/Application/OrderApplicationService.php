@@ -14,6 +14,32 @@ final readonly class OrderApplicationService
     {
     }
 
+    /** @return array<string, mixed>|null */
+    public function findIdempotentCreate(
+        string $tenantId,
+        string $actor,
+        string $idempotencyKey,
+        string $offerId,
+        string $quoteId,
+        string $vehicleId,
+    ): ?array {
+        $this->assertIdentifier($tenantId, 'tenantId');
+        $this->assertIdentifier($actor, 'actor');
+        $this->assertIdentifier($idempotencyKey, 'Idempotency-Key');
+        foreach ([$offerId, $quoteId, $vehicleId] as $identifier) {
+            $this->assertIdentifier($identifier, 'upstream reference');
+        }
+
+        return $this->orders->findIdempotentCreate(
+            $tenantId,
+            $actor,
+            $idempotencyKey,
+            $offerId,
+            $quoteId,
+            $vehicleId,
+        );
+    }
+
     /** @param array<string, mixed> $input
      * @return array<string, mixed>
      */
