@@ -110,7 +110,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	for {
 		fulfilment, err = waitForLifecycleEvent(ctx, map[string]bool{
 			"OrderCompleted": true, "OrderCancelled": true, "OrderPaymentAuthorized": true, "OrderPaymentCaptured": true,
-			"OrderPaymentFailed": true, "OrderPaymentRefunded": true,
+			"OrderPaymentFailed": true, "OrderPaymentRefunded": true, "OrderPaymentPartiallyRefunded": true,
 		}, 7*24*time.Hour, seenEventIDs)
 		if err != nil {
 			return err
@@ -121,6 +121,10 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 		}
 		if fulfilment == "OrderPaymentCaptured" {
 			logger.Info("Payment captured; awaiting order fulfilment", "orderId", input.OrderID)
+			continue
+		}
+		if fulfilment == "OrderPaymentPartiallyRefunded" {
+			logger.Info("Payment partially refunded; order remains under lifecycle management", "orderId", input.OrderID)
 			continue
 		}
 		if fulfilment == "OrderPaymentFailed" {
