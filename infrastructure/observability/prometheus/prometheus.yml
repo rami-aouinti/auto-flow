@@ -14,6 +14,16 @@ scrape_configs:
     static_configs:
       - targets: ["rabbitmq:15692"]
 
+  # RabbitMQ's default /metrics endpoint exposes aggregate queue metrics
+  # without queue labels. Use the detailed endpoint for queue-level alerts.
+  - job_name: rabbitmq-queues
+    metrics_path: /metrics/detailed
+    params:
+      family: [queue_coarse_metrics]
+      vhost: ["/"]
+    static_configs:
+      - targets: ["rabbitmq:15692"]
+
   - job_name: notification-service
     metrics_path: /metrics
     static_configs:
