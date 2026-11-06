@@ -6,7 +6,7 @@ COPY --from=roadrunner /usr/bin/rr /usr/local/bin/rr
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        unzip zip protobuf-compiler libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev libpq-dev \
+        unzip zip supervisor protobuf-compiler libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev libpq-dev \
     && docker-php-ext-install -j"$(nproc)" intl curl mbstring opcache pdo_pgsql sockets zip \
     && pecl install opentelemetry \
     && docker-php-ext-enable opentelemetry \
@@ -18,6 +18,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Apply the shared PHP runtime limits and OPcache settings to the RoadRunner
 # microservice image as well as to the general-purpose development container.
 COPY docker/php/conf.d/99-app.ini /usr/local/etc/php/conf.d/99-app.ini
+COPY docker/php/supervisor/offer-workers.conf /etc/supervisor/conf.d/offer-workers.conf
 
 ARG SERVICE_PATH
 ARG COMPOSER_NO_DEV=--no-dev
