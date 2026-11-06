@@ -52,7 +52,7 @@ final readonly class OrderController
             $input = $this->jsonBody($request);
             foreach (['offerId', 'quoteId', 'vehicleId'] as $field) {
                 if (!isset($input[$field]) || !is_string($input[$field])) {
-                    throw new \\InvalidArgumentException(sprintf('Field "%s" must be a string.', $field));
+                    throw new \InvalidArgumentException(sprintf('Field "%s" must be a string.', $field));
                 }
             }
             $verifiedSnapshots = $this->referenceValidator->validate(
