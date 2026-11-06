@@ -68,6 +68,8 @@ docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 
 docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/130-order-schema.sql
 ```
 
+Keycloak imports the realm file only when the `autoflow` realm does not already exist. If you already have that realm, the new client audience, roles and `order-operator` user will not be merged automatically. For a disposable local Keycloak container, recreate it with `docker compose up -d --force-recreate keycloak` (this resets its local realm data); otherwise add the `autoflow-order` audience mapper, `orders:read/write/manage` realm roles and the `order-operator` user with `tenant_id=tenant-demo` manually.
+
 Then rebuild and start the service:
 
 ```bash
