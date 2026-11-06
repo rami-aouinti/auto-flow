@@ -20,7 +20,7 @@ Implemented capabilities:
 - Create-request idempotency using a tenant-and-actor-scoped key, request hash and transaction-scoped PostgreSQL advisory lock.
 - Transactional Outbox: state, history and event intent commit in the same local transaction.
 - Narrow SECURITY DEFINER functions for cross-tenant Outbox claim/ack/retry; the service login does not have BYPASSRLS.
-- RabbitMQ topic exchange plus a durable holding queue `autoflow.order.events`, persistent messages, publisher confirms and bounded exponential retry.
+- RabbitMQ topic exchange plus a durable holding queue `autoflow.order.events`, persistent messages, publisher confirms and bounded exponential retry.\n- Separate Go Temporal worker consuming lifecycle events with manual acknowledgements, idempotent workflow IDs, dead-letter handling and durable SLA timers.
 - JWT audience `autoflow-order`, tenant claim and `orders:read`, `orders:write`, `orders:manage` roles.
 - Readiness database check, OpenTelemetry business counters and producer spans that continue the originating HTTP trace through the Outbox into RabbitMQ.
 
