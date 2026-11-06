@@ -14,6 +14,7 @@ Implemented capabilities:
 - Domain lifecycle aggregate and explicit transition policy.
 - REST API for create, list, retrieve, submit, review, accept, reject, cancel, contract-pending and complete.
 - Before creation, resolves Offer, Pricing and Vehicle Catalog over authenticated HTTP; verifies accepted/unexpired offer, quote-to-vehicle consistency and published catalogue variant; persists only server-resolved immutable snapshots.
+- Before creation, resolves Offer, Pricing and Vehicle Catalog over authenticated HTTP; verifies accepted/unexpired offer, quote-to-vehicle consistency and published catalogue variant; persists only server-resolved immutable snapshots.
 - Tenant-scoped PostgreSQL tables with forced row-level security.
 - Immutable offer, quote and vehicle JSONB snapshots; PostgreSQL column-level grants prevent the API role from updating snapshot columns.
 - Append-only lifecycle history.
