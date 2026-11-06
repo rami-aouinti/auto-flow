@@ -8,6 +8,7 @@ use App\Application\AcceptOffer\AcceptOfferHandler;
 use App\Application\CreateOffer\CreateOfferCommand;
 use App\Application\CreateOffer\CreateOfferHandler;
 use App\Application\GetOffer\GetOfferHandler;
+use App\Application\GetOfferHistory\GetOfferHistoryHandler;
 use App\Application\ListOffers\ListOffersHandler;
 use App\Application\PublishOffer\PublishOfferHandler;
 use App\Application\RejectOffer\RejectOfferHandler;
@@ -47,6 +48,7 @@ final readonly class OfferController
         private TenantContext $tenantContext,
         private CreateOfferHandler $createOfferHandler,
         private GetOfferHandler $getOfferHandler,
+        private GetOfferHistoryHandler $getOfferHistoryHandler,
         private ListOffersHandler $listOffersHandler,
         private PublishOfferHandler $publishOfferHandler,
         private AcceptOfferHandler $acceptOfferHandler,
@@ -207,6 +209,40 @@ final readonly class OfferController
             'total' => $result['total'],
             'limit' => $limit,
             'offset' => $offset,
+        ]);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    #[RequiresScope('offers:read')]
+    #[Route('/api/offers/{offerId}/history', name: 'offer_history', methods: ['GET'])]
+    public function history(string $offerId, Request $request): JsonResponse
+    {
+        $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new LogicException('A verified authenticated principal is required.');
+        }
+
+        try {
+            $history = ($this->getOfferHistoryHandler)(
+                OfferId::fromString($offerId),
+                $this->tenantContext->requireTenantId(),
+                $principal->subject,
+            );
+        } catch (InvalidArgumentException) {
+            $history = null;
+        }
+
+        if ($history === null) {
+            return new JsonResponse(['error' => 'offer_not_found'], JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $response = new JsonResponse([
+            'offerId' => $offerId,
+            'items' => $history,
+            'total' => count($history),
         ]);
         $response->headers->set('Cache-Control', 'no-store');
 
