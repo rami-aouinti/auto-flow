@@ -50,10 +50,10 @@ wait_for_http "http://localhost:8082/ready" "Pricing"
 wait_for_http "http://localhost:8081/health/ready" "Offer"
 
 echo "==> Loading the curated Vehicle Catalog fixtures"
-"${COMPOSE[@]}" exec vehicle-catalog-service php bin/load-fixtures.php
+"${COMPOSE[@]}" exec -T vehicle-catalog-service php bin/load-fixtures.php
 
 echo "==> Generating the larger deterministic Vehicle Catalog dataset"
-"${COMPOSE[@]}" exec vehicle-catalog-service php bin/generate-demo-dataset.php
+"${COMPOSE[@]}" exec -T vehicle-catalog-service php bin/generate-demo-dataset.php
 
 echo "==> Obtaining the local Keycloak demo user's subject"
 TOKEN_RESPONSE=""
@@ -92,7 +92,7 @@ echo "==> Loading Pricing policy and quotes aligned to the seven curated catalog
     < apps/pricing-service/fixtures/pricing_quotes_demo.sql
 
 echo "==> Loading Offer lifecycle fixtures aligned to Pricing quote IDs and catalogue variant IDs"
-"${COMPOSE[@]}" exec -e APP_ENV=dev -e DEMO_USER_SUBJECT="$DEMO_SUBJECT" \
+"${COMPOSE[@]}" exec -T -e APP_ENV=dev -e DEMO_USER_SUBJECT="$DEMO_SUBJECT" \
     -e DEMO_TENANT_ID="$TENANT_ID" offer-service php bin/load-demo-fixtures.php
 
 echo
