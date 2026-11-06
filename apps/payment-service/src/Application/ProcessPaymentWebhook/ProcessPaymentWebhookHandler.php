@@ -79,7 +79,7 @@ final readonly class ProcessPaymentWebhookHandler
                 $this->db->rollBack();
             }
             // Duplicate webhook event is an acknowledged no-op.
-            if (str_contains(strtolower($exception->getMessage()), 'duplicate') || str_contains(strtolower($exception->getMessage()), 'unique')) {
+            if ($exception instanceof UniqueConstraintViolationException) {
                 return;
             }
             throw $exception;
@@ -111,10 +111,4 @@ final readonly class ProcessPaymentWebhookHandler
         ]);
     }
 
-    private function assertKey(string $key): void
-    {
-        if (preg_match('/^[A-Za-z0-9._:-]{8,128}$/D', $key) !== 1) {
-            throw new DomainException('A valid Idempotency-Key is required.');
-        }
-    }
 }
