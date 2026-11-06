@@ -73,7 +73,7 @@ while (true) {
             true,
             30,
         );
-        $consumer = new RabbitMqOfferEventConsumer($connection->channel(), $handler, $logger);
+        $consumer = new RabbitMqOfferEventConsumer($connection->channel(), $handler, $logger, deliveries: $deliveries);
         $consumer->run();
     } catch (Throwable $exception) {
         $logger->error('Notification worker connection failed; retrying.', ['error' => $exception->getMessage()]);
