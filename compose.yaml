@@ -114,6 +114,9 @@ services:
       OTEL_PHP_EXCLUDED_URLS: ^/health
     depends_on:
       postgres: {condition: service_healthy}
+      offer-service: {condition: service_healthy}
+      pricing-service: {condition: service_healthy}
+      vehicle-catalog-service: {condition: service_healthy}
       tempo: {condition: service_started}
       alloy: {condition: service_started}
       keycloak: {condition: service_started}
