@@ -11,3 +11,5 @@
 
 # Local Kubernetes secrets
 /k8s/pricing/secret.yaml
+/k8s/offer/secret.yaml
+/k8s/vehicle-catalog/secret.yaml
