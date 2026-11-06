@@ -39,4 +39,37 @@ final readonly class DoctrinePaymentRepository implements PaymentRepositoryInter
             throw $exception;
         }
     }
+
+    /**
+     * @return array{items: list<array<string,mixed>>, total: int}
+     */
+    public function listByTenant(string $tenantId, int $limit, int $offset): array
+    {
+        return $this->connection->transactional(function (Connection $db) use ($tenantId, $limit, $offset): array {
+            $db->executeQuery(
+                "SELECT set_config('app.tenant_id', :tenant, true)",
+                ['tenant' => $tenantId],
+            );
+
+            $items = $db->fetchAllAssociative(
+                'SELECT payment_id,order_id,provider,provider_payment_id,amount_minor,currency,status,amount_refunded_minor,created_at,updated_at
+                 FROM payments
+                 WHERE tenant_id = :tenant
+                 ORDER BY created_at DESC, payment_id DESC
+                 LIMIT :limit OFFSET :offset',
+                ['tenant' => $tenantId, 'limit' => $limit, 'offset' => $offset],
+                [
+                    'limit' => \\Doctrine\\DBAL\\ParameterType::INTEGER,
+                    'offset' => \\Doctrine\\DBAL\\ParameterType::INTEGER,
+                ],
+            );
+            $total = (int) $db->fetchOne(
+                'SELECT COUNT(*) FROM payments WHERE tenant_id = :tenant',
+                ['tenant' => $tenantId],
+            );
+
+            return ['items' => $items, 'total' => $total];
+        });
+    }
+
 }
