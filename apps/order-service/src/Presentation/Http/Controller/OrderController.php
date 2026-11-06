@@ -21,7 +21,10 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
-#[Route('/api/v1/orders', requirements: ['orderId' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'])]
+#[Route(
+    '/api/v1/orders',
+    requirements: ['orderId' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'],
+)]
 final readonly class OrderController
 {
     public function __construct(private OrderApplicationService $orders, private OrderMetrics $metrics)
