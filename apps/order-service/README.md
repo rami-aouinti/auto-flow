@@ -60,13 +60,15 @@ The Domain model enforces allowed transitions. The application locks the order r
 
 ## Local database setup
 
-For a **fresh** PostgreSQL volume, Compose mounts the role and schema scripts into the initialization directory. For an existing volume, apply them once manually:
+Compose runs the one-shot `postgres-bootstrap` service after PostgreSQL is healthy and before the Order/Payment APIs and workers start. It reapplies the idempotent Order and Payment role/schema migrations on both fresh and existing PostgreSQL volumes, including the Order payment-lifecycle migration and both Outbox publisher grants.
+
+To rerun the bootstrap explicitly after changing one of these SQL files:
 
 ```bash
-docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/120-order-role.sql
-docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/130-order-schema.sql
-docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/140-order-transition-idempotency.sql
+docker compose --env-file .env.example run --rm postgres-bootstrap
 ```
+
+The bootstrap also reconciles the local database role passwords with the connection URLs in `.env.example`. It does not delete or recreate the PostgreSQL volume.
 
 Keycloak imports the realm file only when the `autoflow` realm does not already exist. If you already have that realm, the new client audience, roles and `order-operator` user will not be merged automatically. The order operator also needs the upstream read roles `offers:read`, `pricing:quote` and `catalog:read`. For a disposable local Keycloak container, recreate it with `docker compose up -d --force-recreate keycloak` (this resets its local realm data); otherwise add the `autoflow-order` audience mapper, `orders:read/write/manage` realm roles and the `order-operator` user with `tenant_id=tenant-demo` manually.
 
