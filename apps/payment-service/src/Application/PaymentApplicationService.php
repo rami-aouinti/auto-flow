@@ -120,9 +120,26 @@ final readonly class PaymentApplicationService
     public function transition(string $tenant, string $actor, string $paymentId, string $key, string $operation, ?int $refundAmount = null): array
     {
         $this->assertKey($key);
+        $requestHash = hash('sha256', json_encode([$paymentId, $operation, $refundAmount], JSON_THROW_ON_ERROR));
         $this->db->beginTransaction();
         try {
             $this->setTenant($tenant);
+            $this->db->executeStatement(
+                'SELECT pg_advisory_xact_lock(hashtext(:scope))',
+                ['scope' => $tenant . ':' . $actor . ':' . $key],
+            );
+            $existing = $this->db->fetchAssociative(
+                'SELECT request_hash,response_json FROM payment_operation_idempotency WHERE tenant_id=:tenant AND actor=:actor AND idempotency_key=:key',
+                ['tenant'=>$tenant,'actor'=>$actor,'key'=>$key],
+            );
+            if ($existing !== false) {
+                if (!hash_equals((string)$existing['request_hash'], $requestHash)) {
+                    throw new DomainException('Idempotency-Key was already used for a different payment operation.');
+                }
+                $response = json_decode((string)$existing['response_json'], true, 512, JSON_THROW_ON_ERROR);
+                $this->db->commit();
+                return $response;
+            }
             $row = $this->db->fetchAssociative(
                 'SELECT * FROM payments WHERE tenant_id=:tenant AND payment_id=:id FOR UPDATE',
                 ['tenant'=>$tenant,'id'=>$paymentId],
@@ -173,6 +190,10 @@ final readonly class PaymentApplicationService
             $this->db->update('payments', ['status'=>$newStatus,'updated_at'=>date('c')], ['tenant_id'=>$tenant,'payment_id'=>$paymentId]);
             $payload = ['paymentId'=>$paymentId,'orderId'=>$row['order_id'],'status'=>$newStatus,'operation'=>$operation];
             $this->recordEvent($tenant, $paymentId, 'Payment' . ucfirst($operation) . 'd', $payload);
+            $this->db->insert('payment_operation_idempotency', [
+                'tenant_id'=>$tenant,'actor'=>$actor,'idempotency_key'=>$key,'request_hash'=>$requestHash,
+                'payment_id'=>$paymentId,'response_json'=>json_encode($payload, JSON_THROW_ON_ERROR),
+            ]);
             $this->db->commit();
             return $payload;
         } catch (\\Throwable $exception) {
