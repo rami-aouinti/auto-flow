@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persistence;
 
 use App\Application\Port\PaymentRepositoryInterface;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 
 final readonly class DoctrinePaymentRepository implements PaymentRepositoryInterface
 {
@@ -59,8 +60,8 @@ final readonly class DoctrinePaymentRepository implements PaymentRepositoryInter
                  LIMIT :limit OFFSET :offset',
                 ['tenant' => $tenantId, 'limit' => $limit, 'offset' => $offset],
                 [
-                    'limit' => \\Doctrine\\DBAL\\ParameterType::INTEGER,
-                    'offset' => \\Doctrine\\DBAL\\ParameterType::INTEGER,
+                    'limit' => ParameterType::INTEGER,
+                    'offset' => ParameterType::INTEGER,
                 ],
             );
             $total = (int) $db->fetchOne(
@@ -71,5 +72,4 @@ final readonly class DoctrinePaymentRepository implements PaymentRepositoryInter
             return ['items' => $items, 'total' => $total];
         });
     }
-
 }
