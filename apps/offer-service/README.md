@@ -92,7 +92,9 @@ The aggregate records transition timestamps (`publishedAt`, `acceptedAt`, `rejec
 
 The repository persists the Offer state and its pending domain events in one PostgreSQL transaction. Events are stored in `offer_outbox_events` with a versioned envelope containing `eventId`, `eventType`, `schemaVersion`, `occurredAt`, `producer`, `tenantId`, aggregate identity and event data.
 
-The `offer-outbox-publisher` publishes durable messages to the RabbitMQ topic exchange `autoflow.events`, routing keys `offer.created`, `offer.published` and `offer.expired`, and durable queue `offer.events`. Publisher confirms are awaited before an outbox row is marked as published. Failed attempts use exponential backoff capped at five minutes.
+The `offer-outbox-publisher` publishes durable messages to the RabbitMQ topic exchange `autoflow.events` with routing keys `offer.created`, `offer.published` and `offer.expired`. It declares the durable queue `offer.events` and binds `offer.#` as a catch-all integration buffer. Publisher confirms are awaited before an outbox row is marked as published. Failed attempts use exponential backoff capped at five minutes.
+
+**Current local topology:** the Compose stack does not run a consumer for `offer.events`. It is therefore expected to retain ready messages until a downstream integration is deployed. This queue is a broker-side buffer, not an event store, an archive, or the Notification delivery queue. Notification has its own queue and consumes only `offer.published`. Do not purge `offer.events` to make its depth zero. Each future consumer should own a dedicated durable queue and bind only the event routing keys it handles; it must deduplicate by `eventId` and make its handler idempotent.
 
 Delivery is **at least once**, not exactly once: a process can crash after RabbitMQ confirms a message but before PostgreSQL commits `published_at`. Consumers must deduplicate using the stable `eventId` and make their handlers idempotent. Event payloads deliberately avoid access tokens and full customer profiles.
 
@@ -130,13 +132,13 @@ Apply the append-only offer audit migration once to the existing volume:
 docker compose --env-file .env.example exec -T postgres psql -U autoflow -d autoflow < apps/offer-service/migrations/Version20261106000700CreateOfferAuditEvents.sql
 ```
 
-Then rebuild and start the Offer API and its two workers:
+Then rebuild and start the Offer API and its worker container:
 
 ```bash
-docker compose up -d --build offer-service offer-expiration-worker offer-outbox-publisher
+docker compose --env-file .env.example up -d --build offer-service offer-workers
 ```
 
-The expiration worker needs PostgreSQL. The outbox publisher additionally waits for RabbitMQ to become healthy.
+The `offer-workers` Compose service runs both `offer-expiration` and `offer-outbox-publisher` under Supervisor. The expiration process needs PostgreSQL; the publisher additionally waits for RabbitMQ to become healthy.
 
 ## Local demo fixtures and Swagger UI
 
