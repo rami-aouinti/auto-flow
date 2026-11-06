@@ -3,14 +3,14 @@ services:
         autowire: true
         autoconfigure: true
 
-    App\\:
+    App\:
         resource: '../src/'
         exclude:
             - '../src/Kernel.php'
             - '../src/Domain/'
 
-    App\\Infrastructure\\Health\\OrderDatabaseHealthCheck:
+    App\Infrastructure\Health\OrderDatabaseHealthCheck:
         tags: ['autoflow_core.health_check']
 
-    App\\Application\\Port\\OrderRepositoryInterface:
-        alias: App\\Infrastructure\\Persistence\\Doctrine\\DoctrineOrderRepository
+    App\Application\Port\OrderRepositoryInterface:
+        alias: App\Infrastructure\Persistence\Doctrine\DoctrineOrderRepository
