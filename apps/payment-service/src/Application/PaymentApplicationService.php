@@ -87,7 +87,7 @@ final readonly class PaymentApplicationService
             $this->recordEvent($tenant, $paymentId, 'PaymentCreated', $eventPayload);
             $this->db->commit();
             return $response;
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->db->isTransactionActive()) {
                 $this->db->rollBack();
             }
@@ -110,7 +110,7 @@ final readonly class PaymentApplicationService
                 throw new PaymentNotFoundException();
             }
             return $row;
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->db->isTransactionActive()) {
                 $this->db->rollBack();
             }
@@ -198,7 +198,7 @@ final readonly class PaymentApplicationService
             ]);
             $this->db->commit();
             return $payload;
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->db->isTransactionActive()) {
                 $this->db->rollBack();
             }
@@ -252,7 +252,7 @@ final readonly class PaymentApplicationService
                 ]);
             }
             $this->db->commit();
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             if ($this->db->isTransactionActive()) {
                 $this->db->rollBack();
             }
