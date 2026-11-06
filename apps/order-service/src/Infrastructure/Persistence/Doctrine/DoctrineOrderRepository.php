@@ -21,7 +21,10 @@ use Symfony\\Component\\Uid\\Uuid;
  */
 final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
 {
-    public function __construct(private Connection $connection)
+    public function __construct(
+        private Connection $connection,
+        private CorrelationContext $correlationContext,
+    )
     {
     }
 
@@ -310,8 +313,11 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         $envelope = [
             'eventId' => $eventId, 'eventType' => $eventType, 'schemaVersion' => 1,
             'producer' => 'order-service', 'aggregate' => ['type' => 'Order', 'id' => $orderId],
-            'tenantId' => $tenantId, 'occurredAt' => $occurredAt,
-            'traceContext' => $traceContext, 'data' => $payload,
+            'tenantId' => $tenantId,
+            'correlationId' => $this->correlationContext->get(),
+            'occurredAt' => $occurredAt,
+            'traceContext' => $traceContext,
+            'data' => $payload,
         ];
         $db->executeStatement(
             'INSERT INTO order_outbox (event_id, tenant_id, order_id, event_type, payload, occurred_at)
