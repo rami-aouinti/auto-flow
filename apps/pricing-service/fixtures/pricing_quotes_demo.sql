@@ -43,23 +43,7 @@ INSERT INTO pricing_quotes (
 ('eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', :'tenant_id', :'created_by', '40000000000000000000000000000006', 75805, 3638640, 4138640, 780000, 'EUR', 48, 425, 'lease-annuity-v1', 4499000, 500000, CURRENT_TIMESTAMP + INTERVAL '7 days', '123e4567-e89b-42d3-a456-426614174000', 1),
 ('ffffffffffffffffffffffffffffffff', :'tenant_id', :'created_by', '40000000000000000000000000000001', 34145, 1638960, 2138960, 1200000, 'EUR', 48, 450, 'lease-annuity-v1', 3000000, 500000, CURRENT_TIMESTAMP + INTERVAL '7 days', '123e4567-e89b-42d3-a456-426614174000', 1),
 ('77777777777777777777777777777777', :'tenant_id', :'created_by', '40000000000000000000000000000002', 41745, 1502820, 1902820, 750000, 'EUR', 36, 350, 'lease-annuity-v1', 2500000, 400000, CURRENT_TIMESTAMP + INTERVAL '7 days', '123e4567-e89b-42d3-a456-426614174000', 1)
-ON CONFLICT (quote_id) DO UPDATE SET
-    tenant_id = EXCLUDED.tenant_id,
-    created_by = EXCLUDED.created_by,
-    vehicle_id = EXCLUDED.vehicle_id,
-    monthly_amount_minor = EXCLUDED.monthly_amount_minor,
-    total_installments_minor = EXCLUDED.total_installments_minor,
-    total_cost_minor = EXCLUDED.total_cost_minor,
-    residual_value_minor = EXCLUDED.residual_value_minor,
-    currency = EXCLUDED.currency,
-    duration_months = EXCLUDED.duration_months,
-    annual_interest_rate_basis_points = EXCLUDED.annual_interest_rate_basis_points,
-    calculation_version = EXCLUDED.calculation_version,
-    vehicle_price_minor = EXCLUDED.vehicle_price_minor,
-    down_payment_minor = EXCLUDED.down_payment_minor,
-    expires_at = EXCLUDED.expires_at,
-    policy_id = EXCLUDED.policy_id,
-    policy_version = EXCLUDED.policy_version,
-    deleted_at = NULL;
+-- Quote snapshots are immutable: seed once and preserve existing snapshots on reruns.
+ON CONFLICT (quote_id) DO NOTHING;
 
 COMMIT;
