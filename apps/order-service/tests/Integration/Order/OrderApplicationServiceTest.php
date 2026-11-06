@@ -54,14 +54,15 @@ final class OrderApplicationServiceTest extends TestCase
         self::assertSame($created['orderId'], $replayed['orderId']);
         self::assertSame('draft', $created['status']);
 
+        $transitionKey = 'submit-' . Uuid::v7()->toRfc4122();
         $submitted = $this->orders->transition(
-            $tenant,
-            $actor,
-            $created['orderId'],
-            OrderStatus::SUBMITTED,
-            'submit-' . Uuid::v7()->toRfc4122(),
+            $tenant, $actor, $created['orderId'], OrderStatus::SUBMITTED, $transitionKey,
+        );
+        $replayedTransition = $this->orders->transition(
+            $tenant, $actor, $created['orderId'], OrderStatus::SUBMITTED, $transitionKey,
         );
         self::assertSame('submitted', $submitted['status']);
+        self::assertSame($submitted, $replayedTransition);
 
         $history = $this->orders->history($tenant, $created['orderId']);
         self::assertCount(2, $history);
@@ -129,6 +130,20 @@ final class OrderApplicationServiceTest extends TestCase
             $input['quoteId'],
             $input['vehicleId'],
         );
+    }
+
+    public function testTransitionIdempotencyKeyCannotBeReusedForDifferentCommand(): void
+    {
+        $tenant = Uuid::v7()->toRfc4122();
+        $actor = Uuid::v7()->toRfc4122();
+        $created = $this->orders->create(
+            $tenant, $actor, $this->validOrderInput(), 'create-' . Uuid::v7()->toRfc4122(),
+        );
+        $key = 'transition-' . Uuid::v7()->toRfc4122();
+        $this->orders->transition($tenant, $actor, $created['orderId'], OrderStatus::SUBMITTED, $key);
+
+        $this->expectException(IdempotencyConflictException::class);
+        $this->orders->transition($tenant, $actor, $created['orderId'], OrderStatus::CANCELLED, $key);
     }
 
     /** @return array<string, mixed> */
