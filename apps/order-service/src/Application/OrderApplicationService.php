@@ -10,6 +10,11 @@ use Doctrine\\DBAL\\Connection;
 use DomainException;
 use Symfony\\Component\\Uid\\Uuid;
 
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ */
 final readonly class OrderApplicationService
 {
     public function __construct(private Connection $connection)
@@ -40,14 +45,19 @@ final readonly class OrderApplicationService
 
         $requestHash = hash('sha256', json_encode($input, JSON_THROW_ON_ERROR));
 
-        return $this->connection->transactional(function (Connection $db) use ($tenantId, $actor, $input, $idempotencyKey, $requestHash): array {
+        return $this->connection->transactional(
+            function (Connection $db) use ($tenantId, $actor, $input, $idempotencyKey, $requestHash): array {
             $this->setTenant($db, $tenantId);
             $db->executeQuery(
                 'SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))',
                 ['lock_key' => $tenantId . ':' . $idempotencyKey],
             );
             $existing = $db->fetchAssociative(
-                'SELECT request_hash, response_json FROM order_idempotency WHERE tenant_id = :tenant AND idempotency_key = :key',
+                <<<'SQL'
+                    SELECT request_hash, response_json
+                    FROM order_idempotency
+                    WHERE tenant_id = :tenant AND idempotency_key = :key
+                    SQL,
                 ['tenant' => $tenantId, 'key' => $idempotencyKey],
             );
             if (is_array($existing)) {
@@ -64,8 +74,16 @@ final readonly class OrderApplicationService
             );
             $now = $this->now();
             $db->executeStatement(
-                'INSERT INTO orders (tenant_id, order_id, created_by, offer_id, quote_id, vehicle_id, status, offer_snapshot, quote_snapshot, vehicle_snapshot, created_at, updated_at)
-                 VALUES (:tenant, :id, :actor, :offer, :quote, :vehicle, :status, CAST(:offer_snapshot AS JSONB), CAST(:quote_snapshot AS JSONB), CAST(:vehicle_snapshot AS JSONB), :now, :now)',
+                <<<'SQL'
+                    INSERT INTO orders (
+                        tenant_id, order_id, created_by, offer_id, quote_id, vehicle_id, status,
+                        offer_snapshot, quote_snapshot, vehicle_snapshot, created_at, updated_at
+                    ) VALUES (
+                        :tenant, :id, :actor, :offer, :quote, :vehicle, :status,
+                        CAST(:offer_snapshot AS JSONB), CAST(:quote_snapshot AS JSONB),
+                        CAST(:vehicle_snapshot AS JSONB), :now, :now
+                    )
+                    SQL,
                 [
                     'tenant' => $tenantId, 'id' => $order->id, 'actor' => $actor,
                     'offer' => $order->offerId, 'quote' => $order->quoteId, 'vehicle' => $order->vehicleId,
@@ -78,12 +96,18 @@ final readonly class OrderApplicationService
             );
             $this->recordHistory($db, $tenantId, $order->id, null, OrderStatus::DRAFT, $actor, null);
             $this->writeOutbox($db, $tenantId, $order->id, 'OrderCreated', [
-                'orderId' => $order->id, 'offerId' => $order->offerId, 'quoteId' => $order->quoteId, 'vehicleId' => $order->vehicleId,
+                'orderId' => $order->id,
+                'offerId' => $order->offerId,
+                'quoteId' => $order->quoteId,
+                'vehicleId' => $order->vehicleId,
             ]);
             $response = $this->findInTransaction($db, $tenantId, $order->id);
             $db->executeStatement(
-                'INSERT INTO order_idempotency (tenant_id, idempotency_key, request_hash, order_id, response_json, created_at)
-                 VALUES (:tenant, :key, :hash, :id, CAST(:response AS JSONB), :now)',
+                <<<'SQL'
+                    INSERT INTO order_idempotency (
+                        tenant_id, idempotency_key, request_hash, order_id, response_json, created_at
+                    ) VALUES (:tenant, :key, :hash, :id, CAST(:response AS JSONB), :now)
+                    SQL,
                 ['tenant' => $tenantId, 'key' => $idempotencyKey, 'hash' => $requestHash, 'id' => $order->id,
                  'response' => json_encode($response, JSON_THROW_ON_ERROR), 'now' => $now],
             );
@@ -91,9 +115,15 @@ final readonly class OrderApplicationService
         });
     }
 
-    public function transition(string $tenantId, string $actor, string $orderId, OrderStatus $target, ?string $reason = null): array
-    {
-        return $this->connection->transactional(function (Connection $db) use ($tenantId, $actor, $orderId, $target, $reason): array {
+    public function transition(
+        string $tenantId,
+        string $actor,
+        string $orderId,
+        OrderStatus $target,
+        ?string $reason = null,
+    ): array {
+        return $this->connection->transactional(
+            function (Connection $db) use ($tenantId, $actor, $orderId, $target, $reason): array {
             $this->setTenant($db, $tenantId);
             $row = $db->fetchAssociative(
                 'SELECT * FROM orders WHERE tenant_id = :tenant AND order_id = :id FOR UPDATE',
@@ -115,8 +145,12 @@ final readonly class OrderApplicationService
             $order->transitionTo($target, $reason);
             $now = $this->now();
             $db->executeStatement(
-                'UPDATE orders SET status = :status, updated_at = :now, submitted_at = :submitted, decided_at = :decided, decision_reason = :reason
-                 WHERE tenant_id = :tenant AND order_id = :id',
+                <<<'SQL'
+                    UPDATE orders
+                    SET status = :status, updated_at = :now, submitted_at = :submitted,
+                        decided_at = :decided, decision_reason = :reason
+                    WHERE tenant_id = :tenant AND order_id = :id
+                    SQL,
                 [
                     'status' => $target->value, 'now' => $now,
                     'submitted' => $order->submittedAt?->format('Y-m-d H:i:sP'),
@@ -137,7 +171,10 @@ final readonly class OrderApplicationService
     {
         return $this->connection->transactional(function (Connection $db) use ($tenantId, $orderId): array {
             $this->setTenant($db, $tenantId);
-            $row = $db->fetchAssociative('SELECT * FROM orders WHERE tenant_id = :tenant AND order_id = :id', ['tenant' => $tenantId, 'id' => $orderId]);
+            $row = $db->fetchAssociative(
+                'SELECT * FROM orders WHERE tenant_id = :tenant AND order_id = :id',
+                ['tenant' => $tenantId, 'id' => $orderId],
+            );
             if (!is_array($row)) {
                 throw new OrderNotFoundException('Order not found.');
             }
@@ -156,9 +193,15 @@ final readonly class OrderApplicationService
             $items = $db->fetchAllAssociative(
                 'SELECT * FROM orders WHERE tenant_id = :tenant ORDER BY created_at DESC LIMIT :limit OFFSET :offset',
                 ['tenant' => $tenantId, 'limit' => $limit, 'offset' => $offset],
-                ['limit' => \\Doctrine\\DBAL\\ParameterType::INTEGER, 'offset' => \\Doctrine\\DBAL\\ParameterType::INTEGER],
+                [
+                    'limit' => \\Doctrine\\DBAL\\ParameterType::INTEGER,
+                    'offset' => \\Doctrine\\DBAL\\ParameterType::INTEGER,
+                ],
             );
-            $total = (int) $db->fetchOne('SELECT COUNT(*) FROM orders WHERE tenant_id = :tenant', ['tenant' => $tenantId]);
+            $total = (int) $db->fetchOne(
+                'SELECT COUNT(*) FROM orders WHERE tenant_id = :tenant',
+                ['tenant' => $tenantId],
+            );
             return ['items' => array_map($this->map(...), $items), 'total' => $total];
         });
     }
@@ -168,12 +211,19 @@ final readonly class OrderApplicationService
     {
         return $this->connection->transactional(function (Connection $db) use ($tenantId, $orderId): array {
             $this->setTenant($db, $tenantId);
-            if (!$db->fetchOne('SELECT 1 FROM orders WHERE tenant_id = :tenant AND order_id = :id', ['tenant' => $tenantId, 'id' => $orderId])) {
+            if (!$db->fetchOne(
+                'SELECT 1 FROM orders WHERE tenant_id = :tenant AND order_id = :id',
+                ['tenant' => $tenantId, 'id' => $orderId],
+            )) {
                 throw new OrderNotFoundException('Order not found.');
             }
             return $db->fetchAllAssociative(
-                'SELECT from_status, to_status, actor, reason, occurred_at
-                 FROM order_history WHERE tenant_id = :tenant AND order_id = :id ORDER BY occurred_at ASC, history_id ASC',
+                <<<'SQL'
+                    SELECT from_status, to_status, actor, reason, occurred_at
+                    FROM order_history
+                    WHERE tenant_id = :tenant AND order_id = :id
+                    ORDER BY occurred_at ASC, history_id ASC
+                    SQL,
                 ['tenant' => $tenantId, 'id' => $orderId],
             );
         });
@@ -186,7 +236,10 @@ final readonly class OrderApplicationService
 
     private function findInTransaction(Connection $db, string $tenantId, string $orderId): array
     {
-        $row = $db->fetchAssociative('SELECT * FROM orders WHERE tenant_id = :tenant AND order_id = :id', ['tenant' => $tenantId, 'id' => $orderId]);
+        $row = $db->fetchAssociative(
+            'SELECT * FROM orders WHERE tenant_id = :tenant AND order_id = :id',
+            ['tenant' => $tenantId, 'id' => $orderId],
+        );
         if (!is_array($row)) {
             throw new OrderNotFoundException('Order not found after persistence.');
         }
@@ -205,17 +258,35 @@ final readonly class OrderApplicationService
             'decisionReason' => $row['decision_reason'],
             'createdAt' => (new \\DateTimeImmutable((string) $row['created_at']))->format(DATE_ATOM),
             'updatedAt' => (new \\DateTimeImmutable((string) $row['updated_at']))->format(DATE_ATOM),
-            'submittedAt' => $row['submitted_at'] === null ? null : (new \\DateTimeImmutable((string) $row['submitted_at']))->format(DATE_ATOM),
-            'decidedAt' => $row['decided_at'] === null ? null : (new \\DateTimeImmutable((string) $row['decided_at']))->format(DATE_ATOM),
+            'submittedAt' => $row['submitted_at'] === null
+                ? null
+                : (new \\DateTimeImmutable((string) $row['submitted_at']))->format(DATE_ATOM),
+            'decidedAt' => $row['decided_at'] === null
+                ? null
+                : (new \\DateTimeImmutable((string) $row['decided_at']))->format(DATE_ATOM),
         ];
     }
 
     private function decodeObject(mixed $value): array
     {
-        return is_array($value) ? $value : json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
+        $decoded = is_array($value)
+            ? $value
+            : json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
+        if (!is_array($decoded) || array_is_list($decoded)) {
+            throw new \\UnexpectedValueException('Stored order snapshot must be a JSON object.');
+        }
+        return $decoded;
     }
 
-    private function recordHistory(Connection $db, string $tenantId, string $orderId, ?OrderStatus $from, OrderStatus $to, string $actor, ?string $reason): void
+    private function recordHistory(
+        Connection $db,
+        string $tenantId,
+        string $orderId,
+        ?OrderStatus $from,
+        OrderStatus $to,
+        string $actor,
+        ?string $reason,
+    ): void
     {
         $db->executeStatement(
             'INSERT INTO order_history (tenant_id, order_id, from_status, to_status, actor, reason, occurred_at)
@@ -226,7 +297,13 @@ final readonly class OrderApplicationService
     }
 
     /** @param array<string,mixed> $payload */
-    private function writeOutbox(Connection $db, string $tenantId, string $orderId, string $eventType, array $payload): void
+    private function writeOutbox(
+        Connection $db,
+        string $tenantId,
+        string $orderId,
+        string $eventType,
+        array $payload,
+    ): void
     {
         $eventId = Uuid::v7()->toRfc4122();
         $occurredAt = (new \\DateTimeImmutable('now', new \\DateTimeZone('UTC')))->format(DATE_ATOM);
@@ -245,7 +322,11 @@ final readonly class OrderApplicationService
 
     private function assertIdentifier(string $value, string $field): void
     {
-        if (trim($value) === '' || strlen($value) > 128 || preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]*$/D', $value) !== 1) {
+        if (
+            trim($value) === ''
+            || strlen($value) > 128
+            || preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]*$/D', $value) !== 1
+        ) {
             throw new DomainException(sprintf('%s is invalid.', $field));
         }
     }
