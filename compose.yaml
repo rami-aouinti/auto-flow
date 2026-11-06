@@ -59,51 +59,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      notification-service:
-    build:
-      context: .
-      dockerfile: apps/notification-service/Dockerfile
-    environment:
-      NOTIFICATION_DATABASE_URL: ${NOTIFICATION_DATABASE_URL:-postgresql://autoflow:autoflow@postgres:5432/autoflow}
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
-      RABBITMQ_VHOST: /
-      KEYCLOAK_BASE_URL: http://keycloak:8080
-      KEYCLOAK_REALM: autoflow
-      KEYCLOAK_NOTIFICATION_CLIENT_ID: ${KEYCLOAK_NOTIFICATION_CLIENT_ID:-autoflow-notification}
-      KEYCLOAK_NOTIFICATION_CLIENT_SECRET: ${KEYCLOAK_NOTIFICATION_CLIENT_SECRET:-autoflow-local-notification-secret}
-      MAILER_DSN: ${MAILER_DSN:-smtp://mailpit:1025}
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-offers@autoflow.local}
-      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-AutoFlow Mobility}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      keycloak:
-        condition: service_started
-      mailpit:
-        condition: service_started
-    init: true
-    restart: unless-stopped
-
-  notification-metrics:
-    build:
-      context: .
-      dockerfile: apps/notification-service/Dockerfile
-    command: ["php", "-S", "0.0.0.0:9464", "-t", "public", "public/metrics.php"]
-    environment:
-      NOTIFICATION_DATABASE_URL: ${NOTIFICATION_DATABASE_URL:-postgresql://autoflow:autoflow@postgres:5432/autoflow}
-    expose:
-      - "9464"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-  pricing-service:
+      pricing-service:
         condition: service_healthy
       tempo:
         condition: service_started
