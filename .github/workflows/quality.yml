@@ -185,6 +185,12 @@ jobs:
               exit(1);
           }
           '
+      - name: Install Vehicle Catalog dependencies for static analysis
+        run: |
+          composer install \
+            --working-dir=apps/vehicle-catalog-service \
+            --ignore-platform-req=ext-opentelemetry \
+            --no-interaction --prefer-dist --no-progress
       - name: Run PHPStan analysis
         run: composer phpstan
       - name: Run quality checks
