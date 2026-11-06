@@ -8,6 +8,8 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 ## Stack
 
 - PHP 8.4 CLI and Xdebug 3
+- Supervisor-managed Offer background processes in Docker Compose
+- Temporal CLI development server with persistent local SQLite state
 - RoadRunner 3.0.1 HTTP and gRPC workers for the Offer and Pricing services
 - Symfony 7.4 microservices with independent Composer projects
 - OpenTelemetry PHP extension, SDK and Symfony auto-instrumentation
@@ -70,6 +72,8 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Adminer | http://localhost:8083 | Browser-based PostgreSQL administration (local host only) |
 | Keycloak | http://localhost:8080 | Local OIDC identity provider and token issuer |
 | PostgreSQL | localhost:5432 | Relational database |
+| Temporal gRPC | localhost:7233 | Local Temporal development server |
+| Temporal UI | http://localhost:8233 | Workflow visibility (development only) |
 | Redis | localhost:6379 | Cache and ephemeral data |
 | OTLP gRPC / HTTP | localhost:4317 / 4318 | OpenTelemetry trace ingestion |
 
@@ -270,8 +274,21 @@ Apply Kubernetes workloads after building and tagging local images:
 
 ~~~bash
 kubectl apply -f k8s/pricing/namespace.yaml
-kubectl apply -f k8s/offer/
-kubectl apply -f k8s/vehicle-catalog/
+
+# Create the local Secrets first (copy/edit each secret.example.yaml).
+kubectl apply -f k8s/offer/configmap.yaml
+kubectl apply -f k8s/offer/secret.yaml
+kubectl apply -f k8s/offer/deployment.yaml
+kubectl apply -f k8s/offer/service.yaml
+kubectl apply -f k8s/offer/outbox-publisher-deployment.yaml
+kubectl apply -f k8s/offer/expire-offers-cronjob.yaml
+
+kubectl apply -f k8s/vehicle-catalog/configmap.yaml
+kubectl apply -f k8s/vehicle-catalog/secret.yaml
+kubectl apply -f k8s/vehicle-catalog/deployment.yaml
+kubectl apply -f k8s/vehicle-catalog/service.yaml
+kubectl apply -f k8s/vehicle-catalog/outbox-publisher-deployment.yaml
+
 kubectl -n autoflow get deployments,pods,services,cronjobs
 kubectl -n autoflow get jobs
 ~~~
