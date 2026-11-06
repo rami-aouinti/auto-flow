@@ -22,13 +22,13 @@ final readonly class StripePaymentGateway implements PaymentGatewayInterface
         }
     }
 
-    public function createIntent(int $amountMinor, string $currency, string $paymentId, string $idempotencyKey): array
+    public function createIntent(int $amountMinor, string $currency, string $paymentId, string $tenantId, string $idempotencyKey): array
     {
         return $this->request('POST', '/v1/payment_intents', [
             'amount' => $amountMinor,
             'currency' => strtolower($currency),
             'capture_method' => 'manual',
-            'metadata[payment_id]' => $paymentId,
+            'metadata[payment_id]' => $paymentId,\n            'metadata[tenant_id]' => $tenantId,
         ], $idempotencyKey);
     }
 
