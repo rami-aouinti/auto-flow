@@ -31,10 +31,6 @@ jobs:
           go mod tidy
           go test ./...
           go build ./cmd/worker
-      - name: Refresh root Composer lock metadata (no dependency upgrades)
-        run: |
-          composer update --lock --no-install --no-scripts
-          git diff -- composer.lock
       - name: Validate Composer
         run: composer validate --strict
       - name: Validate service Composer manifests
