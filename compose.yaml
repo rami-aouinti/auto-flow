@@ -446,7 +446,7 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_USERS_ALLOW_SIGN_UP: "false"
-    ports: ["3000:3000"]
+    ports: ["3002:3000"]
     volumes:
       - grafana-data:/var/lib/grafana
       - ./infrastructure/observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
