@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\\Application;
+namespace App\Application;
 
-use App\\Application\\Port\\OrderRepositoryInterface;
-use App\\Domain\\OrderStatus;
+use App\Application\Port\OrderRepositoryInterface;
+use App\Domain\OrderStatus;
 use DomainException;
 
 final readonly class OrderApplicationService
