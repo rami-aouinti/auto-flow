@@ -50,7 +50,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                 );
                 if (is_array($existing)) {
                     if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
-                        throw new DomainException('Idempotency-Key was already used with a different request body.');
+                        throw new IdempotencyConflictException('Idempotency-Key was already used with a different request body.');
                     }
                     return $this->decodeObject($existing['response_json']);
                 }
