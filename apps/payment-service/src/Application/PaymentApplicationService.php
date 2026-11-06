@@ -130,29 +130,6 @@ final readonly class PaymentApplicationService
     }
 
     /** @return array<string,mixed> */
-    public function get(string $tenant, string $paymentId): array
-    {
-        $this->db->beginTransaction();
-        try {
-            $this->setTenant($tenant);
-            $row = $this->db->fetchAssociative(
-                'SELECT payment_id,order_id,provider,provider_payment_id,amount_minor,currency,status,amount_refunded_minor,created_at,updated_at FROM payments WHERE tenant_id=:tenant AND payment_id=:id',
-                ['tenant'=>$tenant,'id'=>$paymentId],
-            );
-            $this->db->commit();
-            if ($row === false) {
-                throw new PaymentNotFoundException();
-            }
-            return $row;
-        } catch (\Throwable $exception) {
-            if ($this->db->isTransactionActive()) {
-                $this->db->rollBack();
-            }
-            throw $exception;
-        }
-    }
-
-    /** @return array<string,mixed> */
     public function transition(string $tenant, string $actor, string $paymentId, string $key, string $operation, ?int $refundAmount = null): array
     {
         $this->assertKey($key);
