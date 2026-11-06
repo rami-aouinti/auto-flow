@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\\Domain;
+namespace App\Domain;
 
 use DomainException;
 
@@ -23,8 +23,8 @@ final class Order
         public readonly array $quoteSnapshot,
         public readonly array $vehicleSnapshot,
         public OrderStatus $status = OrderStatus::DRAFT,
-        public ?\\DateTimeImmutable $submittedAt = null,
-        public ?\\DateTimeImmutable $decidedAt = null,
+        public ?\DateTimeImmutable $submittedAt = null,
+        public ?\DateTimeImmutable $decidedAt = null,
         public ?string $decisionReason = null,
     ) {
         foreach ([$id, $tenantId, $createdBy, $offerId, $quoteId, $vehicleId] as $value) {
@@ -53,7 +53,7 @@ final class Order
             throw new DomainException('Decision reason must not exceed 500 characters.');
         }
 
-        $now = new \\DateTimeImmutable('now', new \\DateTimeZone('UTC'));
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $this->status = $next;
         if ($next === OrderStatus::SUBMITTED) {
             $this->submittedAt = $now;
