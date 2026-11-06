@@ -177,6 +177,17 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-notification",
+      "name": "AutoFlow Notification Service workload identity",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "autoflow-local-notification-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
     }
   ],
   "users": [
@@ -224,6 +235,17 @@
         "catalog:read",
         "catalog:manage"
       ]
+    },
+    {
+      "username": "service-account-autoflow-notification",
+      "enabled": true,
+      "serviceAccountClientId": "autoflow-notification",
+      "clientRoles": {
+        "realm-management": [
+          "query-users",
+          "view-users"
+        ]
+      }
     }
   ],
   "roles": {
