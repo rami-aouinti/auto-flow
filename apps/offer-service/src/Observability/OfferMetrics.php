@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\\Observability;
+namespace App\Observability;
 
-use OpenTelemetry\\Contrib\\Otlp\\MetricExporter;
-use OpenTelemetry\\SDK\\Common\\Export\\Http\\PsrTransportFactory;
-use OpenTelemetry\\SDK\\Metrics\\MeterProvider;
-use OpenTelemetry\\SDK\\Metrics\\MetricReader\\ExportingReader;
-use OpenTelemetry\\SDK\\Resource\\ResourceInfoFactory;
+use OpenTelemetry\Contrib\Otlp\MetricExporter;
+use OpenTelemetry\SDK\Common\Export\Http\PsrTransportFactory;
+use OpenTelemetry\SDK\Metrics\MeterProvider;
+use OpenTelemetry\SDK\Metrics\MetricReader\ExportingReader;
+use OpenTelemetry\SDK\Resource\ResourceInfoFactory;
 use Throwable;
 
 /** Records low-cardinality offer lifecycle business metrics. */
@@ -63,7 +63,7 @@ final class OfferMetrics
             ->build();
 
         if (!$provider instanceof MeterProvider) {
-            throw new RuntimeException('Could not initialize the OpenTelemetry meter provider.');
+            throw new \RuntimeException('Could not initialize the OpenTelemetry meter provider.');
         }
 
         return $this->meterProvider = $provider;
