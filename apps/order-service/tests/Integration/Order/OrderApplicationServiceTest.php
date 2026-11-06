@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\\Tests\\Integration\\Order;
 
+use App\\Application\\IdempotencyConflictException;
 use App\\Application\\OrderApplicationService;
 use App\\Application\\OrderNotFoundException;
 use App\\Domain\\OrderStatus;
 use App\\Infrastructure\\Persistence\\Doctrine\\DoctrineOrderRepository;
 use Doctrine\\DBAL\\DriverManager;
-use DomainException;
 use PHPUnit\\Framework\\TestCase;
 use Symfony\\Component\\Uid\\Uuid;
 
@@ -81,7 +81,7 @@ final class OrderApplicationServiceTest extends TestCase
         $this->orders->create($tenant, $actor, $input, $key);
         $input['quoteSnapshot']['monthlyAmount'] = '999.00';
 
-        $this->expectException(DomainException::class);
+        $this->expectException(IdempotencyConflictException::class);
         $this->orders->create($tenant, $actor, $input, $key);
     }
 
