@@ -50,71 +50,71 @@ final readonly class OrderApplicationService
 
         return $this->connection->transactional(
             function (Connection $db) use ($tenantId, $actor, $input, $idempotencyKey, $requestHash): array {
-            $this->setTenant($db, $tenantId);
-            $db->executeQuery(
-                'SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))',
-                ['lock_key' => $tenantId . ':' . $idempotencyKey],
-            );
-            $existing = $db->fetchAssociative(
-                <<<'SQL'
-                    SELECT request_hash, response_json
-                    FROM order_idempotency
-                    WHERE tenant_id = :tenant AND idempotency_key = :key
-                    SQL,
-                ['tenant' => $tenantId, 'key' => $idempotencyKey],
-            );
-            if (is_array($existing)) {
-                if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
-                    throw new DomainException('Idempotency-Key was already used with a different request body.');
+                $this->setTenant($db, $tenantId);
+                $db->executeQuery(
+                    'SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))',
+                    ['lock_key' => $tenantId . ':' . $idempotencyKey],
+                );
+                $existing = $db->fetchAssociative(
+                    <<<'SQL'
+                        SELECT request_hash, response_json
+                        FROM order_idempotency
+                        WHERE tenant_id = :tenant AND idempotency_key = :key
+                        SQL,
+                    ['tenant' => $tenantId, 'key' => $idempotencyKey],
+                );
+                if (is_array($existing)) {
+                    if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
+                        throw new DomainException('Idempotency-Key was already used with a different request body.');
+                    }
+                    return $this->decodeObject($existing['response_json']);
                 }
-                return $this->decodeObject($existing['response_json']);
-            }
 
-            $order = new Order(
-                Uuid::v7()->toRfc4122(), $tenantId, $actor,
-                $input['offerId'], $input['quoteId'], $input['vehicleId'],
-                $input['offerSnapshot'], $input['quoteSnapshot'], $input['vehicleSnapshot'],
-            );
-            $now = $this->now();
-            $db->executeStatement(
-                <<<'SQL'
-                    INSERT INTO orders (
-                        tenant_id, order_id, created_by, offer_id, quote_id, vehicle_id, status,
-                        offer_snapshot, quote_snapshot, vehicle_snapshot, created_at, updated_at
-                    ) VALUES (
-                        :tenant, :id, :actor, :offer, :quote, :vehicle, :status,
-                        CAST(:offer_snapshot AS JSONB), CAST(:quote_snapshot AS JSONB),
-                        CAST(:vehicle_snapshot AS JSONB), :now, :now
-                    )
-                    SQL,
-                [
-                    'tenant' => $tenantId, 'id' => $order->id, 'actor' => $actor,
-                    'offer' => $order->offerId, 'quote' => $order->quoteId, 'vehicle' => $order->vehicleId,
-                    'status' => $order->status->value,
-                    'offer_snapshot' => json_encode($order->offerSnapshot, JSON_THROW_ON_ERROR),
-                    'quote_snapshot' => json_encode($order->quoteSnapshot, JSON_THROW_ON_ERROR),
-                    'vehicle_snapshot' => json_encode($order->vehicleSnapshot, JSON_THROW_ON_ERROR),
-                    'now' => $now,
-                ],
-            );
-            $this->recordHistory($db, $tenantId, $order->id, null, OrderStatus::DRAFT, $actor, null);
-            $this->writeOutbox($db, $tenantId, $order->id, 'OrderCreated', [
-                'orderId' => $order->id,
-                'offerId' => $order->offerId,
-                'quoteId' => $order->quoteId,
-                'vehicleId' => $order->vehicleId,
-            ]);
-            $response = $this->findInTransaction($db, $tenantId, $order->id);
-            $db->executeStatement(
-                <<<'SQL'
-                    INSERT INTO order_idempotency (
-                        tenant_id, idempotency_key, request_hash, order_id, response_json, created_at
-                    ) VALUES (:tenant, :key, :hash, :id, CAST(:response AS JSONB), :now)
-                    SQL,
-                ['tenant' => $tenantId, 'key' => $idempotencyKey, 'hash' => $requestHash, 'id' => $order->id,
-                 'response' => json_encode($response, JSON_THROW_ON_ERROR), 'now' => $now],
-            );
-            return $response;
+                $order = new Order(
+                    Uuid::v7()->toRfc4122(), $tenantId, $actor,
+                    $input['offerId'], $input['quoteId'], $input['vehicleId'],
+                    $input['offerSnapshot'], $input['quoteSnapshot'], $input['vehicleSnapshot'],
+                );
+                $now = $this->now();
+                $db->executeStatement(
+                    <<<'SQL'
+                        INSERT INTO orders (
+                            tenant_id, order_id, created_by, offer_id, quote_id, vehicle_id, status,
+                            offer_snapshot, quote_snapshot, vehicle_snapshot, created_at, updated_at
+                        ) VALUES (
+                            :tenant, :id, :actor, :offer, :quote, :vehicle, :status,
+                            CAST(:offer_snapshot AS JSONB), CAST(:quote_snapshot AS JSONB),
+                            CAST(:vehicle_snapshot AS JSONB), :now, :now
+                        )
+                        SQL,
+                    [
+                        'tenant' => $tenantId, 'id' => $order->id, 'actor' => $actor,
+                        'offer' => $order->offerId, 'quote' => $order->quoteId, 'vehicle' => $order->vehicleId,
+                        'status' => $order->status->value,
+                        'offer_snapshot' => json_encode($order->offerSnapshot, JSON_THROW_ON_ERROR),
+                        'quote_snapshot' => json_encode($order->quoteSnapshot, JSON_THROW_ON_ERROR),
+                        'vehicle_snapshot' => json_encode($order->vehicleSnapshot, JSON_THROW_ON_ERROR),
+                        'now' => $now,
+                    ],
+                );
+                $this->recordHistory($db, $tenantId, $order->id, null, OrderStatus::DRAFT, $actor, null);
+                $this->writeOutbox($db, $tenantId, $order->id, 'OrderCreated', [
+                    'orderId' => $order->id,
+                    'offerId' => $order->offerId,
+                    'quoteId' => $order->quoteId,
+                    'vehicleId' => $order->vehicleId,
+                ]);
+                $response = $this->findInTransaction($db, $tenantId, $order->id);
+                $db->executeStatement(
+                    <<<'SQL'
+                        INSERT INTO order_idempotency (
+                            tenant_id, idempotency_key, request_hash, order_id, response_json, created_at
+                        ) VALUES (:tenant, :key, :hash, :id, CAST(:response AS JSONB), :now)
+                        SQL,
+                    ['tenant' => $tenantId, 'key' => $idempotencyKey, 'hash' => $requestHash, 'id' => $order->id,
+                     'response' => json_encode($response, JSON_THROW_ON_ERROR), 'now' => $now],
+                );
+                return $response;
         });
     }
 
@@ -128,46 +128,46 @@ final readonly class OrderApplicationService
     ): array {
         return $this->connection->transactional(
             function (Connection $db) use ($tenantId, $actor, $orderId, $target, $reason): array {
-            $this->setTenant($db, $tenantId);
-            $row = $db->fetchAssociative(
-                'SELECT * FROM orders WHERE tenant_id = :tenant AND order_id = :id FOR UPDATE',
-                ['tenant' => $tenantId, 'id' => $orderId],
-            );
-            if (!is_array($row)) {
-                throw new OrderNotFoundException('Order not found.');
-            }
-            $from = OrderStatus::from((string) $row['status']);
-            $order = new Order(
-                (string) $row['order_id'], $tenantId, (string) $row['created_by'],
-                (string) $row['offer_id'], (string) $row['quote_id'], (string) $row['vehicle_id'],
-                $this->decodeObject($row['offer_snapshot']), $this->decodeObject($row['quote_snapshot']),
-                $this->decodeObject($row['vehicle_snapshot']), $from,
-                $row['submitted_at'] === null ? null : new \\DateTimeImmutable((string) $row['submitted_at']),
-                $row['decided_at'] === null ? null : new \\DateTimeImmutable((string) $row['decided_at']),
-                $row['decision_reason'] === null ? null : (string) $row['decision_reason'],
-            );
-            $order->transitionTo($target, $reason);
-            $now = $this->now();
-            $db->executeStatement(
-                <<<'SQL'
-                    UPDATE orders
-                    SET status = :status, updated_at = :now, submitted_at = :submitted,
-                        decided_at = :decided, decision_reason = :reason
-                    WHERE tenant_id = :tenant AND order_id = :id
-                    SQL,
-                [
-                    'status' => $target->value, 'now' => $now,
-                    'submitted' => $order->submittedAt?->format('Y-m-d H:i:sP'),
-                    'decided' => $order->decidedAt?->format('Y-m-d H:i:sP'),
-                    'reason' => $order->decisionReason, 'tenant' => $tenantId, 'id' => $orderId,
-                ],
-            );
-            $this->recordHistory($db, $tenantId, $orderId, $from, $target, $actor, $reason);
-            $event = 'Order' . str_replace(' ', '', ucwords(str_replace('_', ' ', $target->value)));
-            $this->writeOutbox($db, $tenantId, $orderId, $event, [
-                'orderId' => $orderId, 'previousStatus' => $from->value, 'status' => $target->value,
-            ]);
-            return $this->findInTransaction($db, $tenantId, $orderId);
+                $this->setTenant($db, $tenantId);
+                $row = $db->fetchAssociative(
+                    'SELECT * FROM orders WHERE tenant_id = :tenant AND order_id = :id FOR UPDATE',
+                    ['tenant' => $tenantId, 'id' => $orderId],
+                );
+                if (!is_array($row)) {
+                    throw new OrderNotFoundException('Order not found.');
+                }
+                $from = OrderStatus::from((string) $row['status']);
+                $order = new Order(
+                    (string) $row['order_id'], $tenantId, (string) $row['created_by'],
+                    (string) $row['offer_id'], (string) $row['quote_id'], (string) $row['vehicle_id'],
+                    $this->decodeObject($row['offer_snapshot']), $this->decodeObject($row['quote_snapshot']),
+                    $this->decodeObject($row['vehicle_snapshot']), $from,
+                    $row['submitted_at'] === null ? null : new \\DateTimeImmutable((string) $row['submitted_at']),
+                    $row['decided_at'] === null ? null : new \\DateTimeImmutable((string) $row['decided_at']),
+                    $row['decision_reason'] === null ? null : (string) $row['decision_reason'],
+                );
+                $order->transitionTo($target, $reason);
+                $now = $this->now();
+                $db->executeStatement(
+                    <<<'SQL'
+                        UPDATE orders
+                        SET status = :status, updated_at = :now, submitted_at = :submitted,
+                            decided_at = :decided, decision_reason = :reason
+                        WHERE tenant_id = :tenant AND order_id = :id
+                        SQL,
+                    [
+                        'status' => $target->value, 'now' => $now,
+                        'submitted' => $order->submittedAt?->format('Y-m-d H:i:sP'),
+                        'decided' => $order->decidedAt?->format('Y-m-d H:i:sP'),
+                        'reason' => $order->decisionReason, 'tenant' => $tenantId, 'id' => $orderId,
+                    ],
+                );
+                $this->recordHistory($db, $tenantId, $orderId, $from, $target, $actor, $reason);
+                $event = 'Order' . str_replace(' ', '', ucwords(str_replace('_', ' ', $target->value)));
+                $this->writeOutbox($db, $tenantId, $orderId, $event, [
+                    'orderId' => $orderId, 'previousStatus' => $from->value, 'status' => $target->value,
+                ]);
+                return $this->findInTransaction($db, $tenantId, $orderId);
         });
     }
 
