@@ -99,6 +99,40 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                 }
 
                 self::appendOutboxEvents($connection, $events);
+
+                if ($expectedStatus === null) {
+                    self::appendAuditEvent(
+                        $connection,
+                        (string) OfferId::generate(),
+                        $offer->tenantId(),
+                        (string) $offer->id(),
+                        'offer.created',
+                        null,
+                        $offer->status()->value,
+                        'user',
+                        $offer->createdBy(),
+                        $offer->createdAt(),
+                        [
+                            'quoteId' => $offer->pricingSnapshot()->quoteId,
+                            'vehicleId' => $offer->pricingSnapshot()->vehicleId,
+                        ],
+                    );
+                } elseif ($expectedStatus !== $offer->status()) {
+                    [$eventType, $occurredAt, $actorType, $actorId] = self::auditTransition($offer);
+                    self::appendAuditEvent(
+                        $connection,
+                        (string) OfferId::generate(),
+                        $offer->tenantId(),
+                        (string) $offer->id(),
+                        $eventType,
+                        $expectedStatus->value,
+                        $offer->status()->value,
+                        $actorType,
+                        $actorId,
+                        $occurredAt,
+                        [],
+                    );
+                }
             },
         );
 
@@ -180,6 +214,61 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
         );
     }
 
+    /**
+     * @return list<array{eventId: string, eventType: string, fromStatus: ?string, toStatus: string, actorType: string, actorId: ?string, occurredAt: string, metadata: array<string, mixed>}>|null
+     */
+    public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
+    {
+        return $this->withinTenantTransaction(
+            $tenantId,
+            static function (PDO $connection) use ($id, $ownerId): ?array {
+                $statement = $connection->prepare(<<<'SQL'
+                    SELECT e.event_id, e.event_type, e.from_status, e.to_status,
+                           e.actor_type, e.actor_id, e.occurred_at, e.metadata
+                    FROM offer_audit_events e
+                    INNER JOIN offers o
+                        ON o.tenant_id = e.tenant_id
+                       AND o.offer_id = e.offer_id
+                    WHERE e.offer_id = :offer_id
+                      AND o.created_by = :created_by
+                    ORDER BY e.occurred_at ASC, e.created_at ASC, e.event_id ASC
+                    SQL);
+                $statement->execute([
+                    'offer_id' => (string) $id,
+                    'created_by' => $ownerId,
+                ]);
+                $rows = $statement->fetchAll();
+
+                if ($rows === []) {
+                    $exists = $connection->prepare(
+                        'SELECT 1 FROM offers WHERE offer_id = :offer_id AND created_by = :created_by LIMIT 1',
+                    );
+                    $exists->execute([
+                        'offer_id' => (string) $id,
+                        'created_by' => $ownerId,
+                    ]);
+
+                    return $exists->fetchColumn() === false ? null : [];
+                }
+
+                return array_map(static function (array $row): array {
+                    $metadata = json_decode((string) $row['metadata'], true, 512, JSON_THROW_ON_ERROR);
+
+                    return [
+                        'eventId' => (string) $row['event_id'],
+                        'eventType' => (string) $row['event_type'],
+                        'fromStatus' => $row['from_status'] === null ? null : (string) $row['from_status'],
+                        'toStatus' => (string) $row['to_status'],
+                        'actorType' => (string) $row['actor_type'],
+                        'actorId' => $row['actor_id'] === null ? null : (string) $row['actor_id'],
+                        'occurredAt' => (new DateTimeImmutable((string) $row['occurred_at']))->format(DATE_ATOM),
+                        'metadata' => is_array($metadata) ? $metadata : [],
+                    ];
+                }, $rows);
+            },
+        );
+    }
+
     public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
     {
         if ($limit < 1 || $limit > 1000) {
@@ -249,12 +338,80 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
                     }
 
                     self::appendOutboxEvents($connection, $offer->domainEvents());
+                    self::appendAuditEvent(
+                        $connection,
+                        (string) OfferId::generate(),
+                        $offer->tenantId(),
+                        (string) $offer->id(),
+                        'offer.expired',
+                        $offer->persistedStatus()?->value,
+                        $offer->status()->value,
+                        'system',
+                        null,
+                        $now,
+                        [],
+                    );
                     $offer->markPersisted();
                 }
 
                 return count($offers);
             },
         );
+    }
+
+    /**
+     * @return array{0: string, 1: DateTimeImmutable, 2: string, 3: ?string}
+     */
+    private static function auditTransition(Offer $offer): array
+    {
+        return match ($offer->status()) {
+            OfferStatus::Published => ['offer.published', $offer->publishedAt() ?? new DateTimeImmutable(), 'user', $offer->createdBy()],
+            OfferStatus::Accepted => ['offer.accepted', $offer->acceptedAt() ?? new DateTimeImmutable(), 'user', $offer->createdBy()],
+            OfferStatus::Rejected => ['offer.rejected', $offer->rejectedAt() ?? new DateTimeImmutable(), 'user', $offer->createdBy()],
+            OfferStatus::Expired => ['offer.expired', $offer->expiredAt() ?? new DateTimeImmutable(), 'system', null],
+            OfferStatus::Withdrawn => ['offer.withdrawn', new DateTimeImmutable(), 'user', $offer->createdBy()],
+            OfferStatus::Draft => throw new \\LogicException('A persisted offer cannot transition back to draft.'),
+        };
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    private static function appendAuditEvent(
+        PDO $connection,
+        string $eventId,
+        string $tenantId,
+        string $offerId,
+        string $eventType,
+        ?string $fromStatus,
+        string $toStatus,
+        string $actorType,
+        ?string $actorId,
+        DateTimeImmutable $occurredAt,
+        array $metadata,
+    ): void {
+        $statement = $connection->prepare(<<<'SQL'
+            INSERT INTO offer_audit_events (
+                event_id, tenant_id, offer_id, event_type, from_status, to_status,
+                actor_type, actor_id, occurred_at, metadata
+            ) VALUES (
+                :event_id, :tenant_id, :offer_id, :event_type, :from_status, :to_status,
+                :actor_type, :actor_id, :occurred_at, CAST(:metadata AS JSONB)
+            )
+            ON CONFLICT (event_id) DO NOTHING
+            SQL);
+        $statement->execute([
+            'event_id' => $eventId,
+            'tenant_id' => $tenantId,
+            'offer_id' => $offerId,
+            'event_type' => $eventType,
+            'from_status' => $fromStatus,
+            'to_status' => $toStatus,
+            'actor_type' => $actorType,
+            'actor_id' => $actorId,
+            'occurred_at' => $occurredAt->format('Y-m-d\\TH:i:s.uP'),
+            'metadata' => json_encode($metadata, JSON_THROW_ON_ERROR),
+        ]);
     }
 
     /** @param array<string, mixed> $row */
