@@ -27,6 +27,29 @@ final readonly class PaymentController
     {
     }
 
+
+    #[Route('', methods: ['GET'])]
+    public function list(Request $request): JsonResponse
+    {
+        try {
+            $principal = $this->principal($request, 'payments:read');
+            $limit = $request->query->getInt('limit', 20);
+            $offset = $request->query->getInt('offset', 0);
+
+            return new JsonResponse(
+                $this->getPayment->list($this->tenant($principal), $limit, $offset),
+                200,
+                ['Cache-Control' => 'no-store'],
+            );
+        } catch (AccessDeniedHttpException) {
+            return $this->problem(403, 'Payment permission or tenant context is missing.');
+        } catch (DomainException $exception) {
+            return $this->problem(400, $exception->getMessage());
+        } catch (Throwable) {
+            return $this->problem(503, 'Payment history is temporarily unavailable.');
+        }
+    }
+
     #[Route('', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
