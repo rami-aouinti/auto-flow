@@ -65,7 +65,9 @@ Do not put customer PII, full documents, credentials or full quote snapshots int
 
 OpenTelemetry instruments:
 - `orders.create_requests`
-- `orders.transitions` with bounded `status` attribute.
+- `orders.transitions` with bounded `status` attribute
+- `order_outbox.published` with bounded `event_type` attribute
+- `order_outbox.publish_failures` with bounded `event_type` attribute
 
 The API's HTTP spans are correlated by W3C Trace Context. The publisher creates producer spans and injects trace context into RabbitMQ message headers. CoreBundle's correlation ID remains a separate operational identifier.
 
