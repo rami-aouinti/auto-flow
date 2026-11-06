@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Infrastructure\Messaging\OutboxPublisher;
-use App\Infrastructure\Persistence\PostgresConnection;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+use App\\Infrastructure\\Messaging\\OutboxPublisher;
+use App\\Infrastructure\\Persistence\\PostgresConnection;
+use PhpAmqpLib\\Connection\\AMQPStreamConnection;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -39,42 +39,65 @@ $connectRabbit = static function () use ($databaseUrl): array {
     ];
 };
 
-[$rabbitConnection, $channel, $publisher] = $connectRabbit();
+$closeRabbit = static function (
+    ?AMQPStreamConnection &$connection,
+    &$channel,
+): void {
+    try {
+        if ($channel !== null && $channel->is_open()) {
+            $channel->close();
+        }
+    } catch (Throwable) {
+        // The channel may already be closed by the broker.
+    }
+
+    try {
+        if ($connection !== null && $connection->isConnected()) {
+            $connection->close();
+        }
+    } catch (Throwable) {
+        // The connection may already be unavailable.
+    }
+
+    $channel = null;
+    $connection = null;
+};
+
+$rabbitConnection = null;
+$channel = null;
+$publisher = null;
+
 error_log('[Offer Outbox] Publisher started.');
 
-try {
-    while (true) {
-        try {
-            $published = $publisher->publishNext();
-        } catch (Throwable $exception) {
-            error_log('[Offer Outbox] Worker iteration failed: ' . $exception->getMessage());
-            $published = false;
-        }
-
-        if (!$rabbitConnection->isConnected() || !$channel->is_open()) {
-            try {
-                if ($channel->is_open()) {
-                    $channel->close();
-                }
-                if ($rabbitConnection->isConnected()) {
-                    $rabbitConnection->close();
-                }
-            } catch (Throwable) {
-                // The connection is already unavailable; create a fresh one below.
-            }
-
+while (true) {
+    try {
+        if (
+            !$rabbitConnection instanceof AMQPStreamConnection
+            || !$rabbitConnection->isConnected()
+            || $channel === null
+            || !$channel->is_open()
+        ) {
+            $closeRabbit($rabbitConnection, $channel);
             [$rabbitConnection, $channel, $publisher] = $connectRabbit();
+            error_log('[Offer Outbox] RabbitMQ connection established.');
         }
+
+        // php-amqplib requires the application loop to service heartbeats
+        // while it is idle; otherwise RabbitMQ closes this long-lived socket.
+        $rabbitConnection->checkHeartBeat();
+
+        $published = $publisher->publishNext();
+
+        // Also service heartbeats after a potentially blocking publisher confirm.
+        $rabbitConnection->checkHeartBeat();
 
         if (!$published) {
             usleep(500_000);
         }
-    }
-} finally {
-    if ($channel->is_open()) {
-        $channel->close();
-    }
-    if ($rabbitConnection->isConnected()) {
-        $rabbitConnection->close();
+    } catch (Throwable $exception) {
+        error_log('[Offer Outbox] Worker iteration failed; reconnecting safely: ' . $exception->getMessage());
+        $closeRabbit($rabbitConnection, $channel);
+        $publisher = null;
+        usleep(1_000_000);
     }
 }
