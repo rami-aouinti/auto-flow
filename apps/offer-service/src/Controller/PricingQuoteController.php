@@ -15,10 +15,12 @@ use OpenTelemetry\API\Globals;
 use OpenTelemetry\API\Trace\StatusCode;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
 
+#[AsController]
 final readonly class PricingQuoteController
 {
     public function __construct(
