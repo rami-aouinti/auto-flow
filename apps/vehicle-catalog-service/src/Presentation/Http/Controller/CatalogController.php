@@ -206,25 +206,6 @@ final readonly class CatalogController
     #[OA\Response(response: 201, description: 'Manufacturer registered')]
     #[OA\Response(response: 409, description: 'Manufacturer code already exists')]
     #[RequiresScope('catalog:manage')]
-    #[Route('/manufacturers', methods: ['POST'])]
-    public function createManufacturer(Request $request, CatalogApplicationService $catalog): JsonResponse
-    {
-        try {
-            $input = CreateManufacturerRequest::fromArray($request->toArray());
-            $id = $catalog->registerManufacturer($this->actor($request), $input->code, $input->name);
-
-            return new JsonResponse(['manufacturerId' => $id, 'status' => 'draft'], 201);
-        } catch (InvalidArgumentException $exception) {
-            return $this->problem(422, 'INVALID_MANUFACTURER', $exception->getMessage(), $request);
-        } catch (UniqueConstraintViolationException) {
-            return $this->catalogueConflict($request);
-        } catch (DBALException) {
-            return $this->storageError($request);
-        } catch (JsonException) {
-            return $this->invalidJson($request);
-        }
-    }
-
     #[OA\Post(path: '/api/v1/models', summary: 'Register a model', tags: ['Catalogue management'])]
     #[OA\RequestBody(
         required: true,
@@ -238,29 +219,6 @@ final readonly class CatalogController
     )]
     #[OA\Response(response: 201, description: 'Model registered')]
     #[RequiresScope('catalog:manage')]
-    #[Route('/models', methods: ['POST'])]
-    public function createModel(Request $request, CatalogApplicationService $catalog): JsonResponse
-    {
-        try {
-            $input = CreateModelRequest::fromArray($request->toArray());
-            $id = $catalog->registerModel($this->actor($request), $input->manufacturerId, $input->name);
-
-            return new JsonResponse(['modelId' => $id, 'status' => 'draft'], 201);
-        } catch (CatalogParentNotFoundException) {
-            return $this->unknownParent($request);
-        } catch (InvalidArgumentException $exception) {
-            return $this->problem(422, 'INVALID_MODEL', $exception->getMessage(), $request);
-        } catch (UniqueConstraintViolationException) {
-            return $this->catalogueConflict($request);
-        } catch (ForeignKeyConstraintViolationException) {
-            return $this->unknownParent($request);
-        } catch (DBALException) {
-            return $this->storageError($request);
-        } catch (JsonException) {
-            return $this->invalidJson($request);
-        }
-    }
-
     #[OA\Post(path: '/api/v1/generations', summary: 'Register a model generation', tags: ['Catalogue management'])]
     #[OA\RequestBody(
         required: true,
@@ -276,35 +234,6 @@ final readonly class CatalogController
     )]
     #[OA\Response(response: 201, description: 'Generation registered')]
     #[RequiresScope('catalog:manage')]
-    #[Route('/generations', methods: ['POST'])]
-    public function createGeneration(Request $request, CatalogApplicationService $catalog): JsonResponse
-    {
-        try {
-            $input = CreateGenerationRequest::fromArray($request->toArray());
-            $id = $catalog->registerGeneration(
-                $this->actor($request),
-                $input->modelId,
-                $input->name,
-                $input->productionStartYear,
-                $input->productionEndYear,
-            );
-
-            return new JsonResponse(['generationId' => $id, 'status' => 'draft'], 201);
-        } catch (CatalogParentNotFoundException) {
-            return $this->unknownParent($request);
-        } catch (InvalidArgumentException $exception) {
-            return $this->problem(422, 'INVALID_GENERATION', $exception->getMessage(), $request);
-        } catch (UniqueConstraintViolationException) {
-            return $this->catalogueConflict($request);
-        } catch (ForeignKeyConstraintViolationException) {
-            return $this->unknownParent($request);
-        } catch (DBALException) {
-            return $this->storageError($request);
-        } catch (JsonException) {
-            return $this->invalidJson($request);
-        }
-    }
-
     #[OA\Post(
         path: '/api/v1/vehicles',
         summary: 'Register a technical vehicle variant',
@@ -368,29 +297,6 @@ final readonly class CatalogController
     )]
     #[OA\Response(response: 201, description: 'Variant registered in draft state')]
     #[RequiresScope('catalog:manage')]
-    #[Route('/vehicles', methods: ['POST'])]
-    public function createVariant(Request $request, CatalogApplicationService $catalog): JsonResponse
-    {
-        try {
-            $input = CreateVehicleVariantRequest::fromArray($request->toArray());
-            $id = $catalog->registerVariant($this->actor($request), $input->toArray());
-
-            return new JsonResponse(['variantId' => $id, 'status' => 'draft'], 201);
-        } catch (CatalogParentNotFoundException) {
-            return $this->unknownParent($request);
-        } catch (InvalidArgumentException $exception) {
-            return $this->problem(422, 'INVALID_VARIANT', $exception->getMessage(), $request);
-        } catch (UniqueConstraintViolationException) {
-            return $this->catalogueConflict($request);
-        } catch (ForeignKeyConstraintViolationException) {
-            return $this->unknownParent($request);
-        } catch (DBALException) {
-            return $this->storageError($request);
-        } catch (JsonException) {
-            return $this->invalidJson($request);
-        }
-    }
-
     #[OA\Post(
         path: '/api/v1/vehicles/{variantId}/publish',
         summary: 'Publish a draft vehicle variant',
@@ -405,27 +311,6 @@ final readonly class CatalogController
     #[OA\Response(response: 200, description: 'Vehicle variant published')]
     #[OA\Response(response: 404, description: 'Vehicle variant not found or cannot be published')]
     #[RequiresScope('catalog:manage')]
-    #[Route('/vehicles/{variantId}/publish', methods: ['POST'])]
-    public function publishVariant(
-        string $variantId,
-        Request $request,
-        CatalogApplicationService $catalog,
-    ): JsonResponse {
-        if (preg_match('/^[a-f0-9]{32}$/D', $variantId) !== 1) {
-            return $this->vehicleNotFound($request);
-        }
-
-        try {
-            if (!$catalog->publishVariant($this->actor($request), $variantId)) {
-                return $this->vehicleNotFound($request);
-            }
-
-            return new JsonResponse(['variantId' => $variantId, 'status' => 'published']);
-        } catch (DBALException) {
-            return $this->storageError($request);
-        }
-    }
-
     private function actor(Request $request): CatalogActor
     {
         $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
@@ -440,21 +325,6 @@ final readonly class CatalogController
     private function vehicleNotFound(Request $request): JsonResponse
     {
         return $this->problem(404, 'VEHICLE_NOT_FOUND', 'The requested vehicle does not exist.', $request);
-    }
-
-    private function catalogueConflict(Request $request): JsonResponse
-    {
-        return $this->problem(
-            409,
-            'CATALOGUE_CONFLICT',
-            'A catalogue entry with the same canonical code or name already exists.',
-            $request,
-        );
-    }
-
-    private function unknownParent(Request $request): JsonResponse
-    {
-        return $this->problem(422, 'UNKNOWN_PARENT', 'The referenced catalogue parent does not exist.', $request);
     }
 
     private function storageError(Request $request): JsonResponse
