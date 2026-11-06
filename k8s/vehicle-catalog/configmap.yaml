@@ -10,7 +10,7 @@ data:
   APP_ENV: "prod"
   APP_DEBUG: "0"
   DEFAULT_URI: "http://vehicle-catalog-service:8080"
-  AUTOFLOW_JWT_ISSUER: "http://host.docker.internal:8080/realms/autoflow"
+  AUTOFLOW_JWT_ISSUER: "http://localhost:8080/realms/autoflow"
   AUTOFLOW_JWT_JWKS_URI: "http://host.docker.internal:8080/realms/autoflow/protocol/openid-connect/certs"
   RABBITMQ_HOST: "host.docker.internal"
   RABBITMQ_PORT: "5672"
