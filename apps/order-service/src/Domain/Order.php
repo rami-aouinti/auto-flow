@@ -36,7 +36,11 @@ final class Order
     public function transitionTo(OrderStatus $next, ?string $reason = null): void
     {
         if (!$this->status->canTransitionTo($next)) {
-            throw new DomainException(sprintf('Order cannot transition from %s to %s.', $this->status->value, $next->value));
+            throw new DomainException(sprintf(
+                'Order cannot transition from %s to %s.',
+                $this->status->value,
+                $next->value,
+            ));
         }
         if ($next === OrderStatus::REJECTED && ($reason === null || trim($reason) === '')) {
             throw new DomainException('A rejection reason is required.');
