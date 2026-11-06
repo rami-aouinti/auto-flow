@@ -15,7 +15,7 @@ final class OrderMetrics
     public function __construct()
     {
         $meter = Globals::meterProvider()->getMeter('autoflow.order-service', '1.0.0');
-        $this->created = $meter->createCounter('orders.created', '{order}', 'Orders created');
+        $this->created = $meter->createCounter('orders.create_requests', '{order}', 'Order creation requests');
         $this->transitions = $meter->createCounter('orders.transitions', '{transition}', 'Order lifecycle transitions');
     }
 
