@@ -54,6 +54,13 @@ paths:
       responses:
         '200': { description: Order details }
         '404': { description: Order not found }
+  /api/v1/orders/{orderId}/history:
+    get:
+      summary: Retrieve the append-only lifecycle audit history
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200': { description: Order history }
+        '404': { description: Order not found }
   /api/v1/orders/{orderId}/submit:
     post:
       summary: Submit a draft order
