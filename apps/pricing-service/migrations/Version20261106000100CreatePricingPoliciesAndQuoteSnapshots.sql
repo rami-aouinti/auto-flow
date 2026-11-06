@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS pricing_policies (
         UNIQUE (tenant_id, version)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pricing_policies_tenant_policy_version_fk
+    ON pricing_policies (tenant_id, policy_id, version);
+
 CREATE INDEX IF NOT EXISTS idx_pricing_policies_tenant_status
     ON pricing_policies (tenant_id, status, version DESC);
 
