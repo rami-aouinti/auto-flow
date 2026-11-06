@@ -9,6 +9,7 @@ use App\\Application\\OrderNotFoundException;
 use App\\Application\\Port\\OrderRepositoryInterface;
 use App\\Domain\\Order;
 use App\\Domain\\OrderStatus;
+use AutoFlow\\CoreBundle\\Context\\CorrelationContext;
 use Doctrine\\DBAL\\Connection;
 use DomainException;
 use OpenTelemetry\\API\\Trace\\Propagation\\TraceContextPropagator;
