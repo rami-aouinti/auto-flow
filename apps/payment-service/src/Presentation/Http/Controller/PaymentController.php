@@ -18,7 +18,10 @@ use Throwable;
 #[Route('/api/v1/payments')]
 final readonly class PaymentController
 {
-    public function __construct(private PaymentApplicationService $payments)
+    public function __construct(
+        private PaymentApplicationService $payments,
+        private ListPaymentsHandler $listPayments,
+    )
     {
     }
 
@@ -68,7 +71,7 @@ final readonly class PaymentController
             return new JsonResponse($result, 200, ['Cache-Control'=>'no-store']);
         } catch (AccessDeniedHttpException) {
             return $this->problem(403, 'Payment permission or tenant context is missing.');
-        } catch (\\Throwable) {
+        } catch (\Throwable) {
             return $this->problem(500, 'Payment history could not be loaded.');
         }
     }
