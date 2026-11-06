@@ -27,7 +27,7 @@ final readonly class OfferPublished implements DomainEvent
         return [
             'eventId' => $this->eventId,
             'eventType' => 'OfferPublished',
-            'schemaVersion' => 1,
+            'schemaVersion' => 2,
             'occurredAt' => $this->occurredAt->format(DATE_ATOM),
             'producer' => 'offer-service',
             'tenantId' => $this->tenantId,
