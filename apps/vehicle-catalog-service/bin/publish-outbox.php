@@ -18,16 +18,32 @@ if (!is_string($url) || $url === '') {
     throw new RuntimeException('DATABASE_URL is required.');
 }
 $db = (new PostgresConnection($url))->get();
-$connection = new AMQPStreamConnection(
-    getenv('RABBITMQ_HOST') ?: 'rabbitmq',
-    (int) (getenv('RABBITMQ_PORT') ?: 5672),
-    getenv('RABBITMQ_USER') ?: 'autoflow',
-    getenv('RABBITMQ_PASSWORD') ?: 'autoflow',
-    getenv('RABBITMQ_VHOST') ?: '/',
-);
-$channel = $connection->channel();
-$channel->exchange_declare('autoflow.catalog.events', 'topic', false, true, false);
-$channel->confirm_select();
+$connectRabbit = static function (): array {
+    $connection = new AMQPStreamConnection(
+        getenv('RABBITMQ_HOST') ?: 'rabbitmq',
+        (int) (getenv('RABBITMQ_PORT') ?: 5672),
+        getenv('RABBITMQ_USER') ?: 'autoflow',
+        getenv('RABBITMQ_PASSWORD') ?: 'autoflow',
+        getenv('RABBITMQ_VHOST') ?: '/',
+        false,
+        'PLAIN',
+        null,
+        'en_US',
+        3.0,
+        3.0,
+        null,
+        true,
+        30,
+    );
+    $channel = $connection->channel();
+    $channel->exchange_declare('autoflow.catalog.events', 'topic', false, true, false);
+    $channel->confirm_select();
+
+    return [$connection, $channel];
+};
+
+[$connection, $channel] = $connectRabbit();
+
 
 try {
     while (true) {
@@ -57,6 +73,29 @@ try {
         $db->commit();
 
         if (!is_array($event)) {
+            try {
+                // Keep the long-lived RabbitMQ connection alive while the Outbox is idle.
+                $connection->checkHeartBeat();
+            } catch (Throwable $heartbeatError) {
+                error_log('[Catalog Outbox] Heartbeat failed; reconnecting: ' . $heartbeatError->getMessage());
+                try {
+                    if ($channel->is_open()) {
+                        $channel->close();
+                    }
+                } catch (Throwable) {
+                    // The channel may already be closed.
+                }
+                try {
+                    if ($connection->isConnected()) {
+                        $connection->close();
+                    }
+                } catch (Throwable) {
+                    // The connection may already be unavailable.
+                }
+                [$connection, $channel] = $connectRabbit();
+                error_log('[Catalog Outbox] RabbitMQ connection restored.');
+            }
+
             usleep(500000);
             continue;
         }
@@ -118,7 +157,30 @@ try {
                 throw new RuntimeException('Unable to schedule catalogue Outbox retry.', previous: $error);
             }
             $retry->execute(['id' => $eventId, 'error' => mb_substr($error->getMessage(), 0, 500)]);
-            throw $error;
+
+            // If publishing failed because the broker connection went stale,
+            // replace it before the next Outbox iteration.
+            try {
+                $connection->checkHeartBeat();
+            } catch (Throwable $heartbeatError) {
+                error_log('[Catalog Outbox] RabbitMQ connection lost; reconnecting: ' . $heartbeatError->getMessage());
+                try {
+                    if ($channel->is_open()) {
+                        $channel->close();
+                    }
+                } catch (Throwable) {
+                    // The channel may already be closed.
+                }
+                try {
+                    if ($connection->isConnected()) {
+                        $connection->close();
+                    }
+                } catch (Throwable) {
+                    // The connection may already be unavailable.
+                }
+                [$connection, $channel] = $connectRabbit();
+                error_log('[Catalog Outbox] RabbitMQ connection restored.');
+            }
         } finally {
             $scope->detach();
             $span->end();
