@@ -67,12 +67,19 @@ $handler = static function (AMQPMessage $message) use ($db): void {
         if ($inserted === false) {
             return;
         }
+        $exists = $db->fetchOne(
+            'SELECT 1 FROM orders WHERE tenant_id = :tenant AND order_id = :order',
+            ['tenant' => $tenantId, 'order' => $orderId],
+        );
+        if ($exists === false) {
+            throw new RuntimeException('Payment event references an unknown order; message will be retried.');
+        }
         $updated = $db->executeStatement(
-            'UPDATE orders SET payment_status = :status, updated_at = CURRENT_TIMESTAMP WHERE tenant_id = :tenant AND order_id = :order',
+            'UPDATE orders SET payment_status = :status, updated_at = CURRENT_TIMESTAMP WHERE tenant_id = :tenant AND order_id = :order AND payment_status IS DISTINCT FROM :status',
             ['status' => $paymentStatus, 'tenant' => $tenantId, 'order' => $orderId],
         );
-        if ($updated !== 1) {
-            throw new RuntimeException('Payment event references an unknown order; message will be retried.');
+        if ($updated === 0) {
+            return;
         }
         $outboxEvent = 'Order' . match ($paymentStatus) {
             'authorized' => 'PaymentAuthorized',
