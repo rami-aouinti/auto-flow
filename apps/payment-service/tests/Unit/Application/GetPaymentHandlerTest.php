@@ -22,7 +22,7 @@ final class GetPaymentHandlerTest extends TestCase
             public function findByTenantAndId(string $tenantId, string $paymentId): ?array
             {
                 if ($tenantId !== 'tenant-1' || $paymentId !== 'payment-1') {
-                    throw new \\RuntimeException('Unexpected tenant or payment identifier.');
+                    throw new \RuntimeException('Unexpected tenant or payment identifier.');
                 }
 
                 return $this->payment;
