@@ -35,6 +35,10 @@ final readonly class OfferPublishedNotification
     /** @param array<string, mixed> $envelope */
     public static function fromEnvelope(array $envelope): self
     {
+        if ((int) ($envelope['schemaVersion'] ?? 0) !== 2) {
+            throw new InvalidArgumentException('Unsupported OfferPublished event schema version.');
+        }
+
         $data = $envelope['data'] ?? null;
         $aggregate = $envelope['aggregate'] ?? null;
         if (!is_array($data) || !is_array($aggregate) || ($envelope['eventType'] ?? null) !== 'OfferPublished') {
