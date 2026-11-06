@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Application\ProcessPaymentWebhook;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Symfony\Component\Uid\Uuid;
 use DomainException;
 use RuntimeException;
 
