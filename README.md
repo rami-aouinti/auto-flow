@@ -73,8 +73,8 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Adminer | http://localhost:8083 | Browser-based PostgreSQL administration (local host only) |
 | Keycloak | http://localhost:8080 | Local OIDC identity provider and token issuer |
 | PostgreSQL | localhost:5432 | Relational database |
-| Temporal gRPC | localhost:7233 | Local Temporal development server |\n| Temporal UI | http://localhost:8233 | Inspect Order lifecycle workflow executions |
-| Temporal UI | http://localhost:8233 | Workflow visibility (development only) |
+| Temporal gRPC | localhost:7233 | Local Temporal development server |
+| Temporal UI | http://localhost:8233 | Inspect Order lifecycle workflow executions |
 | Redis | localhost:6379 | Cache and ephemeral data |
 | OTLP gRPC / HTTP | localhost:4317 / 4318 | OpenTelemetry trace ingestion |
 

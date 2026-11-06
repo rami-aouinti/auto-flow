@@ -28,7 +28,7 @@ jobs:
         working-directory: apps/order-workflow-worker
         run: |
           gofmt -w ./cmd ./internal
-          go mod download
+          go mod tidy
           go test ./...
           go build ./cmd/worker
       - name: Validate Composer
@@ -81,12 +81,7 @@ jobs:
           fi
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.offer_outbox_events') IS NOT NULL AS outbox_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.orders') IS NOT NULL AS orders_ready"
-          for attempt in $(seq 1 30); do
-            if docker compose exec -T rabbitmq rabbitmq-diagnostics -q listeners >/dev/null 2>&1; then
-              break
-            fi
-            sleep 2
-          done
+          docker compose exec -T rabbitmq rabbitmqctl await_startup --timeout 60
           docker compose exec -T rabbitmq rabbitmq-diagnostics listeners
           docker compose exec -T rabbitmq rabbitmqctl list_users
           timeout 2 bash -c '</dev/tcp/127.0.0.1/5672'

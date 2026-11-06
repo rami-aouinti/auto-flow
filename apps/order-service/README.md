@@ -48,7 +48,7 @@ The Domain model enforces allowed transitions. The application locks the order r
 
 - Dedicated PostgreSQL login `autoflow_order`; tenant RLS protects orders, history, idempotency and Outbox.
 - Tenant context comes from the verified JWT principal and is set with transaction-local `set_config`; it is never trusted from the JSON body.
-- Creation requires an idempotency key scoped to tenant and authenticated actor. Repeating the same key and payload replays the stored response; reusing it with a different payload is rejected.
+- Creation requires an idempotency key scoped to tenant and authenticated actor. Repeating the same key and Offer/quote/vehicle references replays the stored response before any upstream call; reusing it with different references is rejected. The idempotency fingerprint is based on stable references, not refreshed upstream snapshots.
 - Offer, quote and vehicle snapshots are immutable through the lifecycle API.
 - Each state change appends an audit row and an integration event in the same transaction.
 - The Outbox publisher has a separate `autoflow_order_publisher` login that can only execute narrow SECURITY DEFINER claim/ack/retry functions. Those functions are owned by a dedicated non-login BYPASSRLS role with access only to the Outbox table; neither runtime login receives BYPASSRLS. Retries stop after ten failed attempts and leave a terminal failed row for operator inspection.
@@ -70,7 +70,7 @@ Keycloak imports the realm file only when the `autoflow` realm does not already 
 Then rebuild and start the service:
 
 ```bash
-docker compose --env-file .env.example up -d --build order-service order-outbox-publisher
+docker compose --env-file .env.example up -d --build order-service order-outbox-publisher order-workflow-worker
 docker compose ps order-service order-outbox-publisher
 curl -i http://localhost:8085/health/ready
 ```
