@@ -203,7 +203,7 @@ onMounted(() => { void loadOrders(); void loadQuotes(); });
         </div>
         <p v-if="['submitted','under_review'].includes(selectedOrder.status)" class="ops-inline"><input v-model="rejectReason" maxlength="500" placeholder="Ablehnungsgrund (für Ablehnen)"/></p>
         <p v-if="actionError" class="ops-error">{{actionError}}</p><p v-if="paymentError" class="ops-error">{{paymentError}}</p>
-        <div class="ops-history"><h3>Audit-Verlauf</h3><p v-if="historyLoading" class="ops-empty">Verlauf wird geladen …</p><p v-else-if="historyError" class="ops-error">{{historyError}}</p><p v-else-if="!orderHistory.length" class="ops-empty">Noch keine Ereignisse vorhanden.</p><div v-for="(event,index) in orderHistory" :key="event.eventId || index" class="ops-history-row"><b>{{label(event.eventType || event.toStatus || event.status)}}</b><small>{{date(event.occurredAt || event.createdAt)}} · {{event.actorType || 'Audit'}}</small></div></div>
+        <div class="ops-history"><h3>Audit-Verlauf</h3><p v-if="historyLoading" class="ops-empty">Verlauf wird geladen …</p><p v-else-if="historyError" class="ops-error">{{historyError}}</p><p v-else-if="!orderHistory.length" class="ops-empty">Noch keine Ereignisse vorhanden.</p><div v-for="(event,index) in orderHistory" :key="event.eventId || index" class="ops-history-row"><b>{{label(event.eventType || event.toStatus || event.to_status || event.status)}}</b><small>{{date(event.occurredAt || event.occurred_at || event.createdAt)}} · {{event.actorType || event.actor || 'Audit'}}</small></div></div>
       </section>
     </template>
 
