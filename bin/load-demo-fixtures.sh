@@ -13,7 +13,7 @@ COMPOSE=(docker compose --env-file "$COMPOSE_ENV_FILE")
 TENANT_ID="${DEMO_TENANT_ID:-tenant-demo}"
 
 echo "==> Starting the services required by the demo journey"
-"${COMPOSE[@]}" up -d --build postgres keycloak pricing-service offer-service vehicle-catalog-service
+"${COMPOSE[@]}" up -d --build postgres rabbitmq keycloak pricing-service offer-service vehicle-catalog-service offer-workers vehicle-catalog-outbox-publisher
 
 echo "==> Waiting for PostgreSQL"
 for attempt in $(seq 1 60); do
