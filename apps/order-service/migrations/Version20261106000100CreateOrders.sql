@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS order_outbox (
     FOREIGN KEY (tenant_id, order_id) REFERENCES orders (tenant_id, order_id) ON DELETE RESTRICT
 );
 ALTER TABLE order_outbox ADD COLUMN IF NOT EXISTS failed_at TIMESTAMPTZ NULL;
-CREATE INDEX IF NOT EXISTS idx_order_outbox_pending
+DROP INDEX IF EXISTS idx_order_outbox_pending;
+CREATE INDEX idx_order_outbox_pending
     ON order_outbox (next_attempt_at, occurred_at)
     WHERE published_at IS NULL AND failed_at IS NULL;
 
@@ -67,6 +68,10 @@ CREATE TABLE IF NOT EXISTS order_idempotency (
     PRIMARY KEY (tenant_id, actor, idempotency_key),
     FOREIGN KEY (tenant_id, order_id) REFERENCES orders (tenant_id, order_id) ON DELETE RESTRICT
 );
+ALTER TABLE order_idempotency ADD COLUMN IF NOT EXISTS actor VARCHAR(255) NOT NULL DEFAULT 'legacy';
+ALTER TABLE order_idempotency DROP CONSTRAINT IF EXISTS order_idempotency_pkey;
+ALTER TABLE order_idempotency ADD CONSTRAINT order_idempotency_pkey PRIMARY KEY (tenant_id, actor, idempotency_key);
+ALTER TABLE order_idempotency ALTER COLUMN actor DROP DEFAULT;
 
 DO $$
 DECLARE table_name TEXT;
