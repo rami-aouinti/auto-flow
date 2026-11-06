@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS order_outbox (
     last_error VARCHAR(500) NULL,
     FOREIGN KEY (tenant_id, order_id) REFERENCES orders (tenant_id, order_id) ON DELETE RESTRICT
 );
+ALTER TABLE order_outbox ADD COLUMN IF NOT EXISTS failed_at TIMESTAMPTZ NULL;
 CREATE INDEX IF NOT EXISTS idx_order_outbox_pending
     ON order_outbox (next_attempt_at, occurred_at)
     WHERE published_at IS NULL AND failed_at IS NULL;
@@ -148,7 +149,8 @@ BEGIN
     END IF;
 END
 $;
-GRANT USAGE ON SCHEMA public TO autoflow_order_outbox_owner;
+ALTER ROLE autoflow_order_outbox_owner NOLOGIN BYPASSRLS;
+GRANT USAGE, CREATE ON SCHEMA public TO autoflow_order_outbox_owner;
 GRANT SELECT, UPDATE ON TABLE order_outbox TO autoflow_order_outbox_owner;
 ALTER FUNCTION public.order_outbox_claim() OWNER TO autoflow_order_outbox_owner;
 ALTER FUNCTION public.order_outbox_mark_published(UUID) OWNER TO autoflow_order_outbox_owner;
