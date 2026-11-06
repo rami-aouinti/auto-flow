@@ -82,6 +82,25 @@ final readonly class OrderController
         }
     }
 
+    #[Route('/{orderId}/history', name: 'orders_history', methods: ['GET'])]
+    public function history(Request $request, string $orderId): JsonResponse
+    {
+        try {
+            $principal = $this->principal($request, 'orders:read');
+            return new JsonResponse(
+                ['items' => $this->orders->history($this->tenant($principal), $orderId)],
+                200,
+                ['Cache-Control' => 'no-store'],
+            );
+        } catch (AccessDeniedHttpException) {
+            return $this->problem(403, 'The required permission and tenant context are required.');
+        } catch (OrderNotFoundException) {
+            return $this->problem(404, 'Order not found.');
+        } catch (Throwable) {
+            return $this->problem(500, 'Order history could not be retrieved.');
+        }
+    }
+
     #[Route('/{orderId}/submit', name: 'orders_submit', methods: ['POST'])]
     public function submit(Request $request, string $orderId): JsonResponse
     {
