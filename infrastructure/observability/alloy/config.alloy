@@ -72,8 +72,8 @@ otelcol.processor.batch "autoflow" {
   }
 }
 
-# Prometheus requires cumulative sums and histograms. The PHP OTLP SDK can
-# export delta temporality, which the Prometheus exporter intentionally drops.
+// Prometheus requires cumulative sums and histograms. The PHP OTLP SDK can
+// export delta temporality, which the Prometheus exporter intentionally drops.
 otelcol.processor.deltatocumulative "autoflow" {
   output {
     metrics = [otelcol.exporter.prometheus.autoflow.input]
