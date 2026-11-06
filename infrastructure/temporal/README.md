@@ -5,7 +5,7 @@ Docker Compose runs the official Temporal CLI development server:
 - gRPC endpoint: `localhost:7233`
 - Web UI: `http://localhost:8233`
 - Namespace: `default`
-- Persistent local state: Docker volume `temporal-data`, mounted at `/var/lib/temporal`
+- Persistent local state: Docker volume `temporal-data`, mounted at `/home/temporal`
 
 The command uses `temporal server start-dev` with a persistent SQLite file. This embedded development service is intended for local development and testing only. It is not a production Temporal cluster and does not provide production database topology, HA, TLS, authentication or operational guarantees. For production, deploy the supported Temporal Server with an external persistence database and managed schema lifecycle.
 
