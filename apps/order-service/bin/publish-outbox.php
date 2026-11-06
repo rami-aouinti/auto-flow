@@ -53,7 +53,8 @@ try {
 
         $eventId = (string) $event['event_id'];
         $eventType = (string) $event['event_type'];
-        $payload = json_encode($event['payload'], JSON_THROW_ON_ERROR);
+        $payload = is_string($event['payload']) ? $event['payload'] : json_encode($event['payload'], JSON_THROW_ON_ERROR);
+        json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
         $span = Globals::tracerProvider()->getTracer('autoflow.order-service', '1.0.0')
             ->spanBuilder('messaging.publish')->setSpanKind(SpanKind::KIND_PRODUCER)->startSpan();
         $scope = $span->activate();
