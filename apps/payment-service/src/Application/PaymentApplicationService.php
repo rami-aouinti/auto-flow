@@ -53,7 +53,7 @@ final readonly class PaymentApplicationService
             }
 
             $paymentId = Uuid::v7()->toRfc4122();
-            $intent = $this->gateway->createIntent($amount, $currency, $paymentId, $key);
+            $intent = $this->gateway->createIntent($amount, $currency, $paymentId, $tenant, $key);
             $providerId = $intent['id'] ?? null;
             if (!is_string($providerId) || $providerId === '') {
                 throw new RuntimeException('Payment provider did not return a payment intent identifier.');
@@ -121,6 +121,21 @@ final readonly class PaymentApplicationService
             if ($providerId === '') {
                 throw new DomainException('Payment has no provider intent.');
             }
+            if ($operation === 'capture' && $row['status'] !== 'authorized') {
+                throw new DomainException('Only authorized payments can be captured.');
+            }
+            if ($operation === 'cancel' && !in_array($row['status'], ['pending','requires_action','authorized'], true)) {
+                throw new DomainException('This payment cannot be cancelled in its current state.');
+            }
+            if ($operation === 'refund') {
+                $remaining = (int)$row['amount_minor'] - (int)$row['amount_refunded_minor'];
+                if (!in_array($row['status'], ['captured','partially_refunded'], true)) {
+                    throw new DomainException('Only captured payments can be refunded.');
+                }
+                if ($refundAmount === null || $refundAmount < 1 || $refundAmount > $remaining) {
+                    throw new DomainException('Refund amount exceeds the remaining captured amount.');
+                }
+            }
             $result = match ($operation) {
                 'capture' => $this->gateway->capture($providerId, $key),
                 'cancel' => $this->gateway->cancel($providerId, $key),
@@ -130,22 +145,9 @@ final readonly class PaymentApplicationService
             $newStatus = match ($operation) {
                 'capture' => 'captured',
                 'cancel' => 'cancelled',
-                'refund' => (($operation === 'refund') && ((int)$row['amount_refunded_minor'] + ($refundAmount ?? 0) >= (int)$row['amount_minor'])) ? 'refunded' : 'partially_refunded',
+                'refund' => ((int)$row['amount_refunded_minor'] + ($refundAmount ?? 0) >= (int)$row['amount_minor']) ? 'refunded' : 'partially_refunded',
             };
-            if ($operation === 'capture' && !in_array($row['status'], ['authorized','requires_action'], true)) {
-                throw new DomainException('Only authorized payments can be captured.');
-            }
-            if ($operation === 'cancel' && !in_array($row['status'], ['pending','requires_action','authorized'], true)) {
-                throw new DomainException('This payment cannot be cancelled in its current state.');
-            }
             if ($operation === 'refund') {
-                $remaining = (int)$row['amount_minor'] - (int)$row['amount_refunded_minor'];
-                if ($row['status'] !== 'captured' && $row['status'] !== 'partially_refunded') {
-                    throw new DomainException('Only captured payments can be refunded.');
-                }
-                if ($refundAmount === null || $refundAmount < 1 || $refundAmount > $remaining) {
-                    throw new DomainException('Refund amount exceeds the remaining captured amount.');
-                }
                 $this->db->insert('payment_refunds', [
                     'tenant_id'=>$tenant,'refund_id'=>Uuid::v7()->toRfc4122(),'payment_id'=>$paymentId,
                     'provider_refund_id'=>$result['id'] ?? null,'amount_minor'=>$refundAmount,'status'=>'succeeded',
@@ -177,8 +179,11 @@ final readonly class PaymentApplicationService
         if (!is_string($eventId) || !is_string($type) || !is_array($object)) {
             throw new DomainException('Malformed Stripe event.');
         }
+        $metadata = $object['metadata'] ?? [];
+        $tenantId = is_array($metadata) ? ($metadata['tenant_id'] ?? null) : null;
+        $paymentId = is_array($metadata) ? ($metadata['payment_id'] ?? null) : null;
         $providerId = $object['id'] ?? ($object['payment_intent'] ?? null);
-        if (!is_string($providerId)) {
+        if (!is_string($tenantId) || !is_string($paymentId) || !is_string($providerId)) {
             return;
         }
         $status = match ($type) {
@@ -194,9 +199,13 @@ final readonly class PaymentApplicationService
         $this->db->beginTransaction();
         try {
             $this->db->insert('payment_webhook_events', [
-                'provider_event_id'=>$eventId,'tenant_id'=>null,'event_type'=>$type,
+                'provider_event_id'=>$eventId,'tenant_id'=>$tenantId,'event_type'=>$type,
             ]);
-            $row = $this->db->fetchAssociative('SELECT tenant_id,payment_id,order_id FROM payments WHERE provider_payment_id=:id', ['id'=>$providerId]);
+            $this->setTenant($tenantId);
+            $row = $this->db->fetchAssociative(
+                'SELECT tenant_id,payment_id,order_id FROM payments WHERE tenant_id=:tenant AND payment_id=:payment AND provider_payment_id=:provider',
+                ['tenant'=>$tenantId,'payment'=>$paymentId,'provider'=>$providerId],
+            );
             if ($row !== false) {
                 $this->setTenant((string)$row['tenant_id']);
                 $this->db->update('payments', ['status'=>$status,'updated_at'=>date('c')], [
