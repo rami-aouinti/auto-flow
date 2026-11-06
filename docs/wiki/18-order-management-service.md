@@ -16,7 +16,7 @@ Implemented capabilities:
 - Tenant-scoped PostgreSQL tables with forced row-level security.
 - Immutable offer, quote and vehicle JSONB snapshots.
 - Append-only lifecycle history.
-- Create-request idempotency using a tenant-scoped key, request hash and transaction-scoped PostgreSQL advisory lock.
+- Create-request idempotency using a tenant-and-actor-scoped key, request hash and transaction-scoped PostgreSQL advisory lock.
 - Transactional Outbox: state, history and event intent commit in the same local transaction.
 - Narrow SECURITY DEFINER functions for cross-tenant Outbox claim/ack/retry; the service login does not have BYPASSRLS.
 - RabbitMQ topic exchange plus a durable holding queue `autoflow.order.events`, persistent messages, publisher confirms and bounded exponential retry.
