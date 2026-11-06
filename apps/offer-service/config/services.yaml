@@ -21,9 +21,12 @@ services:
         arguments:
             $offerValidityDays: '%app.offer_validity_days%'
 
-    App\Controller\PricingQuoteController:
+    App\Infrastructure\Pricing\HttpPricingQuoteProxy:
         arguments:
             $pricingServiceUrl: '%app.pricing_service_url%'
+
+    App\Application\Port\Out\PricingQuoteProxyInterface:
+        alias: App\Infrastructure\Pricing\HttpPricingQuoteProxy
 
     App\Infrastructure\Pricing\HttpPricingGateway:
         arguments:
