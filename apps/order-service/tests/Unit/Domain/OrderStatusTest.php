@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\\Tests\\Unit\\Domain;
+namespace App\Tests\Unit\Domain;
 
-use App\\Domain\\OrderStatus;
-use PHPUnit\\Framework\\TestCase;
+use App\Domain\OrderStatus;
+use PHPUnit\Framework\TestCase;
 
 final class OrderStatusTest extends TestCase
 {
