@@ -127,6 +127,16 @@ final class Offer
             vehicleId: $this->pricingSnapshot->vehicleId,
             occurredAt: $publishedAt,
             expiresAt: $this->expiresAt,
+            pricing: [
+                'monthlyAmount' => $this->pricingSnapshot->monthlyAmount,
+                'totalInstallmentsAmount' => $this->pricingSnapshot->totalInstallmentsAmount,
+                'totalCostIncludingDownPayment' => $this->pricingSnapshot->totalCostIncludingDownPayment,
+                'residualValue' => $this->pricingSnapshot->residualValue,
+                'currency' => $this->pricingSnapshot->currency,
+                'durationMonths' => $this->pricingSnapshot->durationMonths,
+                'annualInterestRateBasisPoints' => $this->pricingSnapshot->annualInterestRateBasisPoints,
+                'calculationVersion' => $this->pricingSnapshot->calculationVersion,
+            ],
         ));
     }
 
