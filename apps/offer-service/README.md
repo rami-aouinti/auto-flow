@@ -221,4 +221,4 @@ RABBITMQ_TEST_PASSWORD=autoflow \\
   vendor/bin/phpunit --configuration phpunit.xml tests/Integration/Offer
 ```
 
-The integration tests verify persisted state, atomic Offer/outbox writes, forced tenant RLS, optimistic concurrency, expiration processing and RabbitMQ publisher confirms. The audit migration is applied separately for the local history endpoint. PostgreSQL tests are skipped without `OFFER_TEST_DATABASE_URL`; the RabbitMQ publisher test is additionally skipped without `RABBITMQ_TEST_HOST`.
+The integration tests verify persisted state, atomic Offer/outbox writes, forced tenant RLS, optimistic concurrency, expiration processing and RabbitMQ publisher confirms. The RabbitMQ publisher test creates a uniquely named exchange and queue, verifies that the message is routed and confirmed, then deletes only those test broker resources; it never publishes test messages to the shared `offer.events` queue. The audit migration is applied separately for the local history endpoint. PostgreSQL tests are skipped without `OFFER_TEST_DATABASE_URL`; the RabbitMQ publisher test is additionally skipped without `RABBITMQ_TEST_HOST`.
