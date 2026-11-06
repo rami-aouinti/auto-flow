@@ -224,7 +224,7 @@ final readonly class PaymentApplicationService
             $payload = ['paymentId'=>$paymentId,'orderId'=>$row['order_id'],'status'=>$newStatus,'operation'=>$operation];
             $eventType = match ($operation) {
                 'capture' => 'PaymentCaptured',
-                'refund' => 'PaymentRefunded',
+                'refund' => $newStatus === 'refunded' ? 'PaymentRefunded' : 'PaymentPartiallyRefunded',
                 'cancel' => 'PaymentCancelled',
             };
             $this->recordEvent($tenant, $paymentId, $eventType, $payload);
