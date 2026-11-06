@@ -13,7 +13,7 @@ if (!is_string($databaseUrl) || $databaseUrl === '') {
     throw new RuntimeException('OFFER_DATABASE_URL is required.');
 }
 
-$connectRabbit = static function (): array {
+$connectRabbit = static function () use ($databaseUrl): array {
     $connection = new AMQPStreamConnection(
         getenv('RABBITMQ_HOST') ?: 'rabbitmq',
         (int) (getenv('RABBITMQ_PORT') ?: 5672),
