@@ -23,7 +23,7 @@ final readonly class CreatePaymentHandler
     /** @param array<string,mixed> $input
      *  @return array<string,mixed>
      */
-    public function create(string $tenant, string $actor, string $key, array $input): array
+    public function __invoke(string $tenant, string $actor, string $key, array $input): array
     {
         $orderId = $this->requiredString($input, 'orderId');
         if (!Uuid::isValid($orderId)) {
