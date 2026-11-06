@@ -9,6 +9,7 @@ use App\Domain\Entity\Offer;
 use App\Domain\Exception\OfferNotFound;
 use App\Domain\Repository\OfferRepositoryInterface;
 use App\Domain\ValueObject\OfferId;
+use App\Domain\ValueObject\OfferStatus;
 use App\Domain\ValueObject\PricingSnapshot;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
@@ -52,6 +53,22 @@ final class RejectOfferHandlerTest extends TestCase
             {
                 return $this->offer->createdBy() === $ownerId ? $this->offer : null;
             }
+            public function findByOwner(
+                string $tenantId,
+                string $ownerId,
+                ?OfferStatus $status,
+                ?string $search,
+                int $limit,
+                int $offset,
+            ): array {
+                return ['items' => [], 'total' => 0];
+            }
+
+            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
+            {
+                return [];
+            }
+
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
             {
                 return [];
@@ -83,6 +100,22 @@ final class RejectOfferHandlerTest extends TestCase
             {
                 return null;
             }
+            public function findByOwner(
+                string $tenantId,
+                string $ownerId,
+                ?OfferStatus $status,
+                ?string $search,
+                int $limit,
+                int $offset,
+            ): array {
+                return ['items' => [], 'total' => 0];
+            }
+
+            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
+            {
+                return [];
+            }
+
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
             {
                 return [];
