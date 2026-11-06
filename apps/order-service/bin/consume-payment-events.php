@@ -67,7 +67,7 @@ $handler = static function (AMQPMessage $message) use ($db): void {
         if ($inserted === false) {
             return;
         }
-        $exists = $db->fetchOne(
+        $exists = $db->fetchAssociative(
             'SELECT status, payment_status FROM orders WHERE tenant_id = :tenant AND order_id = :order',
             ['tenant' => $tenantId, 'order' => $orderId],
         );
