@@ -1,0 +1,89 @@
+name: Security Audit
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  composer-audit:
+    name: Composer dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer:v2
+          coverage: none
+
+      - name: Audit every committed Composer lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' lockfiles < <(find . -type f -name composer.lock \
+            -not -path '*/vendor/*' \
+            -not -path '*/node_modules/*' -print0 | sort -z)
+
+          if [ "${#lockfiles[@]}" -eq 0 ]; then
+            echo "::error::No composer.lock files were found."
+            exit 1
+          fi
+
+          for lockfile in "${lockfiles[@]}"; do
+            directory="$(dirname "$lockfile")"
+            echo "::group::composer audit: $directory"
+            (cd "$directory" && composer audit --locked --no-interaction)
+            echo "::endgroup::"
+          done
+
+  filesystem-scan:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan repository dependencies and configuration
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+          skip-dirs: vendor,node_modules,.git,var/cache
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

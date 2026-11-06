@@ -1,6 +1,6 @@
 # 15 — Security, tenants and API platform
 
-This chapter records the target architecture from [ADR-016](../adr/ADR-016-security-and-api-platform.md). It is a roadmap, not a claim that the controls are already implemented.
+This chapter describes the security architecture and its incremental delivery status. Core authentication, Pricing tenant isolation, ownership and Pricing gRPC authorization are already present in the repository; gateway, distributed rate limiting, contract automation and production deployment hardening remain separate release gates. See the [security hardening plan](../security-hardening-plan.md) for the full implementation truth and acceptance criteria. A documented target is not evidence of a deployed control.
 
 ## 1. Security model at a glance
 
@@ -111,6 +111,11 @@ Pact verifies consumer/provider expectations for important REST interactions. Op
 | REST `/api/v1` migration | Planned |
 | Pact REST contracts | Planned |
 | Buf Protobuf compatibility checks | Planned |
+| Order Management tenant RLS and immutable snapshots | Implemented in master; preserve negative tests |
+| Order upstream token delegation | Review required; current validator forwards the inbound bearer token |
+| Composer audit / Trivy / Dependency Review / CodeQL | Added on security-hardening branch; first CI runs pending |
+| Tenant membership validation at token issuance | Planned |
+| Production TLS, secret manager and internal workload mTLS | Deployment hardening required |
 
 The current security increment adds RS256/JWKS verification, audience isolation, REST scope checks, HTTP tenant delegation guarded by `tenant:delegate`, and JWT/scope/tenant checks on Pricing's gRPC quote method. Vehicle Catalog adds its own `autoflow-catalog` audience with `catalog:read` and `catalog:manage` scopes; its global reference dataset is not tenant-owned in Sprint 1. Pricing quote writes, reads, pagination, and deletion are tenant-bound and protected by PostgreSQL row-level security. The next increments are tenant membership validation at identity issuance, explicit ownership propagation for delegated user workflows, update semantics for immutable quote snapshots, and equivalent isolation for other services. See ADR-016 for decisions and trade-offs.
 
