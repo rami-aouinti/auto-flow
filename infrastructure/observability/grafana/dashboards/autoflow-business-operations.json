@@ -25,7 +25,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (action) (increase(offer_lifecycle_events_total[$__range]))",
+          "expr": "sum by (action) (increase(offer_lifecycle_events_offers_total[$__range]))",
           "legendFormat": "{{action}}",
           "refId": "A"
         }
@@ -64,7 +64,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(offer_lifecycle_events_total{action=\"created\"}[5m]))",
+          "expr": "sum(rate(offer_lifecycle_events_offers_total{action=\"created\"}[5m]))",
           "legendFormat": "Created offers / second",
           "refId": "A"
         }
@@ -103,7 +103,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (result) (increase(pricing_quote_calculations_total[$__range]))",
+          "expr": "sum by (result) (increase(pricing_quote_calculations_quotes_total[$__range]))",
           "legendFormat": "{{result}}",
           "refId": "A"
         }
