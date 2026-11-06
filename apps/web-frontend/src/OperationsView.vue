@@ -149,7 +149,7 @@ function normalizePayment(data: any): Payment {
     amountMinor: Number(data.amountMinor ?? data.amount_minor ?? 0),
     currency: data.currency,
     provider: data.provider,
-    clientSecret: data.clientSecret ?? (paymentRecord.value?.paymentId === (data.paymentId ?? data.payment_id) ? paymentRecord.value.clientSecret : null),
+    clientSecret: data.clientSecret ?? (paymentRecord.value?.paymentId === (data.paymentId ?? data.payment_id) ? paymentRecord.value?.clientSecret : null),
     createdAt: data.createdAt ?? data.created_at,
   };
 }
