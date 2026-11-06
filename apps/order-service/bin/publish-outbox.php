@@ -17,7 +17,19 @@ $databaseUrl = getenv('ORDER_PUBLISHER_DATABASE_URL') ?: '';
 if ($databaseUrl === '') {
     throw new RuntimeException('ORDER_PUBLISHER_DATABASE_URL is required.');
 }
-$db = DriverManager::getConnection(['url' => $databaseUrl]);
+/** @var array{scheme?:string,host?:string,port?:int,user?:string,pass?:string,path?:string}|false $parts */
+$parts = parse_url($databaseUrl);
+if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['postgres', 'postgresql'], true)) {
+    throw new RuntimeException('A valid PostgreSQL database URL is required.');
+}
+$db = DriverManager::getConnection([
+    'driver' => 'pdo_pgsql',
+    'host' => $parts['host'] ?? 'localhost',
+    'port' => $parts['port'] ?? 5432,
+    'user' => isset($parts['user']) ? rawurldecode($parts['user']) : '',
+    'password' => isset($parts['pass']) ? rawurldecode($parts['pass']) : '',
+    'dbname' => rawurldecode(ltrim($parts['path'] ?? '', '/')),
+]);
 
 $connect = static function (): array {
     $connection = new AMQPStreamConnection(
