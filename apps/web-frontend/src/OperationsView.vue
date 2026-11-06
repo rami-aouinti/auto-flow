@@ -183,7 +183,7 @@ onMounted(() => { void loadOrders(); void loadQuotes(); });
           <button v-if="selectedOrder.status==='draft'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'submit')">Einreichen</button>
           <button v-if="selectedOrder.status==='submitted'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'review')">In Prüfung</button>
           <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'accept')">Annehmen</button>
-          <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'reject')" :disabled="!!actionBusy || !rejectReason.trim()">Ablehnen</button>
+          <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy || !rejectReason.trim()" @click="transitionOrder(selectedOrder,'reject')">Ablehnen</button>
           <button v-if="!['completed','cancelled','rejected'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'cancel')">Stornieren</button>
           <button v-if="selectedOrder.status==='accepted'" :disabled="paymentBusy" @click="createPayment(selectedOrder)">Payment Intent erstellen</button>
           <button v-if="selectedOrder.status==='accepted'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'contract-pending')">Vertrag vorbereiten</button>
