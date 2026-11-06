@@ -19,6 +19,8 @@ The service listens on host port **8085** (container port 8080). Every `/api/` r
 | POST | `/api/v1/orders/{id}/contract-pending` | `orders:manage` | Await contract preparation |
 | POST | `/api/v1/orders/{id}/complete` | `orders:manage` | Complete fulfilment |
 
+Every lifecycle `POST` also requires an `Idempotency-Key` header. The key is scoped to tenant and authenticated actor. A repeated key with the same order, target status and reason returns the original response without adding another history row or Outbox event; reusing the key for a different command returns `409 Conflict`.
+
 The full OpenAPI contract is in [docs/openapi.yaml](docs/openapi.yaml). Order creation requires `orders:write`, `offers:read`, `pricing:quote` and `catalog:read` in the caller token because the API validates the references against their owning services.
 
 Example create body:
@@ -48,7 +50,7 @@ The Domain model enforces allowed transitions. The application locks the order r
 
 - Dedicated PostgreSQL login `autoflow_order`; tenant RLS protects orders, history, idempotency and Outbox.
 - Tenant context comes from the verified JWT principal and is set with transaction-local `set_config`; it is never trusted from the JSON body.
-- Creation requires an idempotency key scoped to tenant and authenticated actor. Repeating the same key and Offer/quote/vehicle references replays the stored response before any upstream call; reusing it with different references is rejected. The idempotency fingerprint is based on stable references, not refreshed upstream snapshots.
+- Creation and every lifecycle transition require idempotency keys scoped to tenant and authenticated actor. Repeating the same key and Offer/quote/vehicle references replays the stored response before any upstream call; reusing it with different references is rejected. The idempotency fingerprint is based on stable references, not refreshed upstream snapshots.
 - Offer, quote and vehicle snapshots are immutable through the lifecycle API.
 - Each state change appends an audit row and an integration event in the same transaction.
 - The Outbox publisher has a separate `autoflow_order_publisher` login that can only execute narrow SECURITY DEFINER claim/ack/retry functions. Those functions are owned by a dedicated non-login BYPASSRLS role with access only to the Outbox table; neither runtime login receives BYPASSRLS. Retries stop after ten failed attempts and leave a terminal failed row for operator inspection.
@@ -63,6 +65,7 @@ For a **fresh** PostgreSQL volume, Compose mounts the role and schema scripts in
 ```bash
 docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/120-order-role.sql
 docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/130-order-schema.sql
+docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/140-order-transition-idempotency.sql
 ```
 
 Keycloak imports the realm file only when the `autoflow` realm does not already exist. If you already have that realm, the new client audience, roles and `order-operator` user will not be merged automatically. The order operator also needs the upstream read roles `offers:read`, `pricing:quote` and `catalog:read`. For a disposable local Keycloak container, recreate it with `docker compose up -d --force-recreate keycloak` (this resets its local realm data); otherwise add the `autoflow-order` audience mapper, `orders:read/write/manage` realm roles and the `order-operator` user with `tenant_id=tenant-demo` manually.
