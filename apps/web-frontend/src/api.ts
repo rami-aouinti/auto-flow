@@ -29,6 +29,14 @@ export const catalog = {
   list: (params: Record<string, unknown>) => api.get(`${catalogBase}/api/v1/vehicles`, { params }),
   detail: (id: string) => api.get(`${catalogBase}/api/v1/vehicles/${encodeURIComponent(id)}`),
   manufacturers: () => api.get(`${catalogBase}/api/v1/manufacturers`),
+  createManufacturer: (payload: { code: string; name: string }) => api.post(`${catalogBase}/api/v1/manufacturers`, payload),
+  createModel: (payload: { manufacturerId: string; name: string }) => api.post(`${catalogBase}/api/v1/models`, payload),
+  createGeneration: (payload: Record<string, unknown>) => api.post(`${catalogBase}/api/v1/generations`, payload),
+  createVariant: (payload: Record<string, unknown>) => api.post(`${catalogBase}/api/v1/vehicles`, payload),
+  adminList: (resource: string, limit = 100, offset = 0) => api.get(`${catalogBase}/api/v1/admin/catalog/${resource}`, { params: { limit, offset } }),
+  adminGet: (resource: string, id: string) => api.get(`${catalogBase}/api/v1/admin/catalog/${resource}/${encodeURIComponent(id)}`),
+  adminUpdate: (resource: string, id: string, payload: Record<string, unknown>) => api.patch(`${catalogBase}/api/v1/admin/catalog/${resource}/${encodeURIComponent(id)}`, payload),
+  adminArchive: (resource: string, id: string) => api.delete(`${catalogBase}/api/v1/admin/catalog/${resource}/${encodeURIComponent(id)}`),
 };
 
 export const offers = {
@@ -60,6 +68,8 @@ export const orders = {
 };
 
 export const payments = {
+  list: (limit = 20, offset = 0, filters: Record<string, string> = {}) =>
+    api.get(`${paymentBase}/api/v1/payments`, { params: { limit, offset, ...filters } }),
   create: (orderId: string, key: string) =>
     api.post(`${paymentBase}/api/v1/payments`, { orderId }, { headers: { 'Idempotency-Key': key } }),
   get: (id: string) => api.get(`${paymentBase}/api/v1/payments/${encodeURIComponent(id)}`),
