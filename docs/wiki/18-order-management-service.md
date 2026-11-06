@@ -21,7 +21,7 @@ Implemented capabilities:
 - Narrow SECURITY DEFINER functions for cross-tenant Outbox claim/ack/retry; the service login does not have BYPASSRLS.
 - RabbitMQ topic exchange plus a durable holding queue `autoflow.order.events`, persistent messages, publisher confirms and bounded exponential retry.
 - JWT audience `autoflow-order`, tenant claim and `orders:read`, `orders:write`, `orders:manage` roles.
-- Readiness database check, OpenTelemetry business counters and producer spans.
+- Readiness database check, OpenTelemetry business counters and producer spans that continue the originating HTTP trace through the Outbox into RabbitMQ.
 
 ## Lifecycle
 
