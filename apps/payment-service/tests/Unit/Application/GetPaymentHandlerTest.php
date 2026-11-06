@@ -33,7 +33,12 @@ final class GetPaymentHandlerTest extends TestCase
             }
         };
 
-        self::assertSame($payment, (new GetPaymentHandler($repository))('tenant-1', 'payment-1'));
+        $handler = new GetPaymentHandler($repository);
+        self::assertSame($payment, $handler('tenant-1', 'payment-1'));
+        self::assertSame(
+            ['items' => [], 'total' => 0, 'limit' => 20, 'offset' => 0],
+            $handler->list('tenant-1'),
+        );
     }
 
     public function testItThrowsWhenThePaymentDoesNotExistInTheTenant(): void
