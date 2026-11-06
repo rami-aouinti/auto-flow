@@ -13,7 +13,7 @@ final readonly class ProcessPaymentWebhookHandler
     public function __construct(private Connection $db) {}
 
     /** @param array<string,mixed> $event */
-    public function applyWebhook(array $event): void
+    public function __invoke(array $event): void
     {
         $eventId = $event['id'] ?? null;
         $type = $event['type'] ?? null;
