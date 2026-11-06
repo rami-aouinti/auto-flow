@@ -12,7 +12,7 @@ groups:
           summary: "Prometheus target is down"
           description: "Target {{ $labels.job }} at {{ $labels.instance }} has been unavailable for more than 2 minutes."
       - alert: PrometheusScrapeTargetMissing
-        expr: absent(up{job="rabbitmq"}) or absent(up{job="postgres"}) or absent(up{job="redis"}) or absent(up{job="elasticsearch"}) or absent(up{job="cadvisor"}) or absent(up{job="node-exporter"}) or absent(up{job="notification-service"})
+        expr: absent(up{job="rabbitmq"}) or absent(up{job="postgres"}) or absent(up{job="redis"}) or absent(up{job="elasticsearch"}) or absent(up{job="cadvisor"}) or absent(up{job="node-exporter"}) or absent(up{job="notification-service"}) or absent(up{job="alloy"})
         for: 3m
         labels:
           severity: critical
@@ -74,3 +74,32 @@ groups:
         annotations:
           summary: "Notification deliveries are failing"
           description: "At least one notification delivery is waiting for another retry."
+
+      - alert: HttpServerHigh5xxRate
+        expr: |
+          (
+            sum by (service_name) (rate(http_server_requests_total{http_response_status_code=~"5.."}[5m]))
+            /
+            clamp_min(sum by (service_name) (rate(http_server_requests_total[5m])), 0.001)
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "HTTP 5xx rate is above 10%"
+          description: "Service {{ $labels.service_name }} has returned 5xx responses for more than 10% of requests during the last 5 minutes."
+
+      - alert: HttpServerHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, service_name) (rate(http_server_request_duration_seconds_bucket[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "HTTP p95 latency is above one second"
+          description: "Service {{ $labels.service_name }} has a p95 HTTP latency above one second for 10 minutes."
