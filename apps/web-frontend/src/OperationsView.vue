@@ -119,7 +119,7 @@ async function paymentAction(action: 'capture'|'cancel'|'refund') {
   if (!paymentRecord.value) return;
   paymentBusy.value = true; paymentError.value = '';
   try {
-    const amountMinor = action === 'refund' ? Math.round(Number(refundAmount.value) * 100) : undefined;
+    const amountMinor = action === 'refund' ? Math.round(Number(refundAmount.value)) : undefined;
     const response = await payments.transition(paymentRecord.value.paymentId, action, idempotencyKey(), amountMinor);
     if (response.data?.paymentId) paymentRecord.value = { ...paymentRecord.value, ...response.data };
     else await loadPayment();
@@ -183,14 +183,14 @@ onMounted(() => { void loadOrders(); void loadQuotes(); });
           <button v-if="selectedOrder.status==='draft'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'submit')">Einreichen</button>
           <button v-if="selectedOrder.status==='submitted'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'review')">In Prüfung</button>
           <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'accept')">Annehmen</button>
-          <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'reject')">Ablehnen</button>
+          <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'reject')" :disabled="!!actionBusy || !rejectReason.trim()">Ablehnen</button>
           <button v-if="!['completed','cancelled','rejected'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'cancel')">Stornieren</button>
           <button v-if="selectedOrder.status==='accepted'" :disabled="paymentBusy" @click="createPayment(selectedOrder)">Payment Intent erstellen</button>
           <button v-if="selectedOrder.status==='accepted'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'contract-pending')">Vertrag vorbereiten</button>
           <button v-if="selectedOrder.status==='contract_pending'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'complete')">Abschließen</button>
         </div>
         <p v-if="['submitted','under_review'].includes(selectedOrder.status)" class="ops-inline"><input v-model="rejectReason" maxlength="500" placeholder="Ablehnungsgrund (für Ablehnen)"/></p>
-        <p v-if="actionError" class="ops-error">{{actionError}}</p>
+        <p v-if="actionError" class="ops-error">{{actionError}}</p><p v-if="paymentError" class="ops-error">{{paymentError}}</p>
         <div class="ops-history"><h3>Audit-Verlauf</h3><p v-if="historyLoading" class="ops-empty">Verlauf wird geladen …</p><p v-else-if="historyError" class="ops-error">{{historyError}}</p><p v-else-if="!orderHistory.length" class="ops-empty">Noch keine Ereignisse vorhanden.</p><div v-for="(event,index) in orderHistory" :key="event.eventId || index" class="ops-history-row"><b>{{label(event.eventType || event.toStatus || event.status)}}</b><small>{{date(event.occurredAt || event.createdAt)}} · {{event.actorType || 'Audit'}}</small></div></div>
       </section>
     </template>
@@ -209,7 +209,7 @@ onMounted(() => { void loadOrders(); void loadQuotes(); });
           <button v-if="paymentRecord.status==='authorized'" :disabled="paymentBusy" @click="paymentAction('capture')">Einziehen (Capture)</button>
           <button v-if="['pending','requires_action','authorized'].includes(paymentRecord.status)" :disabled="paymentBusy" @click="paymentAction('cancel')">Payment stornieren</button>
         </div>
-        <div v-if="['captured','partially_refunded'].includes(paymentRecord.status)" class="ops-inline"><input v-model="refundAmount" type="number" min="0.01" step="0.01" placeholder="Erstattungsbetrag in EUR"/><button :disabled="paymentBusy || Number(refundAmount)<=0" @click="paymentAction('refund')">Refund ausführen</button></div>
+        <div v-if="['captured','partially_refunded'].includes(paymentRecord.status)" class="ops-inline"><input v-model="refundAmount" type="number" min="0.01" step="0.01" placeholder="Refund amount (minor units)"/><button :disabled="paymentBusy || Number(refundAmount)<=0" @click="paymentAction('refund')">Refund ausführen</button></div>
         <p class="ops-help">Capture, Cancel und Refund werden vom Payment Service gegen den aktuellen Provider- und Payment-Status validiert. Alle Mutationen verwenden Idempotency Keys.</p>
       </section>
     </template>
