@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use Doctrine\\DBAL\\DriverManager;
-use PhpAmqpLib\\Connection\\AMQPStreamConnection;
-use PhpAmqpLib\\Message\\AMQPMessage;
-use PhpAmqpLib\\Wire\\AMQPTable;
 use OpenTelemetry\\API\\Globals;
 use OpenTelemetry\\API\\Trace\\Propagation\\TraceContextPropagator;
 use OpenTelemetry\\API\\Trace\\SpanKind;
 use OpenTelemetry\\API\\Trace\\StatusCode;
+use PhpAmqpLib\\Connection\\AMQPStreamConnection;
+use PhpAmqpLib\\Message\\AMQPMessage;
+use PhpAmqpLib\\Wire\\AMQPTable;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
