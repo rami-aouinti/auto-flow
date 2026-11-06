@@ -84,7 +84,32 @@ final class OrderApplicationServiceTest extends TestCase
         $this->orders->get($otherTenant, $created['orderId']);
     }
 
-    public function testIdempotencyKeyCannotBeReusedWithDifferentPayload(): void
+    public function testIdempotencyReplayUsesStableReferencesAndIgnoresRefreshedSnapshots(): void
+    {
+        $tenant = Uuid::v7()->toRfc4122();
+        $actor = Uuid::v7()->toRfc4122();
+        $key = 'idempotency-' . Uuid::v7()->toRfc4122();
+        $input = $this->validOrderInput();
+
+        $created = $this->orders->create($tenant, $actor, $input, $key);
+        $input['quoteSnapshot']['monthlyAmount'] = '999.00';
+
+        $replayed = $this->orders->create($tenant, $actor, $input, $key);
+        self::assertSame($created['orderId'], $replayed['orderId']);
+        self::assertSame('329.00', $replayed['quoteSnapshot']['monthlyAmount']);
+
+        $existing = $this->orders->findIdempotentCreate(
+            $tenant,
+            $actor,
+            $key,
+            $input['offerId'],
+            $input['quoteId'],
+            $input['vehicleId'],
+        );
+        self::assertSame($created['orderId'], $existing['orderId']);
+    }
+
+    public function testIdempotencyKeyCannotBeReusedWithDifferentReferences(): void
     {
         $tenant = Uuid::v7()->toRfc4122();
         $actor = Uuid::v7()->toRfc4122();
@@ -92,10 +117,17 @@ final class OrderApplicationServiceTest extends TestCase
         $input = $this->validOrderInput();
 
         $this->orders->create($tenant, $actor, $input, $key);
-        $input['quoteSnapshot']['monthlyAmount'] = '999.00';
+        $input['quoteId'] = Uuid::v7()->toRfc4122();
 
         $this->expectException(IdempotencyConflictException::class);
-        $this->orders->create($tenant, $actor, $input, $key);
+        $this->orders->findIdempotentCreate(
+            $tenant,
+            $actor,
+            $key,
+            $input['offerId'],
+            $input['quoteId'],
+            $input['vehicleId'],
+        );
     }
 
     /** @return array<string, mixed> */
