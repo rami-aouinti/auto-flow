@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application;
 
 use App\Application\Port\PaymentGatewayInterface;
+use App\Application\Port\OrderPaymentContextProviderInterface;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Uuid;
 use DomainException;
@@ -15,6 +16,7 @@ final readonly class PaymentApplicationService
     public function __construct(
         private Connection $db,
         private PaymentGatewayInterface $gateway,
+        private OrderPaymentContextProviderInterface $orderContext,
     ) {
     }
 
@@ -27,12 +29,14 @@ final readonly class PaymentApplicationService
         if (!Uuid::isValid($orderId)) {
             throw new DomainException('orderId must be a valid UUID.');
         }
-        $amount = $input['amountMinor'] ?? null;
-        $currency = strtoupper((string) ($input['currency'] ?? ''));
-        if (!is_int($amount) || $amount < 50 || $amount > 99_999_999 || preg_match('/^[A-Z]{3}$/D', $currency) !== 1) {
-            throw new DomainException('A valid amountMinor and ISO-4217 currency are required.');
-        }
         $this->assertKey($key);
+        // Order owns the immutable commercial snapshot and is the only source of payable amount.
+        $orderContext = $this->orderContext->getPayableContext($tenant, $orderId);
+        $amount = $orderContext['amountMinor'];
+        $currency = strtoupper($orderContext['currency']);
+        if ($amount < 50 || $amount > 99_999_999 || preg_match('/^[A-Z]{3}$/D', $currency) !== 1) {
+            throw new DomainException('The accepted order has an invalid payable amount or currency.');
+        }
         $hash = hash('sha256', json_encode([$orderId, $amount, $currency], JSON_THROW_ON_ERROR));
 
         $this->db->beginTransaction();
