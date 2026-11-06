@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\\Presentation\\Http\\Controller;
+namespace App\Presentation\Http\Controller;
 
-use App\\Application\\IdempotencyConflictException;
-use App\\Application\\OrderApplicationService;
-use App\\Application\\OrderNotFoundException;
-use App\\Domain\\OrderStatus;
-use App\\Infrastructure\\Observability\\OrderMetrics;
-use AutoFlow\\CoreBundle\\Security\\AuthenticatedPrincipal;
+use App\Application\IdempotencyConflictException;
+use App\Application\OrderApplicationService;
+use App\Application\OrderNotFoundException;
+use App\Domain\OrderStatus;
+use App\Infrastructure\Observability\OrderMetrics;
+use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use DomainException;
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
-use Symfony\\Component\\HttpFoundation\\Request;
-use Symfony\\Component\\HttpKernel\\Exception\\AccessDeniedHttpException;
-use Symfony\\Component\\Routing\\Attribute\\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 
 /**
@@ -59,7 +59,7 @@ final readonly class OrderController
             return $this->problem(409, $exception->getMessage());
         } catch (DomainException $exception) {
             return $this->problem(422, $exception->getMessage());
-        } catch (\\JsonException|\\InvalidArgumentException) {
+        } catch (\JsonException|\InvalidArgumentException) {
             return $this->problem(400, 'A valid JSON object is required.');
         } catch (Throwable) {
             return $this->problem(500, 'The order could not be created.');
@@ -236,7 +236,7 @@ final readonly class OrderController
     {
         $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($data) || array_is_list($data)) {
-            throw new \\InvalidArgumentException('A JSON object is required.');
+            throw new \InvalidArgumentException('A JSON object is required.');
         }
         return $data;
     }
