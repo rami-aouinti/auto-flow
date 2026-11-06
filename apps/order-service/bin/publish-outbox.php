@@ -74,11 +74,11 @@ try {
             ]);
             $channel->basic_publish($message, 'autoflow.order.events', $eventType, true);
             $channel->wait_for_pending_acks_returns(5);
-            $db->executeStatement('SELECT public.order_outbox_mark_published(:id)', ['id' => $eventId]);
+            $db->executeQuery('SELECT public.order_outbox_mark_published(:id)', ['id' => $eventId]);
         } catch (Throwable $error) {
             $span->setStatus(StatusCode::STATUS_ERROR);
             $span->recordException($error);
-            $db->executeStatement(
+            $db->executeQuery(
                 'SELECT public.order_outbox_schedule_retry(:id, :error)',
                 ['id' => $eventId, 'error' => mb_substr($error->getMessage(), 0, 500)],
             );
