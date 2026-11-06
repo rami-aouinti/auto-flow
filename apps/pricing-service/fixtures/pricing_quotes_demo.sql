@@ -13,12 +13,20 @@ INSERT INTO pricing_policies (
     minimum_annual_rate_bps, maximum_annual_rate_bps,
     quote_validity_days, calculation_version, created_by, published_at
 ) VALUES (
-    '123e4567-e89b-42d3-a456-426614174000', :'tenant_id', 1, 'active',
-    12, 72, 0, 2000, 7, 'lease-annuity-v1', :'created_by', CURRENT_TIMESTAMP
+    '123e4567-e89b-42d3-a456-426614174000', :'tenant_id', 1, 'draft',
+    12, 72, 0, 2000, 7, 'lease-annuity-v1', :'created_by', NULL
 )
-ON CONFLICT (policy_id) DO UPDATE SET
-    status = 'active',
-    published_at = COALESCE(pricing_policies.published_at, EXCLUDED.published_at);
+ON CONFLICT (policy_id) DO NOTHING;
+
+-- Publish through the allowed draft -> active lifecycle transition.
+-- Existing active fixtures remain unchanged on repeated runs.
+UPDATE pricing_policies
+SET status = 'active',
+    published_at = CURRENT_TIMESTAMP
+WHERE policy_id = '123e4567-e89b-42d3-a456-426614174000'
+  AND tenant_id = :'tenant_id'
+  AND status = 'draft'
+  AND published_at IS NULL;
 
 INSERT INTO pricing_quotes (
     quote_id, tenant_id, created_by, vehicle_id,
