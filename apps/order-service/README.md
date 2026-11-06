@@ -1,6 +1,6 @@
 # AutoFlow Order Management Service
 
-Order Management owns the lifecycle of a vehicle-leasing order. It stores references to Offer, Pricing and Vehicle Catalog records plus immutable snapshots captured at order creation. It does not own vehicle taxonomy, commercial offer policy or pricing calculations.
+Order Management owns the lifecycle of a vehicle-leasing order. The Application layer validates commands and depends on an `OrderRepositoryInterface`; a Doctrine DBAL adapter owns SQL, transactions and tenant-local RLS context. It stores references to Offer, Pricing and Vehicle Catalog records plus immutable snapshots captured at order creation. It does not own vehicle taxonomy, commercial offer policy or pricing calculations.
 
 ## Local API
 
