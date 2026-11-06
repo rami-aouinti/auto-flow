@@ -12,7 +12,7 @@ type StripePaymentElement = { mount(target: HTMLElement): void; unmount(): void 
 type StripeElements = { create(type: 'payment'): StripePaymentElement; submit(): Promise<{ error?: { message: string } }> };
 type StripeClient = {
   elements(options: { clientSecret: string; appearance?: Record<string, unknown> }): StripeElements;
-  confirmPayment(options: { elements: StripeElements; confirmParams: { return_url: string }; redirect: 'if_required' }): Promise<{ error?: { message: string }; paymentIntent?: { id: string; status: string } }>;
+  confirmPayment(options: { elements: StripeElements; clientSecret: string; confirmParams: { return_url: string }; redirect: 'if_required' }): Promise<{ error?: { message: string }; paymentIntent?: { id: string; status: string } }>;
 };
 declare global { interface Window { Stripe?: (publishableKey: string) => StripeClient } }
 
@@ -183,9 +183,12 @@ async function confirmCardPayment() {
   try {
     const submitted = await stripeElements.submit();
     if (submitted.error) { checkoutError.value = submitted.error.message; return; }
+    const returnUrl = new URL(window.location.href);
+    returnUrl.searchParams.set('paymentId', paymentRecord.value.paymentId);
     const result = await stripeClient.confirmPayment({
       elements: stripeElements,
-      confirmParams: { return_url: window.location.href },
+      clientSecret: paymentRecord.value.clientSecret!,
+      confirmParams: { return_url: returnUrl.toString() },
       redirect: 'if_required',
     });
     if (result.error) {
@@ -234,7 +237,17 @@ function moneyMinor(amount: number, currency: string) {
 }
 function label(value?: string) { return (value || '–').replaceAll('_', ' '); }
 function date(value?: string) { return value ? new Date(value).toLocaleString('de-DE') : '–'; }
-onMounted(() => { void loadOrders(); void loadQuotes(); void loadPayments(); });
+onMounted(() => {
+  const returnedPaymentId = new URLSearchParams(window.location.search).get('paymentId');
+  if (returnedPaymentId) {
+    paymentIdInput.value = returnedPaymentId;
+    tab.value = 'payments';
+    void loadPayment();
+  }
+  void loadOrders();
+  void loadQuotes();
+  void loadPayments();
+});
 </script>
 
 <template>
