@@ -59,6 +59,7 @@ final class OrderApplicationServiceTest extends TestCase
             $actor,
             $created['orderId'],
             OrderStatus::SUBMITTED,
+            'submit-' . Uuid::v7()->toRfc4122(),
         );
         self::assertSame('submitted', $submitted['status']);
 
