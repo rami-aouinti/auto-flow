@@ -21,7 +21,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
-#[Route('/api/v1/orders')]
+#[Route('/api/v1/orders', requirements: ['orderId' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'])]
 final readonly class OrderController
 {
     public function __construct(private OrderApplicationService $orders, private OrderMetrics $metrics)
@@ -79,7 +79,7 @@ final readonly class OrderController
         }
     }
 
-    #[Route('/{orderId}', name: 'orders_get', requirements: ['orderId' => '[0-9a-fA-F-]{32,36}'], methods: ['GET'])]
+    #[Route('/{orderId}', name: 'orders_get', methods: ['GET'])]
     public function get(Request $request, string $orderId): JsonResponse
     {
         try {
