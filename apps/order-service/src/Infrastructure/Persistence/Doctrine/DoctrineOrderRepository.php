@@ -71,7 +71,11 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
      */
     public function create(string $tenantId, string $actor, array $input, string $idempotencyKey): array
     {
-        $requestHash = hash('sha256', json_encode([\n            'offerId' => $input['offerId'],\n            'quoteId' => $input['quoteId'],\n            'vehicleId' => $input['vehicleId'],\n        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+        $requestHash = hash('sha256', json_encode([
+            'offerId' => $input['offerId'],
+            'quoteId' => $input['quoteId'],
+            'vehicleId' => $input['vehicleId'],
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
 
         return $this->connection->transactional(
             function (Connection $db) use ($tenantId, $actor, $input, $idempotencyKey, $requestHash): array {
