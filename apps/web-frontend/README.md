@@ -44,3 +44,14 @@ The Payment service currently exposes payment retrieval by Payment UUID but no t
 Copy `.env.example` to your local frontend environment when running Vite outside Compose. The API base variables default to same-origin prefixes. Proxy targets are only used by the local Vite development server.
 
 This Vite server is for local development only. Production should serve the built static assets behind TLS and route the five API prefixes through the authenticated ingress/reverse proxy. Do not expose internal service ports directly to the public internet.
+
+
+## Stripe Checkout and Payment History
+
+Set `VITE_STRIPE_PUBLISHABLE_KEY` to a Stripe **publishable** key (`pk_test_...` locally or `pk_live_...` in production). The operations page loads Stripe.js and mounts the Payment Element using the PaymentIntent client secret returned by Payment Service. Card data is submitted directly to Stripe; it is never sent to or stored by AutoFlow. The PaymentIntent uses manual capture, so a confirmed payment may become `authorized` and still requires the existing capture operation. Configure the Stripe webhook endpoint and signing secret on Payment Service for authoritative asynchronous status updates. Never expose `STRIPE_SECRET_KEY` in a `VITE_*` variable.
+
+Payment History is served by `GET /api/v1/payments?limit=20&offset=0` (optional `orderId` and `status` filters). The endpoint requires `payments:read`, scopes every query to the authenticated tenant, applies PostgreSQL row-level security, and omits the client secret from history records.
+
+## Catalogue Administration
+
+Open `http://localhost:3000/admin-catalog.html` and sign in with a Keycloak principal that has `catalog:manage`. The page supports creating, listing, editing and archiving manufacturers, models, generations and vehicle variants. Creation uses the catalogue's existing registration endpoints; administration uses `/api/v1/admin/catalog/{resource}`. Archive is intentionally a soft-delete so historical offer/order snapshots and references remain valid. The catalogue API remains the authorization boundary.
