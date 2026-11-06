@@ -41,7 +41,7 @@ jobs:
           php-version: "8.4"
           extensions: curl, mbstring, pdo_pgsql, sockets, dom, xml, xmlwriter
           coverage: none
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: apps/notification-service/vendor
           key: notification-composer-${{ runner.os }}-${{ hashFiles('apps/notification-service/composer.json') }}
