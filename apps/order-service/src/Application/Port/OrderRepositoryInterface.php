@@ -29,6 +29,7 @@ interface OrderRepositoryInterface
         string $actor,
         string $orderId,
         OrderStatus $target,
+        string $idempotencyKey,
         ?string $reason = null,
     ): array;
 
