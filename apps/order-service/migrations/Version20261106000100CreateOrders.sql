@@ -166,6 +166,9 @@ ALTER FUNCTION public.order_outbox_schedule_retry(UUID, VARCHAR) OWNER TO autofl
 REVOKE ALL ON FUNCTION public.order_outbox_claim() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.order_outbox_mark_published(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.order_outbox_schedule_retry(UUID, VARCHAR) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.order_outbox_claim() TO autoflow_order;
-GRANT EXECUTE ON FUNCTION public.order_outbox_mark_published(UUID) TO autoflow_order;
-GRANT EXECUTE ON FUNCTION public.order_outbox_schedule_retry(UUID, VARCHAR) TO autoflow_order;
+REVOKE ALL ON FUNCTION public.order_outbox_claim() FROM autoflow_order;
+REVOKE ALL ON FUNCTION public.order_outbox_mark_published(UUID) FROM autoflow_order;
+REVOKE ALL ON FUNCTION public.order_outbox_schedule_retry(UUID, VARCHAR) FROM autoflow_order;
+GRANT EXECUTE ON FUNCTION public.order_outbox_claim() TO autoflow_order_publisher;
+GRANT EXECUTE ON FUNCTION public.order_outbox_mark_published(UUID) TO autoflow_order_publisher;
+GRANT EXECUTE ON FUNCTION public.order_outbox_schedule_retry(UUID, VARCHAR) TO autoflow_order_publisher;
