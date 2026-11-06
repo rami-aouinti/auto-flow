@@ -85,12 +85,6 @@ jobs:
           RABBITMQ_TEST_USER: autoflow
           RABBITMQ_TEST_PASSWORD: autoflow
         run: vendor/bin/phpunit --configuration phpunit.xml tests/Integration/Offer
-      - name: Run Order PostgreSQL integration tests
-        env:
-          ORDER_TEST_DATABASE_URL: postgresql://autoflow_order:local-only-order-password@127.0.0.1:5432/autoflow
-        run: |
-          cd apps/order-service
-          vendor/bin/phpunit --configuration phpunit.xml.dist tests/Integration/Order
       - name: Collect RabbitMQ diagnostics on failure
         if: failure()
         run: |
@@ -101,6 +95,12 @@ jobs:
         run: |
           composer install --working-dir=apps/order-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/order-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Run Order PostgreSQL integration tests
+        env:
+          ORDER_TEST_DATABASE_URL: postgresql://autoflow_order:local-only-order-password@127.0.0.1:5432/autoflow
+        run: |
+          cd apps/order-service
+          vendor/bin/phpunit --configuration phpunit.xml.dist tests/Integration/Order
       - name: Build instrumented Symfony services
         run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher
       - name: Validate development OpenAPI generation
