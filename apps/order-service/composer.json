@@ -21,6 +21,7 @@
     "symfony/framework-bundle": "7.4.*",
     "symfony/http-client": "7.4.*",
     "symfony/psr-http-message-bridge": "7.4.*",
+    "symfony/uid": "7.4.*",
     "symfony/yaml": "7.4.*"
   },
   "repositories": [{"type":"path","url":"../../packages/core-bundle","options":{"symlink":false}}],
