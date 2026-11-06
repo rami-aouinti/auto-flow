@@ -59,6 +59,10 @@ CREATE TABLE IF NOT EXISTS payment_outbox (
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     published_at TIMESTAMPTZ NULL,
     attempts INTEGER NOT NULL DEFAULT 0,
+    next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    locked_until TIMESTAMPTZ NULL,
+    failed_at TIMESTAMPTZ NULL,
+    last_error VARCHAR(500) NULL,
     FOREIGN KEY (tenant_id, payment_id) REFERENCES payments (tenant_id, payment_id) ON DELETE RESTRICT
 );
 
@@ -77,3 +81,78 @@ $$;
 GRANT SELECT, INSERT, UPDATE ON payments TO autoflow_payment;
 GRANT SELECT, INSERT ON payment_idempotency, payment_refunds, payment_outbox TO autoflow_payment;
 GRANT SELECT, INSERT ON payment_webhook_events TO autoflow_payment;
+
+ALTER TABLE payment_outbox ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE payment_outbox ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ NULL;
+ALTER TABLE payment_outbox ADD COLUMN IF NOT EXISTS failed_at TIMESTAMPTZ NULL;
+ALTER TABLE payment_outbox ADD COLUMN IF NOT EXISTS last_error VARCHAR(500) NULL;
+CREATE INDEX IF NOT EXISTS idx_payment_outbox_pending
+    ON payment_outbox (next_attempt_at, occurred_at)
+    WHERE published_at IS NULL AND failed_at IS NULL;
+
+CREATE OR REPLACE FUNCTION public.payment_outbox_claim()
+RETURNS TABLE (event_id UUID, event_type VARCHAR(100), payload JSONB, attempts INTEGER)
+LANGUAGE sql SECURITY DEFINER
+SET search_path = pg_catalog, public
+SET row_security = off
+AS $function$
+    WITH candidate AS (
+        SELECT o.event_id FROM public.payment_outbox o
+        WHERE o.published_at IS NULL AND o.failed_at IS NULL
+          AND o.next_attempt_at <= CURRENT_TIMESTAMP
+          AND (o.locked_until IS NULL OR o.locked_until < CURRENT_TIMESTAMP)
+        ORDER BY o.occurred_at FOR UPDATE SKIP LOCKED LIMIT 1
+    )
+    UPDATE public.payment_outbox o
+    SET locked_until = CURRENT_TIMESTAMP + INTERVAL '30 seconds',
+        attempts = o.attempts + 1
+    FROM candidate c
+    WHERE o.event_id = c.event_id
+    RETURNING o.event_id, o.event_type, o.payload, o.attempts
+$function$;
+
+CREATE OR REPLACE FUNCTION public.payment_outbox_mark_published(p_event_id UUID)
+RETURNS VOID LANGUAGE sql SECURITY DEFINER
+SET search_path = pg_catalog, public
+SET row_security = off
+AS $function$
+    UPDATE public.payment_outbox
+    SET published_at = CURRENT_TIMESTAMP, locked_until = NULL, last_error = NULL
+    WHERE event_id = p_event_id
+$function$;
+
+CREATE OR REPLACE FUNCTION public.payment_outbox_schedule_retry(p_event_id UUID, p_error VARCHAR(500))
+RETURNS VOID LANGUAGE sql SECURITY DEFINER
+SET search_path = pg_catalog, public
+SET row_security = off
+AS $function$
+    UPDATE public.payment_outbox
+    SET locked_until = NULL,
+        failed_at = CASE WHEN attempts >= 10 THEN CURRENT_TIMESTAMP ELSE NULL END,
+        next_attempt_at = CASE
+            WHEN attempts >= 10 THEN next_attempt_at
+            ELSE CURRENT_TIMESTAMP + make_interval(secs => LEAST(300, POWER(2, LEAST(attempts, 8))::integer))
+        END,
+        last_error = p_error
+    WHERE event_id = p_event_id
+$function$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'autoflow_payment_outbox_owner') THEN
+        CREATE ROLE autoflow_payment_outbox_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE BYPASSRLS;
+    END IF;
+END
+$$;
+ALTER ROLE autoflow_payment_outbox_owner NOLOGIN BYPASSRLS;
+GRANT USAGE, CREATE ON SCHEMA public TO autoflow_payment_outbox_owner;
+GRANT SELECT, UPDATE ON payment_outbox TO autoflow_payment_outbox_owner;
+ALTER FUNCTION public.payment_outbox_claim() OWNER TO autoflow_payment_outbox_owner;
+ALTER FUNCTION public.payment_outbox_mark_published(UUID) OWNER TO autoflow_payment_outbox_owner;
+ALTER FUNCTION public.payment_outbox_schedule_retry(UUID, VARCHAR) OWNER TO autoflow_payment_outbox_owner;
+REVOKE ALL ON FUNCTION public.payment_outbox_claim() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.payment_outbox_mark_published(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.payment_outbox_schedule_retry(UUID, VARCHAR) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.payment_outbox_claim() TO autoflow_payment_publisher;
+GRANT EXECUTE ON FUNCTION public.payment_outbox_mark_published(UUID) TO autoflow_payment_publisher;
+GRANT EXECUTE ON FUNCTION public.payment_outbox_schedule_retry(UUID, VARCHAR) TO autoflow_payment_publisher;
