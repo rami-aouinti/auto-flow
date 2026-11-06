@@ -289,9 +289,20 @@ final readonly class PaymentApplicationService
     /** @param array<string,mixed> $payload */
     private function recordEvent(string $tenant, string $paymentId, string $type, array $payload): void
     {
+        $eventId = Uuid::v7()->toRfc4122();
+        $envelope = [
+            'eventId' => $eventId,
+            'eventType' => $type,
+            'schemaVersion' => 1,
+            'producer' => 'payment-service',
+            'aggregate' => ['type' => 'Payment', 'id' => $paymentId],
+            'tenantId' => $tenant,
+            'occurredAt' => (new \\DateTimeImmutable('now', new \\DateTimeZone('UTC')))->format(DATE_ATOM),
+            'data' => $payload,
+        ];
         $this->db->insert('payment_outbox', [
-            'event_id'=>Uuid::v7()->toRfc4122(),'tenant_id'=>$tenant,'payment_id'=>$paymentId,
-            'event_type'=>$type,'payload'=>json_encode($payload, JSON_THROW_ON_ERROR),
+            'event_id'=>$eventId,'tenant_id'=>$tenant,'payment_id'=>$paymentId,
+            'event_type'=>$type,'payload'=>json_encode($envelope, JSON_THROW_ON_ERROR),
         ]);
     }
 
