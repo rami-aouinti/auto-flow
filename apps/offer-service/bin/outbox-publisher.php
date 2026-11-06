@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\\Infrastructure\\Messaging\\OutboxPublisher;
-use App\\Infrastructure\\Persistence\\PostgresConnection;
-use PhpAmqpLib\\Connection\\AMQPStreamConnection;
+use App\Infrastructure\Messaging\OutboxPublisher;
+use App\Infrastructure\Persistence\PostgresConnection;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -82,13 +82,12 @@ while (true) {
             error_log('[Offer Outbox] RabbitMQ connection established.');
         }
 
-        // php-amqplib requires the application loop to service heartbeats
-        // while it is idle; otherwise RabbitMQ closes this long-lived socket.
+        // Service heartbeats while the publisher is idle.
         $rabbitConnection->checkHeartBeat();
 
         $published = $publisher->publishNext();
 
-        // Also service heartbeats after a potentially blocking publisher confirm.
+        // A publisher confirm may block; service heartbeats again afterwards.
         $rabbitConnection->checkHeartBeat();
 
         if (!$published) {
