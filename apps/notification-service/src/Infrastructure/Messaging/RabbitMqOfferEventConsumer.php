@@ -79,7 +79,7 @@ final readonly class RabbitMqOfferEventConsumer
                 $dead = ($attempt + 1) >= $this->maxAttempts;
                 if ($eventId !== 'unknown') {
                     $persistedAttempts = $this->deliveries->markFailed($eventId, $exception->getMessage(), $dead);
-                    $dead = $persistedAttempts >= $this->maxAttempts;
+                    $dead = max($attempt + 1, $persistedAttempts) >= $this->maxAttempts;
                 }
                 $this->logger->error('Offer notification delivery failed.', [
                     'event_id' => $eventId,
