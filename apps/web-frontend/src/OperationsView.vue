@@ -209,7 +209,7 @@ onMounted(() => { void loadOrders(); void loadQuotes(); });
           <button v-if="paymentRecord.status==='authorized'" :disabled="paymentBusy" @click="paymentAction('capture')">Einziehen (Capture)</button>
           <button v-if="['pending','requires_action','authorized'].includes(paymentRecord.status)" :disabled="paymentBusy" @click="paymentAction('cancel')">Payment stornieren</button>
         </div>
-        <div v-if="['captured','partially_refunded'].includes(paymentRecord.status)" class="ops-inline"><input v-model="refundAmount" type="number" min="0.01" step="0.01" placeholder="Refund amount (minor units)"/><button :disabled="paymentBusy || Number(refundAmount)<=0" @click="paymentAction('refund')">Refund ausführen</button></div>
+        <div v-if="['captured','partially_refunded'].includes(paymentRecord.status)" class="ops-inline"><input v-model="refundAmount" type="number" min="1" step="1" placeholder="Refund amount (minor units)"/><button :disabled="paymentBusy || Number(refundAmount)<=0" @click="paymentAction('refund')">Refund ausführen</button></div>
         <p class="ops-help">Capture, Cancel und Refund werden vom Payment Service gegen den aktuellen Provider- und Payment-Status validiert. Alle Mutationen verwenden Idempotency Keys.</p>
       </section>
     </template>
