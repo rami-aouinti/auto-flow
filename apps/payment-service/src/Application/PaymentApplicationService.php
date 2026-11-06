@@ -29,6 +29,9 @@ final readonly class PaymentApplicationService
         if (!Uuid::isValid($orderId)) {
             throw new DomainException('orderId must be a valid UUID.');
         }
+        if (array_diff(array_keys($input), ['orderId']) !== []) {
+            throw new DomainException('Only orderId is accepted; amount and currency are resolved from Order Service.');
+        }
         $this->assertKey($key);
         // Idempotent retries must still return the original result after Order advances
         // from accepted to contract_pending.
