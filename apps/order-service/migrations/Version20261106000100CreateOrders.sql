@@ -89,6 +89,7 @@ END
 $$;
 
 GRANT SELECT, INSERT ON orders TO autoflow_order;
+REVOKE UPDATE ON orders FROM autoflow_order;
 GRANT UPDATE (status, updated_at, submitted_at, decided_at, decision_reason) ON orders TO autoflow_order;
 GRANT SELECT, INSERT ON order_history, order_outbox, order_idempotency TO autoflow_order;
 GRANT USAGE, SELECT ON SEQUENCE order_history_history_id_seq TO autoflow_order;
