@@ -2,13 +2,14 @@ package orders
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log"
 	"os"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.temporal.io/api/enums/v1"
+	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
 )
 
@@ -47,7 +48,7 @@ func consumeOnce(ctx context.Context, temporal client.Client) error {
 	if err := channel.ExchangeDeclare("autoflow.order.events", "topic", true, false, false, false, nil); err != nil {
 		return err
 	}
-	queue, err := channel.QueueDeclare("autoflow.order.workflow", true, false, false, false, nil)
+	if err := channel.ExchangeDeclare("autoflow.order.workflow.dlx", "direct", true, false, false, false, nil); err != nil {\n\t\treturn err\n\t}\n\tif _, err := channel.QueueDeclare("autoflow.order.workflow.dead", true, false, false, false, nil); err != nil {\n\t\treturn err\n\t}\n\tif err := channel.QueueBind("autoflow.order.workflow.dead", "malformed", "autoflow.order.workflow.dlx", false, nil); err != nil {\n\t\treturn err\n\t}\n\tqueue, err := channel.QueueDeclare("autoflow.order.workflow", true, false, false, false, amqp.Table{"x-dead-letter-exchange": "autoflow.order.workflow.dlx", "x-dead-letter-routing-key": "malformed"})
 	if err != nil {
 		return err
 	}
@@ -98,7 +99,7 @@ func forwardToTemporal(ctx context.Context, temporal client.Client, event Event)
 	input := WorkflowInput{TenantID: event.TenantID, OrderID: event.Aggregate.ID}
 	if event.EventType == "OrderSubmitted" {
 		_, err := temporal.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
-			ID: id, TaskQueue: env("TEMPORAL_TASK_QUEUE", "autoflow-order-workflows"),
+			ID: id, TaskQueue: env("TEMPORAL_TASK_QUEUE", "autoflow-order-workflows"),\n\t\t\tWorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
 		}, OrderLifecycleWorkflow, input)
 		if err != nil && !isAlreadyStarted(err) {
 			return err
@@ -112,7 +113,7 @@ func isAlreadyStarted(err error) bool {
 	if err == nil {
 		return false
 	}
-	var alreadyStarted *client.WorkflowExecutionAlreadyStartedError
+	var alreadyStarted *serviceerror.WorkflowExecutionAlreadyStarted
 	return errors.As(err, &alreadyStarted)
 }
 
