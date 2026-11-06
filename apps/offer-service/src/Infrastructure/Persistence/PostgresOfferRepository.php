@@ -370,7 +370,7 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
             OfferStatus::Rejected => ['offer.rejected', $offer->rejectedAt() ?? new DateTimeImmutable(), 'user', $offer->createdBy()],
             OfferStatus::Expired => ['offer.expired', $offer->expiredAt() ?? new DateTimeImmutable(), 'system', null],
             OfferStatus::Withdrawn => ['offer.withdrawn', new DateTimeImmutable(), 'user', $offer->createdBy()],
-            OfferStatus::Draft => throw new \\LogicException('A persisted offer cannot transition back to draft.'),
+            OfferStatus::Draft => throw new \LogicException('A persisted offer cannot transition back to draft.'),
         };
     }
 
