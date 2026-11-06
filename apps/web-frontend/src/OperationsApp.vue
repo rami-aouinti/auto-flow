@@ -13,6 +13,7 @@ const keycloak = inject<Keycloak>('keycloak');
       <nav>
         <a href="/">Fahrzeuge</a>
         <a href="/operations.html">Aufträge & Payments</a>
+        <a href="/admin-catalog.html">Katalogverwaltung</a>
       </nav>
       <div class="account">
         <i></i>{{ keycloak?.tokenParsed?.preferred_username || 'Account' }}
