@@ -75,7 +75,7 @@ final readonly class OrderController
                     $tenantId,
                     $this->bearerToken($request),
                 );
-            } catch (OrderUpstreamUnavailableException $exception) {
+            } catch (OrderReferenceValidationException|OrderUpstreamAuthorizationException|OrderUpstreamUnavailableException $exception) {
                 // A concurrent first request may have committed while this request was calling upstream.
                 $existing = $this->orders->findIdempotentCreate(
                     $tenantId,
