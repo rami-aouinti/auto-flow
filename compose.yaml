@@ -300,6 +300,7 @@ services:
       - ./apps/offer-service/migrations/Version20261104000400CreateOffers.sql:/docker-entrypoint-initdb.d/60-offers.sql:ro
       - ./apps/offer-service/migrations/Version20261104000500CreateOfferOutbox.sql:/docker-entrypoint-initdb.d/70-offer-outbox.sql:ro
       - ./apps/offer-service/migrations/Version20261104000600AddOfferLifecycleTimestamps.sql:/docker-entrypoint-initdb.d/80-offer-lifecycle-timestamps.sql:ro
+      - ./apps/offer-service/migrations/Version20261106000700CreateOfferAuditEvents.sql:/docker-entrypoint-initdb.d/85-offer-audit.sql:ro
       - ./apps/vehicle-catalog-service/migrations/00_create_catalog_database_role.sql:/docker-entrypoint-initdb.d/090-catalog-role.sql:ro
       - ./apps/vehicle-catalog-service/migrations/Version20261105000100CreateVehicleCatalog.sql:/docker-entrypoint-initdb.d/100-catalog-schema.sql:ro
       - ./apps/vehicle-catalog-service/fixtures/vehicle_catalog_demo.sql:/docker-entrypoint-initdb.d/110-catalog-demo.sql:ro
