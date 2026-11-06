@@ -82,7 +82,8 @@ BEGIN
 END
 $$;
 
-GRANT SELECT, INSERT, UPDATE ON orders, order_history, order_outbox, order_idempotency TO autoflow_order;
+GRANT SELECT, INSERT, UPDATE ON orders TO autoflow_order;
+GRANT SELECT, INSERT ON order_history, order_outbox, order_idempotency TO autoflow_order;
 GRANT USAGE, SELECT ON SEQUENCE order_history_history_id_seq TO autoflow_order;
 
 -- SECURITY DEFINER functions let the isolated publisher claim rows across tenants
