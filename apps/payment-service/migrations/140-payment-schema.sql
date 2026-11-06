@@ -31,6 +31,18 @@ CREATE TABLE IF NOT EXISTS payment_idempotency (
     FOREIGN KEY (tenant_id, payment_id) REFERENCES payments (tenant_id, payment_id) ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS payment_operation_idempotency (
+    tenant_id VARCHAR(128) NOT NULL,
+    actor VARCHAR(255) NOT NULL,
+    idempotency_key VARCHAR(128) NOT NULL,
+    request_hash CHAR(64) NOT NULL,
+    payment_id UUID NOT NULL,
+    response_json JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (tenant_id, actor, idempotency_key),
+    FOREIGN KEY (tenant_id, payment_id) REFERENCES payments (tenant_id, payment_id) ON DELETE RESTRICT
+);
+
 CREATE TABLE IF NOT EXISTS payment_refunds (
     tenant_id VARCHAR(128) NOT NULL,
     refund_id UUID NOT NULL,
@@ -69,7 +81,7 @@ CREATE TABLE IF NOT EXISTS payment_outbox (
 DO $$
 DECLARE t TEXT;
 BEGIN
-    FOREACH t IN ARRAY ARRAY['payments','payment_idempotency','payment_refunds','payment_outbox'] LOOP
+    FOREACH t IN ARRAY ARRAY['payments','payment_idempotency','payment_operation_idempotency','payment_refunds','payment_outbox'] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', t);
         EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t);
         EXECUTE format('DROP POLICY IF EXISTS %I ON %I', t || '_tenant_isolation', t);
@@ -79,7 +91,7 @@ END
 $$;
 
 GRANT SELECT, INSERT, UPDATE ON payments TO autoflow_payment;
-GRANT SELECT, INSERT ON payment_idempotency, payment_refunds, payment_outbox TO autoflow_payment;
+GRANT SELECT, INSERT ON payment_idempotency, payment_operation_idempotency, payment_refunds, payment_outbox TO autoflow_payment;
 GRANT SELECT, INSERT ON payment_webhook_events TO autoflow_payment;
 
 ALTER TABLE payment_outbox ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP;
