@@ -53,15 +53,15 @@ final readonly class OrderApplicationService
                 $this->setTenant($db, $tenantId);
                 $db->executeQuery(
                     'SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))',
-                    ['lock_key' => $tenantId . ':' . $idempotencyKey],
+                    ['lock_key' => $tenantId . ':' . $actor . ':' . $idempotencyKey],
                 );
                 $existing = $db->fetchAssociative(
                     <<<'SQL'
                         SELECT request_hash, response_json
                         FROM order_idempotency
-                        WHERE tenant_id = :tenant AND idempotency_key = :key
+                        WHERE tenant_id = :tenant AND actor = :actor AND idempotency_key = :key
                         SQL,
-                    ['tenant' => $tenantId, 'key' => $idempotencyKey],
+                    ['tenant' => $tenantId, 'actor' => $actor, 'key' => $idempotencyKey],
                 );
                 if (is_array($existing)) {
                     if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
@@ -108,10 +108,10 @@ final readonly class OrderApplicationService
                 $db->executeStatement(
                     <<<'SQL'
                         INSERT INTO order_idempotency (
-                            tenant_id, idempotency_key, request_hash, order_id, response_json, created_at
-                        ) VALUES (:tenant, :key, :hash, :id, CAST(:response AS JSONB), :now)
+                            tenant_id, actor, idempotency_key, request_hash, order_id, response_json, created_at
+                        ) VALUES (:tenant, :actor, :key, :hash, :id, CAST(:response AS JSONB), :now)
                         SQL,
-                    ['tenant' => $tenantId, 'key' => $idempotencyKey, 'hash' => $requestHash, 'id' => $order->id,
+                    ['tenant' => $tenantId, 'actor' => $actor, 'key' => $idempotencyKey, 'hash' => $requestHash, 'id' => $order->id,
                      'response' => json_encode($response, JSON_THROW_ON_ERROR), 'now' => $now],
                 );
                 return $response;
