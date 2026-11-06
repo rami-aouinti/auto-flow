@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze PHP
+    name: Analyze Go worker
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -23,16 +23,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: php
+          languages: go
+          build-mode: manual
           queries: security-extended
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - name: Build Go worker for CodeQL
+        working-directory: apps/order-workflow-worker
+        run: |
+          go mod tidy
+          go build ./...
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: /language:php
+          category: /language:go
