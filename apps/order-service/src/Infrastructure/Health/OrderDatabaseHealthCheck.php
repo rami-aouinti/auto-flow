@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\\Infrastructure\\Health;
+namespace App\Infrastructure\Health;
 
-use AutoFlow\\CoreBundle\\Health\\HealthCheckInterface;
-use AutoFlow\\CoreBundle\\Health\\HealthCheckResult;
-use Doctrine\\DBAL\\Connection;
+use AutoFlow\CoreBundle\Health\HealthCheckInterface;
+use AutoFlow\CoreBundle\Health\HealthCheckResult;
+use Doctrine\DBAL\Connection;
 use Throwable;
 
 final readonly class OrderDatabaseHealthCheck implements HealthCheckInterface
