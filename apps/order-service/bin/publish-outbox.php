@@ -39,7 +39,11 @@ $connect = static function (): array {
 [$connection, $channel] = $connect();
 $meter = Globals::meterProvider()->getMeter('autoflow.order-outbox-publisher', '1.0.0');
 $publishedEvents = $meter->createCounter('order_outbox.published', '{event}', 'Outbox events published');
-$publishFailures = $meter->createCounter('order_outbox.publish_failures', '{attempt}', 'Outbox publication attempts that failed');
+$publishFailures = $meter->createCounter(
+    'order_outbox.publish_failures',
+    '{attempt}',
+    'Outbox publication attempts that failed',
+);
 
 try {
     while (true) {
