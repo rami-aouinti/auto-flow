@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
         input: {
           main: resolve(process.cwd(), 'index.html'),
           operations: resolve(process.cwd(), 'operations.html'),
+          adminCatalog: resolve(process.cwd(), 'admin-catalog.html'),
         },
       },
     },
