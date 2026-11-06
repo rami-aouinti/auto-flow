@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\Tests\Integration\Offer;
+namespace AutoFlow\\Tests\\Integration\\Offer;
 
-use App\Domain\ValueObject\OfferId;
-use App\Infrastructure\Messaging\OutboxPublisher;
-use App\Infrastructure\Persistence\PostgresConnection;
+use App\\Domain\\ValueObject\\OfferId;
+use App\\Infrastructure\\Messaging\\OutboxPublisher;
+use App\\Infrastructure\\Persistence\\PostgresConnection;
 use DateTimeImmutable;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PHPUnit\Framework\TestCase;
+use PhpAmqpLib\\Connection\\AMQPStreamConnection;
+use PHPUnit\\Framework\\TestCase;
 
 final class OutboxPublisherIntegrationTest extends TestCase
 {
-    private \PDO $database;
+    private \\PDO $database;
     private AMQPStreamConnection $rabbitConnection;
 
     protected function setUp(): void
@@ -55,11 +55,14 @@ final class OutboxPublisherIntegrationTest extends TestCase
         }
     }
 
-    public function testPublisherMarksEventOnlyAfterRabbitMqConfirmation(): void
+    public function testPublisherConfirmsAndRoutesEventBeforeMarkingOutboxRowAsPublished(): void
     {
         $eventId = (string) OfferId::generate();
         $tenantId = 'it-broker-' . bin2hex(random_bytes(6));
         $offerId = (string) OfferId::generate();
+        $resourceSuffix = bin2hex(random_bytes(8));
+        $testExchange = 'autoflow.offer.test.' . $resourceSuffix;
+        $testQueue = 'autoflow.offer.test.' . $resourceSuffix;
         $occurredAt = new DateTimeImmutable();
         $envelope = [
             'eventId' => $eventId,
@@ -89,23 +92,44 @@ final class OutboxPublisherIntegrationTest extends TestCase
         ]);
 
         $channel = $this->rabbitConnection->channel();
+
         try {
             $publisher = new OutboxPublisher(
                 new PostgresConnection((string) getenv('OFFER_TEST_DATABASE_URL')),
                 $channel,
+                $testExchange,
+                $testQueue,
             );
 
             self::assertTrue($publisher->publishNext());
+
+            // Verify that the confirmed event was actually routed to this test's
+            // isolated queue. Never publish integration-test messages to offer.events.
+            $queue = $channel->queue_declare($testQueue, false, true, false, false);
+            self::assertSame(1, $queue[1], 'The event must be present in the isolated test queue.');
 
             $published = $this->database->prepare(
                 'SELECT published_at FROM offer_outbox_events WHERE event_id = :event_id',
             );
             $published->execute(['event_id' => $eventId]);
 
-            self::assertNotNull($published->fetchColumn());
+            self::assertNotFalse($published->fetchColumn(), 'The outbox row must be marked only after broker confirmation.');
         } finally {
-            if ($channel->is_open()) {
-                $channel->close();
+            try {
+                if ($channel->is_open()) {
+                    $channel->queue_delete($testQueue);
+                    $channel->exchange_delete($testExchange);
+                }
+            } finally {
+                if ($channel->is_open()) {
+                    $channel->close();
+                }
+
+                // Integration-test rows must not accumulate in the shared database.
+                $delete = $this->database->prepare(
+                    'DELETE FROM offer_outbox_events WHERE event_id = :event_id',
+                );
+                $delete->execute(['event_id' => $eventId]);
             }
         }
     }
