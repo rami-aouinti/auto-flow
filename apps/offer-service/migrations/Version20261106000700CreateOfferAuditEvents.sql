@@ -99,7 +99,7 @@ INSERT INTO offer_audit_events (
 )
 SELECT
     md5(o.tenant_id || ':' || o.offer_id || ':expired'),
-    o.tenant_id, o.offer_id, 'offer.expired', o.status, 'expired',
+    o.tenant_id, o.offer_id, 'offer.expired', CASE WHEN o.published_at IS NULL THEN 'draft' ELSE 'published' END, 'expired',
     'system', NULL, o.expired_at, '{}'::jsonb
 FROM offers o
 WHERE o.expired_at IS NOT NULL
