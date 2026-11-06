@@ -71,7 +71,7 @@ final readonly class HttpOrderReferenceValidator implements OrderReferenceValida
             throw new OrderReferenceValidationException('The referenced pricing quote has expired or has no valid expiry date.');
         }
 
-        if (($vehicle['status'] ?? null) !== 'published') {
+        if (($vehicle['variantId'] ?? null) !== $vehicleId || ($vehicle['status'] ?? null) !== 'published') {
             throw new OrderReferenceValidationException('The referenced vehicle is not published in the catalogue.');
         }
 
