@@ -12,7 +12,8 @@
     "ext-sockets": "*",
     "php-amqplib/php-amqplib": "^3.7",
     "symfony/mailer": "7.4.*",
-    "symfony/http-client": "7.4.*"
+    "symfony/http-client": "7.4.*",
+    "symfony/mime": "7.4.*"
   },
   "autoload": {
     "psr-4": {
