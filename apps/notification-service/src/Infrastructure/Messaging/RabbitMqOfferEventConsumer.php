@@ -9,6 +9,7 @@ use AutoFlow\Notification\Domain\Notification\OfferPublishedNotification;
 use AutoFlow\Notification\Infrastructure\Observability\StructuredLogger;
 use AutoFlow\Notification\Infrastructure\Persistence\NotificationDeliveryRepository;
 use PhpAmqpLib\Channel\AMQPChannel;
+use PhpAmqpLib\Exception\AMQPTimeoutException;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 use Throwable;
