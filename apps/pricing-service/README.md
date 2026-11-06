@@ -61,13 +61,13 @@ Content-Type: application/json
 
 ```json
 {
-  "vehicleId": "vehicle-demo-001",
-  "vehiclePrice": "30000.00",
+  "vehicleId": "40000000000000000000000000000004",
+  "vehiclePrice": "42000.00",
   "downPayment": "5000.00",
-  "residualValue": "12000.00",
+  "residualValue": "8000.00",
   "currency": "EUR",
   "durationMonths": 48,
-  "annualInterestRateBasisPoints": 450
+  "annualInterestRateBasisPoints": 425
 }
 ```
 
