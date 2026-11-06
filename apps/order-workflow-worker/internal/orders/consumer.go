@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"net/url"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -27,14 +28,14 @@ func ConsumeOrderEvents(ctx context.Context, temporal client.Client) {
 }
 
 func consumeOnce(ctx context.Context, temporal client.Client) error {
-	url := env("RABBITMQ_URL", "")
+	brokerURL := env("RABBITMQ_URL", "")
 	if url == "" {
 		url = "amqp://" + env("RABBITMQ_USER", "autoflow") + ":" +
 			env("RABBITMQ_PASSWORD", "autoflow") + "@" +
 			env("RABBITMQ_HOST", "rabbitmq") + ":" + env("RABBITMQ_PORT", "5672") +
 			"/" + env("RABBITMQ_VHOST", "")
 	}
-	connection, err := amqp.Dial(url)
+	connection, err := amqp.Dial(brokerURL)
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ func forwardToTemporal(ctx context.Context, temporal client.Client, event Event)
 	return temporal.SignalWorkflow(ctx, id, "", LifecycleSignal, event)
 }
 
-func isAlreadyStarted(err error) bool {
+func urlpkgEscape(value string) string {\n\treturn url.QueryEscape(value)\n}\n\nfunc isAlreadyStarted(err error) bool {
 	if err == nil {
 		return false
 	}
