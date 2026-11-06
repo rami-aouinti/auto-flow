@@ -107,7 +107,7 @@ func forwardToTemporal(ctx context.Context, temporal client.Client, event Event)
 			ID: id,
 			TaskQueue: env("TEMPORAL_TASK_QUEUE", "autoflow-order-workflows"),
 			WorkflowIDReusePolicy: enums.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE,
-\t\t\tWorkflowExecutionErrorWhenAlreadyStarted: true,
+			WorkflowExecutionErrorWhenAlreadyStarted: true,
 		}, OrderLifecycleWorkflow, input)
 		if err != nil && !isAlreadyStarted(err) {
 			return err
@@ -115,14 +115,14 @@ func forwardToTemporal(ctx context.Context, temporal client.Client, event Event)
 		return nil
 	}
 	err := temporal.SignalWorkflow(ctx, id, "", LifecycleSignal, event)
-\tif err != nil {
-\t\tvar notFound *serviceerror.NotFound
-\t\tif errors.As(err, &notFound) {
-\t\t\t// The workflow has already reached a terminal state; late duplicate events are harmless.
-\t\t\treturn nil
-\t\t}
-\t}
-\treturn err
+	if err != nil {
+		var notFound *serviceerror.NotFound
+		if errors.As(err, &notFound) {
+			// The workflow has already reached a terminal state; late duplicate events are harmless.
+			return nil
+		}
+	}
+	return err
 }
 
 func isAlreadyStarted(err error) bool {
