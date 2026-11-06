@@ -91,7 +91,7 @@ jobs:
       - name: Install Order Service dependencies and run domain tests
         run: |
           composer install --working-dir=apps/order-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
-          apps/order-service/vendor/bin/phpunit --configuration apps/order-service/phpunit.xml.dist
+          cd apps/order-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Build instrumented Symfony services
         run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher
       - name: Validate development OpenAPI generation
