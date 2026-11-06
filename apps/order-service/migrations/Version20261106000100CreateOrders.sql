@@ -151,13 +151,13 @@ AS $function$
     WHERE event_id = p_event_id
 $function$;
 
-DO $
+DO $role$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'autoflow_order_outbox_owner') THEN
         CREATE ROLE autoflow_order_outbox_owner NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE BYPASSRLS;
     END IF;
 END
-$;
+$role$;
 ALTER ROLE autoflow_order_outbox_owner NOLOGIN BYPASSRLS;
 GRANT USAGE, CREATE ON SCHEMA public TO autoflow_order_outbox_owner;
 GRANT SELECT, UPDATE ON TABLE order_outbox TO autoflow_order_outbox_owner;
