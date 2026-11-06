@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace App\\Infrastructure\\Persistence\\Doctrine;
+namespace App\Infrastructure\Persistence\Doctrine;
 
-use App\\Application\\IdempotencyConflictException;
-use App\\Application\\OrderNotFoundException;
-use App\\Application\\Port\\OrderRepositoryInterface;
-use App\\Domain\\Order;
-use App\\Domain\\OrderStatus;
-use AutoFlow\\CoreBundle\\Context\\CorrelationContext;
-use Doctrine\\DBAL\\Connection;
+use App\Application\IdempotencyConflictException;
+use App\Application\OrderNotFoundException;
+use App\Application\Port\OrderRepositoryInterface;
+use App\Domain\Order;
+use App\Domain\OrderStatus;
+use AutoFlow\CoreBundle\Context\CorrelationContext;
+use Doctrine\DBAL\Connection;
 use DomainException;
-use OpenTelemetry\\API\\Trace\\Propagation\\TraceContextPropagator;
-use Symfony\\Component\\Uid\\Uuid;
+use OpenTelemetry\API\Trace\Propagation\TraceContextPropagator;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -136,8 +136,8 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                     (string) $row['offer_id'], (string) $row['quote_id'], (string) $row['vehicle_id'],
                     $this->decodeObject($row['offer_snapshot']), $this->decodeObject($row['quote_snapshot']),
                     $this->decodeObject($row['vehicle_snapshot']), $from,
-                    $row['submitted_at'] === null ? null : new \\DateTimeImmutable((string) $row['submitted_at']),
-                    $row['decided_at'] === null ? null : new \\DateTimeImmutable((string) $row['decided_at']),
+                    $row['submitted_at'] === null ? null : new \DateTimeImmutable((string) $row['submitted_at']),
+                    $row['decided_at'] === null ? null : new \DateTimeImmutable((string) $row['decided_at']),
                     $row['decision_reason'] === null ? null : (string) $row['decision_reason'],
                 );
                 $order->transitionTo($target, $reason);
@@ -193,8 +193,8 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                 'SELECT * FROM orders WHERE tenant_id = :tenant ORDER BY created_at DESC LIMIT :limit OFFSET :offset',
                 ['tenant' => $tenantId, 'limit' => $limit, 'offset' => $offset],
                 [
-                    'limit' => \\Doctrine\\DBAL\\ParameterType::INTEGER,
-                    'offset' => \\Doctrine\\DBAL\\ParameterType::INTEGER,
+                    'limit' => \Doctrine\DBAL\ParameterType::INTEGER,
+                    'offset' => \Doctrine\DBAL\ParameterType::INTEGER,
                 ],
             );
             $total = (int) $db->fetchOne(
@@ -257,14 +257,14 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
             'quoteSnapshot' => $this->decodeObject($row['quote_snapshot']),
             'vehicleSnapshot' => $this->decodeObject($row['vehicle_snapshot']),
             'decisionReason' => $row['decision_reason'],
-            'createdAt' => (new \\DateTimeImmutable((string) $row['created_at']))->format(DATE_ATOM),
-            'updatedAt' => (new \\DateTimeImmutable((string) $row['updated_at']))->format(DATE_ATOM),
+            'createdAt' => (new \DateTimeImmutable((string) $row['created_at']))->format(DATE_ATOM),
+            'updatedAt' => (new \DateTimeImmutable((string) $row['updated_at']))->format(DATE_ATOM),
             'submittedAt' => $row['submitted_at'] === null
                 ? null
-                : (new \\DateTimeImmutable((string) $row['submitted_at']))->format(DATE_ATOM),
+                : (new \DateTimeImmutable((string) $row['submitted_at']))->format(DATE_ATOM),
             'decidedAt' => $row['decided_at'] === null
                 ? null
-                : (new \\DateTimeImmutable((string) $row['decided_at']))->format(DATE_ATOM),
+                : (new \DateTimeImmutable((string) $row['decided_at']))->format(DATE_ATOM),
         ];
     }
 
@@ -275,7 +275,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
             ? $value
             : json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
         if (!is_array($decoded) || array_is_list($decoded)) {
-            throw new \\UnexpectedValueException('Stored order snapshot must be a JSON object.');
+            throw new \UnexpectedValueException('Stored order snapshot must be a JSON object.');
         }
         return $decoded;
     }
@@ -310,7 +310,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         $eventId = Uuid::v7()->toRfc4122();
         $traceContext = [];
         TraceContextPropagator::getInstance()->inject($traceContext);
-        $occurredAt = (new \\DateTimeImmutable('now', new \\DateTimeZone('UTC')))->format(DATE_ATOM);
+        $occurredAt = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(DATE_ATOM);
         $envelope = [
             'eventId' => $eventId, 'eventType' => $eventType, 'schemaVersion' => 1,
             'producer' => 'order-service', 'aggregate' => ['type' => 'Order', 'id' => $orderId],
@@ -330,6 +330,6 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
 
     private function now(): string
     {
-        return (new \\DateTimeImmutable('now', new \\DateTimeZone('UTC')))->format('Y-m-d H:i:sP');
+        return (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:sP');
     }
 }
