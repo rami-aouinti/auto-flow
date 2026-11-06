@@ -72,7 +72,7 @@ error_log('[Offer Outbox] Publisher started.');
 while (true) {
     try {
         if (
-            !$rabbitConnection instanceof AMQPStreamConnection
+            !($rabbitConnection instanceof AMQPStreamConnection)
             || !$rabbitConnection->isConnected()
             || $channel === null
             || !$channel->is_open()
