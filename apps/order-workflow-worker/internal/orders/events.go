@@ -34,7 +34,7 @@ func DecodeEvent(body []byte) (Event, error) {
 	case "OrderSubmitted", "OrderUnderReview", "OrderAccepted", "OrderRejected",
 		"OrderCancelled", "OrderContractPending", "OrderCompleted",
 		"OrderPaymentAuthorized", "OrderPaymentCaptured", "OrderPaymentFailed",
-		"OrderPaymentRefunded", "OrderPaymentCancelled":
+		"OrderPaymentRefunded", "OrderPaymentPartiallyRefunded", "OrderPaymentCancelled":
 		return event, nil
 	default:
 		return Event{}, fmt.Errorf("unsupported order event type %q", event.EventType)
