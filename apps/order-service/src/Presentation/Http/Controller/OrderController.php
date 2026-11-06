@@ -247,12 +247,12 @@ final readonly class OrderController
                 ? 'orders:manage'
                 : 'orders:write';
             $principal = $this->principal($request, $scope);
+            $idempotencyKey = $request->headers->get('Idempotency-Key', '');
+            if (!is_string($idempotencyKey) || $idempotencyKey === '') {
+                return $this->problem(400, 'Idempotency-Key is required for order transitions.');
+            }
             $result = $this->orders->transition(
-                $this->tenant($principal),
-                $principal->subject,
-                $orderId,
-                $target,
-                $reason,
+                $this->tenant($principal), $principal->subject, $orderId, $target, $idempotencyKey, $reason,
             );
             $this->metrics->recordTransition($target->value);
             return new JsonResponse(
@@ -264,6 +264,8 @@ final readonly class OrderController
             return $this->problem(403, 'The required permission and tenant context are required.');
         } catch (OrderNotFoundException) {
             return $this->problem(404, 'Order not found.');
+        } catch (IdempotencyConflictException $exception) {
+            return $this->problem(409, $exception->getMessage());
         } catch (DomainException $exception) {
             return $this->problem(409, $exception->getMessage());
         } catch (Throwable) {
