@@ -18,7 +18,7 @@ declare global { interface Window { Stripe?: (publishableKey: string) => StripeC
 
 type Payment = {
   paymentId: string; orderId: string; status: string; amountMinor: number;
-  currency: string; provider?: string; clientSecret?: string | null;
+  currency: string; provider?: string; clientSecret?: string | null; createdAt?: string;
 };
 
 const tab = ref<'orders' | 'payments' | 'quotes'>('orders');
@@ -303,7 +303,7 @@ onMounted(() => { void loadOrders(); void loadQuotes(); void loadPayments(); });
         <p v-if="paymentHistoryError" class="ops-error">{{paymentHistoryError}}</p>
         <p v-else-if="paymentHistoryLoading" class="ops-empty">Zahlungen werden geladen …</p>
         <p v-else-if="!paymentRows.length" class="ops-empty">Für diesen Mandanten wurden noch keine Zahlungen gefunden.</p>
-        <div v-else class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Payment ID</th><th>Order ID</th><th>Betrag</th><th>Status</th><th>Erstellt</th><th></th></tr></thead><tbody><tr v-for="item in paymentRows" :key="item.paymentId"><td>{{item.paymentId}}</td><td>{{item.orderId}}</td><td>{{moneyMinor(item.amountMinor,item.currency)}}</td><td>{{label(item.status)}}</td><td>{{date((item as any).createdAt)}}</td><td><button class="ops-ghost" @click="paymentIdInput=item.paymentId;loadPayment()">Öffnen</button></td></tr></tbody></table></div>
+        <div v-else class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Payment ID</th><th>Order ID</th><th>Betrag</th><th>Status</th><th>Erstellt</th><th></th></tr></thead><tbody><tr v-for="item in paymentRows" :key="item.paymentId"><td>{{item.paymentId}}</td><td>{{item.orderId}}</td><td>{{moneyMinor(item.amountMinor,item.currency)}}</td><td>{{label(item.status)}}</td><td>{{date(item.createdAt)}}</td><td><button class="ops-ghost" @click="paymentIdInput=item.paymentId;loadPayment()">Öffnen</button></td></tr></tbody></table></div>
         <div class="ops-pagination" v-if="paymentTotal>paymentLimit"><button :disabled="paymentOffset===0" @click="paymentOffset=Math.max(0,paymentOffset-paymentLimit);loadPayments()">←</button>{{Math.floor(paymentOffset/paymentLimit)+1}} / {{paymentPages}}<button :disabled="paymentOffset+paymentLimit>=paymentTotal" @click="paymentOffset+=paymentLimit;loadPayments()">→</button></div>
       </section>
       <section class="ops-panel">
