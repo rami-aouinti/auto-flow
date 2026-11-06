@@ -68,7 +68,7 @@ while (true) {
             null,
             'en_US',
             3.0,
-            3.0,
+            70.0,
             null,
             true,
             30,
