@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\\Application;
+namespace App\Application;
 
-use App\\Application\\Port\\PaymentGatewayInterface;
-use Doctrine\\DBAL\\Connection;
-use Symfony\\Component\\Uid\\Uuid;
+use App\Application\Port\PaymentGatewayInterface;
+use Doctrine\DBAL\Connection;
+use Symfony\Component\Uid\Uuid;
 use DomainException;
 use RuntimeException;
 
