@@ -70,7 +70,7 @@ Keycloak imports the realm file only when the `autoflow` realm does not already 
 Then rebuild and start the service:
 
 ```bash
-docker compose --env-file .env.example up -d --build order-service order-outbox-publisher
+docker compose --env-file .env.example up -d --build order-service order-outbox-publisher order-workflow-worker
 docker compose ps order-service order-outbox-publisher
 curl -i http://localhost:8085/health/ready
 ```
