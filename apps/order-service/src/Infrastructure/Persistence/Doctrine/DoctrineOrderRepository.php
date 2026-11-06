@@ -240,7 +240,6 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         return $this->map($row);
     }
 
-    /** @param array<string,mixed> $row */
     /** @param array<string, mixed> $row
      * @return array<string, mixed>
      */
