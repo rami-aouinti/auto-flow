@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vehicle-catalog-outbox-publisher
+  namespace: autoflow
+  labels:
+    app.kubernetes.io/name: vehicle-catalog-outbox-publisher
+    app.kubernetes.io/part-of: autoflow
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vehicle-catalog-outbox-publisher
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vehicle-catalog-outbox-publisher
+        app.kubernetes.io/part-of: autoflow
+    spec:
+      terminationGracePeriodSeconds: 40
+      containers:
+        - name: publisher
+          image: autoflow/vehicle-catalog-service:local
+          imagePullPolicy: Never
+          command: ["php", "bin/publish-outbox.php"]
+          envFrom:
+            - configMapRef:
+                name: vehicle-catalog-config
+            - secretRef:
+                name: vehicle-catalog-secret
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
