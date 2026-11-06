@@ -6,6 +6,9 @@ namespace App\\Domain;
 
 use DomainException;
 
+/**
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ */
 final class Order
 {
     public function __construct(
