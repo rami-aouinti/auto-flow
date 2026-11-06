@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"net/url"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -15,13 +13,7 @@ type Activities struct {
 }
 
 func (a *Activities) PublishSLAAlert(ctx context.Context, alert SLAAlert) error {
-	host := env("RABBITMQ_HOST", "rabbitmq")
-	port := env("RABBITMQ_PORT", "5672")
-	user := env("RABBITMQ_USER", "autoflow")
-	password := env("RABBITMQ_PASSWORD", "autoflow")
-	vhost := env("RABBITMQ_VHOST", "/")
-	url := fmt.Sprintf("amqp://%s:%s@%s:%s/%s", user, password, host, port, vhost)
-	connection, err := amqp.Dial(url)
+	connection, err := amqp.Dial(rabbitURL())
 	if err != nil {
 		return fmt.Errorf("connect to RabbitMQ for SLA alert: %w", err)
 	}
@@ -31,12 +23,26 @@ func (a *Activities) PublishSLAAlert(ctx context.Context, alert SLAAlert) error 
 		return fmt.Errorf("open RabbitMQ channel: %w", err)
 	}
 	defer channel.Close()
+
 	if err := channel.ExchangeDeclare("autoflow.order.events", "topic", true, false, false, false, nil); err != nil {
 		return err
 	}
+	queue, err := channel.QueueDeclare("autoflow.order.workflow.alerts", true, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+	if err := channel.QueueBind(queue.Name, "OrderWorkflowSlaBreached", "autoflow.order.events", false, nil); err != nil {
+		return err
+	}
+	if err := channel.Confirm(false); err != nil {
+		return err
+	}
+	confirmations := channel.NotifyPublish(make(chan amqp.Confirmation, 1))
+
 	now := time.Now().UTC()
+	eventID := fmt.Sprintf("sla-%s-%d", alert.OrderID, now.UnixNano())
 	envelope := map[string]any{
-		"eventId": fmt.Sprintf("sla-%s-%d", alert.OrderID, now.UnixNano()),
+		"eventId": eventID,
 		"eventType": "OrderWorkflowSlaBreached",
 		"schemaVersion": 1,
 		"producer": "order-workflow-worker",
@@ -49,19 +55,25 @@ func (a *Activities) PublishSLAAlert(ctx context.Context, alert SLAAlert) error 
 	if err != nil {
 		return err
 	}
-	return channel.PublishWithContext(ctx, "autoflow.order.events", "OrderWorkflowSlaBreached", false, false, amqp.Publishing{
+	if err := channel.PublishWithContext(ctx, "autoflow.order.events", "OrderWorkflowSlaBreached", false, false, amqp.Publishing{
 		ContentType: "application/json",
 		DeliveryMode: amqp.Persistent,
 		Type: "OrderWorkflowSlaBreached",
-		MessageId: envelope["eventId"].(string),
+		MessageId: eventID,
 		Timestamp: now,
 		Body: body,
-	})
-}
-
-func env(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+	}); err != nil {
+		return err
 	}
-	return fallback
+	select {
+	case confirmation := <-confirmations:
+		if !confirmation.Ack {
+			return fmt.Errorf("RabbitMQ negatively acknowledged SLA event %s", eventID)
+		}
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(5 * time.Second):
+		return fmt.Errorf("timed out waiting for RabbitMQ publisher confirm for %s", eventID)
+	}
 }
