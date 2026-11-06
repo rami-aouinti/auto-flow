@@ -29,13 +29,53 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
     {
     }
 
+    /** @return array<string, mixed>|null */
+    public function findIdempotentCreate(
+        string $tenantId,
+        string $actor,
+        string $idempotencyKey,
+        string $offerId,
+        string $quoteId,
+        string $vehicleId,
+    ): ?array {
+        return $this->connection->transactional(function (Connection $db) use (
+            $tenantId, $actor, $idempotencyKey, $offerId, $quoteId, $vehicleId,
+        ): ?array {
+            $this->setTenant($db, $tenantId);
+            $existing = $db->fetchAssociative(
+                <<<'SQL'
+                    SELECT response_json
+                    FROM order_idempotency
+                    WHERE tenant_id = :tenant AND actor = :actor AND idempotency_key = :key
+                    SQL,
+                ['tenant' => $tenantId, 'actor' => $actor, 'key' => $idempotencyKey],
+            );
+            if (!is_array($existing)) {
+                return null;
+            }
+            $response = $this->decodeObject($existing['response_json']);
+            if (($response['offerId'] ?? null) !== $offerId
+                || ($response['quoteId'] ?? null) !== $quoteId
+                || ($response['vehicleId'] ?? null) !== $vehicleId) {
+                throw new IdempotencyConflictException(
+                    'Idempotency-Key was already used with different Offer, quote or vehicle references.',
+                );
+            }
+            return $response;
+        });
+    }
+
     /**
      * @param array<string, mixed> $input
      * @return array<string, mixed>
      */
     public function create(string $tenantId, string $actor, array $input, string $idempotencyKey): array
     {
-        $requestHash = hash('sha256', json_encode($input, JSON_THROW_ON_ERROR));
+        $requestHash = hash('sha256', json_encode([
+            'offerId' => $input['offerId'],
+            'quoteId' => $input['quoteId'],
+            'vehicleId' => $input['vehicleId'],
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
 
         return $this->connection->transactional(
             function (Connection $db) use ($tenantId, $actor, $input, $idempotencyKey, $requestHash): array {

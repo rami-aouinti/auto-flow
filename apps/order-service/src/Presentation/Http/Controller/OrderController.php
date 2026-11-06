@@ -7,6 +7,7 @@ namespace App\Presentation\Http\Controller;
 use App\Application\IdempotencyConflictException;
 use App\Application\OrderApplicationService;
 use App\Application\OrderNotFoundException;
+use App\Application\OrderReferenceValidationException;
 use App\Application\OrderUpstreamAuthorizationException;
 use App\Application\OrderUpstreamUnavailableException;
 use App\Application\Port\OrderReferenceValidatorInterface;
@@ -55,13 +56,42 @@ final readonly class OrderController
                     throw new \InvalidArgumentException(sprintf('Field "%s" must be a string.', $field));
                 }
             }
-            $verifiedSnapshots = $this->referenceValidator->validate(
+            $existing = $this->orders->findIdempotentCreate(
+                $tenantId,
+                $principal->subject,
+                $key,
                 $input['offerId'],
                 $input['quoteId'],
                 $input['vehicleId'],
-                $tenantId,
-                $this->bearerToken($request),
             );
+            if ($existing !== null) {
+                $this->metrics->recordCreated();
+                return new JsonResponse($existing, JsonResponse::HTTP_CREATED, ['Cache-Control' => 'no-store']);
+            }
+            try {
+                $verifiedSnapshots = $this->referenceValidator->validate(
+                    $input['offerId'],
+                    $input['quoteId'],
+                    $input['vehicleId'],
+                    $tenantId,
+                    $this->bearerToken($request),
+                );
+            } catch (OrderReferenceValidationException|OrderUpstreamAuthorizationException|OrderUpstreamUnavailableException $exception) {
+                // A concurrent first request may have committed while this request was calling upstream.
+                $existing = $this->orders->findIdempotentCreate(
+                    $tenantId,
+                    $principal->subject,
+                    $key,
+                    $input['offerId'],
+                    $input['quoteId'],
+                    $input['vehicleId'],
+                );
+                if ($existing !== null) {
+                    $this->metrics->recordCreated();
+                    return new JsonResponse($existing, JsonResponse::HTTP_CREATED, ['Cache-Control' => 'no-store']);
+                }
+                throw $exception;
+            }
             // Snapshots are resolved from the authoritative services, never accepted from the browser.
             $input['offerSnapshot'] = $verifiedSnapshots['offerSnapshot'];
             $input['quoteSnapshot'] = $verifiedSnapshots['quoteSnapshot'];

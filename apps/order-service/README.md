@@ -85,6 +85,16 @@ Do not use `docker compose down -v` on a database containing data.
 - Outbox publisher creates producer spans and records message ID/type/destination.
 - Inspect queue backlog and oldest event age through RabbitMQ metrics; inspect traces in Grafana Tempo.
 
-## Explicitly not included yet
+## Temporal lifecycle orchestration
 
-Temporal workflow orchestration, customer identity/profile storage, payment capture, contract generation/signature, and downstream event consumers remain later increments. The Temporal server already present in Compose is not proof that this service currently runs a Temporal workflow.
+The `order-workflow-worker` is a separate Go process using the official Temporal Go SDK. It consumes lifecycle events from the durable `autoflow.order.events` topic exchange through its own durable queue and starts one workflow per `(tenantId, orderId)`. Workflow IDs reject duplicate starts; events are acknowledged only after Temporal accepts the start or signal. Malformed messages are dead-lettered, while transient Temporal failures are requeued.
+
+The workflow tracks the human-controlled order lifecycle without taking ownership of order state:
+
+- 48 hours from submission to acceptance/rejection/cancellation;
+- 24 hours from acceptance to `contract_pending`/cancellation;
+- 7 days from `contract_pending` to completion/cancellation.
+
+When a threshold expires, Temporal retries an activity that publishes a persistent `OrderWorkflowSlaBreached` event with publisher confirms. Alerts are retained in `autoflow.order.workflow.alerts` for an operational consumer/acknowledgement. Grafana dashboard `AutoFlow — Order Management` and Prometheus rules cover create/transition rates, Outbox failures, workflow backlog, dead-letter messages and SLA alerts.
+
+**The workflow does not auto-approve orders, generate legal contracts, capture payments or perform e-signature.** Those actions require explicit business policy, customer data and provider integrations. The workflow only observes the authoritative lifecycle transitions and raises durable SLA events.

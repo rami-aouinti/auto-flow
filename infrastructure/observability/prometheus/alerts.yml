@@ -103,3 +103,43 @@ groups:
         annotations:
           summary: "HTTP p95 latency is above one second"
           description: "Service {{ $labels.service_name }} has a p95 HTTP latency above one second for 10 minutes."
+
+  - name: autoflow-order-management
+    interval: 30s
+    rules:
+      - alert: OrderWorkflowConsumerBacklog
+        expr: rabbitmq_queue_messages_ready{queue="autoflow.order.workflow"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: orders
+        annotations:
+          summary: "Order workflow events are backing up"
+          description: "The Temporal workflow consumer has more than 100 ready Order lifecycle events for 5 minutes."
+      - alert: OrderWorkflowDeadLettered
+        expr: rabbitmq_queue_messages_ready{queue="autoflow.order.workflow.dead"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: orders
+        annotations:
+          summary: "Malformed Order events reached the dead-letter queue"
+          description: "Inspect autoflow.order.workflow.dead and correct the event producer or schema before replay."
+      - alert: OrderWorkflowSlaBreached
+        expr: rabbitmq_queue_messages_ready{queue="autoflow.order.workflow.alerts"} > 0
+        for: 1m
+        labels:
+          severity: warning
+          team: orders
+        annotations:
+          summary: "An Order lifecycle SLA was breached"
+          description: "At least one review, contract-preparation or fulfilment SLA alert is awaiting acknowledgement."
+      - alert: OrderOutboxPublishFailures
+        expr: increase(order_outbox_publish_failures_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          team: orders
+        annotations:
+          summary: "Order Outbox publication is failing"
+          description: "The Order Outbox publisher recorded a failed RabbitMQ publish attempt in the last 5 minutes."

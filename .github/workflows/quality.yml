@@ -18,6 +18,19 @@ jobs:
           coverage: xdebug
           extensions: pdo_pgsql, mbstring
           tools: composer:v2
+      - name: Setup Go for Temporal Order worker
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+          cache-dependency-path: apps/order-workflow-worker/go.mod
+      - name: Test and build Temporal Order worker
+        working-directory: apps/order-workflow-worker
+        run: |
+          gofmt -w ./cmd ./internal
+          go mod download
+          go test ./...
+          go build ./cmd/worker
       - name: Validate Composer
         run: composer validate --strict
       - name: Validate service Composer manifests
@@ -102,7 +115,7 @@ jobs:
           cd apps/order-service
           vendor/bin/phpunit --configuration phpunit.xml.dist tests/Integration/Order
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher
+        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-workflow-worker
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
