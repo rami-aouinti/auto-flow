@@ -25,8 +25,4 @@ final readonly class GetPaymentHandler
         return $payment;
     }
 
-    /**
-     * @return array{items: list<array<string,mixed>>, total: int, limit: int, offset: int}
-     */
-
 }
