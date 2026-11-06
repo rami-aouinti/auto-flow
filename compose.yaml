@@ -65,7 +65,31 @@ services:
         condition: service_started
       alloy:
         condition: service_started
-      keycloak:
+      # Local development only: Temporal CLI server with persistent SQLite state.
+  temporal:
+    image: temporalio/temporal:1.6.2
+    command:
+      - server
+      - start-dev
+      - --ip
+      - 0.0.0.0
+      - --db-filename
+      - /var/lib/temporal/temporal.db
+    ports:
+      - "127.0.0.1:7233:7233"
+      - "127.0.0.1:8233:8233"
+    volumes:
+      - temporal-data:/var/lib/temporal
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    init: true
+    restart: unless-stopped
+
+  keycloak:
         condition: service_started
     healthcheck:
       test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
@@ -154,30 +178,14 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  offer-expiration-worker:
+  offer-workers:
     build:
       context: .
       dockerfile: docker/php/service.Dockerfile
       args:
         SERVICE_PATH: apps/offer-service
         COMPOSER_NO_DEV: ""
-    command: ["php", "bin/expire-offers.php"]
-    environment:
-      APP_ENV: prod
-      OFFER_DATABASE_URL: ${OFFER_DATABASE_URL:-postgresql://autoflow_offer:local-only-offer-password@postgres:5432/autoflow}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-  offer-outbox-publisher:
-    build:
-      context: .
-      dockerfile: docker/php/service.Dockerfile
-      args:
-        SERVICE_PATH: apps/offer-service
-        COMPOSER_NO_DEV: ""
-    command: ["php", "bin/outbox-publisher.php"]
+    command: ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/offer-workers.conf"]
     environment:
       APP_ENV: prod
       OFFER_DATABASE_URL: ${OFFER_DATABASE_URL:-postgresql://autoflow_offer:local-only-offer-password@postgres:5432/autoflow}
@@ -186,7 +194,7 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
       RABBITMQ_VHOST: /
-      OTEL_SERVICE_NAME: autoflow-offer-outbox-publisher
+      OTEL_SERVICE_NAME: autoflow-offer-workers
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
       OTEL_PHP_AUTOLOAD_ENABLED: "true"
       OTEL_TRACES_EXPORTER: otlp
@@ -196,12 +204,13 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
       OTEL_PROPAGATORS: tracecontext,baggage
     depends_on:
-      tempo:
-        condition: service_started
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      tempo:
+        condition: service_started
+    init: true
     restart: unless-stopped
 
   pricing-service:
@@ -483,3 +492,4 @@ volumes:
   grafana-data:
   loki-data:
   tempo-data:
+  temporal-data:
