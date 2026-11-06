@@ -1,14 +1,28 @@
 # Process supervision
 
-AutoFlow uses one long-running process per container. Docker Compose supervises the
-container with its restart policy. Kubernetes supervises API and publisher processes
-through Deployments; finite scheduled work belongs in CronJobs.
+AutoFlow deliberately uses different process supervisors depending on the runtime.
 
-Do not run Supervisor inside these application containers as a second orchestrator.
-The optional configuration in supervisord.conf.example is for a traditional Linux VM
-deployment where Supervisor is the process manager.
+## Docker Compose
 
-Before using it on a VM:
+The Offer worker container runs Supervisor as PID 1. The active configuration is
+docker/php/supervisor/offer-workers.conf, copied into the service image by
+docker/php/service.Dockerfile.
+
+It supervises two independent PHP processes:
+- Offer expiration polling worker.
+- Offer Transactional Outbox publisher.
+
+The processes have separate restart policies and write stdout/stderr to the container
+log stream. Docker Compose then supervises the container itself with restart: unless-stopped.
+
+This is a pragmatic local-development setup. For Kubernetes, do not nest Supervisor
+inside Pods: use a Deployment for each long-running process and a CronJob for finite
+scheduled tasks. That allows independent scaling, rollout and failure isolation.
+
+## Traditional Linux VM
+
+supervisord.conf.example is an optional example for a non-containerized VM deployment.
+It shows the Offer and Vehicle Catalog publisher programs. Before using it:
 - install Supervisor and deploy the release to /srv/autoflow;
 - create an unprivileged autoflow user;
 - inject database and RabbitMQ credentials through a protected environment mechanism;
@@ -16,6 +30,5 @@ Before using it on a VM:
 - run supervisorctl reread and supervisorctl update;
 - monitor supervisorctl status.
 
-Offer expiration is intentionally not a permanent Supervisor process in the target
-architecture. It is a finite scheduled job, so Kubernetes CronJob or an external
-scheduler is a better fit.
+Offer expiration should be a finite scheduled task on Kubernetes (CronJob) or a VM
+scheduler. Do not run the polling loop and the one-shot CronJob in the same environment.
