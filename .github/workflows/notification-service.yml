@@ -1,0 +1,56 @@
+name: Notification Service CI
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "apps/notification-service/**"
+      - "apps/offer-service/src/Domain/Entity/Offer.php"
+      - "apps/offer-service/src/Domain/Event/OfferPublished.php"
+      - ".github/workflows/notification-service.yml"
+  pull_request:
+    paths:
+      - "apps/notification-service/**"
+      - "apps/offer-service/src/Domain/Entity/Offer.php"
+      - "apps/offer-service/src/Domain/Event/OfferPublished.php"
+      - ".github/workflows/notification-service.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: autoflow
+          POSTGRES_USER: autoflow
+          POSTGRES_PASSWORD: autoflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U autoflow -d autoflow"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NOTIFICATION_DATABASE_URL: postgresql://autoflow:autoflow@127.0.0.1:5432/autoflow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: curl, mbstring, pdo_pgsql, sockets
+          coverage: none
+      - uses: actions/cache@v4
+        with:
+          path: apps/notification-service/vendor
+          key: notification-composer-${{ runner.os }}-${{ hashFiles('apps/notification-service/composer.json') }}
+          restore-keys: notification-composer-${{ runner.os }}-
+      - name: Install dependencies
+        working-directory: apps/notification-service
+        run: composer install --no-interaction --prefer-dist
+      - name: PHP syntax checks
+        run: find apps/notification-service/src apps/notification-service/bin apps/notification-service/public -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Unit and integration tests
+        working-directory: apps/notification-service
+        run: vendor/bin/phpunit --configuration phpunit.xml.dist
