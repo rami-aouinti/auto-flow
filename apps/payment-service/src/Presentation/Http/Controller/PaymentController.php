@@ -9,7 +9,7 @@ use App\\Application\\PaymentNotFoundException;
 use AutoFlow\\CoreBundle\\Security\\AuthenticatedPrincipal;
 use DomainException;
 use Symfony\\Component\\HttpFoundation\\JsonResponse;
-use Symfony\\Component\\HttpFoundation\\Request;
+use Symfony\\Component\\HttpFoundation\\Request;\nuse Symfony\\Component\\HttpKernel\\Exception\\AccessDeniedHttpException;
 use Symfony\\Component\\Routing\\Attribute\\Route;
 use Throwable;
 
@@ -105,7 +105,7 @@ final readonly class PaymentController
     {
         $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
         if (!$principal instanceof AuthenticatedPrincipal || !$principal->hasScope($scope)) {
-            throw new DomainException('Permission denied.');
+            throw new AccessDeniedHttpException('Permission denied.');
         }
         return $principal;
     }
@@ -113,7 +113,7 @@ final readonly class PaymentController
     private function tenant(AuthenticatedPrincipal $principal): string
     {
         if ($principal->tenantId === null) {
-            throw new DomainException('Tenant context is required.');
+            throw new AccessDeniedHttpException('Tenant context is required.');
         }
         return $principal->tenantId;
     }
