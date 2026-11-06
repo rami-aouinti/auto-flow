@@ -56,7 +56,9 @@ final readonly class PaymentApplicationService
             }
 
             $paymentId = Uuid::v7()->toRfc4122();
-            $intent = $this->gateway->createIntent(\n                $amount, $currency, $paymentId, $tenant, hash('sha256', $tenant . ':' . $actor . ':' . $key . ':create'),\n            );
+            $intent = $this->gateway->createIntent(
+                $amount, $currency, $paymentId, $tenant, hash('sha256', $tenant . ':' . $actor . ':' . $key . ':create'),
+            );
             $providerId = $intent['id'] ?? null;
             if (!is_string($providerId) || $providerId === '') {
                 throw new RuntimeException('Payment provider did not return a payment intent identifier.');
