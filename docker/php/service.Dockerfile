@@ -28,12 +28,26 @@ WORKDIR /app
 # Resolve the local CoreBundle path repository inside the image.
 COPY packages/core-bundle/ /packages/core-bundle/
 COPY ${SERVICE_PATH}/composer.json ./composer.json
-RUN composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-progress --no-scripts \
-    && composer show autoflow/core-bundle --no-interaction \
+# Composer downloads can occasionally time out against GitHub's codeload endpoint.
+# Retry the install without hiding the real Composer error after the final attempt.
+RUN set -eu; \
+    attempt=1; \
+    until COMPOSER_MAX_PARALLEL_HTTP=4 composer install ${COMPOSER_NO_DEV} --no-interaction --prefer-dist --no-progress --no-scripts; do \
+        if [ "$attempt" -ge 3 ]; then \
+            echo "ERROR: Composer install failed after 3 attempts."; \
+            exit 1; \
+        fi; \
+        echo "Composer install failed (attempt $attempt/3); retrying in 10 seconds..."; \
+        attempt=$((attempt + 1)); \
+        sleep 10; \
+    done
+
+# Verify the path repository only after Composer has completed successfully.
+RUN composer show autoflow/core-bundle --no-interaction \
     && test -f /packages/core-bundle/src/Security/JwtTokenVerifier.php \
     && test -f vendor/autoflow/core-bundle/src/Security/JwtTokenVerifier.php \
     && diff -qr /packages/core-bundle/src vendor/autoflow/core-bundle/src \
-    || { echo "ERROR: installed autoflow/core-bundle does not match the CoreBundle source copied into the image."; exit 1; }
+    || { echo "ERROR: installed autoflow/core-bundle differs from the copied CoreBundle source."; exit 1; }
 
 COPY ${SERVICE_PATH}/ ./
 
