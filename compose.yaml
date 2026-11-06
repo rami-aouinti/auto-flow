@@ -189,6 +189,51 @@ services:
     init: true
     restart: unless-stopped
 
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: apps/notification-service/Dockerfile
+    environment:
+      NOTIFICATION_DATABASE_URL: ${NOTIFICATION_DATABASE_URL}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_VHOST: /
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: autoflow
+      KEYCLOAK_NOTIFICATION_CLIENT_ID: ${KEYCLOAK_NOTIFICATION_CLIENT_ID}
+      KEYCLOAK_NOTIFICATION_CLIENT_SECRET: ${KEYCLOAK_NOTIFICATION_CLIENT_SECRET}
+      MAILER_DSN: ${MAILER_DSN}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    init: true
+    restart: unless-stopped
+
+  notification-metrics:
+    build:
+      context: .
+      dockerfile: apps/notification-service/Dockerfile
+    command: ["php", "-S", "0.0.0.0:9464", "-t", "public", "public/metrics.php"]
+    environment:
+      NOTIFICATION_DATABASE_URL: ${NOTIFICATION_DATABASE_URL}
+    expose:
+      - "9464"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   pricing-service:
     build:
       context: .
