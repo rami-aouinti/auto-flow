@@ -1,0 +1,124 @@
+openapi: 3.1.0
+info:
+  title: AutoFlow Order Management API
+  version: 1.0.0
+  description: Tenant-scoped order lifecycle API. All routes require a verified JWT bearer token.
+servers:
+  - url: http://localhost:8085
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/orders:
+    post:
+      summary: Create a draft order
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [offerId, quoteId, vehicleId, offerSnapshot, quoteSnapshot, vehicleSnapshot]
+              properties:
+                offerId: { type: string }
+                quoteId: { type: string }
+                vehicleId: { type: string }
+                offerSnapshot: { type: object }
+                quoteSnapshot: { type: object }
+                vehicleSnapshot: { type: object }
+      responses:
+        '201': { description: Draft order created }
+        '400': { description: Invalid request or missing idempotency key }
+        '403': { description: Missing permission or tenant context }
+        '422': { description: Invalid order input }
+    get:
+      summary: List orders for the authenticated tenant
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: Paginated tenant orders }
+  /api/v1/orders/{orderId}:
+    get:
+      summary: Retrieve one order and its immutable snapshots
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200': { description: Order details }
+        '404': { description: Order not found }
+  /api/v1/orders/{orderId}/submit:
+    post:
+      summary: Submit a draft order
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200': { description: Order submitted }
+        '409': { description: Invalid lifecycle transition }
+  /api/v1/orders/{orderId}/review:
+    post:
+      summary: Move a submitted order into manual review
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200': { description: Order under review }
+        '409': { description: Invalid lifecycle transition }
+  /api/v1/orders/{orderId}/accept:
+    post:
+      summary: Accept an order
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200': { description: Order accepted }
+        '409': { description: Invalid lifecycle transition }
+  /api/v1/orders/{orderId}/reject:
+    post:
+      summary: Reject an order with a mandatory reason
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        '200': { description: Order rejected }
+        '409': { description: Invalid lifecycle transition }
+  /api/v1/orders/{orderId}/cancel:
+    post:
+      summary: Cancel an order where allowed
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200': { description: Order cancelled }
+        '409': { description: Invalid lifecycle transition }
+  /api/v1/orders/{orderId}/contract-pending:
+    post:
+      summary: Mark accepted order as awaiting contract preparation
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200': { description: Contract preparation pending }
+  /api/v1/orders/{orderId}/complete:
+    post:
+      summary: Complete contract fulfilment
+      parameters: [{ $ref: '#/components/parameters/OrderId' }]
+      responses:
+        '200': { description: Order completed }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    OrderId:
+      in: path
+      name: orderId
+      required: true
+      schema: { type: string, format: uuid }
