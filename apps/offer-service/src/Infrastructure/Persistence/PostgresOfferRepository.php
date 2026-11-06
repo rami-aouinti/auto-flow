@@ -121,6 +121,65 @@ final readonly class PostgresOfferRepository implements OfferRepositoryInterface
         );
     }
 
+    /**
+     * @return array{items: list<Offer>, total: int}
+     */
+    public function findByOwner(
+        string $tenantId,
+        string $ownerId,
+        ?OfferStatus $status,
+        ?string $search,
+        int $limit,
+        int $offset,
+    ): array {
+        if ($limit < 1 || $limit > 100 || $offset < 0 || $offset > 1000000) {
+            throw new \InvalidArgumentException('Offer list pagination is outside the allowed range.');
+        }
+
+        return $this->withinTenantTransaction(
+            $tenantId,
+            static function (PDO $connection) use ($ownerId, $status, $search, $limit, $offset): array {
+                $conditions = ['created_by = :created_by'];
+                $parameters = ['created_by' => $ownerId];
+
+                if ($status !== null) {
+                    $conditions[] = 'status = :status';
+                    $parameters['status'] = $status->value;
+                }
+
+                if ($search !== null && trim($search) !== '') {
+                    $conditions[] = '(offer_id ILIKE :search_offer OR quote_id ILIKE :search_quote OR pricing_snapshot->>\'vehicleId\' ILIKE :search_vehicle)';
+                    $term = '%' . trim($search) . '%';
+                    $parameters['search_offer'] = $term;
+                    $parameters['search_quote'] = $term;
+                    $parameters['search_vehicle'] = $term;
+                }
+
+                $where = implode(' AND ', $conditions);
+                $count = $connection->prepare('SELECT COUNT(*) FROM offers WHERE ' . $where);
+                $count->execute($parameters);
+                $total = (int) $count->fetchColumn();
+
+                $statement = $connection->prepare(
+                    'SELECT * FROM offers WHERE ' . $where . ' ORDER BY created_at DESC, offer_id DESC LIMIT :limit OFFSET :offset',
+                );
+                foreach ($parameters as $name => $value) {
+                    $statement->bindValue(':' . $name, $value);
+                }
+                $statement->bindValue(':limit', $limit, PDO::PARAM_INT);
+                $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
+                $statement->execute();
+
+                $items = array_map(
+                    static fn (array $row): Offer => self::hydrate($row),
+                    $statement->fetchAll(),
+                );
+
+                return ['items' => $items, 'total' => $total];
+            },
+        );
+    }
+
     public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
     {
         if ($limit < 1 || $limit > 1000) {
