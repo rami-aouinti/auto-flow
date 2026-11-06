@@ -17,18 +17,31 @@ $handler = new ExpireOffersHandler(
     new PostgresOfferRepository(new PostgresConnection($databaseUrl)),
 );
 
-error_log('[Offer Expiration] Worker started.');
+$runOnce = in_array('--once', $argv, true);
+error_log('[Offer Expiration] Worker started' . ($runOnce ? ' (one-shot).' : '.'));
 
-while (true) {
+do {
     try {
         $count = $handler(new DateTimeImmutable(), 100, 100);
 
         if ($count > 0) {
-            error_log(sprintf('[Offer Expiration] Expired %d offer(s).', $count));
+            error_log(sprintf(
+                '[Offer Expiration] Expired %d offer(s).',
+                $count,
+            ));
         }
     } catch (Throwable $exception) {
         error_log('[Offer Expiration] Worker iteration failed: ' . $exception->getMessage());
+
+        // CronJob must see a failure to apply Kubernetes Job retry policy.
+        if ($runOnce) {
+            exit(1);
+        }
+    }
+
+    if ($runOnce) {
+        break;
     }
 
     sleep(30);
-}
+} while (true);
