@@ -19,7 +19,6 @@ final readonly class HttpPricingQuoteProxy implements PricingQuoteProxyInterface
     }
 
     public function requestQuote(
-        string $vehicleId,
         array $payload,
         string $subjectAccessToken,
         string $tenantId,
