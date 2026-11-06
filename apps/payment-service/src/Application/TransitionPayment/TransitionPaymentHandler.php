@@ -6,13 +6,18 @@ namespace App\Application\TransitionPayment;
 
 use App\Application\PaymentNotFoundException;
 use App\Application\Port\PaymentGatewayInterface;
+use AutoFlow\CoreBundle\Application\Clock\ClockInterface;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Uuid;
 use DomainException;
 
 final readonly class TransitionPaymentHandler
 {
-    public function __construct(private Connection $db, private PaymentGatewayInterface $gateway) {}
+    public function __construct(
+        private ClockInterface $clock,
+        private Connection $db,
+        private PaymentGatewayInterface $gateway,
+    ) {}
 
     /** @return array<string,mixed> */
     public function __invoke(string $tenant, string $actor, string $paymentId, string $key, string $operation, ?int $refundAmount = null): array
@@ -85,7 +90,7 @@ final readonly class TransitionPaymentHandler
                     ['amount'=>$refundAmount,'tenant'=>$tenant,'id'=>$paymentId],
                 );
             }
-            $this->db->update('payments', ['status'=>$newStatus,'updated_at'=>date('c')], ['tenant_id'=>$tenant,'payment_id'=>$paymentId]);
+            $this->db->update('payments', ['status'=>$newStatus,'updated_at'=>$this->clock->now()->format(DATE_ATOM)], ['tenant_id'=>$tenant,'payment_id'=>$paymentId]);
             $payload = ['paymentId'=>$paymentId,'orderId'=>$row['order_id'],'status'=>$newStatus,'operation'=>$operation];
             $eventType = match ($operation) {
                 'capture' => 'PaymentCaptured',
@@ -123,7 +128,7 @@ final readonly class TransitionPaymentHandler
             'producer' => 'payment-service',
             'aggregate' => ['type' => 'Payment', 'id' => $paymentId],
             'tenantId' => $tenant,
-            'occurredAt' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(DATE_ATOM),
+            'occurredAt' => $this->clock->now()->setTimezone(new \DateTimeZone('UTC'))->format(DATE_ATOM),
             'data' => $payload,
         ];
         $this->db->insert('payment_outbox', [
