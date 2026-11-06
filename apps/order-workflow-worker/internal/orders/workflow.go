@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/temporal"
-\t"go.temporal.io/sdk/workflow"
+	"go.temporal.io/sdk/workflow"
 )
 
 const LifecycleSignal = "order.lifecycle"
