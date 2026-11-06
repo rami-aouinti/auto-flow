@@ -15,7 +15,7 @@ Asynchronous notification worker for the AutoFlow offer lifecycle.
 
 ## Event contract
 
-The worker consumes routing key offer.published. The envelope must contain eventId, tenantId, aggregate.id, data.createdBy, data.vehicleId, data.quoteId, data.expiresAt, and data.pricing.
+The worker consumes routing key offer.published and currently accepts schemaVersion 2. The email is sent to the Keycloak account that created the offer. The envelope must contain eventId, tenantId, aggregate.id, data.createdBy, data.vehicleId, data.quoteId, data.expiresAt, and data.pricing.
 
 The pricing object is a copy of the immutable snapshot stored by Offer Service. This avoids a service-to-service call with a user's access token and prevents the worker from bypassing owner and tenant authorization on the public PDF endpoint.
 
