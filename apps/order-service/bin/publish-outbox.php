@@ -13,9 +13,9 @@ use PhpAmqpLib\\Wire\\AMQPTable;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$databaseUrl = getenv('ORDER_DATABASE_URL') ?: '';
+$databaseUrl = getenv('ORDER_PUBLISHER_DATABASE_URL') ?: '';
 if ($databaseUrl === '') {
-    throw new RuntimeException('ORDER_DATABASE_URL is required.');
+    throw new RuntimeException('ORDER_PUBLISHER_DATABASE_URL is required.');
 }
 $db = DriverManager::getConnection(['url' => $databaseUrl]);
 
