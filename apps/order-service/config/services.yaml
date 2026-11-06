@@ -8,3 +8,6 @@ services:
         exclude:
             - '../src/Kernel.php'
             - '../src/Domain/'
+
+    App\\Infrastructure\\Health\\OrderDatabaseHealthCheck:
+        tags: ['autoflow_core.health_check']
