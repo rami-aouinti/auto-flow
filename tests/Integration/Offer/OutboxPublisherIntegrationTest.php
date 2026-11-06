@@ -63,7 +63,7 @@ final class OutboxPublisherIntegrationTest extends TestCase
         $resourceSuffix = bin2hex(random_bytes(8));
         $testExchange = 'autoflow.offer.test.' . $resourceSuffix;
         $testQueue = 'autoflow.offer.test.' . $resourceSuffix;
-        $occurredAt = new DateTimeImmutable();
+        $occurredAt = new DateTimeImmutable('1900-01-01T00:00:00+00:00');
         $envelope = [
             'eventId' => $eventId,
             'eventType' => 'OfferCreated',
@@ -127,11 +127,18 @@ final class OutboxPublisherIntegrationTest extends TestCase
                     $channel->close();
                 }
 
-                // Integration-test rows must not accumulate in the shared database.
-                $delete = $this->database->prepare(
-                    'DELETE FROM offer_outbox_events WHERE event_id = :event_id',
-                );
-                $delete->execute(['event_id' => $eventId]);
+                // The application role intentionally has no DELETE privilege on the outbox.
+                // Clean the test row only when the configured integration DB role permits it.
+                $canDelete = $this->database->query(
+                    "SELECT has_table_privilege(current_user, 'offer_outbox_events', 'DELETE')",
+                )->fetchColumn();
+
+                if ($canDelete) {
+                    $delete = $this->database->prepare(
+                        'DELETE FROM offer_outbox_events WHERE event_id = :event_id',
+                    );
+                    $delete->execute(['event_id' => $eventId]);
+                }
             }
         }
     }
