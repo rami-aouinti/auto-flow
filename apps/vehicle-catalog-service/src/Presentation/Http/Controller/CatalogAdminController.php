@@ -95,6 +95,10 @@ final readonly class CatalogAdminController
             return new JsonResponse(['id' => $id, 'status' => 'draft'], 201, ['Cache-Control' => 'no-store']);
         } catch (CatalogParentNotFoundException $exception) {
             return $this->problem(422, $exception->getMessage());
+        } catch (UniqueConstraintViolationException) {
+            return $this->problem(409, 'A catalogue record with this code or parent/name already exists.');
+        } catch (ForeignKeyConstraintViolationException) {
+            return $this->problem(422, 'The selected parent record does not exist.');
         } catch (\InvalidArgumentException $exception) {
             return $this->problem(422, $exception->getMessage());
         } catch (\Throwable) {
@@ -170,7 +174,9 @@ final readonly class CatalogAdminController
                     if (!is_array($value)) return $this->problem(422, 'mediaReferences must be an array.');
                     $value = json_encode($value, JSON_THROW_ON_ERROR);
                 }
-                $sets[] = $column . '=:' . $field;
+                $sets[] = $field === 'mediaReferences'
+                    ? $column . '=CAST(:' . $field . ' AS jsonb)'
+                    : $column . '=:' . $field;
                 $params[$field] = $value;
                 if ($resource === 'models' && $field === 'name') {
                     $sets[] = 'normalized_name=:normalizedName';
