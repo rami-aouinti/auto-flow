@@ -9,7 +9,8 @@ import (
 type Event struct {
 	EventID   string         `json:"eventId"`
 	EventType string         `json:"eventType"`
-	TenantID  string         `json:"tenantId"`\n\tCorrelationID string `json:"correlationId"`
+	TenantID  string         `json:"tenantId"`
+	CorrelationID string `json:"correlationId"`
 	Aggregate struct {
 		Type string `json:"type"`
 		ID   string `json:"id"`
