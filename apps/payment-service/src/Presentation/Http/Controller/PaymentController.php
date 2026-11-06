@@ -6,6 +6,7 @@ namespace App\Presentation\Http\Controller;
 
 use App\Application\PaymentApplicationService;
 use App\Application\PaymentNotFoundException;
+use App\Application\GetPayment\GetPaymentHandler;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use DomainException;
 use Symfony\Component\HttpFoundation\JsonResponse;
