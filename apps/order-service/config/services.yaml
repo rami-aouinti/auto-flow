@@ -1,3 +1,8 @@
+parameters:
+    app.order_offer_service_url: '%env(resolve:ORDER_OFFER_SERVICE_URL)%'
+    app.order_pricing_service_url: '%env(resolve:ORDER_PRICING_SERVICE_URL)%'
+    app.order_catalog_service_url: '%env(resolve:ORDER_CATALOG_SERVICE_URL)%'
+
 services:
     _defaults:
         autowire: true
@@ -14,3 +19,12 @@ services:
 
     App\Application\Port\OrderRepositoryInterface:
         alias: App\Infrastructure\Persistence\Doctrine\DoctrineOrderRepository
+
+    App\Infrastructure\Upstream\HttpOrderReferenceValidator:
+        arguments:
+            $offerServiceUrl: '%app.order_offer_service_url%'
+            $pricingServiceUrl: '%app.order_pricing_service_url%'
+            $catalogServiceUrl: '%app.order_catalog_service_url%'
+
+    App\Application\Port\OrderReferenceValidatorInterface:
+        alias: App\Infrastructure\Upstream\HttpOrderReferenceValidator
