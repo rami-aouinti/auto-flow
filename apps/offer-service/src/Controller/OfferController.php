@@ -19,6 +19,7 @@ use App\Domain\Exception\OfferNotFound;
 use App\Domain\ValueObject\OfferId;
 use App\Domain\ValueObject\OfferStatus;
 use App\Infrastructure\Pdf\OfferPdfGenerator;
+use AutoFlow\CoreBundle\Application\Clock\ClockInterface;
 use AutoFlow\CoreBundle\Context\TenantContext;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
@@ -43,6 +44,7 @@ final readonly class OfferController
 {
     public function __construct(
         private TenantContext $tenantContext,
+        private ClockInterface $clock,
         private CreateOfferHandler $createOfferHandler,
         private GetOfferHandler $getOfferHandler,
         private GetOfferHistoryHandler $getOfferHistoryHandler,
@@ -88,7 +90,7 @@ final readonly class OfferController
                 throw new LogicException('A verified authenticated principal is required.');
             }
 
-            $createdAt = new DateTimeImmutable();
+            $createdAt = $this->clock->now();
             $expiresAt = $createdAt->modify(sprintf('+%d days', $this->offerValidityDays));
 
             if (!$expiresAt instanceof DateTimeImmutable) {
