@@ -7,7 +7,7 @@ BEGIN
         SELECT 1 FROM pg_constraint WHERE conname = 'orders_payment_status_check'
     ) THEN
         ALTER TABLE orders ADD CONSTRAINT orders_payment_status_check
-            CHECK (payment_status IN ('not_started','authorized','captured','failed','refunded','cancelled'));
+            CHECK (payment_status IN ('not_started','authorized','captured','failed','partially_refunded','refunded','cancelled'));
     END IF;
 END
 $$;
