@@ -7,6 +7,7 @@ namespace App\Presentation\Http\Controller;
 use App\Application\IdempotencyConflictException;
 use App\Application\OrderApplicationService;
 use App\Application\OrderNotFoundException;
+use App\Application\OrderReferenceValidationException;
 use App\Application\OrderUpstreamAuthorizationException;
 use App\Application\OrderUpstreamUnavailableException;
 use App\Application\Port\OrderReferenceValidatorInterface;
