@@ -8,6 +8,7 @@ use App\\Domain\\Order;
 use App\\Domain\\OrderStatus;
 use Doctrine\\DBAL\\Connection;
 use DomainException;
+use OpenTelemetry\\API\\Trace\\Propagation\\TraceContextPropagator;
 use Symfony\\Component\\Uid\\Uuid;
 
 /**
@@ -315,11 +316,14 @@ final readonly class OrderApplicationService
     ): void
     {
         $eventId = Uuid::v7()->toRfc4122();
+        $traceContext = [];
+        TraceContextPropagator::getInstance()->inject($traceContext);
         $occurredAt = (new \\DateTimeImmutable('now', new \\DateTimeZone('UTC')))->format(DATE_ATOM);
         $envelope = [
             'eventId' => $eventId, 'eventType' => $eventType, 'schemaVersion' => 1,
             'producer' => 'order-service', 'aggregate' => ['type' => 'Order', 'id' => $orderId],
-            'tenantId' => $tenantId, 'occurredAt' => $occurredAt, 'data' => $payload,
+            'tenantId' => $tenantId, 'occurredAt' => $occurredAt,
+            'traceContext' => $traceContext, 'data' => $payload,
         ];
         $db->executeStatement(
             'INSERT INTO order_outbox (event_id, tenant_id, order_id, event_type, payload, occurred_at)
