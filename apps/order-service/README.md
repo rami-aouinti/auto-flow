@@ -19,7 +19,7 @@ The service listens on host port **8085** (container port 8080). Every `/api/` r
 | POST | `/api/v1/orders/{id}/contract-pending` | `orders:manage` | Await contract preparation |
 | POST | `/api/v1/orders/{id}/complete` | `orders:manage` | Complete fulfilment |
 
-The full OpenAPI contract is in [docs/openapi.yaml](docs/openapi.yaml).
+The full OpenAPI contract is in [docs/openapi.yaml](docs/openapi.yaml). Order creation requires `orders:write`, `offers:read`, `pricing:quote` and `catalog:read` in the caller token because the API validates the references against their owning services.
 
 Example create body:
 
@@ -27,14 +27,11 @@ Example create body:
 {
   "offerId": "offer-123",
   "quoteId": "quote-456",
-  "vehicleId": "variant-789",
-  "offerSnapshot": { "offerVersion": 1, "validUntil": "2026-11-13T12:00:00Z" },
-  "quoteSnapshot": { "currency": "EUR", "monthlyAmount": "329.00", "durationMonths": 48 },
-  "vehicleSnapshot": { "manufacturer": "Example Motors", "model": "E-1", "variant": "Long Range" }
+  "vehicleId": "variant-789"
 }
 ```
 
-The snapshots preserve the submitted commercial and vehicle facts even if upstream data changes later. **Current boundary:** this first increment accepts snapshots from its trusted caller; it does not yet call Offer/Pricing/Catalog to verify quote ownership, validity or tenant consistency. Do not expose this endpoint to an untrusted public client until that orchestration/validation boundary is implemented.
+Order Management now resolves all three snapshots itself before persisting the order. It calls Offer, Pricing and Vehicle Catalog with the caller's verified bearer token and tenant context. The offer must be accepted and unexpired, the quote must belong to the same vehicle and remain valid, and the catalogue variant must be published. Client-supplied snapshots are overwritten and never trusted. The local `order-operator` therefore needs `offers:read`, `pricing:quote` and `catalog:read` in addition to the order roles; the local token client already carries the three upstream audiences. A 503 means an upstream dependency could not be reached and no order was created.
 
 ## Domain lifecycle
 
@@ -68,7 +65,7 @@ docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 
 docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/130-order-schema.sql
 ```
 
-Keycloak imports the realm file only when the `autoflow` realm does not already exist. If you already have that realm, the new client audience, roles and `order-operator` user will not be merged automatically. For a disposable local Keycloak container, recreate it with `docker compose up -d --force-recreate keycloak` (this resets its local realm data); otherwise add the `autoflow-order` audience mapper, `orders:read/write/manage` realm roles and the `order-operator` user with `tenant_id=tenant-demo` manually.
+Keycloak imports the realm file only when the `autoflow` realm does not already exist. If you already have that realm, the new client audience, roles and `order-operator` user will not be merged automatically. The order operator also needs the upstream read roles `offers:read`, `pricing:quote` and `catalog:read`. For a disposable local Keycloak container, recreate it with `docker compose up -d --force-recreate keycloak` (this resets its local realm data); otherwise add the `autoflow-order` audience mapper, `orders:read/write/manage` realm roles and the `order-operator` user with `tenant_id=tenant-demo` manually.
 
 Then rebuild and start the service:
 
@@ -90,4 +87,4 @@ Do not use `docker compose down -v` on a database containing data.
 
 ## Explicitly not included yet
 
-Temporal workflow orchestration, automatic upstream offer/quote verification, customer identity/profile storage, payment capture, contract generation/signature, and downstream event consumers are later increments. The Temporal server already present in Compose is not proof that this service currently runs a Temporal workflow.
+Temporal workflow orchestration, customer identity/profile storage, payment capture, contract generation/signature, and downstream event consumers remain later increments. The Temporal server already present in Compose is not proof that this service currently runs a Temporal workflow.

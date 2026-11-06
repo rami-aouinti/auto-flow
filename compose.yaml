@@ -94,6 +94,9 @@ services:
       APP_SECRET: local-only-order-service-secret
       DEFAULT_URI: http://localhost:8085
       ORDER_DATABASE_URL: ${ORDER_DATABASE_URL:-postgresql://autoflow_order:local-only-order-password@postgres:5432/autoflow}
+      ORDER_OFFER_SERVICE_URL: ${ORDER_OFFER_SERVICE_URL:-http://offer-service:8080}
+      ORDER_PRICING_SERVICE_URL: ${ORDER_PRICING_SERVICE_URL:-http://pricing-service:8080}
+      ORDER_CATALOG_SERVICE_URL: ${ORDER_CATALOG_SERVICE_URL:-http://vehicle-catalog-service:8080}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-order-service
@@ -111,6 +114,9 @@ services:
       OTEL_PHP_EXCLUDED_URLS: ^/health
     depends_on:
       postgres: {condition: service_healthy}
+      offer-service: {condition: service_healthy}
+      pricing-service: {condition: service_healthy}
+      vehicle-catalog-service: {condition: service_healthy}
       tempo: {condition: service_started}
       alloy: {condition: service_started}
       keycloak: {condition: service_started}

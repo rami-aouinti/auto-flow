@@ -7,6 +7,9 @@ namespace App\Presentation\Http\Controller;
 use App\Application\IdempotencyConflictException;
 use App\Application\OrderApplicationService;
 use App\Application\OrderNotFoundException;
+use App\Application\OrderUpstreamAuthorizationException;
+use App\Application\OrderUpstreamUnavailableException;
+use App\Application\Port\OrderReferenceValidatorInterface;
 use App\Domain\OrderStatus;
 use App\Infrastructure\Observability\OrderMetrics;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
@@ -28,7 +31,11 @@ use Throwable;
 )]
 final readonly class OrderController
 {
-    public function __construct(private OrderApplicationService $orders, private OrderMetrics $metrics)
+    public function __construct(
+        private OrderApplicationService $orders,
+        private OrderMetrics $metrics,
+        private OrderReferenceValidatorInterface $referenceValidator,
+    )
     {
     }
 
@@ -41,10 +48,28 @@ final readonly class OrderController
             if (!is_string($key) || $key === '') {
                 return $this->problem(400, 'Idempotency-Key is required.');
             }
+            $tenantId = $this->tenant($principal);
+            $input = $this->jsonBody($request);
+            foreach (['offerId', 'quoteId', 'vehicleId'] as $field) {
+                if (!isset($input[$field]) || !is_string($input[$field])) {
+                    throw new \InvalidArgumentException(sprintf('Field "%s" must be a string.', $field));
+                }
+            }
+            $verifiedSnapshots = $this->referenceValidator->validate(
+                $input['offerId'],
+                $input['quoteId'],
+                $input['vehicleId'],
+                $tenantId,
+                $this->bearerToken($request),
+            );
+            // Snapshots are resolved from the authoritative services, never accepted from the browser.
+            $input['offerSnapshot'] = $verifiedSnapshots['offerSnapshot'];
+            $input['quoteSnapshot'] = $verifiedSnapshots['quoteSnapshot'];
+            $input['vehicleSnapshot'] = $verifiedSnapshots['vehicleSnapshot'];
             $result = $this->orders->create(
-                $this->tenant($principal),
+                $tenantId,
                 $principal->subject,
-                $this->jsonBody($request),
+                $input,
                 $key,
             );
             $this->metrics->recordCreated();
@@ -53,8 +78,10 @@ final readonly class OrderController
                 JsonResponse::HTTP_CREATED,
                 ['Cache-Control' => 'no-store'],
             );
-        } catch (AccessDeniedHttpException) {
+        } catch (AccessDeniedHttpException|OrderUpstreamAuthorizationException) {
             return $this->problem(403, 'The required permission and tenant context are required.');
+        } catch (OrderUpstreamUnavailableException) {
+            return $this->problem(503, 'An upstream service is temporarily unavailable; no order was created.');
         } catch (IdempotencyConflictException $exception) {
             return $this->problem(409, $exception->getMessage());
         } catch (DomainException $exception) {
@@ -214,6 +241,16 @@ final readonly class OrderController
         }
     }
 
+    private function bearerToken(Request $request): string
+    {
+        $authorization = $request->headers->get('Authorization', '');
+        if (!is_string($authorization)
+            || preg_match('/^Bearer ([A-Za-z0-9._~-]+)$/D', $authorization, $matches) !== 1) {
+            throw new AccessDeniedHttpException();
+        }
+        return $matches[1];
+    }
+
     private function principal(Request $request, string $scope): AuthenticatedPrincipal
     {
         $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
@@ -245,7 +282,7 @@ final readonly class OrderController
     {
         $title = match ($status) {
             400 => 'Bad Request', 403 => 'Forbidden', 404 => 'Not Found',
-            409 => 'Conflict', 422 => 'Unprocessable Entity', default => 'Internal Server Error',
+            409 => 'Conflict', 422 => 'Unprocessable Entity', 503 => 'Service Unavailable', default => 'Internal Server Error',
         };
         return new JsonResponse([
             'type' => 'about:blank', 'title' => $title, 'status' => $status, 'detail' => $detail,

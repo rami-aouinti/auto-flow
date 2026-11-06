@@ -13,6 +13,7 @@ The new independently deployable Symfony 7.4 application lives at `apps/order-se
 Implemented capabilities:
 - Domain lifecycle aggregate and explicit transition policy.
 - REST API for create, list, retrieve, submit, review, accept, reject, cancel, contract-pending and complete.
+- Before creation, resolves Offer, Pricing and Vehicle Catalog over authenticated HTTP; verifies accepted/unexpired offer, quote-to-vehicle consistency and published catalogue variant; persists only server-resolved immutable snapshots.
 - Tenant-scoped PostgreSQL tables with forced row-level security.
 - Immutable offer, quote and vehicle JSONB snapshots; PostgreSQL column-level grants prevent the API role from updating snapshot columns.
 - Append-only lifecycle history.
@@ -82,7 +83,7 @@ Recommended dashboards:
 ## Deliberate boundaries and remaining work
 
 This increment does **not** claim the following are implemented:
-1. Calling Offer/Pricing/Catalog APIs to verify that referenced resources exist, are current and belong to the same tenant. The current API accepts snapshots from a trusted orchestrator; do not expose it directly to untrusted clients until validation is added.
+1. The local Order flow now performs the Offer/Pricing/Catalog checks with the caller's bearer token. Production still needs an explicit delegated-token/exchange policy and least-privilege scope provisioning for each customer/partner client.
 2. Payment capture, credit/eligibility decision, contract document generation or e-signature.
 3. A Temporal workflow. Temporal is a suitable next step for long-running partner checks, human review and contract progression, but this service currently exposes explicit state transitions and publishes events.
 4. Downstream RabbitMQ consumers, dead-letter replay tooling, retention jobs and production secret rotation.
