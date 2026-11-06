@@ -110,3 +110,27 @@ func TestWaitForLifecycleEventDeduplicatesRabbitRedelivery(t *testing.T) {
 		t.Fatalf("workflow returned an error: %v", err)
 	}
 }
+
+func TestOrderLifecycleWorkflowContinuesAfterPaymentAuthorization(t *testing.T) {
+	var suite testsuite.WorkflowTestSuite
+	env := suite.NewTestWorkflowEnvironment()
+	env.RegisterActivity(&Activities{})
+
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(LifecycleSignal, Event{EventType: "OrderAccepted"})
+	}, time.Minute)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(LifecycleSignal, Event{EventType: "OrderPaymentAuthorized"})
+	}, 2*time.Minute)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(LifecycleSignal, Event{EventType: "OrderPaymentCaptured"})
+	}, 3*time.Minute)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(LifecycleSignal, Event{EventType: "OrderCompleted"})
+	}, 4*time.Minute)
+
+	env.ExecuteWorkflow(OrderLifecycleWorkflow, WorkflowInput{TenantID: "tenant-a", OrderID: "order-payment"})
+	if err := env.GetWorkflowError(); err != nil {
+		t.Fatalf("workflow returned an error: %v", err)
+	}
+}
