@@ -50,6 +50,9 @@ services:
       OTEL_PHP_AUTOLOAD_ENABLED: "true"
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
+      # Export often enough for local dashboards while keeping a bounded batch cadence.
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
@@ -97,6 +100,9 @@ services:
       OTEL_PHP_AUTOLOAD_ENABLED: "true"
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
+      # Export often enough for local dashboards while keeping a bounded batch cadence.
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
@@ -259,6 +265,9 @@ services:
       OTEL_PHP_AUTOLOAD_ENABLED: "true"
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
+      # Export often enough for local dashboards while keeping a bounded batch cadence.
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
