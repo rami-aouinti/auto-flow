@@ -30,6 +30,6 @@ services:
     App\Application\Port\OrderReferenceValidatorInterface:
         alias: App\Infrastructure\Upstream\HttpOrderReferenceValidator
 
-    App\\Presentation\\Http\\Controller\\InternalPaymentContextController:
+    App\Presentation\Http\Controller\InternalPaymentContextController:
         arguments:
             $paymentSharedSecret: '%app.order_payment_shared_secret%'
