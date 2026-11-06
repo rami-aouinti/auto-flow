@@ -158,11 +158,33 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         string $actor,
         string $orderId,
         OrderStatus $target,
+        string $idempotencyKey,
         ?string $reason = null,
     ): array {
         return $this->connection->transactional(
-            function (Connection $db) use ($tenantId, $actor, $orderId, $target, $reason): array {
+            function (Connection $db) use ($tenantId, $actor, $orderId, $target, $idempotencyKey, $reason): array {
                 $this->setTenant($db, $tenantId);
+                $requestHash = hash('sha256', json_encode([
+                    'orderId' => $orderId, 'target' => $target->value, 'reason' => $reason,
+                ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+                $db->executeQuery(
+                    'SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))',
+                    ['lock_key' => 'transition:' . $tenantId . ':' . $actor . ':' . $idempotencyKey],
+                );
+                $existing = $db->fetchAssociative(
+                    <<<'SQL'
+                        SELECT request_hash, response_json
+                        FROM order_transition_idempotency
+                        WHERE tenant_id = :tenant AND actor = :actor AND idempotency_key = :key
+                        SQL,
+                    ['tenant' => $tenantId, 'actor' => $actor, 'key' => $idempotencyKey],
+                );
+                if (is_array($existing)) {
+                    if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
+                        throw new IdempotencyConflictException('Idempotency-Key was already used for a different order transition.');
+                    }
+                    return $this->decodeObject($existing['response_json']);
+                }
                 $row = $db->fetchAssociative(
                     'SELECT * FROM orders WHERE tenant_id = :tenant AND order_id = :id FOR UPDATE',
                     ['tenant' => $tenantId, 'id' => $orderId],
@@ -201,7 +223,20 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                 $this->writeOutbox($db, $tenantId, $orderId, $event, [
                     'orderId' => $orderId, 'previousStatus' => $from->value, 'status' => $target->value,
                 ]);
-                return $this->findInTransaction($db, $tenantId, $orderId);
+                $response = $this->findInTransaction($db, $tenantId, $orderId);
+                $db->executeStatement(
+                    <<<'SQL'
+                        INSERT INTO order_transition_idempotency (
+                            tenant_id, actor, idempotency_key, request_hash, order_id, response_json, created_at
+                        ) VALUES (:tenant, :actor, :key, :hash, :order, CAST(:response AS JSONB), :now)
+                        SQL,
+                    [
+                        'tenant' => $tenantId, 'actor' => $actor, 'key' => $idempotencyKey,
+                        'hash' => $requestHash, 'order' => $orderId,
+                        'response' => json_encode($response, JSON_THROW_ON_ERROR), 'now' => $now,
+                    ],
+                );
+                return $response;
         });
     }
 
