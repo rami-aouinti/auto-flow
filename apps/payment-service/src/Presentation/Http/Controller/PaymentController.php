@@ -7,6 +7,7 @@ namespace App\Presentation\Http\Controller;
 use App\Application\PaymentApplicationService;
 use App\Application\PaymentNotFoundException;
 use App\Application\GetPayment\GetPaymentHandler;
+use App\Application\ListPayments\ListPaymentsHandler;
 use App\Application\CreatePayment\CreatePaymentHandler;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use DomainException;
@@ -22,6 +23,7 @@ final readonly class PaymentController
     public function __construct(
         private PaymentApplicationService $payments,
         private GetPaymentHandler $getPayment,
+        private ListPaymentsHandler $listPayments,
         private CreatePaymentHandler $createPayment,
     )
     {
@@ -37,7 +39,7 @@ final readonly class PaymentController
             $offset = $request->query->getInt('offset', 0);
 
             return new JsonResponse(
-                $this->getPayment->list($this->tenant($principal), $limit, $offset),
+                ($this->listPayments)($this->tenant($principal), $limit, $offset),
                 200,
                 ['Cache-Control' => 'no-store'],
             );
