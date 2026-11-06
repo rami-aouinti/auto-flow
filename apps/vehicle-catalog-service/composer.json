@@ -7,7 +7,7 @@
     "autoflow/core-bundle": "^2.0",
     "doctrine/dbal": "^4.3",
     "doctrine/doctrine-bundle": "^3.3",
-    "doctrine/doctrine-migrations-bundle": "^3.4",
+    "doctrine/doctrine-migrations-bundle": "^4.0",
     "doctrine/orm": "^3.5",
     "ext-json": "*",
     "ext-mbstring": "*",
