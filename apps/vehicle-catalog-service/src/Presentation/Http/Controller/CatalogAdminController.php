@@ -95,9 +95,9 @@ final readonly class CatalogAdminController
             return new JsonResponse(['id' => $id, 'status' => 'draft'], 201, ['Cache-Control' => 'no-store']);
         } catch (CatalogParentNotFoundException $exception) {
             return $this->problem(422, $exception->getMessage());
-        } catch (\\InvalidArgumentException $exception) {
+        } catch (\InvalidArgumentException $exception) {
             return $this->problem(422, $exception->getMessage());
-        } catch (\\Throwable) {
+        } catch (\Throwable) {
             return $this->problem(400, 'A valid catalogue JSON payload is required.');
         }
     }
