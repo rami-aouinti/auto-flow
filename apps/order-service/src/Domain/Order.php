@@ -8,6 +8,7 @@ use DomainException;
 
 /**
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
  */
 final class Order
 {
