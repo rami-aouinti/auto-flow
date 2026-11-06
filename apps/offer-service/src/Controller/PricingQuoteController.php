@@ -54,7 +54,6 @@ final readonly class PricingQuoteController
             ];
 
             $pricingResponse = $this->pricingQuoteProxy->requestQuote(
-                $vehicleId,
                 $pricingPayload,
                 $this->requireBearerToken($request),
                 $this->tenantContext->requireTenantId(),
