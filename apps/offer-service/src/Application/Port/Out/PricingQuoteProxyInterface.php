@@ -10,7 +10,6 @@ interface PricingQuoteProxyInterface
 {
     /** @param array<string, scalar|null> $payload */
     public function requestQuote(
-        string $vehicleId,
         array $payload,
         string $subjectAccessToken,
         string $tenantId,
