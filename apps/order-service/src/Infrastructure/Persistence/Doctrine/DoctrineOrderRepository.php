@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\\Infrastructure\\Persistence\\Doctrine;
 
+use App\\Application\\IdempotencyConflictException;
 use App\\Application\\OrderNotFoundException;
 use App\\Application\\Port\\OrderRepositoryInterface;
 use App\\Domain\\Order;
