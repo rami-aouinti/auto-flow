@@ -38,7 +38,7 @@ docker compose up -d --build
 docker compose ps
 docker compose exec php composer install
 docker compose exec php php -v
-docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher
+docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-workflow-worker
 ~~~
 
 The first local build installs each service's independent Composer dependencies. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
@@ -73,7 +73,7 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Adminer | http://localhost:8083 | Browser-based PostgreSQL administration (local host only) |
 | Keycloak | http://localhost:8080 | Local OIDC identity provider and token issuer |
 | PostgreSQL | localhost:5432 | Relational database |
-| Temporal gRPC | localhost:7233 | Local Temporal development server |
+| Temporal gRPC | localhost:7233 | Local Temporal development server |\n| Temporal UI | http://localhost:8233 | Inspect Order lifecycle workflow executions |
 | Temporal UI | http://localhost:8233 | Workflow visibility (development only) |
 | Redis | localhost:6379 | Cache and ephemeral data |
 | OTLP gRPC / HTTP | localhost:4317 / 4318 | OpenTelemetry trace ingestion |
