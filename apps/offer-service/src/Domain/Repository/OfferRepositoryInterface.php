@@ -27,6 +27,11 @@ interface OfferRepositoryInterface
         int $offset,
     ): array;
 
+    /**
+     * @return list<array{eventId: string, eventType: string, fromStatus: ?string, toStatus: string, actorType: string, actorId: ?string, occurredAt: string, metadata: array<string, mixed>}>|null
+     */
+    public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array;
+
     /** @return list<string> */
     public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array;
 
