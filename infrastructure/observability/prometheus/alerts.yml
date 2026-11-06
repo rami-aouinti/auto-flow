@@ -104,6 +104,19 @@ groups:
           summary: "HTTP p95 latency is above one second"
           description: "Service {{ $labels.service_name }} has a p95 HTTP latency above one second for 10 minutes."
 
+  - name: autoflow-offer-management
+    interval: 30s
+    rules:
+      - alert: OfferIntegrationEventBufferBacklog
+        expr: rabbitmq_queue_messages_ready{queue="offer.events"} > 100
+        for: 10m
+        labels:
+          severity: warning
+          team: offers
+        annotations:
+          summary: "Offer integration event buffer is growing"
+          description: "The durable offer.events buffer has more than 100 ready messages for 10 minutes. The current Compose topology has no consumer for this catch-all queue; verify whether a downstream integration should be deployed or whether the backlog is expected."
+
   - name: autoflow-order-management
     interval: 30s
     rules:
