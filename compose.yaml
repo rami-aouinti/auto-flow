@@ -590,7 +590,6 @@ services:
       - ./apps/order-service/migrations/Version20261106000200AddOrderTransitionIdempotency.sql:/docker-entrypoint-initdb.d/140-order-transition-idempotency.sql:ro
       - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/docker-entrypoint-initdb.d/150-payment-role.sql:ro
       - ./apps/order-service/migrations/Version20261106000300AddPaymentLifecycle.sql:/docker-entrypoint-initdb.d/145-order-payment-lifecycle.sql:ro
-      - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/docker-entrypoint-initdb.d/150-payment-role.sql:ro
       - ./apps/payment-service/migrations/140-payment-schema.sql:/docker-entrypoint-initdb.d/160-payment-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
@@ -602,11 +601,13 @@ services:
   postgres-bootstrap:
     image: postgres:16-alpine
     entrypoint: ["/bin/sh", "-ec"]
-    command: |
-      for migration in /migrations/*.sql; do
-        echo "Applying ${migration##*/}"
-        psql -v ON_ERROR_STOP=1 -f "$migration"
-      done
+    command: >
+      psql -v ON_ERROR_STOP=1 -f /migrations/120-order-role.sql &&
+      psql -v ON_ERROR_STOP=1 -f /migrations/130-order-schema.sql &&
+      psql -v ON_ERROR_STOP=1 -f /migrations/140-order-transition-idempotency.sql &&
+      psql -v ON_ERROR_STOP=1 -f /migrations/145-order-payment-lifecycle.sql &&
+      psql -v ON_ERROR_STOP=1 -f /migrations/150-payment-role.sql &&
+      psql -v ON_ERROR_STOP=1 -f /migrations/160-payment-schema.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
