@@ -37,3 +37,6 @@ services:
 
     App\\Application\\Port\\OrderPaymentContextProviderInterface:
         alias: App\\Infrastructure\\Order\\HttpOrderPaymentContextProvider
+
+    App\\Application\\Port\\PaymentRepositoryInterface:
+        alias: App\\Infrastructure\\Persistence\\DoctrinePaymentRepository
