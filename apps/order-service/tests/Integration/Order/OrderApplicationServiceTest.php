@@ -7,6 +7,7 @@ namespace App\\Tests\\Integration\\Order;
 use App\\Application\\IdempotencyConflictException;
 use App\\Application\\OrderApplicationService;
 use App\\Application\\OrderNotFoundException;
+use AutoFlow\\CoreBundle\\Context\\CorrelationContext;
 use App\\Domain\\OrderStatus;
 use App\\Infrastructure\\Persistence\\Doctrine\\DoctrineOrderRepository;
 use Doctrine\\DBAL\\DriverManager;
@@ -25,7 +26,7 @@ final class OrderApplicationServiceTest extends TestCase
         }
 
         $connection = DriverManager::getConnection(['url' => $databaseUrl]);
-        $this->orders = new OrderApplicationService(new DoctrineOrderRepository($connection));
+        $this->orders = new OrderApplicationService(new DoctrineOrderRepository($connection, new CorrelationContext()));
     }
 
     public function testCreationIsIdempotentAndLifecycleIsAudited(): void
