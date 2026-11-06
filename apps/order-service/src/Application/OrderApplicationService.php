@@ -83,13 +83,15 @@ final readonly class OrderApplicationService
         string $actor,
         string $orderId,
         OrderStatus $target,
+        string $idempotencyKey,
         ?string $reason = null,
     ): array {
         $this->assertIdentifier($tenantId, 'tenantId');
         $this->assertIdentifier($actor, 'actor');
         $this->assertIdentifier($orderId, 'orderId');
+        $this->assertIdentifier($idempotencyKey, 'Idempotency-Key');
 
-        return $this->orders->transition($tenantId, $actor, $orderId, $target, $reason);
+        return $this->orders->transition($tenantId, $actor, $orderId, $target, $idempotencyKey, $reason);
     }
 
     /** @return array<string, mixed> */
