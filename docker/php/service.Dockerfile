@@ -22,6 +22,7 @@ COPY docker/php/supervisor/offer-workers.conf /etc/supervisor/conf.d/offer-worke
 
 ARG SERVICE_PATH
 ARG COMPOSER_NO_DEV=--no-dev
+ARG ROADRUNNER_BOOT_CHECK=1
 WORKDIR /app
 
 # Resolve the local CoreBundle path repository inside the image.
@@ -63,7 +64,7 @@ RUN if [ -f src/Grpc/PricingGrpcService.php ]; then \
 # Only HTTP/gRPC service images contain a RoadRunner configuration.
 # Outbox publishers and event consumers reuse this image but run CLI commands,
 # so they must not be forced to boot a long-running RoadRunner server at build time.
-RUN if [ -f .rr.yaml ]; then \
+RUN if [ "$ROADRUNNER_BOOT_CHECK" = "1" ] && [ -f .rr.yaml ]; then \
     set +e; APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-secret DATABASE_URL=postgresql://autoflow_pricing:build-only@127.0.0.1:5432/autoflow OFFER_DATABASE_URL=postgresql://autoflow_offer:build-only@127.0.0.1:5432/autoflow ORDER_DATABASE_URL=postgresql://autoflow_order:build-only@127.0.0.1:5432/autoflow ORDER_OFFER_SERVICE_URL=http://offer-service:8080 ORDER_PRICING_SERVICE_URL=http://pricing-service:8080 ORDER_CATALOG_SERVICE_URL=http://vehicle-catalog-service:8080 PRICING_SERVICE_URL=http://pricing-service:8080 AUTOFLOW_JWT_ISSUER=https://identity-build.invalid/realms/autoflow AUTOFLOW_JWT_JWKS_URI=http://127.0.0.1:8080/realms/autoflow/protocol/openid-connect/certs KEYCLOAK_TOKEN_URL=http://127.0.0.1:8080/token PRICING_CLIENT_ID=build-only PRICING_CLIENT_SECRET=build-only \
         timeout --signal=TERM --kill-after=3s 8s rr serve -c .rr.yaml; status=$?; \
     if [ "$status" -ne 124 ] && [ "$status" -ne 137 ]; then exit "$status"; fi; \
