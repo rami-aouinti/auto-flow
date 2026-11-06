@@ -34,6 +34,7 @@ paths:
         '201': { description: Draft order created }
         '400': { description: Invalid request or missing idempotency key }
         '403': { description: Missing permission or tenant context }
+        '409': { description: Idempotency key conflict }
         '422': { description: Invalid order input }
     get:
       summary: List orders for the authenticated tenant
