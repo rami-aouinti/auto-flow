@@ -55,7 +55,7 @@ final class PublishOfferHandlerTest extends TestCase
 
             public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
             {
-                return [];
+                return null;
             }
 
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
@@ -112,7 +112,7 @@ final class PublishOfferHandlerTest extends TestCase
 
             public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
             {
-                return [];
+                return null;
             }
 
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
@@ -169,7 +169,7 @@ final class PublishOfferHandlerTest extends TestCase
 
             public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
             {
-                return [];
+                return null;
             }
 
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
