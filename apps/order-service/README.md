@@ -54,7 +54,7 @@ The Domain model enforces allowed transitions. The application locks the order r
 - Creation requires an idempotency key scoped to tenant and authenticated actor. Repeating the same key and payload replays the stored response; reusing it with a different payload is rejected.
 - Offer, quote and vehicle snapshots are immutable through the lifecycle API.
 - Each state change appends an audit row and an integration event in the same transaction.
-- The Outbox publisher uses narrow SECURITY DEFINER claim/ack/retry functions owned by a dedicated non-login BYPASSRLS role with access only to the Outbox table; the runtime API login does not receive BYPASSRLS. Retries stop after ten failed attempts and leave a terminal failed row for operator inspection.
+- The Outbox publisher has a separate `autoflow_order_publisher` login that can only execute narrow SECURITY DEFINER claim/ack/retry functions. Those functions are owned by a dedicated non-login BYPASSRLS role with access only to the Outbox table; neither runtime login receives BYPASSRLS. Retries stop after ten failed attempts and leave a terminal failed row for operator inspection.
 - RabbitMQ delivery is at-least-once. Consumers must deduplicate by `eventId`.
 - Rejection requires a reason. Terminal states cannot transition further.
 - CoreBundle propagates correlation IDs and verifies JWTs; OpenTelemetry exports traces and low-cardinality business counters.
