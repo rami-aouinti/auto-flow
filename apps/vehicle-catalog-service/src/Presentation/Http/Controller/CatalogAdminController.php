@@ -65,8 +65,6 @@ final readonly class CatalogAdminController
     ];
 
     #[RequiresScope('catalog:manage')]
-    #[Route('/{resource}', methods: ['GET'], requirements: ['resource' => 'manufacturers|models|generations|variants'])]
-    #[RequiresScope('catalog:manage')]
     #[Route('/{resource}', methods: ['POST'], requirements: ['resource' => 'manufacturers|models|generations|variants'])]
     public function create(string $resource, Request $request, CatalogApplicationService $catalog): JsonResponse
     {
@@ -104,6 +102,8 @@ final readonly class CatalogAdminController
         }
     }
 
+    #[RequiresScope('catalog:manage')]
+    #[Route('/{resource}', methods: ['GET'], requirements: ['resource' => 'manufacturers|models|generations|variants'])]
     public function list(string $resource, Request $request, Connection $db): JsonResponse
     {
         $config = self::RESOURCES[$resource];
