@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\\Presentation\\Http\\Controller;
+namespace App\Presentation\Http\Controller;
 
-use App\\Application\\PaymentApplicationService;
-use App\\Application\\PaymentNotFoundException;
-use AutoFlow\\CoreBundle\\Security\\AuthenticatedPrincipal;
+use App\Application\PaymentApplicationService;
+use App\Application\PaymentNotFoundException;
+use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use DomainException;
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
-use Symfony\\Component\\HttpFoundation\\Request;\nuse Symfony\\Component\\HttpKernel\\Exception\\AccessDeniedHttpException;
-use Symfony\\Component\\Routing\\Attribute\\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 
 #[Route('/api/v1/payments')]
