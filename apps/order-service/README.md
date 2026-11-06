@@ -19,7 +19,7 @@ The service listens on host port **8085** (container port 8080). Every `/api/` r
 | POST | `/api/v1/orders/{id}/contract-pending` | `orders:manage` | Await contract preparation |
 | POST | `/api/v1/orders/{id}/complete` | `orders:manage` | Complete fulfilment |
 
-The full OpenAPI contract is in [docs/openapi.yaml](docs/openapi.yaml).
+The full OpenAPI contract is in [docs/openapi.yaml](docs/openapi.yaml). Order creation requires `orders:write`, `offers:read`, `pricing:quote` and `catalog:read` in the caller token because the API validates the references against their owning services.
 
 Example create body:
 
@@ -65,7 +65,7 @@ docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 
 docker compose exec -T postgres psql -U autoflow -d autoflow -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/130-order-schema.sql
 ```
 
-Keycloak imports the realm file only when the `autoflow` realm does not already exist. If you already have that realm, the new client audience, roles and `order-operator` user will not be merged automatically. For a disposable local Keycloak container, recreate it with `docker compose up -d --force-recreate keycloak` (this resets its local realm data); otherwise add the `autoflow-order` audience mapper, `orders:read/write/manage` realm roles and the `order-operator` user with `tenant_id=tenant-demo` manually.
+Keycloak imports the realm file only when the `autoflow` realm does not already exist. If you already have that realm, the new client audience, roles and `order-operator` user will not be merged automatically. The order operator also needs the upstream read roles `offers:read`, `pricing:quote` and `catalog:read`. For a disposable local Keycloak container, recreate it with `docker compose up -d --force-recreate keycloak` (this resets its local realm data); otherwise add the `autoflow-order` audience mapper, `orders:read/write/manage` realm roles and the `order-operator` user with `tenant_id=tenant-demo` manually.
 
 Then rebuild and start the service:
 
@@ -87,4 +87,4 @@ Do not use `docker compose down -v` on a database containing data.
 
 ## Explicitly not included yet
 
-Temporal workflow orchestration, automatic upstream offer/quote verification, customer identity/profile storage, payment capture, contract generation/signature, and downstream event consumers are later increments. The Temporal server already present in Compose is not proof that this service currently runs a Temporal workflow.
+Temporal workflow orchestration, customer identity/profile storage, payment capture, contract generation/signature, and downstream event consumers remain later increments. The Temporal server already present in Compose is not proof that this service currently runs a Temporal workflow.
