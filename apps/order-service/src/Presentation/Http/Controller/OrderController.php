@@ -16,12 +16,12 @@ use Symfony\\Component\\HttpKernel\\Exception\\AccessDeniedHttpException;
 use Symfony\\Component\\Routing\\Attribute\\Route;
 use Throwable;
 
-#[Route('/api/v1/orders')]
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
+#[Route('/api/v1/orders')]
 final readonly class OrderController
 {
     public function __construct(private OrderApplicationService $orders, private OrderMetrics $metrics)
