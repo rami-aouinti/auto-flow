@@ -6,7 +6,6 @@ namespace App\Infrastructure\Pdf;
 
 use App\Domain\Entity\Offer;
 use DateTimeImmutable;
-use RuntimeException;
 
 /**
  * Dependency-free, deterministic PDF renderer for the immutable offer snapshot.
@@ -97,10 +96,7 @@ final class OfferPdfGenerator
 
     private function escapeText(string $value): string
     {
-        $encoded = iconv('UTF-8', 'Windows-1252//TRANSLIT', $value);
-        if ($encoded === false) {
-            throw new RuntimeException('Could not encode offer text for PDF output.');
-        }
+        $encoded = mb_convert_encoding($value, 'Windows-1252', 'UTF-8');
 
         return str_replace(['\\', '(', ')', "\r", "\n"], ['\\\\', '\\(', '\\)', '', ' '], $encoded);
     }
