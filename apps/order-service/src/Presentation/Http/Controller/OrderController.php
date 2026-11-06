@@ -71,7 +71,7 @@ final readonly class OrderController
             return $this->problem(409, $exception->getMessage());
         } catch (DomainException $exception) {
             return $this->problem(422, $exception->getMessage());
-        } catch (\\JsonException|\\InvalidArgumentException) {
+        } catch (\JsonException|\InvalidArgumentException) {
             return $this->problem(400, 'A valid JSON object is required.');
         } catch (Throwable) {
             return $this->problem(500, 'The order could not be created.');
