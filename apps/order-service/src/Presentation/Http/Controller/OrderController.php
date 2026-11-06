@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controller;
 
+use App\Application\CreateOrder\CreateOrderHandler;
 use App\Application\IdempotencyConflictException;
 use App\Application\OrderApplicationService;
 use App\Application\OrderNotFoundException;
 use App\Application\OrderReferenceValidationException;
 use App\Application\OrderUpstreamAuthorizationException;
 use App\Application\OrderUpstreamUnavailableException;
-use App\Application\Port\OrderReferenceValidatorInterface;
 use App\Domain\OrderStatus;
 use App\Infrastructure\Observability\OrderMetrics;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
@@ -35,7 +35,7 @@ final readonly class OrderController
     public function __construct(
         private OrderApplicationService $orders,
         private OrderMetrics $metrics,
-        private OrderReferenceValidatorInterface $referenceValidator,
+        private CreateOrderHandler $createOrder,
     )
     {
     }
@@ -49,60 +49,15 @@ final readonly class OrderController
             if (!is_string($key) || $key === '') {
                 return $this->problem(400, 'Idempotency-Key is required.');
             }
-            $tenantId = $this->tenant($principal);
-            $input = $this->jsonBody($request);
-            foreach (['offerId', 'quoteId', 'vehicleId'] as $field) {
-                if (!isset($input[$field]) || !is_string($input[$field])) {
-                    throw new \InvalidArgumentException(sprintf('Field "%s" must be a string.', $field));
-                }
-            }
-            $existing = $this->orders->findIdempotentCreate(
-                $tenantId,
+
+            $result = ($this->createOrder)(
+                $this->tenant($principal),
                 $principal->subject,
                 $key,
-                $input['offerId'],
-                $input['quoteId'],
-                $input['vehicleId'],
+                $this->jsonBody($request),
+                $this->bearerToken($request),
             );
-            if ($existing !== null) {
-                $this->metrics->recordCreated();
-                return new JsonResponse($existing, JsonResponse::HTTP_CREATED, ['Cache-Control' => 'no-store']);
-            }
-            try {
-                $verifiedSnapshots = $this->referenceValidator->validate(
-                    $input['offerId'],
-                    $input['quoteId'],
-                    $input['vehicleId'],
-                    $tenantId,
-                    $this->bearerToken($request),
-                );
-            } catch (OrderReferenceValidationException|OrderUpstreamAuthorizationException|OrderUpstreamUnavailableException $exception) {
-                // A concurrent first request may have committed while this request was calling upstream.
-                $existing = $this->orders->findIdempotentCreate(
-                    $tenantId,
-                    $principal->subject,
-                    $key,
-                    $input['offerId'],
-                    $input['quoteId'],
-                    $input['vehicleId'],
-                );
-                if ($existing !== null) {
-                    $this->metrics->recordCreated();
-                    return new JsonResponse($existing, JsonResponse::HTTP_CREATED, ['Cache-Control' => 'no-store']);
-                }
-                throw $exception;
-            }
-            // Snapshots are resolved from the authoritative services, never accepted from the browser.
-            $input['offerSnapshot'] = $verifiedSnapshots['offerSnapshot'];
-            $input['quoteSnapshot'] = $verifiedSnapshots['quoteSnapshot'];
-            $input['vehicleSnapshot'] = $verifiedSnapshots['vehicleSnapshot'];
-            $result = $this->orders->create(
-                $tenantId,
-                $principal->subject,
-                $input,
-                $key,
-            );
-            $this->metrics->recordCreated();
+
             return new JsonResponse(
                 $result,
                 JsonResponse::HTTP_CREATED,
@@ -116,7 +71,7 @@ final readonly class OrderController
             return $this->problem(409, $exception->getMessage());
         } catch (DomainException $exception) {
             return $this->problem(422, $exception->getMessage());
-        } catch (\JsonException|\InvalidArgumentException) {
+        } catch (\\JsonException|\\InvalidArgumentException) {
             return $this->problem(400, 'A valid JSON object is required.');
         } catch (Throwable) {
             return $this->problem(500, 'The order could not be created.');
