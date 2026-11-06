@@ -78,6 +78,81 @@ services:
       start_period: 60s
     restart: unless-stopped
 
+
+  order-service:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/order-service
+        COMPOSER_NO_DEV: ""
+    ports:
+      - "8085:8080"
+    environment:
+      APP_ENV: ${ORDER_APP_ENV:-prod}
+      APP_DEBUG: ${ORDER_APP_DEBUG:-0}
+      APP_SECRET: local-only-order-service-secret
+      DEFAULT_URI: http://localhost:8085
+      ORDER_DATABASE_URL: ${ORDER_DATABASE_URL:-postgresql://autoflow_order:local-only-order-password@postgres:5432/autoflow}
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      OTEL_SERVICE_NAME: autoflow-order-service
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_PHP_EXCLUDED_URLS: ^/health
+    depends_on:
+      postgres: {condition: service_healthy}
+      tempo: {condition: service_started}
+      alloy: {condition: service_started}
+      keycloak: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  order-outbox-publisher:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/order-service
+        COMPOSER_NO_DEV: ""
+    command: ["php", "bin/publish-outbox.php"]
+    environment:
+      APP_ENV: prod
+      ORDER_DATABASE_URL: ${ORDER_DATABASE_URL:-postgresql://autoflow_order:local-only-order-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+      OTEL_SERVICE_NAME: autoflow-order-outbox-publisher
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_PROPAGATORS: tracecontext,baggage
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      tempo: {condition: service_started}
+    restart: unless-stopped
+
   vehicle-catalog-service:
     build:
       context: .
@@ -358,6 +433,8 @@ services:
       - ./apps/vehicle-catalog-service/migrations/00_create_catalog_database_role.sql:/docker-entrypoint-initdb.d/090-catalog-role.sql:ro
       - ./apps/vehicle-catalog-service/migrations/Version20261105000100CreateVehicleCatalog.sql:/docker-entrypoint-initdb.d/100-catalog-schema.sql:ro
       - ./apps/vehicle-catalog-service/fixtures/vehicle_catalog_demo.sql:/docker-entrypoint-initdb.d/110-catalog-demo.sql:ro
+      - ./apps/order-service/migrations/00_create_order_database_role.sql:/docker-entrypoint-initdb.d/120-order-role.sql:ro
+      - ./apps/order-service/migrations/Version20261106000100CreateOrders.sql:/docker-entrypoint-initdb.d/130-order-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
