@@ -35,89 +35,6 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/v1')]
 final readonly class CatalogManagementController
 {
-    #[OA\Get(
-        path: '/api/v1/manufacturers',
-        summary: 'List published manufacturers',
-        tags: ['Catalogue'],
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Published manufacturers',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(
-                    property: 'items',
-                    type: 'array',
-                    items: new OA\Items(ref: '#/components/schemas/ManufacturerResponse'),
-                ),
-            ],
-        ),
-    )]
-    #[RequiresScope('catalog:read')]
-    #[OA\Get(
-        path: '/api/v1/vehicles',
-        summary: 'Search published vehicle variants',
-        tags: ['Catalogue'],
-    )]
-    #[OA\Parameter(
-        name: 'q',
-        in: 'query',
-        description: 'Search variant, model or manufacturer name',
-        schema: new OA\Schema(type: 'string', maxLength: 200),
-    )]
-    #[OA\Parameter(name: 'manufacturerId', in: 'query', schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'modelId', in: 'query', schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'generationId', in: 'query', schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'fuelType', in: 'query', schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'bodyStyle', in: 'query', schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'powertrain', in: 'query', schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'transmission', in: 'query', schema: new OA\Schema(type: 'string'))]
-    #[OA\Parameter(name: 'minPowerKw', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1))]
-    #[OA\Parameter(name: 'maxPowerKw', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1))]
-    #[OA\Parameter(name: 'minSeats', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 20))]
-    #[OA\Parameter(name: 'maxSeats', in: 'query', schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 20))]
-    #[OA\Parameter(
-        name: 'limit',
-        in: 'query',
-        schema: new OA\Schema(type: 'integer', default: 20, minimum: 1, maximum: 100),
-    )]
-    #[OA\Parameter(name: 'offset', in: 'query', schema: new OA\Schema(type: 'integer', default: 0, minimum: 0))]
-    #[OA\Response(
-        response: 200,
-        description: 'Paginated vehicle variants',
-        content: new OA\JsonContent(
-            properties: [
-                new OA\Property(
-                    property: 'items',
-                    type: 'array',
-                    items: new OA\Items(ref: '#/components/schemas/VehicleResponse'),
-                ),
-                new OA\Property(property: 'total', type: 'integer'),
-                new OA\Property(property: 'limit', type: 'integer'),
-                new OA\Property(property: 'offset', type: 'integer'),
-            ],
-        ),
-    )]
-    #[OA\Response(response: 400, description: 'Invalid search criteria')]
-    #[RequiresScope('catalog:read')]
-    #[OA\Get(
-        path: '/api/v1/vehicles/{variantId}',
-        summary: 'Get a published vehicle variant',
-        tags: ['Catalogue'],
-    )]
-    #[OA\Parameter(
-        name: 'variantId',
-        in: 'path',
-        required: true,
-        schema: new OA\Schema(type: 'string', pattern: '^[a-f0-9]{32}$'),
-    )]
-    #[OA\Response(
-        response: 200,
-        description: 'Vehicle details',
-        content: new OA\JsonContent(ref: '#/components/schemas/VehicleResponse'),
-    )]
-    #[OA\Response(response: 404, description: 'Vehicle not found')]
-    #[RequiresScope('catalog:read')]
     #[OA\Post(
         path: '/api/v1/manufacturers',
         summary: 'Register a manufacturer',
@@ -380,6 +297,11 @@ final readonly class CatalogManagementController
     private function unknownParent(Request $request): JsonResponse
     {
         return $this->problem(422, 'UNKNOWN_PARENT', 'The referenced catalogue parent does not exist.', $request);
+    }
+
+    private function vehicleNotFound(Request $request): JsonResponse
+    {
+        return $this->problem(404, 'VEHICLE_NOT_FOUND', 'The requested vehicle does not exist.', $request);
     }
 
     private function storageError(Request $request): JsonResponse
