@@ -74,7 +74,13 @@ jobs:
 
   dependency-review:
     name: Dependency review
-    # GitHub's dependency-review API requires the repository Dependency Graph feature.\n    # Enable it and set DEPENDENCY_GRAPH_ENABLED=true to activate this optional gate.\n    if: github.event_name == 'pull_request' && vars.DEPENDENCY_GRAPH_ENABLED == 'true'\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n      pull-requests: read
+    # GitHub's dependency-review API requires the repository Dependency Graph feature.
+    # Enable it and set DEPENDENCY_GRAPH_ENABLED=true to activate this optional gate.
+    if: github.event_name == 'pull_request' && vars.DEPENDENCY_GRAPH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
