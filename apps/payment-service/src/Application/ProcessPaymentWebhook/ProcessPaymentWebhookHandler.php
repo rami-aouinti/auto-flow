@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\ProcessPaymentWebhook;
 
+use AutoFlow\CoreBundle\Application\Clock\ClockInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Component\Uid\Uuid;
@@ -12,7 +13,7 @@ use RuntimeException;
 
 final readonly class ProcessPaymentWebhookHandler
 {
-    public function __construct(private Connection $db) {}
+    public function __construct(private ClockInterface $clock, private Connection $db) {}
 
     /** @param array<string,mixed> $event */
     public function __invoke(array $event): void
@@ -62,7 +63,7 @@ final readonly class ProcessPaymentWebhookHandler
                 default => [],
             };
             if (in_array($status, $allowed, true)) {
-                $this->db->update('payments', ['status'=>$status,'updated_at'=>date('c')], [
+                $this->db->update('payments', ['status'=>$status,'updated_at'=>$this->clock->now()->format(DATE_ATOM)], [
                     'tenant_id'=>$row['tenant_id'],'payment_id'=>$row['payment_id'],
                 ]);
                 $eventType = match ($status) {
@@ -104,7 +105,7 @@ final readonly class ProcessPaymentWebhookHandler
             'producer' => 'payment-service',
             'aggregate' => ['type' => 'Payment', 'id' => $paymentId],
             'tenantId' => $tenant,
-            'occurredAt' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(DATE_ATOM),
+            'occurredAt' => $this->clock->now()->setTimezone(new \DateTimeZone('UTC'))->format(DATE_ATOM),
             'data' => $payload,
         ];
         $this->db->insert('payment_outbox', [
