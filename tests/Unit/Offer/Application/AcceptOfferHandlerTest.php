@@ -9,6 +9,7 @@ use App\Domain\Entity\Offer;
 use App\Domain\Exception\OfferNotFound;
 use App\Domain\Repository\OfferRepositoryInterface;
 use App\Domain\ValueObject\OfferId;
+use App\Domain\ValueObject\OfferStatus;
 use App\Domain\ValueObject\PricingSnapshot;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
