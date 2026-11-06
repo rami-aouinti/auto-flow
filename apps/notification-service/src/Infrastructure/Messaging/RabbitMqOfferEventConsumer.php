@@ -47,6 +47,7 @@ final readonly class RabbitMqOfferEventConsumer
             'x-dead-letter-routing-key' => 'notification.failed',
         ]));
         $this->channel->queue_bind($this->queue, $this->exchange, 'offer.published');
+        $this->channel->confirm_select();
         $this->channel->basic_qos(null, 1, null);
 
         $this->channel->basic_consume($this->queue, '', false, false, false, false, function (AMQPMessage $message): void {
@@ -99,6 +100,7 @@ final readonly class RabbitMqOfferEventConsumer
                 } else {
                     $this->channel->basic_publish($retry, 'autoflow.notifications.retry', 'offer.published.retry');
                 }
+                $this->channel->wait_for_pending_acks_returns(5.0);
                 $message->ack();
             }
         });
