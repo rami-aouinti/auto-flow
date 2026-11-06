@@ -56,7 +56,7 @@ final readonly class PaymentApplicationService
             }
 
             $paymentId = Uuid::v7()->toRfc4122();
-            $intent = $this->gateway->createIntent($amount, $currency, $paymentId, $tenant, $key);
+            $intent = $this->gateway->createIntent(\n                $amount, $currency, $paymentId, $tenant, hash('sha256', $tenant . ':' . $actor . ':' . $key . ':create'),\n            );
             $providerId = $intent['id'] ?? null;
             if (!is_string($providerId) || $providerId === '') {
                 throw new RuntimeException('Payment provider did not return a payment intent identifier.');
@@ -169,9 +169,9 @@ final readonly class PaymentApplicationService
                 }
             }
             $result = match ($operation) {
-                'capture' => $this->gateway->capture($providerId, $key),
-                'cancel' => $this->gateway->cancel($providerId, $key),
-                'refund' => $this->gateway->refund($providerId, $refundAmount ?? 0, $key),
+                'capture' => $this->gateway->capture($providerId, hash('sha256', $tenant . ':' . $actor . ':' . $paymentId . ':capture:' . $key)),
+                'cancel' => $this->gateway->cancel($providerId, hash('sha256', $tenant . ':' . $actor . ':' . $paymentId . ':cancel:' . $key)),
+                'refund' => $this->gateway->refund($providerId, $refundAmount ?? 0, hash('sha256', $tenant . ':' . $actor . ':' . $paymentId . ':refund:' . $key)),
                 default => throw new DomainException('Unsupported payment operation.'),
             };
             $newStatus = match ($operation) {
