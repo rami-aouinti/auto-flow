@@ -40,6 +40,14 @@ The response contains `items`, `total`, `limit` and `offset`, ordered newest fir
 
 Requires `offers:read`. The lookup is restricted to the authenticated tenant and offer creator.
 
+### Read an offer audit history
+
+`GET /api/offers/{offerId}/history`
+
+Requires `offers:read`. Returns the append-only lifecycle audit events for an offer owned by the authenticated subject in the current tenant. Each event includes its type, previous and resulting status, actor type, timestamp and metadata. The endpoint returns HTTP 404 for offers outside the caller's tenant/ownership boundary.
+
+The `offer_audit_events` table is protected by forced tenant row-level security. The application database role has SELECT and INSERT only; UPDATE, DELETE and TRUNCATE are revoked. Audit inserts occur in the same PostgreSQL transaction as the offer write. The migration backfills lifecycle facts whose timestamps are already stored.
+
 ### Publish an offer
 
 `POST /api/offers/{offerId}/publish`
@@ -114,6 +122,12 @@ If the PostgreSQL volume already exists, Docker does not rerun `docker-entrypoin
 ```bash
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/offer-service/migrations/Version20261104000500CreateOfferOutbox.sql
 docker compose exec -T postgres psql -U autoflow -d autoflow < apps/offer-service/migrations/Version20261104000600AddOfferLifecycleTimestamps.sql
+```
+
+Apply the append-only offer audit migration once to the existing volume:
+
+```bash
+docker compose --env-file .env.example exec -T postgres psql -U autoflow -d autoflow < apps/offer-service/migrations/Version20261106000700CreateOfferAuditEvents.sql
 ```
 
 Then rebuild and start the Offer API and its two workers:
