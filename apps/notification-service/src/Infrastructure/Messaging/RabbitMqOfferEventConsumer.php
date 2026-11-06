@@ -107,7 +107,11 @@ final readonly class RabbitMqOfferEventConsumer
 
         $this->logger->info('Notification consumer started.', ['queue' => $this->queue]);
         while ($this->channel->is_consuming()) {
-            $this->channel->wait(null, false, 5);
+            try {
+                $this->channel->wait(null, false, 5);
+            } catch (AMQPTimeoutException) {
+                // An idle queue is healthy; keep the consumer alive and let the next wait check the socket.
+            }
         }
 
         throw new \RuntimeException('RabbitMQ consumer stopped unexpectedly.');
