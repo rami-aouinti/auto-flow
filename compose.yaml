@@ -767,6 +767,7 @@ services:
       VITE_KEYCLOAK_URL: http://localhost:8080
       VITE_KEYCLOAK_REALM: autoflow
       VITE_KEYCLOAK_CLIENT_ID: autoflow-local-client
+      VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
       CATALOG_PROXY_TARGET: http://vehicle-catalog-service:8080
       OFFER_PROXY_TARGET: http://offer-service:8080
       PRICING_PROXY_TARGET: http://pricing-service:8080
