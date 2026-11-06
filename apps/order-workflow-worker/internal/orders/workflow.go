@@ -33,7 +33,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 			InitialInterval: time.Second,
 			BackoffCoefficient: 2,
 			MaximumInterval: time.Minute,
-			MaximumAttempts: 8,
+			MaximumAttempts: 0,
 		},
 	})
 
