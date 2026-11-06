@@ -6,6 +6,7 @@ namespace App\Application\GetPayment;
 
 use App\Application\PaymentNotFoundException;
 use App\Application\Port\PaymentRepositoryInterface;
+use DomainException;
 
 final readonly class GetPaymentHandler
 {
