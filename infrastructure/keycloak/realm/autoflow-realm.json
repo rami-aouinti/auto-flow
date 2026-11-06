@@ -22,13 +22,15 @@
         "http://localhost:3000/*",
         "http://localhost:8081/*",
         "http://localhost:8082/*",
-        "http://localhost:8084/*"
+        "http://localhost:8084/*",
+        "http://localhost:8085/*"
       ],
       "webOrigins": [
         "http://localhost:3000",
         "http://localhost:8081",
         "http://localhost:8082",
-        "http://localhost:8084"
+        "http://localhost:8084",
+        "http://localhost:8085"
       ],
       "protocolMappers": [
         {
@@ -83,6 +85,17 @@
           "protocolMapper": "oidc-audience-mapper",
           "config": {
             "included.client.audience": "autoflow-catalog",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "order-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-order",
             "id.token.claim": "false",
             "access.token.claim": "true",
             "introspection.token.claim": "true"
@@ -188,6 +201,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true
+    },
+    {
+      "clientId": "autoflow-order",
+      "name": "Order Management Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -209,7 +232,8 @@
         "offers:read",
         "offers:quote",
         "pricing:quote",
-        "catalog:read"
+        "catalog:read",
+        "orders:read"
       ],
       "attributes": {
         "tenant_id": [
@@ -246,6 +270,31 @@
           "view-users"
         ]
       }
+    },
+    {
+      "username": "order-operator",
+      "enabled": true,
+      "email": "order-operator@autoflow.local",
+      "emailVerified": true,
+      "firstName": "Order",
+      "lastName": "Operator",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "order-operator",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "orders:read",
+        "orders:write",
+        "orders:manage"
+      ],
+      "attributes": {
+        "tenant_id": [
+          "tenant-demo"
+        ]
+      }
     }
   ],
   "roles": {
@@ -269,6 +318,18 @@
       {
         "name": "catalog:manage",
         "description": "Manage and publish vehicle catalogue entries"
+      },
+      {
+        "name": "orders:read",
+        "description": "Read orders within the authenticated tenant"
+      },
+      {
+        "name": "orders:write",
+        "description": "Create, submit and cancel orders within the authenticated tenant"
+      },
+      {
+        "name": "orders:manage",
+        "description": "Review and decide orders within the authenticated tenant"
       }
     ]
   }

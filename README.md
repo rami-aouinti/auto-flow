@@ -11,7 +11,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - Supervisor-managed Offer background processes in Docker Compose
 - Temporal CLI development server with persistent local SQLite state
 - RoadRunner 3.0.1 HTTP and gRPC workers for the Offer and Pricing services
-- Symfony 7.4 microservices with independent Composer projects
+- Symfony 7.4 microservices with independent Composer projects (Offer, Pricing, Vehicle Catalog and Order)
 - OpenTelemetry PHP extension, SDK and Symfony auto-instrumentation
 - PostgreSQL 16, RabbitMQ 4, Redis 7, Elasticsearch 8 and Kibana
 - Mercure Hub for real-time Server-Sent Events
@@ -38,10 +38,10 @@ docker compose up -d --build
 docker compose ps
 docker compose exec php composer install
 docker compose exec php php -v
-docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher
+docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher
 ~~~
 
-The first local build of the three Symfony services installs their independent Composer dependencies, including development-only Swagger UI tooling. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` to export all three generated OpenAPI specifications.
+The first local build installs each service's independent Composer dependencies. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
 Subsequent starts reuse the built images unless their source or Dockerfile changes.
 
 ## Local interfaces and endpoints
@@ -53,6 +53,7 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
 | Pricing Service | http://localhost:8082 | Tenant-scoped quote calculation API |
 | Vehicle Catalog Service | http://localhost:8084 | Authoritative manufacturers, models, generations and vehicle variants |
+| Order Management Service | http://localhost:8085 | Tenant-scoped order lifecycle, audit history and immutable commercial snapshots |
 | Pricing Swagger UI | http://localhost:8082/api/doc | Interactive Pricing REST API documentation (dev only) |
 | Pricing OpenAPI JSON | http://localhost:8082/api/doc.json | Machine-readable Pricing API contract (dev only) |
 | Vehicle Catalog Swagger UI | http://localhost:8084/api/doc | Interactive Vehicle Catalog REST API documentation (dev only) |
@@ -79,9 +80,9 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 
 ## Authentication quick start
 
-Offer and Pricing validate RS256 access tokens locally using Keycloak's JWKS endpoint. Their expected audiences are distinct (`autoflow-offer` and `autoflow-pricing`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
+Offer, Pricing, Vehicle Catalog and Order Management validate RS256 access tokens locally using Keycloak's JWKS endpoint. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog` and `autoflow-order`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
 
-The imported `demo` user and password `demo`, and the local password-grant client below, are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
+The imported `demo` user/password `demo`, `order-operator` user/password `order-operator`, and the local password-grant client below are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
 
 ~~~bash
 TOKEN=$(curl -fsS -X POST http://localhost:8080/realms/autoflow/protocol/openid-connect/token \\
@@ -104,6 +105,22 @@ curl -i http://localhost:8082/api/pricing/quotes \\
   -H "Authorization: Bearer $TOKEN" \\
   -H 'Content-Type: application/json' \\
   -d '{"vehicleId":"vehicle-001","vehiclePrice":"30000.00","downPayment":"3000.00","residualValue":"9000.00","currency":"EUR","durationMonths":36,"annualInterestRateBasisPoints":500}'
+~~~
+
+~~~bash
+# Order Management demo token (order-operator has read/write/manage permissions).
+ORDER_TOKEN=$(curl -fsS -X POST http://localhost:8080/realms/autoflow/protocol/openid-connect/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'grant_type=password' \
+  --data-urlencode 'client_id=autoflow-local-client' \
+  --data-urlencode 'username=order-operator' \
+  --data-urlencode 'password=order-operator' | jq -r .access_token)
+
+curl -i -X POST http://localhost:8085/api/v1/orders \
+  -H "Authorization: Bearer $ORDER_TOKEN" \
+  -H 'Idempotency-Key: local-order-demo-001' \
+  -H 'Content-Type: application/json' \
+  -d '{"offerId":"offer-123","quoteId":"quote-456","vehicleId":"variant-789","offerSnapshot":{"offerVersion":1},"quoteSnapshot":{"currency":"EUR","monthlyAmount":"329.00","durationMonths":48},"vehicleSnapshot":{"manufacturer":"Example Motors","model":"E-1"}}'
 ~~~
 
 Offer validates the incoming user access token, then exchanges it with Keycloak using the confidential `autoflow-offer-to-pricing` client and the standard OAuth 2.0 Token Exchange grant. The exchanged token is downscoped to the `autoflow-pricing` audience and sent to Pricing. Pricing therefore validates its own audience while retaining the user's `sub`; quote ownership is based on that verified subject. The local realm gives the demo user the `offers:read`, `offers:quote` and `pricing:quote` realm roles, assigns the `tenant-demo` tenant attribute, and includes the Offer workload client in the original token audience. Both the original and exchanged token receive the `tenant_id` claim from the user's Keycloak attribute. For a production realm, enable Standard Token Exchange on the confidential requester client, allow that client to exchange to the Pricing audience, and map only the appropriate user roles/permissions. Do not use the deprecated legacy token-exchange feature.

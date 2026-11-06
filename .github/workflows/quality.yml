@@ -16,6 +16,7 @@ jobs:
         with:
           php-version: "8.4"
           coverage: xdebug
+          extensions: pdo_pgsql, mbstring
           tools: composer:v2
       - name: Validate Composer
         run: composer validate --strict
@@ -24,6 +25,7 @@ jobs:
           composer validate --strict --working-dir=apps/offer-service
           composer validate --strict --working-dir=apps/pricing-service
           composer validate --strict --working-dir=apps/vehicle-catalog-service
+          composer validate --strict --working-dir=apps/order-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
@@ -32,6 +34,7 @@ jobs:
           timeout 10s docker run --rm \
             -v "$PWD/infrastructure/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro" \
             grafana/alloy:v1.6.1 run \
+            --stability.level=experimental \
             --server.http.listen-addr=0.0.0.0:12345 \
             /etc/alloy/config.alloy
           status=$?
@@ -64,6 +67,7 @@ jobs:
             exit 1
           fi
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.offer_outbox_events') IS NOT NULL AS outbox_ready"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.orders') IS NOT NULL AS orders_ready"
           for attempt in $(seq 1 30); do
             if docker compose exec -T rabbitmq rabbitmq-diagnostics -q listeners >/dev/null 2>&1; then
               break
@@ -87,8 +91,18 @@ jobs:
           docker compose logs rabbitmq
           docker compose exec -T rabbitmq rabbitmq-diagnostics listeners || true
           docker compose exec -T rabbitmq rabbitmqctl list_users || true
+      - name: Install Order Service dependencies and run domain tests
+        run: |
+          composer install --working-dir=apps/order-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
+          cd apps/order-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Run Order PostgreSQL integration tests
+        env:
+          ORDER_TEST_DATABASE_URL: postgresql://autoflow_order:local-only-order-password@127.0.0.1:5432/autoflow
+        run: |
+          cd apps/order-service
+          vendor/bin/phpunit --configuration phpunit.xml.dist tests/Integration/Order
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher
+        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
