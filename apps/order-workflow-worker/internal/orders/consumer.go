@@ -60,6 +60,8 @@ func consumeOnce(ctx context.Context, temporal client.Client) error {
 	for _, key := range []string{
 		"OrderSubmitted", "OrderUnderReview", "OrderAccepted", "OrderRejected",
 		"OrderCancelled", "OrderContractPending", "OrderCompleted",
+		"OrderPaymentAuthorized", "OrderPaymentCaptured", "OrderPaymentFailed",
+		"OrderPaymentRefunded", "OrderPaymentCancelled",
 	} {
 		if err := channel.QueueBind(queue.Name, key, "autoflow.order.events", false, nil); err != nil {
 			return err
