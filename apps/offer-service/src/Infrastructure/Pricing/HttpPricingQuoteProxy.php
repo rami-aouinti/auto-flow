@@ -34,7 +34,7 @@ final readonly class HttpPricingQuoteProxy implements PricingQuoteProxyInterface
                     'X-Tenant-ID' => $tenantId,
                     'Content-Type' => 'application/json',
                 ],
-                'json' => ['vehicleId' => $vehicleId] + $payload,
+                'json' => $payload,
             ],
         );
 
