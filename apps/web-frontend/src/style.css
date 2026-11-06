@@ -4,3 +4,5 @@
 .offer-expanded{border-top:1px solid var(--line);margin-top:14px;padding-top:8px}.offer-timeline{border-left:1px solid #52616a;margin:14px 0 4px 5px;padding-left:15px}.offer-timeline p{display:flex;align-items:center;gap:9px;position:relative;margin:12px 0;font-size:10px;color:#b9c6cb}.offer-timeline time{margin-left:auto;color:#8e9ca5;font-size:9px;text-align:right}.timeline-dot{position:absolute;left:-20px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--panel)}
 
 .offer-lifecycle-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.offer-lifecycle-actions button{background:var(--accent);border:0;color:#18232a;border-radius:6px;padding:8px 10px;font-size:10px;font-weight:700;cursor:pointer}.offer-lifecycle-actions button:last-child:nth-child(2){background:transparent;border:1px solid #71828a;color:#dce5e8}.offer-lifecycle-actions button:disabled{opacity:.45;cursor:wait}
+
+.offer-timeline p{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 10px}.offer-timeline p small{grid-column:1/-1;color:#8e9ca5;font-size:9px}.offer-timeline p time{grid-column:2;grid-row:1}
