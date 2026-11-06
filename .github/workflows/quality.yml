@@ -28,7 +28,7 @@ jobs:
         working-directory: apps/order-workflow-worker
         run: |
           gofmt -w ./cmd ./internal
-          go mod download
+          go mod tidy
           go test ./...
           go build ./cmd/worker
       - name: Validate Composer
