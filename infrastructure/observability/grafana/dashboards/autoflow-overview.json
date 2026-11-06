@@ -172,7 +172,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (result) ({__name__=~\"pricing_quote_calculations.*\"})",
+          "expr": "sum by (result) (increase(pricing_quote_calculations_quotes_total[$__range]))",
           "legendFormat": "{{result}}",
           "refId": "A"
         }
@@ -431,7 +431,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (result) (rate({__name__=~\"pricing_quote_calculations.*\"}[5m]))",
+          "expr": "sum by (result) (rate(pricing_quote_calculations_quotes_total[5m]))",
           "refId": "A",
           "legendFormat": "{{result}}"
         }
