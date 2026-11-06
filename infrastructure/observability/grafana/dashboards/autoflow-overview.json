@@ -317,7 +317,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]))",
+          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total[5m]))",
           "refId": "A",
           "legendFormat": "{{name}}"
         }
