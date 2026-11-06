@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\Tests\\Integration\\Offer;
+namespace AutoFlow\Tests\Integration\Offer;
 
-use App\\Domain\\ValueObject\\OfferId;
-use App\\Infrastructure\\Messaging\\OutboxPublisher;
-use App\\Infrastructure\\Persistence\\PostgresConnection;
+use App\Domain\ValueObject\OfferId;
+use App\Infrastructure\Messaging\OutboxPublisher;
+use App\Infrastructure\Persistence\PostgresConnection;
 use DateTimeImmutable;
-use PhpAmqpLib\\Connection\\AMQPStreamConnection;
-use PHPUnit\\Framework\\TestCase;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PHPUnit\Framework\TestCase;
 
 final class OutboxPublisherIntegrationTest extends TestCase
 {
-    private \\PDO $database;
+    private \PDO $database;
     private AMQPStreamConnection $rabbitConnection;
 
     protected function setUp(): void
@@ -112,8 +112,10 @@ final class OutboxPublisherIntegrationTest extends TestCase
                 'SELECT published_at FROM offer_outbox_events WHERE event_id = :event_id',
             );
             $published->execute(['event_id' => $eventId]);
+            $publishedAt = $published->fetchColumn();
 
-            self::assertNotFalse($published->fetchColumn(), 'The outbox row must be marked only after broker confirmation.');
+            self::assertNotFalse($publishedAt, 'The outbox row must still exist.');
+            self::assertNotNull($publishedAt, 'The outbox row must be marked only after broker confirmation.');
         } finally {
             try {
                 if ($channel->is_open()) {
