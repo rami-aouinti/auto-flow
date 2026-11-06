@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controller;
 
+use App\Application\CatalogApplicationService;
+use App\Application\Exception\CatalogParentNotFoundException;
+use App\Application\Security\CatalogActor;
+use App\Presentation\Http\Dto\Request\CreateGenerationRequest;
+use App\Presentation\Http\Dto\Request\CreateManufacturerRequest;
+use App\Presentation\Http\Dto\Request\CreateModelRequest;
+use App\Presentation\Http\Dto\Request\CreateVehicleVariantRequest;
+use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use AutoFlow\CoreBundle\Security\RequiresScope;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException;
