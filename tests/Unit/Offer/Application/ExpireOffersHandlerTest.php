@@ -8,6 +8,7 @@ use App\Application\ExpireOffers\ExpireOffersHandler;
 use App\Domain\Entity\Offer;
 use App\Domain\Repository\OfferRepositoryInterface;
 use App\Domain\ValueObject\OfferId;
+use App\Domain\ValueObject\OfferStatus;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -26,6 +27,22 @@ final class ExpireOffersHandlerTest extends TestCase
             public function findById(OfferId $id, string $tenantId, string $ownerId): ?Offer
             {
                 return null;
+            }
+
+            public function findByOwner(
+                string $tenantId,
+                string $ownerId,
+                ?OfferStatus $status,
+                ?string $search,
+                int $limit,
+                int $offset,
+            ): array {
+                return ['items' => [], 'total' => 0];
+            }
+
+            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
+            {
+                return [];
             }
 
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
@@ -59,6 +76,22 @@ final class ExpireOffersHandlerTest extends TestCase
             {
                 return null;
             }
+            public function findByOwner(
+                string $tenantId,
+                string $ownerId,
+                ?OfferStatus $status,
+                ?string $search,
+                int $limit,
+                int $offset,
+            ): array {
+                return ['items' => [], 'total' => 0];
+            }
+
+            public function findHistoryByOffer(OfferId $id, string $tenantId, string $ownerId): ?array
+            {
+                return [];
+            }
+
             public function findExpiredTenantIds(DateTimeImmutable $now, int $limit): array
             {
                 return [];
