@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Application;
 
 use App\Application\Port\PaymentGatewayInterface;
-use App\Application\Port\OrderPaymentContextProviderInterface;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Uuid;
 use DomainException;
@@ -16,7 +15,6 @@ final readonly class PaymentApplicationService
     public function __construct(
         private Connection $db,
         private PaymentGatewayInterface $gateway,
-        private OrderPaymentContextProviderInterface $orderContext,
     ) {
     }
 
