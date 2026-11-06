@@ -1,0 +1,260 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\\Application;
+
+use App\\Application\\Port\\PaymentGatewayInterface;
+use Doctrine\\DBAL\\Connection;
+use Symfony\\Component\\Uid\\Uuid;
+use DomainException;
+use RuntimeException;
+
+final readonly class PaymentApplicationService
+{
+    public function __construct(
+        private Connection $db,
+        private PaymentGatewayInterface $gateway,
+    ) {
+    }
+
+    /** @param array<string,mixed> $input
+     *  @return array<string,mixed>
+     */
+    public function create(string $tenant, string $actor, string $key, array $input): array
+    {
+        $orderId = $this->requiredString($input, 'orderId');
+        $amount = $input['amountMinor'] ?? null;
+        $currency = strtoupper((string) ($input['currency'] ?? ''));
+        if (!is_int($amount) || $amount < 50 || $amount > 99_999_999 || preg_match('/^[A-Z]{3}$/D', $currency) !== 1) {
+            throw new DomainException('A valid amountMinor and ISO-4217 currency are required.');
+        }
+        $this->assertKey($key);
+        $hash = hash('sha256', json_encode([$orderId, $amount, $currency], JSON_THROW_ON_ERROR));
+
+        $this->db->beginTransaction();
+        try {
+            $this->setTenant($tenant);
+            $this->db->executeStatement(
+                "SELECT pg_advisory_xact_lock(hashtext(:scope))",
+                ['scope' => $tenant . ':' . $actor . ':' . $key],
+            );
+            $existing = $this->db->fetchAssociative(
+                'SELECT request_hash, response_json FROM payment_idempotency WHERE tenant_id=:tenant AND actor=:actor AND idempotency_key=:key',
+                ['tenant'=>$tenant,'actor'=>$actor,'key'=>$key],
+            );
+            if ($existing !== false) {
+                if (!hash_equals((string) $existing['request_hash'], $hash)) {
+                    throw new DomainException('Idempotency-Key was already used for a different payment request.');
+                }
+                $response = json_decode((string) $existing['response_json'], true, 512, JSON_THROW_ON_ERROR);
+                $this->db->commit();
+                return $response;
+            }
+
+            $paymentId = Uuid::v7()->toRfc4122();
+            $intent = $this->gateway->createIntent($amount, $currency, $paymentId, $key);
+            $providerId = $intent['id'] ?? null;
+            if (!is_string($providerId) || $providerId === '') {
+                throw new RuntimeException('Payment provider did not return a payment intent identifier.');
+            }
+            $status = match ($intent['status'] ?? '') {
+                'requires_action', 'requires_payment_method', 'requires_confirmation' => 'requires_action',
+                'requires_capture' => 'authorized',
+                'succeeded' => 'captured',
+                default => 'pending',
+            };
+            $this->db->insert('payments', [
+                'tenant_id'=>$tenant,'payment_id'=>$paymentId,'order_id'=>$orderId,'created_by'=>$actor,
+                'provider'=>'stripe','provider_payment_id'=>$providerId,'amount_minor'=>$amount,
+                'currency'=>$currency,'status'=>$status,
+            ]);
+            $response = [
+                'paymentId'=>$paymentId,'orderId'=>$orderId,'provider'=>'stripe','providerPaymentId'=>$providerId,
+                'amountMinor'=>$amount,'currency'=>$currency,'status'=>$status,
+                'clientSecret'=>$intent['client_secret'] ?? null,
+            ];
+            $this->db->insert('payment_idempotency', [
+                'tenant_id'=>$tenant,'actor'=>$actor,'idempotency_key'=>$key,'request_hash'=>$hash,
+                'payment_id'=>$paymentId,'response_json'=>json_encode($response, JSON_THROW_ON_ERROR),
+            ]);
+            $this->recordEvent($tenant, $paymentId, 'PaymentCreated', $response);
+            $this->db->commit();
+            return $response;
+        } catch (\\Throwable $exception) {
+            if ($this->db->isTransactionActive()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    /** @return array<string,mixed> */
+    public function get(string $tenant, string $paymentId): array
+    {
+        $this->setTenantOutsideTransaction($tenant);
+        $row = $this->db->fetchAssociative(
+            'SELECT payment_id,order_id,provider,provider_payment_id,amount_minor,currency,status,amount_refunded_minor,created_at,updated_at FROM payments WHERE tenant_id=:tenant AND payment_id=:id',
+            ['tenant'=>$tenant,'id'=>$paymentId],
+        );
+        if ($row === false) {
+            throw new PaymentNotFoundException();
+        }
+        return $row;
+    }
+
+    /** @return array<string,mixed> */
+    public function transition(string $tenant, string $actor, string $paymentId, string $key, string $operation, ?int $refundAmount = null): array
+    {
+        $this->assertKey($key);
+        $this->db->beginTransaction();
+        try {
+            $this->setTenant($tenant);
+            $row = $this->db->fetchAssociative(
+                'SELECT * FROM payments WHERE tenant_id=:tenant AND payment_id=:id FOR UPDATE',
+                ['tenant'=>$tenant,'id'=>$paymentId],
+            );
+            if ($row === false) {
+                throw new PaymentNotFoundException();
+            }
+            $providerId = (string) ($row['provider_payment_id'] ?? '');
+            if ($providerId === '') {
+                throw new DomainException('Payment has no provider intent.');
+            }
+            $result = match ($operation) {
+                'capture' => $this->gateway->capture($providerId, $key),
+                'cancel' => $this->gateway->cancel($providerId, $key),
+                'refund' => $this->gateway->refund($providerId, $refundAmount ?? 0, $key),
+                default => throw new DomainException('Unsupported payment operation.'),
+            };
+            $newStatus = match ($operation) {
+                'capture' => 'captured',
+                'cancel' => 'cancelled',
+                'refund' => (($operation === 'refund') && ((int)$row['amount_refunded_minor'] + ($refundAmount ?? 0) >= (int)$row['amount_minor'])) ? 'refunded' : 'partially_refunded',
+            };
+            if ($operation === 'capture' && !in_array($row['status'], ['authorized','requires_action'], true)) {
+                throw new DomainException('Only authorized payments can be captured.');
+            }
+            if ($operation === 'cancel' && !in_array($row['status'], ['pending','requires_action','authorized'], true)) {
+                throw new DomainException('This payment cannot be cancelled in its current state.');
+            }
+            if ($operation === 'refund') {
+                $remaining = (int)$row['amount_minor'] - (int)$row['amount_refunded_minor'];
+                if ($row['status'] !== 'captured' && $row['status'] !== 'partially_refunded') {
+                    throw new DomainException('Only captured payments can be refunded.');
+                }
+                if ($refundAmount === null || $refundAmount < 1 || $refundAmount > $remaining) {
+                    throw new DomainException('Refund amount exceeds the remaining captured amount.');
+                }
+                $this->db->insert('payment_refunds', [
+                    'tenant_id'=>$tenant,'refund_id'=>Uuid::v7()->toRfc4122(),'payment_id'=>$paymentId,
+                    'provider_refund_id'=>$result['id'] ?? null,'amount_minor'=>$refundAmount,'status'=>'succeeded',
+                ]);
+                $this->db->executeStatement(
+                    'UPDATE payments SET amount_refunded_minor=amount_refunded_minor+:amount WHERE tenant_id=:tenant AND payment_id=:id',
+                    ['amount'=>$refundAmount,'tenant'=>$tenant,'id'=>$paymentId],
+                );
+            }
+            $this->db->update('payments', ['status'=>$newStatus,'updated_at'=>date('c')], ['tenant_id'=>$tenant,'payment_id'=>$paymentId]);
+            $payload = ['paymentId'=>$paymentId,'orderId'=>$row['order_id'],'status'=>$newStatus,'operation'=>$operation];
+            $this->recordEvent($tenant, $paymentId, 'Payment' . ucfirst($operation) . 'd', $payload);
+            $this->db->commit();
+            return $payload;
+        } catch (\\Throwable $exception) {
+            if ($this->db->isTransactionActive()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    /** @param array<string,mixed> $event */
+    public function applyWebhook(array $event): void
+    {
+        $eventId = $event['id'] ?? null;
+        $type = $event['type'] ?? null;
+        $object = $event['data']['object'] ?? [];
+        if (!is_string($eventId) || !is_string($type) || !is_array($object)) {
+            throw new DomainException('Malformed Stripe event.');
+        }
+        $providerId = $object['id'] ?? ($object['payment_intent'] ?? null);
+        if (!is_string($providerId)) {
+            return;
+        }
+        $status = match ($type) {
+            'payment_intent.amount_capturable_updated' => 'authorized',
+            'payment_intent.succeeded' => 'captured',
+            'payment_intent.payment_failed' => 'failed',
+            'payment_intent.canceled' => 'cancelled',
+            default => null,
+        };
+        if ($status === null) {
+            return;
+        }
+        $this->db->beginTransaction();
+        try {
+            $this->db->insert('payment_webhook_events', [
+                'provider_event_id'=>$eventId,'tenant_id'=>null,'event_type'=>$type,
+            ]);
+            $row = $this->db->fetchAssociative('SELECT tenant_id,payment_id,order_id FROM payments WHERE provider_payment_id=:id', ['id'=>$providerId]);
+            if ($row !== false) {
+                $this->setTenant((string)$row['tenant_id']);
+                $this->db->update('payments', ['status'=>$status,'updated_at'=>date('c')], [
+                    'tenant_id'=>$row['tenant_id'],'payment_id'=>$row['payment_id'],
+                ]);
+                $this->recordEvent((string)$row['tenant_id'], (string)$row['payment_id'], 'PaymentStatusChanged', [
+                    'paymentId'=>$row['payment_id'],'orderId'=>$row['order_id'],'status'=>$status,'providerEventId'=>$eventId,
+                ]);
+            }
+            $this->db->commit();
+        } catch (\\Throwable $exception) {
+            if ($this->db->isTransactionActive()) {
+                $this->db->rollBack();
+            }
+            // Duplicate webhook event is an acknowledged no-op.
+            if (str_contains(strtolower($exception->getMessage()), 'duplicate') || str_contains(strtolower($exception->getMessage()), 'unique')) {
+                return;
+            }
+            throw $exception;
+        }
+    }
+
+    private function setTenant(string $tenant): void
+    {
+        $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant'=>$tenant]);
+    }
+
+    private function setTenantOutsideTransaction(string $tenant): void
+    {
+        $this->db->beginTransaction();
+        $this->setTenant($tenant);
+        $this->db->commit();
+        $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, false)", ['tenant'=>$tenant]);
+    }
+
+    /** @param array<string,mixed> $payload */
+    private function recordEvent(string $tenant, string $paymentId, string $type, array $payload): void
+    {
+        $this->db->insert('payment_outbox', [
+            'event_id'=>Uuid::v7()->toRfc4122(),'tenant_id'=>$tenant,'payment_id'=>$paymentId,
+            'event_type'=>$type,'payload'=>json_encode($payload, JSON_THROW_ON_ERROR),
+        ]);
+    }
+
+    /** @param array<string,mixed> $input */
+    private function requiredString(array $input, string $key): string
+    {
+        $value = $input[$key] ?? null;
+        if (!is_string($value) || trim($value) === '') {
+            throw new DomainException($key . ' is required.');
+        }
+        return $value;
+    }
+
+    private function assertKey(string $key): void
+    {
+        if (preg_match('/^[A-Za-z0-9._:-]{8,128}$/D', $key) !== 1) {
+            throw new DomainException('A valid Idempotency-Key is required.');
+        }
+    }
+}
