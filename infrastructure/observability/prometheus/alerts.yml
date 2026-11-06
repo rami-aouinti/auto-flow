@@ -56,3 +56,21 @@ groups:
         annotations:
           summary: "RabbitMQ has a large ready-message backlog"
           description: "More than 1000 messages have remained ready in RabbitMQ queues for 5 minutes."
+      - alert: NotificationServiceDeadLettered
+        expr: autoflow_notification_deliveries_total{status="dead"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: messaging
+        annotations:
+          summary: "Notification delivery reached the dead-letter state"
+          description: "At least one offer email could not be delivered after the configured retry attempts."
+      - alert: NotificationServiceFailedDeliveries
+        expr: autoflow_notification_deliveries_total{status="failed"} > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: messaging
+        annotations:
+          summary: "Notification deliveries are failing"
+          description: "At least one notification delivery is waiting for another retry."
