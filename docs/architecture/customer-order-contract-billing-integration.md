@@ -112,8 +112,8 @@ Event type and schema version are separate. Additive optional fields may be intr
 
 ## Recommended rollout
 
-1. **Customer reference in Order**: add nullable `customer_id`, customer version/snapshot columns and index; deploy backward-compatible schema first; then make customerId mandatory for new order creation after clients are updated.
-2. **Order → Customer verification**: add a typed Customer client, short timeout, bounded retries only for transient failures, circuit breaker and clear 404/409/503 mapping. Persist the verified snapshot in the same Order transaction as the order and Outbox event.
+1. **Customer reference in Order — implemented**: nullable `customer_id`, customer version/snapshot columns and index preserve old rows; new order creation requires a UUID customerId.
+2. **Order → Customer verification — implemented**: the HTTP reference validator uses the caller's verified bearer token and tenant context, short timeout, and maps invalid/unauthorized/unavailable upstream responses. It persists the verified snapshot in the same Order transaction as the order and Outbox event. Bounded retry/circuit-breaker policy remains future hardening.
 3. **Customer Outbox**: add Customer event table, publisher, event schemas and Inbox consumer tests. Publish IDs/versions, not PII.
 4. **Contract bounded context**: create a separate service/database only when contract lifecycle, templates, document storage and signature integration are ready. Do not put contract tables in Order or Billing.
 5. **Billing enrichment**: consume a versioned Order/Contract event or fetch authoritative context before invoice issuance; persist immutable legal billing snapshot. Never assume PaymentCaptured alone contains legal invoice data.
@@ -122,7 +122,7 @@ Event type and schema version are separate. Additive optional fields may be intr
 ## Current implementation status
 
 - Customer Service exists with tenant-scoped profiles, addresses, consent, audit history and idempotent creation.
-- Order currently validates Offer, Pricing and Vehicle Catalog references; the customer reference/snapshot flow described above is a next integration slice.
+- Order now requires `customerId` for new orders, validates the active customer through Customer Service using the caller's verified JWT and tenant context, and persists a minimal immutable customer snapshot plus customer version. The migration preserves historical orders with a null customer reference. Customer consent records are intentionally excluded from the order snapshot.
 - Billing currently consumes PaymentCaptured/refund events and creates invoices/credit notes. It does not yet have the complete legal customer/order snapshot enrichment described above.
 - A dedicated Contract Service and e-signature integration are not yet implemented.
 
