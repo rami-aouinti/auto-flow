@@ -12,7 +12,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - Supervisor-managed Offer background processes in Docker Compose
 - Temporal CLI development server with persistent local SQLite state
 - RoadRunner 3.0.1 HTTP and gRPC workers for the Offer and Pricing services
-- Symfony 7.4 microservices with independent Composer projects (Offer, Pricing, Vehicle Catalog and Order)
+- Symfony 7.4 microservices with independent Composer projects (Customer, Offer, Pricing, Vehicle Catalog, Order, Payment and Billing)
 - OpenTelemetry PHP extension, SDK and Symfony auto-instrumentation
 - PostgreSQL 16, RabbitMQ 4, Redis 7, Elasticsearch 8 and Kibana
 - Mercure Hub for real-time Server-Sent Events
@@ -39,7 +39,7 @@ docker compose up -d --build
 docker compose ps
 docker compose exec php composer install
 docker compose exec php php -v
-docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher payment-service payment-outbox-publisher order-payment-event-consumer order-workflow-worker
+docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher payment-service payment-outbox-publisher order-payment-event-consumer order-workflow-worker customer-service
 ~~~
 
 The first local build installs each service's independent Composer dependencies. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
@@ -53,6 +53,7 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | --- | --- | --- |
 | API Gateway (Traefik) | http://localhost:8088 | Single HTTP entry point; routes Catalog, Offers, Pricing, Orders, Payments and Billing; applies CORS, security headers, in-memory IP rate limiting and in-flight request limits |
 | Billing Service | http://localhost:8087 | Invoices, VAT breakdowns, credit notes and billing summary |
+| Customer Service | http://localhost:8089 | Tenant-scoped individual/company profiles, addresses, consents and audit history |
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
 | Offer Swagger UI | http://localhost:8081/api/doc | Interactive Offer REST API documentation (dev only) |
 | Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
@@ -88,6 +89,10 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 
 Billing consumes PaymentCaptured and refund events, creates tenant-scoped invoices and credit notes, and exposes read APIs. Payment remains the only Stripe integration. The local VAT default is 19%; jurisdiction-aware tax calculation and legally compliant invoice rendering remain production requirements. See [Billing Service documentation](apps/billing-service/README.md).
 
+## Customer Service
+
+Customer owns customer profiles, contact details, addresses, consent decisions and audit history. It enforces tenant isolation in PostgreSQL and exposes a protected API at `/api/v1/customers/**`. See [Customer Service documentation](apps/customer-service/README.md).
+
 ## API Gateway routes
 
 | Public path | Upstream service | Notes |
@@ -98,12 +103,13 @@ Billing consumes PaymentCaptured and refund events, creates tenant-scoped invoic
 | `/api/v1/orders/**` | Order (`order-service:8080`) | Versioned order lifecycle API |
 | `/api/v1/payments/**` | Payment (`payment-service:8080`) | Payment intent, payment lifecycle and Stripe webhook API |
 | `/api/v1/billing/**` | Billing (`billing-service:8080`) | Tenant invoices, VAT breakdowns, credit notes and summary |
+| `/api/v1/customers/**` | Customer (`customer-service:8080`) | Tenant customer profiles, addresses, consents and audit history |
 
 The gateway does **not** replace authentication or authorization. It does not decode or trust JWT claims: every backend continues to validate the Keycloak RS256 token, issuer, audience, tenant and service-owned scopes. The local edge rate limiter is in-memory and per gateway replica; distributed per-tenant quotas backed by Redis remain a separate production hardening task. TLS termination and trusted-proxy configuration must be completed for the target deployment.
 
 ## Authentication quick start
 
-Offer, Pricing, Vehicle Catalog and Order Management validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog` and `autoflow-order`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
+Customer, Offer, Pricing, Vehicle Catalog, Order Management and Billing validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog` and `autoflow-order`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
 
 The imported `demo` user/password `demo`, `order-operator` user/password `order-operator`, and the local password-grant client below are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
 
