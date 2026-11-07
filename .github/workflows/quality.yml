@@ -82,12 +82,12 @@ jobs:
         run: |
           docker compose --env-file .env.example up -d postgres rabbitmq
           for attempt in $(seq 1 30); do
-            if docker compose exec -T postgres pg_isready -U autoflow -d autoflow; then
+            if docker compose exec -T postgres pg_isready -h 127.0.0.1 -p 5432 -U autoflow -d autoflow; then
               break
             fi
             sleep 2
           done
-          if ! docker compose exec -T postgres pg_isready -U autoflow -d autoflow; then
+          if ! docker compose exec -T postgres pg_isready -h 127.0.0.1 -p 5432 -U autoflow -d autoflow; then
             docker compose ps -a
             docker compose logs postgres
             exit 1
