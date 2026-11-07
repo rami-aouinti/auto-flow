@@ -238,6 +238,10 @@ jobs:
           php -l apps/contract-service/src/Presentation/Http/Controller/ContractController.php
           php -l apps/contract-service/src/Infrastructure/Health/ContractDatabaseHealthCheck.php
           php -l apps/contract-service/bin/publish-outbox.php
+          php -l apps/contract-service/src/Infrastructure/Document/ContractDocumentManager.php
+          php -l apps/contract-service/src/Infrastructure/Signature/DocuSignSignatureProvider.php
+          php -l apps/contract-service/src/Application/Port/SignatureProviderInterface.php
+          php -l apps/contract-service/src/Presentation/Http/Controller/DocuSignWebhookController.php
       - name: Run PHPStan analysis
         run: composer phpstan
       - name: Run quality checks
