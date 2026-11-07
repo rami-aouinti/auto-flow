@@ -84,8 +84,8 @@ RUN if [ "$ROADRUNNER_BOOT_CHECK" = "1" ] && [ -f .rr.yaml ]; then \
     if [ "$status" -ne 124 ] && [ "$status" -ne 137 ]; then exit "$status"; fi; \
     else echo "Skipping RoadRunner boot check: this is a CLI worker image."; fi
 
-RUN mkdir -p /app/var/cache /app/var/log /app/var/sessions \
-    && chown -R www-data:www-data /app /packages/core-bundle
+RUN mkdir -p /app/var/cache /app/var/log /app/var/sessions /var/lib/autoflow/contracts \
+    && chown -R www-data:www-data /app /packages/core-bundle /var/lib/autoflow
 
 USER www-data
 
