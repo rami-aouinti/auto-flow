@@ -15,4 +15,8 @@
         </properties>
     </rule>
     <exclude-pattern>*/vendor/*</exclude-pattern>
+    <!-- Symfony Flex-generated files are ignored by Git and PHP-CS-Fixer. -->
+    <exclude-pattern>*/config/preload.php</exclude-pattern>
+    <exclude-pattern>*/public/index.php</exclude-pattern>
+    <exclude-pattern>*/tests/bootstrap.php</exclude-pattern>
 </ruleset>
