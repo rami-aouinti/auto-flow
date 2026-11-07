@@ -51,7 +51,10 @@ try {
             try {
                 $connection->checkHeartBeat();
             } catch (Throwable) {
-                try { if ($channel->is_open()) { $channel->close(); } } catch (Throwable) {}
+                try {
+                    $channel->close();
+                } catch (Throwable) {
+                }
                 try { if ($connection->isConnected()) { $connection->close(); } } catch (Throwable) {}
                 [$connection, $channel] = $connect();
             }
@@ -82,7 +85,10 @@ try {
             try {
                 $connection->checkHeartBeat();
             } catch (Throwable) {
-                try { if ($channel->is_open()) { $channel->close(); } } catch (Throwable) {}
+                try {
+                    $channel->close();
+                } catch (Throwable) {
+                }
                 try { if ($connection->isConnected()) { $connection->close(); } } catch (Throwable) {}
                 [$connection, $channel] = $connect();
             }

@@ -7,6 +7,9 @@ parameters:
     excludePaths:
         analyse:
             - apps/*/vendor/*
+            # Symfony Flex generates these bootstrap files during Composer install.
+            # They are framework boilerplate, not application code.
+            - apps/*/tests/bootstrap.php
             - apps/order-service/*
             - apps/offer-service/*
             - apps/pricing-service/*
@@ -40,3 +43,7 @@ parameters:
           path: apps/vehicle-catalog-service/src/Domain/Entity/VehicleVariant.php
         - identifier: phpDoc.parseError
           path: apps/vehicle-catalog-service/src/Presentation/Http/Dto/Request/VehicleSearchCriteria.php
+        # Doctrine hydrates these nullable outbox columns directly from database rows.
+        - identifier: property.unusedType
+          path: apps/vehicle-catalog-service/src/Infrastructure/Persistence/Doctrine/Entity/CatalogOutboxRecord.php
+          count: 3
