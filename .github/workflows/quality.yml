@@ -242,6 +242,7 @@ jobs:
           php -l apps/contract-service/src/Infrastructure/Signature/DocuSignSignatureProvider.php
           php -l apps/contract-service/src/Application/Port/SignatureProviderInterface.php
           php -l apps/contract-service/src/Presentation/Http/Controller/DocuSignWebhookController.php
+          cd apps/contract-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Run PHPStan analysis
         run: composer phpstan
       - name: Run quality checks
