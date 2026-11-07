@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\\Presentation\\Http\\Controller;
+namespace App\Presentation\Http\Controller;
 
-use Doctrine\\DBAL\\Connection;
+use Doctrine\DBAL\Connection;
 use JsonException;
-use Symfony\\Component\\HttpFoundation\\JsonResponse;
-use Symfony\\Component\\HttpFoundation\\Request;
-use Symfony\\Component\\Routing\\Attribute\\Route;
-use Symfony\\Component\\Uid\\Uuid;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 final readonly class DocuSignWebhookController
@@ -111,7 +111,7 @@ final readonly class DocuSignWebhookController
                 );
                 if (!is_array($contract) || $contract['status'] !== 'awaiting_signature') {
                     $db->update('contract_signature_webhook_inbox', [
-                        'processed_at' => (new \\DateTimeImmutable())->format(DATE_ATOM),
+                        'processed_at' => (new \DateTimeImmutable())->format(DATE_ATOM),
                     ], ['tenant_id' => $tenant, 'event_key' => $eventKey]);
 
                     return;
@@ -132,7 +132,7 @@ final readonly class DocuSignWebhookController
                 }
 
                 if ($targetStatus !== null) {
-                    $timestamp = (new \\DateTimeImmutable())->format(DATE_ATOM);
+                    $timestamp = (new \DateTimeImmutable())->format(DATE_ATOM);
                     $changes = [
                         'status' => $targetStatus,
                         'updated_at' => $timestamp,
@@ -174,7 +174,7 @@ final readonly class DocuSignWebhookController
                 }
 
                 $db->update('contract_signature_webhook_inbox', [
-                    'processed_at' => (new \\DateTimeImmutable())->format(DATE_ATOM),
+                    'processed_at' => (new \DateTimeImmutable())->format(DATE_ATOM),
                 ], ['tenant_id' => $tenant, 'event_key' => $eventKey]);
             });
 
