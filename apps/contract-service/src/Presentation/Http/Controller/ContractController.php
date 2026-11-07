@@ -119,6 +119,8 @@ final readonly class ContractController
             return $this->problem(400, $exception->getMessage());
         } catch (UniqueConstraintViolationException) {
             return $this->problem(409, 'A contract already exists for this order, type and version.');
+        } catch (\\DomainException $exception) {
+            return $this->problem(422, $exception->getMessage());
         } catch (Throwable) {
             return $this->problem(503, 'Contract creation is temporarily unavailable.');
         }
@@ -253,8 +255,23 @@ final readonly class ContractController
                 $this->setTenant($db, $tenant);
                 $db->executeQuery(
                     'SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))',
-                    ['lock_key' => $tenant . ':' . $contractId . ':' . $key],
+                    ['lock_key' => $tenant . ':' . $principal->subject . ':' . $key],
                 );
+                $requestHash = hash('sha256', json_encode([
+                    'contractId' => $contractId,
+                    'targetStatus' => $to,
+                ], JSON_THROW_ON_ERROR));
+                $replay = $db->fetchAssociative(
+                    'SELECT request_hash, response_body FROM contract_transition_idempotency
+                     WHERE tenant_id = :tenant AND actor_id = :actor AND idempotency_key = :key',
+                    ['tenant' => $tenant, 'actor' => $principal->subject, 'key' => $key],
+                );
+                if (is_array($replay)) {
+                    if (!hash_equals((string) $replay['request_hash'], $requestHash)) {
+                        return $this->problem(409, 'Idempotency-Key was used for another contract transition.');
+                    }
+                    return new JsonResponse($this->decode($replay['response_body']), 200, ['Cache-Control' => 'no-store']);
+                }
                 $item = $this->find($db, $tenant, $contractId);
                 if ($item === null) {
                     return $this->problem(404, 'Contract not found.');
@@ -273,7 +290,16 @@ final readonly class ContractController
                 $db->update('contract_records', $sets, ['tenant_id' => $tenant, 'contract_id' => $contractId]);
                 $this->audit($db, $tenant, $contractId, $principal->subject, $event, ['from' => $item['status'], 'to' => $to]);
                 $this->outbox($db, $tenant, $contractId, $eventType, ['contractId' => $contractId, 'orderId' => $item['orderId'], 'status' => $to]);
-                return new JsonResponse($this->find($db, $tenant, $contractId), 200, ['Cache-Control' => 'no-store']);
+                $response = $this->find($db, $tenant, $contractId);
+                $db->insert('contract_transition_idempotency', [
+                    'tenant_id' => $tenant,
+                    'actor_id' => $principal->subject,
+                    'idempotency_key' => $key,
+                    'request_hash' => $requestHash,
+                    'contract_id' => $contractId,
+                    'response_body' => json_encode($response, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
+                ]);
+                return new JsonResponse($response, 200, ['Cache-Control' => 'no-store']);
             });
         } catch (AccessDeniedHttpException $exception) {
             return $this->problem(403, $exception->getMessage());
