@@ -272,6 +272,10 @@ final readonly class ContractController
                     }
                     return new JsonResponse($this->decode($replay['response_body']), 200, ['Cache-Control' => 'no-store']);
                 }
+                $db->fetchOne(
+                    'SELECT contract_id FROM contract_records WHERE tenant_id = :tenant AND contract_id = :id FOR UPDATE',
+                    ['tenant' => $tenant, 'id' => $contractId],
+                );
                 $item = $this->find($db, $tenant, $contractId);
                 if ($item === null) {
                     return $this->problem(404, 'Contract not found.');
