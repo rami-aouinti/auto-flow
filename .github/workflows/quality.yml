@@ -54,6 +54,7 @@ jobs:
           composer validate --strict --working-dir=apps/billing-service
           composer validate --strict --working-dir=apps/customer-service
           composer validate --strict --working-dir=apps/contract-service
+          composer validate --strict --working-dir=apps/fulfillment-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
@@ -135,6 +136,11 @@ jobs:
         run: |
           composer install --working-dir=apps/payment-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/payment-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Install Fulfillment Service dependencies and run unit tests
+        run: |
+          composer install --working-dir=apps/fulfillment-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
+          cd apps/fulfillment-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+
       - name: Install Customer Service dependencies and run unit tests
         run: |
           composer install --working-dir=apps/customer-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
