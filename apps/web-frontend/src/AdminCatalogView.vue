@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { catalog, errorMessage } from './api';
 import PageHeader from '../app/components/shared/PageHeader.vue';
 import MetricCard from '../app/components/shared/MetricCard.vue';
