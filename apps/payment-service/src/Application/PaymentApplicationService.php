@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application;
 
-use App\Application\TransitionPayment\TransitionPaymentHandler;
 use App\Application\ProcessPaymentWebhook\ProcessPaymentWebhookHandler;
+use App\Application\TransitionPayment\TransitionPaymentHandler;
 
 /**
  * Compatibility façade for the HTTP controllers.

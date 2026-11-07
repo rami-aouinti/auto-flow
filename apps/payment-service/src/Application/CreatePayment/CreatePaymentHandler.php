@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Application\CreatePayment;
 
-use App\Application\Port\PaymentGatewayInterface;
 use App\Application\Port\OrderPaymentContextProviderInterface;
+use App\Application\Port\PaymentGatewayInterface;
 use AutoFlow\CoreBundle\Application\Clock\ClockInterface;
 use Doctrine\DBAL\Connection;
-use Symfony\Component\Uid\Uuid;
 use DomainException;
 use RuntimeException;
+use Symfony\Component\Uid\Uuid;
 
 final readonly class CreatePaymentHandler
 {
@@ -43,7 +43,7 @@ final readonly class CreatePaymentHandler
             $this->setTenant($tenant);
             $existing = $this->db->fetchAssociative(
                 'SELECT request_hash, response_json FROM payment_idempotency WHERE tenant_id=:tenant AND actor=:actor AND idempotency_key=:key',
-                ['tenant'=>$tenant,'actor'=>$actor,'key'=>$key],
+                ['tenant' => $tenant,'actor' => $actor,'key' => $key],
             );
             if ($existing !== false) {
                 if (!hash_equals((string) $existing['request_hash'], $hash)) {
@@ -78,7 +78,7 @@ final readonly class CreatePaymentHandler
             );
             $existing = $this->db->fetchAssociative(
                 'SELECT request_hash, response_json FROM payment_idempotency WHERE tenant_id=:tenant AND actor=:actor AND idempotency_key=:key',
-                ['tenant'=>$tenant,'actor'=>$actor,'key'=>$key],
+                ['tenant' => $tenant,'actor' => $actor,'key' => $key],
             );
             if ($existing !== false) {
                 if (!hash_equals((string) $existing['request_hash'], $hash)) {
@@ -91,7 +91,11 @@ final readonly class CreatePaymentHandler
 
             $paymentId = Uuid::v7()->toRfc4122();
             $intent = $this->gateway->createIntent(
-                $amount, $currency, $paymentId, $tenant, hash('sha256', $tenant . ':' . $actor . ':' . $key . ':create'),
+                $amount,
+                $currency,
+                $paymentId,
+                $tenant,
+                hash('sha256', $tenant . ':' . $actor . ':' . $key . ':create'),
             );
             $providerId = $intent['id'] ?? null;
             if (!is_string($providerId) || $providerId === '') {
@@ -105,18 +109,18 @@ final readonly class CreatePaymentHandler
                 default => 'pending',
             };
             $this->db->insert('payments', [
-                'tenant_id'=>$tenant,'payment_id'=>$paymentId,'order_id'=>$orderId,'created_by'=>$actor,
-                'provider'=>'stripe','provider_payment_id'=>$providerId,'amount_minor'=>$amount,
-                'currency'=>$currency,'status'=>$status,
+                'tenant_id' => $tenant,'payment_id' => $paymentId,'order_id' => $orderId,'created_by' => $actor,
+                'provider' => 'stripe','provider_payment_id' => $providerId,'amount_minor' => $amount,
+                'currency' => $currency,'status' => $status,
             ]);
             $response = [
-                'paymentId'=>$paymentId,'orderId'=>$orderId,'provider'=>'stripe','providerPaymentId'=>$providerId,
-                'amountMinor'=>$amount,'currency'=>$currency,'status'=>$status,
-                'clientSecret'=>$intent['client_secret'] ?? null,
+                'paymentId' => $paymentId,'orderId' => $orderId,'provider' => 'stripe','providerPaymentId' => $providerId,
+                'amountMinor' => $amount,'currency' => $currency,'status' => $status,
+                'clientSecret' => $intent['client_secret'] ?? null,
             ];
             $this->db->insert('payment_idempotency', [
-                'tenant_id'=>$tenant,'actor'=>$actor,'idempotency_key'=>$key,'request_hash'=>$hash,
-                'payment_id'=>$paymentId,'response_json'=>json_encode($response, JSON_THROW_ON_ERROR),
+                'tenant_id' => $tenant,'actor' => $actor,'idempotency_key' => $key,'request_hash' => $hash,
+                'payment_id' => $paymentId,'response_json' => json_encode($response, JSON_THROW_ON_ERROR),
             ]);
             $eventPayload = $response;
             unset($eventPayload['clientSecret']);
@@ -133,7 +137,7 @@ final readonly class CreatePaymentHandler
 
     private function setTenant(string $tenant): void
     {
-        $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant'=>$tenant]);
+        $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant' => $tenant]);
     }
 
     /** @param array<string,mixed> $payload */
@@ -151,8 +155,8 @@ final readonly class CreatePaymentHandler
             'data' => $payload,
         ];
         $this->db->insert('payment_outbox', [
-            'event_id'=>$eventId,'tenant_id'=>$tenant,'payment_id'=>$paymentId,
-            'event_type'=>$type,'payload'=>json_encode($envelope, JSON_THROW_ON_ERROR),
+            'event_id' => $eventId,'tenant_id' => $tenant,'payment_id' => $paymentId,
+            'event_type' => $type,'payload' => json_encode($envelope, JSON_THROW_ON_ERROR),
         ]);
     }
 

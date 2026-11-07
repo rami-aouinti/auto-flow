@@ -19,3 +19,8 @@
 /apps/web-frontend/.output/
 /apps/web-frontend/node_modules/
 /apps/web-frontend/.data/
+
+# Symfony Flex-generated service bootstrap files
+/apps/*/config/preload.php
+/apps/*/public/index.php
+/apps/*/tests/bootstrap.php

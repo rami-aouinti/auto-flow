@@ -7,13 +7,15 @@ namespace App\Application\ProcessPaymentWebhook;
 use AutoFlow\CoreBundle\Application\Clock\ClockInterface;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Symfony\Component\Uid\Uuid;
 use DomainException;
 use RuntimeException;
+use Symfony\Component\Uid\Uuid;
 
 final readonly class ProcessPaymentWebhookHandler
 {
-    public function __construct(private ClockInterface $clock, private Connection $db) {}
+    public function __construct(private ClockInterface $clock, private Connection $db)
+    {
+    }
 
     /** @param array<string,mixed> $event */
     public function __invoke(array $event): void
@@ -44,12 +46,12 @@ final readonly class ProcessPaymentWebhookHandler
         $this->db->beginTransaction();
         try {
             $this->db->insert('payment_webhook_events', [
-                'provider_event_id'=>$eventId,'tenant_id'=>$tenantId,'event_type'=>$type,
+                'provider_event_id' => $eventId,'tenant_id' => $tenantId,'event_type' => $type,
             ]);
             $this->setTenant($tenantId);
             $row = $this->db->fetchAssociative(
                 'SELECT tenant_id,payment_id,order_id,status FROM payments WHERE tenant_id=:tenant AND payment_id=:payment AND provider_payment_id=:provider FOR UPDATE',
-                ['tenant'=>$tenantId,'payment'=>$paymentId,'provider'=>$providerId],
+                ['tenant' => $tenantId,'payment' => $paymentId,'provider' => $providerId],
             );
             if ($row === false) {
                 throw new RuntimeException('Payment intent is not persisted yet; Stripe webhook must be retried.');
@@ -63,8 +65,8 @@ final readonly class ProcessPaymentWebhookHandler
                 default => [],
             };
             if (in_array($status, $allowed, true)) {
-                $this->db->update('payments', ['status'=>$status,'updated_at'=>$this->clock->now()->format(DATE_ATOM)], [
-                    'tenant_id'=>$row['tenant_id'],'payment_id'=>$row['payment_id'],
+                $this->db->update('payments', ['status' => $status,'updated_at' => $this->clock->now()->format(DATE_ATOM)], [
+                    'tenant_id' => $row['tenant_id'],'payment_id' => $row['payment_id'],
                 ]);
                 $eventType = match ($status) {
                     'authorized' => 'PaymentAuthorized',
@@ -73,7 +75,7 @@ final readonly class ProcessPaymentWebhookHandler
                     'cancelled' => 'PaymentCancelled',
                 };
                 $this->recordEvent((string)$row['tenant_id'], (string)$row['payment_id'], $eventType, [
-                    'paymentId'=>$row['payment_id'],'orderId'=>$row['order_id'],'status'=>$status,'providerEventId'=>$eventId,'amountMinor'=>(int)$this->db->fetchOne('SELECT amount_minor FROM payments WHERE tenant_id=:tenant AND payment_id=:payment',['tenant'=>$tenantId,'payment'=>$paymentId]),'currency'=>(string)$this->db->fetchOne('SELECT currency FROM payments WHERE tenant_id=:tenant AND payment_id=:payment',['tenant'=>$tenantId,'payment'=>$paymentId]),
+                    'paymentId' => $row['payment_id'],'orderId' => $row['order_id'],'status' => $status,'providerEventId' => $eventId,'amountMinor' => (int)$this->db->fetchOne('SELECT amount_minor FROM payments WHERE tenant_id=:tenant AND payment_id=:payment', ['tenant' => $tenantId,'payment' => $paymentId]),'currency' => (string)$this->db->fetchOne('SELECT currency FROM payments WHERE tenant_id=:tenant AND payment_id=:payment', ['tenant' => $tenantId,'payment' => $paymentId]),
                 ]);
             }
             $this->db->commit();
@@ -91,7 +93,7 @@ final readonly class ProcessPaymentWebhookHandler
 
     private function setTenant(string $tenant): void
     {
-        $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant'=>$tenant]);
+        $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant' => $tenant]);
     }
 
     /** @param array<string,mixed> $payload */
@@ -109,8 +111,8 @@ final readonly class ProcessPaymentWebhookHandler
             'data' => $payload,
         ];
         $this->db->insert('payment_outbox', [
-            'event_id'=>$eventId,'tenant_id'=>$tenant,'payment_id'=>$paymentId,
-            'event_type'=>$type,'payload'=>json_encode($envelope, JSON_THROW_ON_ERROR),
+            'event_id' => $eventId,'tenant_id' => $tenant,'payment_id' => $paymentId,
+            'event_type' => $type,'payload' => json_encode($envelope, JSON_THROW_ON_ERROR),
         ]);
     }
 

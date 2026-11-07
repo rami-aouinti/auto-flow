@@ -8,8 +8,8 @@ use App\Application\IdempotencyConflictException;
 use App\Application\OrderApplicationService;
 use App\Application\OrderNotFoundException;
 use App\Domain\OrderStatus;
-use AutoFlow\CoreBundle\Context\CorrelationContext;
 use App\Infrastructure\Persistence\Doctrine\DoctrineOrderRepository;
+use AutoFlow\CoreBundle\Context\CorrelationContext;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -56,10 +56,18 @@ final class OrderApplicationServiceTest extends TestCase
 
         $transitionKey = 'submit-' . Uuid::v7()->toRfc4122();
         $submitted = $this->orders->transition(
-            $tenant, $actor, $created['orderId'], OrderStatus::SUBMITTED, $transitionKey,
+            $tenant,
+            $actor,
+            $created['orderId'],
+            OrderStatus::SUBMITTED,
+            $transitionKey,
         );
         $replayedTransition = $this->orders->transition(
-            $tenant, $actor, $created['orderId'], OrderStatus::SUBMITTED, $transitionKey,
+            $tenant,
+            $actor,
+            $created['orderId'],
+            OrderStatus::SUBMITTED,
+            $transitionKey,
         );
         self::assertSame('submitted', $submitted['status']);
         self::assertSame($this->sortKeysRecursively($submitted), $this->sortKeysRecursively($replayedTransition));
@@ -137,7 +145,10 @@ final class OrderApplicationServiceTest extends TestCase
         $tenant = Uuid::v7()->toRfc4122();
         $actor = Uuid::v7()->toRfc4122();
         $created = $this->orders->create(
-            $tenant, $actor, $this->validOrderInput(), 'create-' . Uuid::v7()->toRfc4122(),
+            $tenant,
+            $actor,
+            $this->validOrderInput(),
+            'create-' . Uuid::v7()->toRfc4122(),
         );
         $key = 'transition-' . Uuid::v7()->toRfc4122();
         $this->orders->transition($tenant, $actor, $created['orderId'], OrderStatus::SUBMITTED, $key);

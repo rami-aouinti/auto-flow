@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controller;
 
-use App\Application\PaymentApplicationService;
-use App\Application\PaymentNotFoundException;
+use App\Application\CreatePayment\CreatePaymentHandler;
 use App\Application\GetPayment\GetPaymentHandler;
 use App\Application\ListPayments\ListPaymentsHandler;
-use App\Application\CreatePayment\CreatePaymentHandler;
+use App\Application\PaymentApplicationService;
+use App\Application\PaymentNotFoundException;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use DomainException;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,8 +25,7 @@ final readonly class PaymentController
         private GetPaymentHandler $getPayment,
         private ListPaymentsHandler $listPayments,
         private CreatePaymentHandler $createPayment,
-    )
-    {
+    ) {
     }
 
 
@@ -59,7 +58,7 @@ final readonly class PaymentController
             $principal = $this->principal($request, 'payments:write');
             $key = $request->headers->get('Idempotency-Key') ?? '';
             $result = ($this->createPayment)($this->tenant($principal), $principal->subject, $key, $this->body($request));
-            return new JsonResponse($result, 201, ['Cache-Control'=>'no-store']);
+            return new JsonResponse($result, 201, ['Cache-Control' => 'no-store']);
         } catch (AccessDeniedHttpException) {
             return $this->problem(403, 'Payment permission or tenant context is missing.');
         } catch (DomainException $e) {
@@ -69,12 +68,12 @@ final readonly class PaymentController
         }
     }
 
-    #[Route('/{paymentId}', methods: ['GET'], requirements: ['paymentId'=>'[0-9a-fA-F-]{36}'])]
+    #[Route('/{paymentId}', methods: ['GET'], requirements: ['paymentId' => '[0-9a-fA-F-]{36}'])]
     public function get(Request $request, string $paymentId): JsonResponse
     {
         try {
             $principal = $this->principal($request, 'payments:read');
-            return new JsonResponse(($this->getPayment)($this->tenant($principal), $paymentId), 200, ['Cache-Control'=>'no-store']);
+            return new JsonResponse(($this->getPayment)($this->tenant($principal), $paymentId), 200, ['Cache-Control' => 'no-store']);
         } catch (PaymentNotFoundException) {
             return $this->problem(404, 'Payment not found.');
         } catch (\Throwable) {
@@ -82,19 +81,19 @@ final readonly class PaymentController
         }
     }
 
-    #[Route('/{paymentId}/capture', methods: ['POST'], requirements: ['paymentId'=>'[0-9a-fA-F-]{36}'])]
+    #[Route('/{paymentId}/capture', methods: ['POST'], requirements: ['paymentId' => '[0-9a-fA-F-]{36}'])]
     public function capture(Request $request, string $paymentId): JsonResponse
     {
         return $this->transition($request, $paymentId, 'payments:capture', 'capture');
     }
 
-    #[Route('/{paymentId}/cancel', methods: ['POST'], requirements: ['paymentId'=>'[0-9a-fA-F-]{36}'])]
+    #[Route('/{paymentId}/cancel', methods: ['POST'], requirements: ['paymentId' => '[0-9a-fA-F-]{36}'])]
     public function cancel(Request $request, string $paymentId): JsonResponse
     {
         return $this->transition($request, $paymentId, 'payments:write', 'cancel');
     }
 
-    #[Route('/{paymentId}/refund', methods: ['POST'], requirements: ['paymentId'=>'[0-9a-fA-F-]{36}'])]
+    #[Route('/{paymentId}/refund', methods: ['POST'], requirements: ['paymentId' => '[0-9a-fA-F-]{36}'])]
     public function refund(Request $request, string $paymentId): JsonResponse
     {
         try {
@@ -115,7 +114,7 @@ final readonly class PaymentController
             $principal = $this->principal($request, $scope);
             $key = $request->headers->get('Idempotency-Key') ?? '';
             $result = $this->payments->transition($this->tenant($principal), $principal->subject, $paymentId, $key, $operation, $amount);
-            return new JsonResponse($result, 200, ['Cache-Control'=>'no-store']);
+            return new JsonResponse($result, 200, ['Cache-Control' => 'no-store']);
         } catch (AccessDeniedHttpException) {
             return $this->problem(403, 'Payment permission or tenant context is missing.');
         } catch (PaymentNotFoundException) {
@@ -156,6 +155,8 @@ final readonly class PaymentController
 
     private function problem(int $status, string $detail): JsonResponse
     {
-        return new JsonResponse(['type'=>'about:blank','title'=>match($status){400=>'Bad Request',403=>'Forbidden',404=>'Not Found',409=>'Conflict',422=>'Unprocessable Entity',default=>'Service Unavailable'},'status'=>$status,'detail'=>$detail], $status, ['Content-Type'=>'application/problem+json','Cache-Control'=>'no-store']);
+        return new JsonResponse(['type' => 'about:blank','title' => match($status) {
+            400 => 'Bad Request',403 => 'Forbidden',404 => 'Not Found',409 => 'Conflict',422 => 'Unprocessable Entity',default => 'Service Unavailable'
+        },'status' => $status,'detail' => $detail], $status, ['Content-Type' => 'application/problem+json','Cache-Control' => 'no-store']);
     }
 }

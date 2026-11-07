@@ -105,7 +105,9 @@ try {
         $generationNumber = (($i - 1) % $generationCount) + 1;
         $fuelIndex = ($i - 1) % count($fuels);
         $fuel = $fuels[$fuelIndex];
-        $powertrain = match ($fuel) { 'petrol', 'diesel' => 'ice', 'electric' => 'bev', 'hybrid' => 'hev', default => 'phev' };
+        $powertrain = match ($fuel) {
+            'petrol', 'diesel' => 'ice', 'electric' => 'bev', 'hybrid' => 'hev', default => 'phev'
+        };
         $body = $bodies[($i - 1) % count($bodies)];
         $transmission = $fuel === 'electric' ? 'single_speed' : $transmissions[($i - 1) % 2];
         $power = 70 + (($i * 17) % 260);
@@ -121,9 +123,16 @@ try {
     }
     $pdo->commit();
 } catch (Throwable $exception) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     throw $exception;
 }
 
-printf("Catalogue demo dataset ensured: requested manufacturers=%d models=%d generations=%d variants=%d. Existing records were preserved.\n",
-    $manufacturerCount, $modelCount, $generationCount, $variantCount);
+printf(
+    "Catalogue demo dataset ensured: requested manufacturers=%d models=%d generations=%d variants=%d. Existing records were preserved.\n",
+    $manufacturerCount,
+    $modelCount,
+    $generationCount,
+    $variantCount
+);

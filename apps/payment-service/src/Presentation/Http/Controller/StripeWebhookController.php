@@ -28,14 +28,14 @@ final readonly class StripeWebhookController
             $this->verifier->verify($payload, $request->headers->get('Stripe-Signature') ?? '');
             $event = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($event)) {
-                return new JsonResponse(['error'=>'invalid_event'], 400);
+                return new JsonResponse(['error' => 'invalid_event'], 400);
             }
             $this->payments->applyWebhook($event);
-            return new JsonResponse(['received'=>true], 200);
+            return new JsonResponse(['received' => true], 200);
         } catch (JsonException) {
-            return new JsonResponse(['error'=>'invalid_json'], 400);
+            return new JsonResponse(['error' => 'invalid_json'], 400);
         } catch (Throwable) {
-            return new JsonResponse(['error'=>'invalid_webhook'], 400);
+            return new JsonResponse(['error' => 'invalid_webhook'], 400);
         }
     }
 }

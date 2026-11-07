@@ -22,7 +22,15 @@ final class CreatePricingPolicyHandlerTest extends TestCase
         ));
 
         $policy = (new CreatePricingPolicyHandler($repository))(
-            'tenant-demo', 5, 12, 72, 0, 2000, 7, 'lease-annuity-v1', 'admin-demo',
+            'tenant-demo',
+            5,
+            12,
+            72,
+            0,
+            2000,
+            7,
+            'lease-annuity-v1',
+            'admin-demo',
         );
 
         self::assertSame(5, $policy->version);
@@ -37,7 +45,15 @@ final class CreatePricingPolicyHandlerTest extends TestCase
 
         $this->expectException(DomainException::class);
         (new CreatePricingPolicyHandler($repository))(
-            'tenant-demo', 4, 12, 72, 0, 2000, 7, 'lease-annuity-v1', 'admin-demo',
+            'tenant-demo',
+            4,
+            12,
+            72,
+            0,
+            2000,
+            7,
+            'lease-annuity-v1',
+            'admin-demo',
         );
     }
 }

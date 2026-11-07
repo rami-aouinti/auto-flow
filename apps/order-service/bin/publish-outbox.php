@@ -38,7 +38,15 @@ $connect = static function (): array {
         getenv('RABBITMQ_USER') ?: 'autoflow',
         getenv('RABBITMQ_PASSWORD') ?: 'autoflow',
         getenv('RABBITMQ_VHOST') ?: '/',
-        false, 'PLAIN', null, 'en_US', 3.0, 3.0, null, true, 30,
+        false,
+        'PLAIN',
+        null,
+        'en_US',
+        3.0,
+        3.0,
+        null,
+        true,
+        30,
     );
     $channel = $connection->channel();
     $channel->exchange_declare('autoflow.order.events', 'topic', false, true, false);
@@ -64,8 +72,18 @@ try {
             try {
                 $connection->checkHeartBeat();
             } catch (Throwable) {
-                try { if ($channel->is_open()) { $channel->close(); } } catch (Throwable) {}
-                try { if ($connection->isConnected()) { $connection->close(); } } catch (Throwable) {}
+                try {
+                    if ($channel->is_open()) {
+                        $channel->close();
+                    }
+                } catch (Throwable) {
+                }
+                try {
+                    if ($connection->isConnected()) {
+                        $connection->close();
+                    }
+                } catch (Throwable) {
+                }
                 [$connection, $channel] = $connect();
             }
             usleep(500000);
@@ -117,9 +135,21 @@ try {
                 ['id' => $eventId, 'error' => mb_substr($error->getMessage(), 0, 500)],
             );
             $publishFailures->add(1, ['event_type' => $eventType]);
-            try { $connection->checkHeartBeat(); } catch (Throwable) {
-                try { if ($channel->is_open()) { $channel->close(); } } catch (Throwable) {}
-                try { if ($connection->isConnected()) { $connection->close(); } } catch (Throwable) {}
+            try {
+                $connection->checkHeartBeat();
+            } catch (Throwable) {
+                try {
+                    if ($channel->is_open()) {
+                        $channel->close();
+                    }
+                } catch (Throwable) {
+                }
+                try {
+                    if ($connection->isConnected()) {
+                        $connection->close();
+                    }
+                } catch (Throwable) {
+                }
                 [$connection, $channel] = $connect();
             }
         } finally {

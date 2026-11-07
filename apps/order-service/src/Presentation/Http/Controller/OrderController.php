@@ -8,7 +8,6 @@ use App\Application\CreateOrder\CreateOrderHandler;
 use App\Application\IdempotencyConflictException;
 use App\Application\OrderApplicationService;
 use App\Application\OrderNotFoundException;
-use App\Application\OrderReferenceValidationException;
 use App\Application\OrderUpstreamAuthorizationException;
 use App\Application\OrderUpstreamUnavailableException;
 use App\Domain\OrderStatus;
@@ -36,8 +35,7 @@ final readonly class OrderController
         private OrderApplicationService $orders,
         private OrderMetrics $metrics,
         private CreateOrderHandler $createOrder,
-    )
-    {
+    ) {
     }
 
     #[Route('', name: 'orders_create', methods: ['POST'])]
@@ -188,8 +186,7 @@ final readonly class OrderController
         string $orderId,
         OrderStatus $target,
         ?string $reason = null,
-    ): JsonResponse
-    {
+    ): JsonResponse {
         try {
             $managementStatuses = [
                 OrderStatus::ACCEPTED,
@@ -207,7 +204,12 @@ final readonly class OrderController
                 return $this->problem(400, 'Idempotency-Key is required for order transitions.');
             }
             $result = $this->orders->transition(
-                $this->tenant($principal), $principal->subject, $orderId, $target, $idempotencyKey, $reason,
+                $this->tenant($principal),
+                $principal->subject,
+                $orderId,
+                $target,
+                $idempotencyKey,
+                $reason,
             );
             $this->metrics->recordTransition($target->value);
             return new JsonResponse(

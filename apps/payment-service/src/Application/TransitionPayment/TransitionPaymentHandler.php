@@ -8,8 +8,8 @@ use App\Application\PaymentNotFoundException;
 use App\Application\Port\PaymentGatewayInterface;
 use AutoFlow\CoreBundle\Application\Clock\ClockInterface;
 use Doctrine\DBAL\Connection;
-use Symfony\Component\Uid\Uuid;
 use DomainException;
+use Symfony\Component\Uid\Uuid;
 
 final readonly class TransitionPaymentHandler
 {
@@ -17,7 +17,8 @@ final readonly class TransitionPaymentHandler
         private ClockInterface $clock,
         private Connection $db,
         private PaymentGatewayInterface $gateway,
-    ) {}
+    ) {
+    }
 
     /** @return array<string,mixed> */
     public function __invoke(string $tenant, string $actor, string $paymentId, string $key, string $operation, ?int $refundAmount = null): array
@@ -33,7 +34,7 @@ final readonly class TransitionPaymentHandler
             );
             $existing = $this->db->fetchAssociative(
                 'SELECT request_hash,response_json FROM payment_operation_idempotency WHERE tenant_id=:tenant AND actor=:actor AND idempotency_key=:key',
-                ['tenant'=>$tenant,'actor'=>$actor,'key'=>$key],
+                ['tenant' => $tenant,'actor' => $actor,'key' => $key],
             );
             if ($existing !== false) {
                 if (!hash_equals((string)$existing['request_hash'], $requestHash)) {
@@ -45,7 +46,7 @@ final readonly class TransitionPaymentHandler
             }
             $row = $this->db->fetchAssociative(
                 'SELECT * FROM payments WHERE tenant_id=:tenant AND payment_id=:id FOR UPDATE',
-                ['tenant'=>$tenant,'id'=>$paymentId],
+                ['tenant' => $tenant,'id' => $paymentId],
             );
             if ($row === false) {
                 throw new PaymentNotFoundException();
@@ -82,16 +83,16 @@ final readonly class TransitionPaymentHandler
             };
             if ($operation === 'refund') {
                 $this->db->insert('payment_refunds', [
-                    'tenant_id'=>$tenant,'refund_id'=>Uuid::v7()->toRfc4122(),'payment_id'=>$paymentId,
-                    'provider_refund_id'=>$result['id'] ?? null,'amount_minor'=>$refundAmount,'status'=>'succeeded',
+                    'tenant_id' => $tenant,'refund_id' => Uuid::v7()->toRfc4122(),'payment_id' => $paymentId,
+                    'provider_refund_id' => $result['id'] ?? null,'amount_minor' => $refundAmount,'status' => 'succeeded',
                 ]);
                 $this->db->executeStatement(
                     'UPDATE payments SET amount_refunded_minor=amount_refunded_minor+:amount WHERE tenant_id=:tenant AND payment_id=:id',
-                    ['amount'=>$refundAmount,'tenant'=>$tenant,'id'=>$paymentId],
+                    ['amount' => $refundAmount,'tenant' => $tenant,'id' => $paymentId],
                 );
             }
-            $this->db->update('payments', ['status'=>$newStatus,'updated_at'=>$this->clock->now()->format(DATE_ATOM)], ['tenant_id'=>$tenant,'payment_id'=>$paymentId]);
-            $payload = ['paymentId'=>$paymentId,'orderId'=>$row['order_id'],'status'=>$newStatus,'operation'=>$operation,'amountMinor'=>(int)$row['amount_minor'],'currency'=>(string)$row['currency'],'refundAmountMinor'=>$operation==='refund'?$refundAmount:null,'amountRefundedMinor'=>$operation==='refund'?(int)$row['amount_refunded_minor']+(int)$refundAmount:(int)$row['amount_refunded_minor']];
+            $this->db->update('payments', ['status' => $newStatus,'updated_at' => $this->clock->now()->format(DATE_ATOM)], ['tenant_id' => $tenant,'payment_id' => $paymentId]);
+            $payload = ['paymentId' => $paymentId,'orderId' => $row['order_id'],'status' => $newStatus,'operation' => $operation,'amountMinor' => (int)$row['amount_minor'],'currency' => (string)$row['currency'],'refundAmountMinor' => $operation === 'refund' ? $refundAmount : null,'amountRefundedMinor' => $operation === 'refund' ? (int)$row['amount_refunded_minor'] + (int)$refundAmount : (int)$row['amount_refunded_minor']];
             $eventType = match ($operation) {
                 'capture' => 'PaymentCaptured',
                 'refund' => $newStatus === 'refunded' ? 'PaymentRefunded' : 'PaymentPartiallyRefunded',
@@ -99,8 +100,8 @@ final readonly class TransitionPaymentHandler
             };
             $this->recordEvent($tenant, $paymentId, $eventType, $payload);
             $this->db->insert('payment_operation_idempotency', [
-                'tenant_id'=>$tenant,'actor'=>$actor,'idempotency_key'=>$key,'request_hash'=>$requestHash,
-                'payment_id'=>$paymentId,'response_json'=>json_encode($payload, JSON_THROW_ON_ERROR),
+                'tenant_id' => $tenant,'actor' => $actor,'idempotency_key' => $key,'request_hash' => $requestHash,
+                'payment_id' => $paymentId,'response_json' => json_encode($payload, JSON_THROW_ON_ERROR),
             ]);
             $this->db->commit();
             return $payload;
@@ -114,7 +115,7 @@ final readonly class TransitionPaymentHandler
 
     private function setTenant(string $tenant): void
     {
-        $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant'=>$tenant]);
+        $this->db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant' => $tenant]);
     }
 
     /** @param array<string,mixed> $payload */
@@ -132,8 +133,8 @@ final readonly class TransitionPaymentHandler
             'data' => $payload,
         ];
         $this->db->insert('payment_outbox', [
-            'event_id'=>$eventId,'tenant_id'=>$tenant,'payment_id'=>$paymentId,
-            'event_type'=>$type,'payload'=>json_encode($envelope, JSON_THROW_ON_ERROR),
+            'event_id' => $eventId,'tenant_id' => $tenant,'payment_id' => $paymentId,
+            'event_type' => $type,'payload' => json_encode($envelope, JSON_THROW_ON_ERROR),
         ]);
     }
 

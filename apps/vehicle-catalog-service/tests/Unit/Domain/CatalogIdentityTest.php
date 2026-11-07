@@ -7,8 +7,8 @@ namespace App\Tests\Unit\Domain;
 use App\Domain\Entity\Manufacturer;
 use App\Domain\Entity\VehicleGeneration;
 use App\Domain\Entity\VehicleModel;
-use App\Domain\ValueObject\CatalogueId;
 use App\Domain\ValueObject\CatalogStatus;
+use App\Domain\ValueObject\CatalogueId;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 

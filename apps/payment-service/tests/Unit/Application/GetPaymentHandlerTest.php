@@ -14,7 +14,7 @@ final class GetPaymentHandlerTest extends TestCase
     public function testItReturnsThePaymentFromTheTenantScopedRepository(): void
     {
         $payment = ['payment_id' => 'payment-1', 'tenant_id' => 'tenant-1'];
-        $repository = new class($payment) implements PaymentRepositoryInterface {
+        $repository = new class ($payment) implements PaymentRepositoryInterface {
             /** @param array<string, mixed> $payment */
             public function __construct(private array $payment)
             {
@@ -40,7 +40,7 @@ final class GetPaymentHandlerTest extends TestCase
     }
     public function testItThrowsWhenThePaymentDoesNotExistInTheTenant(): void
     {
-        $repository = new class implements PaymentRepositoryInterface {
+        $repository = new class () implements PaymentRepositoryInterface {
             public function findByTenantAndId(string $tenantId, string $paymentId): ?array
             {
                 return null;

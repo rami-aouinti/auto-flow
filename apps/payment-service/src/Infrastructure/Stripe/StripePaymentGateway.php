@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Stripe;
 
 use App\Application\Port\PaymentGatewayInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use RuntimeException;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Throwable;
 
 final readonly class StripePaymentGateway implements PaymentGatewayInterface

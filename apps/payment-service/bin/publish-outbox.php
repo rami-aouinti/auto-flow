@@ -33,7 +33,15 @@ $connect = static function (): array {
         getenv('RABBITMQ_USER') ?: 'autoflow',
         getenv('RABBITMQ_PASSWORD') ?: 'autoflow',
         getenv('RABBITMQ_VHOST') ?: '/',
-        false, 'PLAIN', null, 'en_US', 3.0, 3.0, null, true, 30,
+        false,
+        'PLAIN',
+        null,
+        'en_US',
+        3.0,
+        3.0,
+        null,
+        true,
+        30,
     );
     $channel = $connection->channel();
     $channel->exchange_declare('autoflow.payment.events', 'topic', false, true, false);
@@ -55,7 +63,12 @@ try {
                     $channel->close();
                 } catch (Throwable) {
                 }
-                try { if ($connection->isConnected()) { $connection->close(); } } catch (Throwable) {}
+                try {
+                    if ($connection->isConnected()) {
+                        $connection->close();
+                    }
+                } catch (Throwable) {
+                }
                 [$connection, $channel] = $connect();
             }
             usleep(500000);
@@ -89,7 +102,12 @@ try {
                     $channel->close();
                 } catch (Throwable) {
                 }
-                try { if ($connection->isConnected()) { $connection->close(); } } catch (Throwable) {}
+                try {
+                    if ($connection->isConnected()) {
+                        $connection->close();
+                    }
+                } catch (Throwable) {
+                }
                 [$connection, $channel] = $connect();
             }
         }

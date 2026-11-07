@@ -168,11 +168,15 @@ final readonly class CatalogAdminController
                     return $this->problem(422, sprintf('%s must be a non-empty string.', $field));
                 }
                 if (str_ends_with($config['fields'][$field], '_year') || in_array($field, ['powerKw','displacementCc','seats','doors','curbWeightKg','lengthMm','widthMm','heightMm','co2EmissionGPerKm'], true)) {
-                    if ($value !== null && !is_int($value)) return $this->problem(422, sprintf('%s must be an integer or null.', $field));
+                    if ($value !== null && !is_int($value)) {
+                        return $this->problem(422, sprintf('%s must be an integer or null.', $field));
+                    }
                 }
                 $column = $config['fields'][$field];
                 if ($field === 'mediaReferences') {
-                    if (!is_array($value)) return $this->problem(422, 'mediaReferences must be an array.');
+                    if (!is_array($value)) {
+                        return $this->problem(422, 'mediaReferences must be an array.');
+                    }
                     $value = json_encode($value, JSON_THROW_ON_ERROR);
                 }
                 $sets[] = $field === 'mediaReferences'
@@ -184,7 +188,9 @@ final readonly class CatalogAdminController
                     $params['normalizedName'] = mb_strtolower(trim($value));
                 }
             }
-            if ($sets === []) return $this->problem(400, 'At least one editable field is required.');
+            if ($sets === []) {
+                return $this->problem(400, 'At least one editable field is required.');
+            }
             $sets[] = 'updated_at=CURRENT_TIMESTAMP';
             $changed = $db->executeStatement(
                 'UPDATE ' . $config['table'] . ' SET ' . implode(', ', $sets) . ' WHERE ' . $config['id'] . '=:id',
@@ -240,7 +246,9 @@ final readonly class CatalogAdminController
     {
         return new JsonResponse([
             'type' => 'about:blank',
-            'title' => match ($status) { 400 => 'Bad Request', 404 => 'Not Found', 409 => 'Conflict', 422 => 'Unprocessable Entity', default => 'Internal Server Error' },
+            'title' => match ($status) {
+                400 => 'Bad Request', 404 => 'Not Found', 409 => 'Conflict', 422 => 'Unprocessable Entity', default => 'Internal Server Error'
+            },
             'status' => $status,
             'detail' => $detail,
         ], $status, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);

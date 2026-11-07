@@ -14,8 +14,15 @@ final class OrderTest extends TestCase
     private function order(): Order
     {
         return new Order(
-            'order-1', 'tenant-1', 'customer-1', 'offer-1', 'quote-1', 'vehicle-1',
-            ['version' => 1], ['currency' => 'EUR'], ['variant' => 'EV'],
+            'order-1',
+            'tenant-1',
+            'customer-1',
+            'offer-1',
+            'quote-1',
+            'vehicle-1',
+            ['version' => 1],
+            ['currency' => 'EUR'],
+            ['variant' => 'EV'],
         );
     }
 

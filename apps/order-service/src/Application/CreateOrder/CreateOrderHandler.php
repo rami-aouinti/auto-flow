@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Application\CreateOrder;
 
-use App\Application\IdempotencyConflictException;
 use App\Application\OrderApplicationService;
 use App\Application\OrderReferenceValidationException;
 use App\Application\OrderUpstreamAuthorizationException;
@@ -40,8 +39,12 @@ final readonly class CreateOrderHandler
         }
 
         $existing = $this->orders->findIdempotentCreate(
-            $tenantId, $actor, $idempotencyKey,
-            $input['offerId'], $input['quoteId'], $input['vehicleId'],
+            $tenantId,
+            $actor,
+            $idempotencyKey,
+            $input['offerId'],
+            $input['quoteId'],
+            $input['vehicleId'],
         );
         if ($existing !== null) {
             $this->metrics->recordCreated();
@@ -59,8 +62,12 @@ final readonly class CreateOrderHandler
         } catch (OrderReferenceValidationException|OrderUpstreamAuthorizationException|OrderUpstreamUnavailableException $exception) {
             // A concurrent first request may have committed while this request was calling upstream.
             $existing = $this->orders->findIdempotentCreate(
-                $tenantId, $actor, $idempotencyKey,
-                $input['offerId'], $input['quoteId'], $input['vehicleId'],
+                $tenantId,
+                $actor,
+                $idempotencyKey,
+                $input['offerId'],
+                $input['quoteId'],
+                $input['vehicleId'],
             );
             if ($existing !== null) {
                 $this->metrics->recordCreated();

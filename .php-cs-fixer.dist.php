@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 $finder = PhpCsFixer\Finder::create()
     ->in([__DIR__ . '/apps', __DIR__ . '/packages', __DIR__ . '/tests'])
-    ->name('*.php');
+    ->name('*.php')
+    ->ignoreVCSIgnored(true)
+    // Symfony Flex may rewrite these generated manifests during Composer install.
+    ->notName('bundles.php');
 
 return (new PhpCsFixer\Config())
     ->setRiskyAllowed(true)

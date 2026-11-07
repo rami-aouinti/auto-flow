@@ -31,7 +31,15 @@ $connection = new AMQPStreamConnection(
     getenv('RABBITMQ_USER') ?: 'autoflow',
     getenv('RABBITMQ_PASSWORD') ?: 'autoflow',
     getenv('RABBITMQ_VHOST') ?: '/',
-    false, 'PLAIN', null, 'en_US', 3.0, 3.0, null, true, 30,
+    false,
+    'PLAIN',
+    null,
+    'en_US',
+    3.0,
+    3.0,
+    null,
+    true,
+    30,
 );
 $channel = $connection->channel();
 $exchange = 'autoflow.payment.events';

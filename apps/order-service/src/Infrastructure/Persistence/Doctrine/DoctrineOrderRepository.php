@@ -25,8 +25,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
     public function __construct(
         private Connection $connection,
         private CorrelationContext $correlationContext,
-    )
-    {
+    ) {
     }
 
     /** @return array<string, mixed>|null */
@@ -39,7 +38,12 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         string $vehicleId,
     ): ?array {
         return $this->connection->transactional(function (Connection $db) use (
-            $tenantId, $actor, $idempotencyKey, $offerId, $quoteId, $vehicleId,
+            $tenantId,
+            $actor,
+            $idempotencyKey,
+            $offerId,
+            $quoteId,
+            $vehicleId,
         ): ?array {
             $this->setTenant($db, $tenantId);
             $existing = $db->fetchAssociative(
@@ -100,9 +104,15 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                 }
 
                 $order = new Order(
-                    Uuid::v7()->toRfc4122(), $tenantId, $actor,
-                    $input['offerId'], $input['quoteId'], $input['vehicleId'],
-                    $input['offerSnapshot'], $input['quoteSnapshot'], $input['vehicleSnapshot'],
+                    Uuid::v7()->toRfc4122(),
+                    $tenantId,
+                    $actor,
+                    $input['offerId'],
+                    $input['quoteId'],
+                    $input['vehicleId'],
+                    $input['offerSnapshot'],
+                    $input['quoteSnapshot'],
+                    $input['vehicleSnapshot'],
                 );
                 $now = $this->now();
                 $db->executeStatement(
@@ -149,7 +159,8 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                      'response' => json_encode($response, JSON_THROW_ON_ERROR), 'now' => $now],
                 );
                 return $response;
-        });
+            }
+        );
     }
 
     /** @return array<string, mixed> */
@@ -194,10 +205,16 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                 }
                 $from = OrderStatus::from((string) $row['status']);
                 $order = new Order(
-                    (string) $row['order_id'], $tenantId, (string) $row['created_by'],
-                    (string) $row['offer_id'], (string) $row['quote_id'], (string) $row['vehicle_id'],
-                    $this->decodeObject($row['offer_snapshot']), $this->decodeObject($row['quote_snapshot']),
-                    $this->decodeObject($row['vehicle_snapshot']), $from,
+                    (string) $row['order_id'],
+                    $tenantId,
+                    (string) $row['created_by'],
+                    (string) $row['offer_id'],
+                    (string) $row['quote_id'],
+                    (string) $row['vehicle_id'],
+                    $this->decodeObject($row['offer_snapshot']),
+                    $this->decodeObject($row['quote_snapshot']),
+                    $this->decodeObject($row['vehicle_snapshot']),
+                    $from,
                     $row['submitted_at'] === null ? null : new \DateTimeImmutable((string) $row['submitted_at']),
                     $row['decided_at'] === null ? null : new \DateTimeImmutable((string) $row['decided_at']),
                     $row['decision_reason'] === null ? null : (string) $row['decision_reason'],
@@ -237,7 +254,8 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                     ],
                 );
                 return $response;
-        });
+            }
+        );
     }
 
     /** @return array<string, mixed> */
@@ -363,8 +381,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         OrderStatus $to,
         string $actor,
         ?string $reason,
-    ): void
-    {
+    ): void {
         $db->executeStatement(
             'INSERT INTO order_history (tenant_id, order_id, from_status, to_status, actor, reason, occurred_at)
              VALUES (:tenant, :id, :from_status, :to_status, :actor, :reason, :occurred)',
@@ -380,8 +397,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         string $orderId,
         string $eventType,
         array $payload,
-    ): void
-    {
+    ): void {
         $eventId = Uuid::v7()->toRfc4122();
         $traceContext = [];
         TraceContextPropagator::getInstance()->inject($traceContext);
