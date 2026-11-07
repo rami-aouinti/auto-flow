@@ -1,0 +1,4 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:CUSTOMER_DATABASE_URL)%'
+        server_version: '16'
