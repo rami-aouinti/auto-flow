@@ -12,7 +12,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - Supervisor-managed Offer background processes in Docker Compose
 - Temporal CLI development server with persistent local SQLite state
 - RoadRunner 3.0.1 HTTP and gRPC workers for the Offer and Pricing services
-- Symfony 7.4 microservices with independent Composer projects (Customer, Offer, Pricing, Vehicle Catalog, Order, Payment and Billing)
+- Symfony 7.4 microservices with independent Composer projects (Customer, Offer, Pricing, Vehicle Catalog, Order, Payment, Billing and Contract)
 - OpenTelemetry PHP extension, SDK and Symfony auto-instrumentation
 - PostgreSQL 16, RabbitMQ 4, Redis 7, Elasticsearch 8 and Kibana
 - Mercure Hub for real-time Server-Sent Events
@@ -35,11 +35,11 @@ The complete observability stack is resource-intensive; allocate at least 8 GB R
 ~~~bash
 cp .env.example .env
 # Replace the local-only JWT and Grafana passwords in .env before use.
-docker compose up -d --build
-docker compose ps
-docker compose exec php composer install
-docker compose exec php php -v
-docker compose up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher payment-service payment-outbox-publisher order-payment-event-consumer order-workflow-worker customer-service
+docker compose --env-file .env.example up -d --build
+docker compose --env-file .env.example ps
+docker compose --env-file .env.example exec php composer install
+docker compose --env-file .env.example exec php php -v
+docker compose --env-file .env.example up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher payment-service payment-outbox-publisher order-payment-event-consumer order-workflow-worker customer-service contract-service
 ~~~
 
 The first local build installs each service's independent Composer dependencies. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
@@ -54,6 +54,7 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | API Gateway (Traefik) | http://localhost:8088 | Single HTTP entry point; routes Catalog, Offers, Pricing, Orders, Payments and Billing; applies CORS, security headers, in-memory IP rate limiting and in-flight request limits |
 | Billing Service | http://localhost:8087 | Invoices, VAT breakdowns, credit notes and billing summary |
 | Customer Service | http://localhost:8089 | Tenant-scoped individual/company profiles, addresses, consents and audit history |
+| Contract Service | http://localhost:8090 | Tenant-scoped contract drafts, immutable legal snapshots and lifecycle audit |
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
 | Offer Swagger UI | http://localhost:8081/api/doc | Interactive Offer REST API documentation (dev only) |
 | Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
@@ -93,6 +94,10 @@ Billing consumes PaymentCaptured and refund events, creates tenant-scoped invoic
 
 Customer owns customer profiles, contact details, addresses, consent decisions and audit history. It enforces tenant isolation in PostgreSQL and exposes a protected API at `/api/v1/customers/**`. See [Customer Service documentation](apps/customer-service/README.md).
 
+## Contract Service
+
+Contract owns contract drafts and their immutable legal snapshots, referencing accepted orders without cross-service database joins. The first slice includes tenant-isolated storage, idempotent creation, prepare/cancel transitions, audit history and transactional Outbox writes. PDF rendering, Outbox publishing and real e-signature integration are still open. See [Contract Service documentation](apps/contract-service/README.md).
+
 ## API Gateway routes
 
 | Public path | Upstream service | Notes |
@@ -104,12 +109,13 @@ Customer owns customer profiles, contact details, addresses, consent decisions a
 | `/api/v1/payments/**` | Payment (`payment-service:8080`) | Payment intent, payment lifecycle and Stripe webhook API |
 | `/api/v1/billing/**` | Billing (`billing-service:8080`) | Tenant invoices, VAT breakdowns, credit notes and summary |
 | `/api/v1/customers/**` | Customer (`customer-service:8080`) | Tenant customer profiles, addresses, consents and audit history |
+| `/api/v1/contracts/**` | Contract (`contract-service:8080`) | Contract drafts, legal snapshots, lifecycle and audit history |
 
-The gateway does **not** replace authentication or authorization. It does not decode or trust JWT claims: every backend continues to validate the Keycloak RS256 token, issuer, audience, tenant and service-owned scopes. The local edge rate limiter is in-memory and per gateway replica; distributed per-tenant quotas backed by Redis remain a separate production hardening task. TLS termination and trusted-proxy configuration must be completed for the target deployment.
+The gateway routes `/api/v1/contracts/**` to Contract Service at `contract-service:8080`. The gateway does **not** replace authentication or authorization. It does not decode or trust JWT claims: every backend continues to validate the Keycloak RS256 token, issuer, audience, tenant and service-owned scopes. The local edge rate limiter is in-memory and per gateway replica; distributed per-tenant quotas backed by Redis remain a separate production hardening task. TLS termination and trusted-proxy configuration must be completed for the target deployment.
 
 ## Authentication quick start
 
-Customer, Offer, Pricing, Vehicle Catalog, Order Management and Billing validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog` and `autoflow-order`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
+Customer, Offer, Pricing, Vehicle Catalog, Order Management, Billing and Contract validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog` and `autoflow-order`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
 
 The imported `demo` user/password `demo`, `order-operator` user/password `order-operator`, and the local password-grant client below are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
 
