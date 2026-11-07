@@ -24,15 +24,18 @@ These are logical responsibility groups. They do not require every group to beco
 The initial implemented HTTP path is:
 
 ~~~text
-Client
+Browser / Mobile / API Client
   |
-  | GET /api/offers/{vehicleId}
+  | HTTP :8088
   v
-Offer Service (Symfony, host port 8081)
+Traefik API Gateway
+  | /api/offers/**
+  v
+Offer Service (Symfony)
   |
   | Symfony HttpClient + W3C trace context
   v
-Pricing Service (Symfony, host port 8082)
+Pricing Service (Symfony)
   |
   | response
   v
@@ -40,10 +43,13 @@ Offer Service
   |
   | composed JSON response
   v
+Traefik API Gateway
+  |
+  v
 Client
 ~~~
 
-Inside Docker Compose, Offer calls Pricing using the Docker DNS name pricing-service and container port 8080. Host ports 8081 and 8082 are for local access.
+Inside Docker Compose, the gateway routes public API paths to each backend over Docker DNS and container port 8080. Offer calls Pricing directly using the Docker DNS name pricing-service and container port 8080. Host port 8088 is the common HTTP entry point; individual backend ports remain available for local diagnostics.
 
 Each application has its own Symfony application and Composer project. They do not call one another's PHP classes directly; the integration boundary is HTTP.
 

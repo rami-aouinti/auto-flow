@@ -7,6 +7,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 
 ## Stack
 
+- Traefik v3 API Gateway for centralized HTTP routing, CORS, security headers, per-IP rate limits and Prometheus metrics
 - PHP 8.4 CLI and Xdebug 3
 - Supervisor-managed Offer background processes in Docker Compose
 - Temporal CLI development server with persistent local SQLite state
@@ -46,8 +47,11 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 
 ## Local interfaces and endpoints
 
+Use **http://localhost:8088** as the single HTTP entry point for application clients. The gateway preserves the service-owned `/api/...` paths and routes them to the corresponding Symfony application. Direct backend ports remain published only for local diagnostics and service-specific Swagger UI.
+
 | Service | URL | Purpose |
 | --- | --- | --- |
+| API Gateway (Traefik) | http://localhost:8088 | Single HTTP entry point; routes Catalog, Offers, Pricing, Orders and Payments; applies CORS, security headers, in-memory IP rate limiting and in-flight request limits |
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
 | Offer Swagger UI | http://localhost:8081/api/doc | Interactive Offer REST API documentation (dev only) |
 | Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
@@ -79,9 +83,21 @@ Subsequent starts reuse the built images unless their source or Dockerfile chang
 | Redis | localhost:6379 | Cache and ephemeral data |
 | OTLP gRPC / HTTP | localhost:4317 / 4318 | OpenTelemetry trace ingestion |
 
+## API Gateway routes
+
+| Public path | Upstream service | Notes |
+| --- | --- | --- |
+| `/api/catalog/**` | Vehicle Catalog (`vehicle-catalog-service:8080`) | Manufacturer, model, generation and variant APIs |
+| `/api/offers/**` | Offer (`offer-service:8080`) | Offer lifecycle and quote composition |
+| `/api/pricing/**` | Pricing (`pricing-service:8080`) | Tenant-scoped quote calculation and retrieval |
+| `/api/v1/orders/**` | Order (`order-service:8080`) | Versioned order lifecycle API |
+| `/api/payments/**` | Payment (`payment-service:8080`) | Payment intent and payment lifecycle API |
+
+The gateway does **not** replace authentication or authorization. It does not decode or trust JWT claims: every backend continues to validate the Keycloak RS256 token, issuer, audience, tenant and service-owned scopes. The local edge rate limiter is in-memory and per gateway replica; distributed per-tenant quotas backed by Redis remain a separate production hardening task. TLS termination and trusted-proxy configuration must be completed for the target deployment.
+
 ## Authentication quick start
 
-Offer, Pricing, Vehicle Catalog and Order Management validate RS256 access tokens locally using Keycloak's JWKS endpoint. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog` and `autoflow-order`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
+Offer, Pricing, Vehicle Catalog and Order Management validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog` and `autoflow-order`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
 
 The imported `demo` user/password `demo`, `order-operator` user/password `order-operator`, and the local password-grant client below are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
 

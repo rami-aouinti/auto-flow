@@ -1,0 +1,145 @@
+# Traefik dynamic configuration for the AutoFlow API edge.
+# Paths are intentionally preserved: each Symfony service owns its /api route contract.
+http:
+  middlewares:
+    api-security-headers:
+      headers:
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: strict-origin-when-cross-origin
+        permissionsPolicy: "camera=(), microphone=(), geolocation=()"
+
+    api-cors:
+      headers:
+        accessControlAllowOriginList:
+          - "http://localhost:3000"
+          - "http://127.0.0.1:3000"
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Accept
+          - Authorization
+          - Content-Type
+          - Idempotency-Key
+          - Origin
+          - X-Correlation-ID
+        accessControlExposeHeaders:
+          - Retry-After
+          - X-Correlation-ID
+        accessControlMaxAge: 600
+        addVaryHeader: true
+
+    api-rate-limit:
+      rateLimit:
+        average: 120
+        period: 1m
+        burst: 60
+
+    api-in-flight:
+      inFlightReq:
+        amount: 100
+
+    api-defaults:
+      chain:
+        middlewares:
+          - api-security-headers
+          - api-cors
+          - api-rate-limit
+          - api-in-flight
+
+  routers:
+    catalog:
+      entryPoints:
+        - web
+      rule: "PathPrefix(`/api/catalog`)"
+      service: catalog
+      middlewares:
+        - api-defaults
+
+    offers:
+      entryPoints:
+        - web
+      rule: "PathPrefix(`/api/offers`)"
+      service: offers
+      middlewares:
+        - api-defaults
+
+    pricing:
+      entryPoints:
+        - web
+      rule: "PathPrefix(`/api/pricing`)"
+      service: pricing
+      middlewares:
+        - api-defaults
+
+    orders:
+      entryPoints:
+        - web
+      rule: "PathPrefix(`/api/v1/orders`)"
+      service: orders
+      middlewares:
+        - api-defaults
+
+    payments:
+      entryPoints:
+        - web
+      rule: "PathPrefix(`/api/payments`)"
+      service: payments
+      middlewares:
+        - api-defaults
+
+  services:
+    catalog:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://vehicle-catalog-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    offers:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://offer-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    pricing:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://pricing-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    orders:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://order-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    payments:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://payment-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s

@@ -85,9 +85,11 @@ Pricing's gRPC `CalculateQuote` method uses `GrpcRequestAuthenticator`. Callers 
 
 ## 7. Gateway and rate limits
 
-Traefik is the edge router. The target deployment exposes the gateway, not every service port. Edge rate limits protect against bursts by IP/client; authenticated service/tenant limits protect expensive business operations. Redis provides shared counters across replicas. A rejected request returns 429 and a useful Retry-After header where possible.
+**Implemented in Docker Compose:** Traefik v3 is the single HTTP entry point on `http://localhost:8088`. Its file-provider configuration routes `/api/catalog/**`, `/api/offers/**`, `/api/pricing/**`, `/api/v1/orders/**` and `/api/payments/**` to their owning Symfony services without rewriting their paths. Each upstream has an active `/health/ready` health check. The gateway applies CORS for the local Nuxt origins, security response headers, an in-memory per-IP rate limit (120 requests/minute with a burst of 60), and an in-flight request ceiling (100). JSON access logs deliberately drop request headers so bearer tokens are not written to logs. Prometheus scrapes gateway metrics on the internal `:8081` entrypoint; the dashboard and internal metrics/health entrypoint are not published on the host. The Docker socket is not mounted.
 
-The gateway is not a substitute for service-level authentication or authorization.
+Direct backend host ports are retained temporarily for local diagnostics and Swagger UI. Production should expose only the gateway and internalize backend ports. The current local gateway does not terminate TLS and its rate-limit counters are local to one replica. Redis-backed per-tenant quotas, trusted proxy configuration, TLS/certificate automation and production ingress policy remain release gates.
+
+The gateway is not a substitute for service-level JWT validation, authorization or tenant isolation. Every Symfony backend continues to validate Keycloak issuer, signature, audience and service-owned scopes.
 
 ## 8. API versioning and contracts
 
@@ -106,8 +108,9 @@ Pact verifies consumer/provider expectations for important REST interactions. Op
 | Principal and tenant request context | Implemented: verified HTTP principal, request-scoped TenantContext, and explicit tenant delegation |
 | REST scope enforcement | Implemented for Offer and Pricing; Pricing enforces per-user quote ownership and explicit tenant-wide read/delete scopes |
 | Tenant delegation policy and negative tests | Implemented for HTTP and gRPC; Pricing enforces PostgreSQL tenant RLS and per-user quote ownership with integration tests |
-| Traefik edge gateway | Planned |
-| Redis-backed rate limiting | Planned |
+| Traefik edge gateway | Implemented in Compose: path routing, backend health checks, CORS, security headers, in-flight limit, JSON access logs and Prometheus metrics |
+| Per-IP edge rate limiting | Implemented in Traefik (in-memory per replica) |
+| Redis-backed per-tenant rate limiting | Planned |
 | REST `/api/v1` migration | Planned |
 | Pact REST contracts | Planned |
 | Buf Protobuf compatibility checks | Planned |
