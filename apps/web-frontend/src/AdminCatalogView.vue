@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { catalog, errorMessage } from './api';
+import PageHeader from '../app/components/shared/PageHeader.vue';
+import MetricCard from '../app/components/shared/MetricCard.vue';
 
 type Resource = 'manufacturers' | 'models' | 'generations' | 'variants';
 type RecordRow = Record<string, any> & { id: string; status: string };
@@ -150,25 +152,14 @@ onMounted(() => { form.value = emptyForm(); void load(); });
 
 <template>
   <div class="catalog-admin-page">
-    <div class="d-flex flex-wrap align-start justify-space-between ga-4 mb-7">
-      <div>
-        <div class="text-overline text-medium-emphasis font-weight-bold">STAMMDATEN · VEHICLE CATALOG</div>
-        <h1 class="text-h4 text-md-h3 font-weight-bold mt-1">Fahrzeugkatalog</h1>
-        <p class="text-body-2 text-medium-emphasis mt-2">Verwalte die Datenhierarchie von Herstellern bis zu technischen Fahrzeugvarianten.</p>
-      </div>
-      <v-btn to="/admin" variant="tonal" prepend-icon="mdi-arrow-left" color="primary">Zur Übersicht</v-btn>
-    </div>
+    <PageHeader eyebrow="STAMMDATEN · VEHICLE CATALOG" title="Fahrzeugkatalog" description="Verwalte die Datenhierarchie von Herstellern bis zu technischen Fahrzeugvarianten.">
+      <template #actions><v-btn to="/admin" variant="tonal" prepend-icon="mdi-arrow-left" color="primary">Zur Übersicht</v-btn></template>
+    </PageHeader>
 
     <v-row class="mb-2">
-      <v-col cols="12" sm="4">
-        <v-card rounded="xl" border elevation="0"><v-card-text class="d-flex align-center ga-3 pa-4"><v-avatar color="primary" variant="tonal" rounded="lg"><v-icon icon="mdi-domain" /></v-avatar><div><div class="text-caption text-medium-emphasis">Aktueller Bereich</div><div class="text-subtitle-1 font-weight-bold">{{ title }}</div></div></v-card-text></v-card>
-      </v-col>
-      <v-col cols="12" sm="4">
-        <v-card rounded="xl" border elevation="0"><v-card-text class="d-flex align-center ga-3 pa-4"><v-avatar color="info" variant="tonal" rounded="lg"><v-icon icon="mdi-database-outline" /></v-avatar><div><div class="text-caption text-medium-emphasis">Gefundene Einträge</div><div class="text-h5 font-weight-bold">{{ total.toLocaleString('de-DE') }}</div></div></v-card-text></v-card>
-      </v-col>
-      <v-col cols="12" sm="4">
-        <v-card rounded="xl" border elevation="0"><v-card-text class="d-flex align-center ga-3 pa-4"><v-avatar color="success" variant="tonal" rounded="lg"><v-icon icon="mdi-shield-check-outline" /></v-avatar><div><div class="text-caption text-medium-emphasis">Datenintegrität</div><div class="text-subtitle-1 font-weight-bold">Referenzsicher</div></div></v-card-text></v-card>
-      </v-col>
+      <v-col cols="12" sm="4"><MetricCard label="Aktueller Bereich" :value="title" caption="Gewählter Datentyp" icon="mdi-domain" tone="primary" /></v-col>
+      <v-col cols="12" sm="4"><MetricCard label="Gefundene Einträge" :value="total.toLocaleString('de-DE')" caption="Gesamt im Service" icon="mdi-database-outline" tone="info" /></v-col>
+      <v-col cols="12" sm="4"><MetricCard label="Datenintegrität" value="Referenzsicher" caption="Archivierung statt Hard Delete" icon="mdi-shield-check-outline" tone="success" /></v-col>
     </v-row>
 
     <v-card rounded="xl" border elevation="0" class="overflow-hidden">
