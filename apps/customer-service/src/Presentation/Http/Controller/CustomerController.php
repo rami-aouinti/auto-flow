@@ -119,7 +119,7 @@ final readonly class CustomerController
     {
         try{$d=$this->addressInput($this->body($r));}catch(Throwable $e){return $this->problem(400,$e->getMessage());}
         return $this->run($r,'customers:write',function(Connection $db,string $t,AuthenticatedPrincipal $p)use($id,$d):JsonResponse{
-            if($this->load($db,$t,$id)===null)return $this->problem(404,'Customer not found.');$address=Uuid::v7()->toRfc4122();
+            $customer=$this->load($db,$t,$id);if($customer===null||$customer['status']==='archived')return $this->problem(404,'Active customer not found.');$address=Uuid::v7()->toRfc4122();
             if($d['isDefault'])$db->executeStatement('UPDATE customer_addresses SET is_default=false WHERE tenant_id=:t AND customer_id=:id AND address_type=:type AND deleted_at IS NULL',['t'=>$t,'id'=>$id,'type'=>$d['addressType']]);
             $db->insert('customer_addresses',['tenant_id'=>$t,'address_id'=>$address,'customer_id'=>$id,'address_type'=>$d['addressType'],'label'=>$d['label'],'line1'=>$d['line1'],'line2'=>$d['line2'],'postal_code'=>$d['postalCode'],'city'=>$d['city'],'region'=>$d['region'],'country_code'=>$d['countryCode'],'is_default'=>$d['isDefault']]);
             $this->audit($db,$t,$id,$p->subject,'CustomerAddressAdded',['addressId'=>$address]);
@@ -132,6 +132,9 @@ final readonly class CustomerController
     {
         try{$d=$this->addressInput($this->body($r));}catch(Throwable $e){return $this->problem(400,$e->getMessage());}
         return $this->run($r,'customers:write',function(Connection $db,string $t,AuthenticatedPrincipal $p)use($id,$addressId,$d):JsonResponse{
+            if($this->load($db,$t,$id)===null)return $this->problem(404,'Customer not found.');
+            $exists=$db->fetchOne('SELECT 1 FROM customer_addresses WHERE tenant_id=:t AND customer_id=:id AND address_id=:a AND deleted_at IS NULL',['t'=>$t,'id'=>$id,'a'=>$addressId]);
+            if($exists===false)return $this->problem(404,'Address not found.');
             if($d['isDefault'])$db->executeStatement('UPDATE customer_addresses SET is_default=false WHERE tenant_id=:t AND customer_id=:id AND address_type=:type AND address_id<>:a AND deleted_at IS NULL',['t'=>$t,'id'=>$id,'type'=>$d['addressType'],'a'=>$addressId]);
             $n=$db->executeStatement('UPDATE customer_addresses SET address_type=:type,label=:label,line1=:line1,line2=:line2,postal_code=:postal,city=:city,region=:region,country_code=:country,is_default=:default,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=:t AND customer_id=:id AND address_id=:a AND deleted_at IS NULL',['type'=>$d['addressType'],'label'=>$d['label'],'line1'=>$d['line1'],'line2'=>$d['line2'],'postal'=>$d['postalCode'],'city'=>$d['city'],'region'=>$d['region'],'country'=>$d['countryCode'],'default'=>$d['isDefault'],'t'=>$t,'id'=>$id,'a'=>$addressId]);
             if(!$n)return $this->problem(404,'Address not found.');$this->audit($db,$t,$id,$p->subject,'CustomerAddressUpdated',['addressId'=>$addressId]);
@@ -162,7 +165,7 @@ final readonly class CustomerController
     {
         try{$b=$this->body($r);$purpose=$b['purpose']??null;if(!is_string($purpose)||!preg_match('/^[a-z][a-z0-9_.-]{1,63}$/',$purpose)||!is_bool($b['granted']??null))throw new \InvalidArgumentException('purpose and boolean granted are required.');$source=is_string($b['source']??null)?mb_substr(trim($b['source']),0,80):'customer-portal';}catch(Throwable $e){return $this->problem(400,$e->getMessage());}
         return $this->run($r,'customers:write',function(Connection $db,string $t,AuthenticatedPrincipal $p)use($id,$purpose,$b,$source):JsonResponse{
-            if($this->load($db,$t,$id)===null)return $this->problem(404,'Customer not found.');
+            $customer=$this->load($db,$t,$id);if($customer===null||$customer['status']==='archived')return $this->problem(404,'Active customer not found.');
             $db->executeStatement('INSERT INTO customer_consents(tenant_id,customer_id,purpose,granted,source,recorded_at) VALUES(:t,:id,:purpose,:granted,:source,CURRENT_TIMESTAMP) ON CONFLICT(tenant_id,customer_id,purpose) DO UPDATE SET granted=EXCLUDED.granted,source=EXCLUDED.source,recorded_at=CURRENT_TIMESTAMP',['t'=>$t,'id'=>$id,'purpose'=>$purpose,'granted'=>$b['granted'],'source'=>$source]);
             $this->audit($db,$t,$id,$p->subject,'CustomerConsentChanged',['purpose'=>$purpose,'granted'=>$b['granted']]);return new JsonResponse(['purpose'=>$purpose,'granted'=>$b['granted'],'source'=>$source],200,['Cache-Control'=>'no-store']);
         });
