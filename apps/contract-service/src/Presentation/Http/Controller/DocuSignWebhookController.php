@@ -20,7 +20,7 @@ final readonly class DocuSignWebhookController
     ) {
     }
 
-    #[Route('/api/v1/contracts/webhooks/docusign', methods: ['POST'])]
+    #[Route('/webhooks/docusign', methods: ['POST'])]
     public function __invoke(Request $request): JsonResponse
     {
         $raw = $request->getContent();
