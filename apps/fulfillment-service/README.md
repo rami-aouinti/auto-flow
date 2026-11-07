@@ -11,7 +11,7 @@ A fulfillment is created once per tenant/order. It becomes eligible for preparat
 
 The events may arrive in either order and may be delivered more than once. The application layer must persist each event in a tenant-scoped Inbox, deduplicate by provider event ID, and update the prerequisite state in the same PostgreSQL transaction. The fulfillment must be created idempotently using the unique tenant/order key. A delivery must never start merely because an order was accepted or a payment was only authorized.
 
-The first delivery integration will consume the versioned RabbitMQ exchanges already used by the platform. The event envelope must carry `eventId`, `eventType`, `occurredAt`, `tenantId`, `aggregateId` and `payload`. Consumers must reject malformed/unsupported versions, acknowledge only after commit, and route poison messages to a dead-letter queue.
+The first delivery integration consumes Payment Service's `autoflow.payment.events` exchange (`PaymentCaptured`) and Contract Service's `autoflow.contract.events` exchange (`contract.signed.v1`). Contract's signed event includes `orderId` so Fulfillment can correlate without querying another service's database. The event envelope must carry `eventId`, `eventType`, `occurredAt`, `tenantId`, `aggregateId` and `payload`. Consumers must reject malformed/unsupported versions, acknowledge only after commit, and route poison messages to a dead-letter queue.
 
 ## Lifecycle
 
@@ -40,7 +40,7 @@ The domain aggregate enforces transitions. A delivered fulfillment is terminal a
 
 ## Initial implementation slice
 
-This commit establishes the pure domain model and its unit tests before adding persistence, messaging, HTTP endpoints and runtime wiring. The domain has no Symfony, Doctrine, RabbitMQ or HTTP dependency. This keeps business rules testable without infrastructure.
+The domain model and unit tests are established. The PostgreSQL migration now defines tenant-isolated fulfillment, event Inbox, audit, idempotency and Outbox tables plus a restricted publisher role. Compose applies this migration on both fresh volumes and existing local volumes. HTTP endpoints, the RabbitMQ consumers and runtime service wiring are the next implementation slice. The domain has no Symfony, Doctrine, RabbitMQ or HTTP dependency. This keeps business rules testable without infrastructure.
 
 ## Planned API
 

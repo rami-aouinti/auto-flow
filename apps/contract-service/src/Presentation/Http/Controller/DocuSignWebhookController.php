@@ -103,7 +103,7 @@ final readonly class DocuSignWebhookController
                 }
 
                 $contract = $db->fetchAssociative(
-                    'SELECT status FROM contract_records
+                    'SELECT order_id, status FROM contract_records
                      WHERE tenant_id = :tenant AND contract_id = :id
                        AND provider_envelope_id = :envelope
                      FOR UPDATE',
@@ -166,6 +166,7 @@ final readonly class DocuSignWebhookController
                         'event_type' => $outboxType,
                         'payload' => json_encode([
                             'contractId' => $contractId,
+                            'orderId' => (string) $contract['order_id'],
                             'provider' => 'docusign',
                             'envelopeId' => $envelopeId,
                             'status' => $targetStatus,

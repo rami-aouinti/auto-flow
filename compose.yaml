@@ -863,6 +863,7 @@ services:
       - ./apps/order-service/migrations/Version20261106000300AddPaymentLifecycle.sql:/docker-entrypoint-initdb.d/145-order-payment-lifecycle.sql:ro
       - ./apps/payment-service/migrations/140-payment-schema.sql:/docker-entrypoint-initdb.d/160-payment-schema.sql:ro
       - ./apps/contract-service/migrations/200-contract-schema.sql:/docker-entrypoint-initdb.d/170-contract-schema.sql:ro
+      - ./apps/contract-service/migrations/205-contract-outbox-envelope.sql:/docker-entrypoint-initdb.d/175-contract-outbox-envelope.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
@@ -886,6 +887,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/180-customer-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/190-order-customer-reference.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/200-contract-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/205-contract-outbox-envelope.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -903,6 +905,7 @@ services:
       - ./apps/customer-service/migrations/00-customer-schema.sql:/migrations/180-customer-schema.sql:ro
       - ./apps/order-service/migrations/Version20261107000100AddCustomerReference.sql:/migrations/190-order-customer-reference.sql:ro
       - ./apps/contract-service/migrations/200-contract-schema.sql:/migrations/200-contract-schema.sql:ro
+      - ./apps/contract-service/migrations/205-contract-outbox-envelope.sql:/migrations/205-contract-outbox-envelope.sql:ro
     depends_on:
       postgres:
         condition: service_healthy
