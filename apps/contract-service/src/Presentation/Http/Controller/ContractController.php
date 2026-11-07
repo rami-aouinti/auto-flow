@@ -7,6 +7,7 @@ namespace App\Presentation\Http\Controller;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use DomainException;
 use Symfony\Component\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
