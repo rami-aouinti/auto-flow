@@ -38,6 +38,15 @@ final class Order
         if ($offerSnapshot === [] || $quoteSnapshot === [] || $vehicleSnapshot === []) {
             throw new DomainException('Offer, quote and vehicle snapshots are required.');
         }
+        if ($customerId !== null) {
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/D', $customerId) !== 1
+                || $customerSnapshot === []
+                || ($customerSnapshot['customerId'] ?? null) !== $customerId
+                || $customerVersion === null
+                || $customerVersion < 1) {
+                throw new DomainException('Customer reference, snapshot and version must be consistent.');
+            }
+        }
     }
 
     public function transitionTo(OrderStatus $next, ?string $reason = null): void
