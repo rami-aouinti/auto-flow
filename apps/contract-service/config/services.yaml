@@ -7,6 +7,7 @@ parameters:
     app.docusign_oauth_host: '%env(DOCUSIGN_OAUTH_HOST)%'
     app.docusign_api_base_url: '%env(DOCUSIGN_API_BASE_URL)%'
     app.docusign_private_key_path: '%env(DOCUSIGN_PRIVATE_KEY_PATH)%'
+    app.docusign_webhook_hmac_key: '%env(DOCUSIGN_WEBHOOK_HMAC_KEY)%'
 
 services:
     _defaults:
@@ -39,3 +40,7 @@ services:
             $oauthHost: '%app.docusign_oauth_host%'
             $apiBaseUrl: '%app.docusign_api_base_url%'
             $privateKeyPath: '%app.docusign_private_key_path%'
+
+    App\Presentation\Http\Controller\DocuSignWebhookController:
+        arguments:
+            $hmacKey: '%app.docusign_webhook_hmac_key%'
