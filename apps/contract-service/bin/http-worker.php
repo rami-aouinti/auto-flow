@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use App\\Kernel;
-use AutoFlow\\CoreBundle\\Infrastructure\\RoadRunner\\SymfonyHttpWorker;
+use App\Kernel;
+use AutoFlow\CoreBundle\Infrastructure\RoadRunner\SymfonyHttpWorker;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
