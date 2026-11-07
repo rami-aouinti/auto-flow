@@ -63,6 +63,8 @@ services:
         condition: service_healthy
       billing-service:
         condition: service_healthy
+      customer-service:
+        condition: service_healthy
     init: true
     restart: unless-stopped
 
@@ -757,6 +759,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/150-payment-role.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/160-payment-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/170-billing-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/180-customer-schema.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -771,6 +774,7 @@ services:
       - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/migrations/150-payment-role.sql:ro
       - ./apps/payment-service/migrations/140-payment-schema.sql:/migrations/160-payment-schema.sql:ro
       - ./apps/billing-service/migrations/170-billing-schema.sql:/migrations/170-billing-schema.sql:ro
+      - ./apps/customer-service/migrations/00-customer-schema.sql:/migrations/180-customer-schema.sql:ro
     depends_on:
       postgres:
         condition: service_healthy
