@@ -16,6 +16,7 @@ interface OrderRepositoryInterface
         string $offerId,
         string $quoteId,
         string $vehicleId,
+        string $customerId,
     ): ?array;
 
     /** @param array<string, mixed> $input
