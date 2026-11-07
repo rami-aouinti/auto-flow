@@ -17,3 +17,7 @@ services:
     App\Presentation\Http\Controller\ContractController:
         arguments:
             $orderServiceUrl: '%app.contract_order_service_url%'
+
+    App\Infrastructure\Document\ContractDocumentManager:
+        arguments:
+            $storagePath: '%app.contract_document_storage_path%'
