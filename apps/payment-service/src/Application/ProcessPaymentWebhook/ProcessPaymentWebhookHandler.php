@@ -73,7 +73,7 @@ final readonly class ProcessPaymentWebhookHandler
                     'cancelled' => 'PaymentCancelled',
                 };
                 $this->recordEvent((string)$row['tenant_id'], (string)$row['payment_id'], $eventType, [
-                    'paymentId'=>$row['payment_id'],'orderId'=>$row['order_id'],'status'=>$status,'providerEventId'=>$eventId,
+                    'paymentId'=>$row['payment_id'],'orderId'=>$row['order_id'],'status'=>$status,'providerEventId'=>$eventId,'amountMinor'=>(int)$this->db->fetchOne('SELECT amount_minor FROM payments WHERE tenant_id=:tenant AND payment_id=:payment',['tenant'=>$tenantId,'payment'=>$paymentId]),'currency'=>(string)$this->db->fetchOne('SELECT currency FROM payments WHERE tenant_id=:tenant AND payment_id=:payment',['tenant'=>$tenantId,'payment'=>$paymentId]),
                 ]);
             }
             $this->db->commit();

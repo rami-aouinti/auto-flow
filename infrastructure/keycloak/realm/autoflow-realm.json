@@ -100,6 +100,17 @@
             "access.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "billing-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-billing",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
         }
       ],
       "defaultClientScopes": [
@@ -211,6 +222,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-billing",
+      "name": "Billing Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -233,7 +254,8 @@
         "offers:quote",
         "pricing:quote",
         "catalog:read",
-        "orders:read"
+        "orders:read",
+        "billing:read"
       ],
       "attributes": {
         "tenant_id": [
@@ -295,7 +317,8 @@
         "payments:read",
         "payments:write",
         "payments:capture",
-        "payments:refund"
+        "payments:refund",
+        "billing:read"
       ],
       "attributes": {
         "tenant_id": [
@@ -353,6 +376,10 @@
       {
         "name": "payments:refund",
         "description": "Refund captured payments within the authenticated tenant"
+      },
+      {
+        "name": "billing:read",
+        "description": "Read tenant invoices, credit notes and billing summaries"
       }
     ]
   }

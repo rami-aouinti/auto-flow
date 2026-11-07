@@ -59,7 +59,86 @@ services:
         condition: service_healthy
       order-service:
         condition: service_healthy
-      payment-service:
+      billing-service:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/billing-service
+        COMPOSER_NO_DEV: ""
+    ports: ["8087:8080"]
+    environment:
+      APP_ENV: ${BILLING_APP_ENV:-prod}
+      APP_DEBUG: ${BILLING_APP_DEBUG:-0}
+      APP_SECRET: local-only-billing-service-secret
+      DEFAULT_URI: http://localhost:8087
+      BILLING_DATABASE_URL: ${BILLING_DATABASE_URL:-postgresql://autoflow_billing:local-only-billing-password@postgres:5432/autoflow}
+      BILLING_TAX_RATE_BPS: ${BILLING_TAX_RATE_BPS:-1900}
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      OTEL_SERVICE_NAME: autoflow-billing-service
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_PHP_EXCLUDED_URLS: ^/health
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+      tempo: {condition: service_started}
+      alloy: {condition: service_started}
+      keycloak: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  billing-payment-event-consumer:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/billing-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/consume-payment-events.php"]
+    environment:
+      APP_ENV: prod
+      BILLING_DATABASE_URL: ${BILLING_DATABASE_URL:-postgresql://autoflow_billing:local-only-billing-password@postgres:5432/autoflow}
+      BILLING_TAX_RATE_BPS: ${BILLING_TAX_RATE_BPS:-1900}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+      OTEL_SERVICE_NAME: autoflow-billing-payment-event-consumer
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_PROPAGATORS: tracecontext,baggage
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+      payment-outbox-publisher: {condition: service_started}
+    restart: unless-stopped
+
+  payment-service:
         condition: service_healthy
     init: true
     restart: unless-stopped
@@ -675,6 +754,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/145-order-payment-lifecycle.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/150-payment-role.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/160-payment-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/170-billing-schema.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -688,6 +768,7 @@ services:
       - ./apps/order-service/migrations/Version20261106000300AddPaymentLifecycle.sql:/migrations/145-order-payment-lifecycle.sql:ro
       - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/migrations/150-payment-role.sql:ro
       - ./apps/payment-service/migrations/140-payment-schema.sql:/migrations/160-payment-schema.sql:ro
+      - ./apps/billing-service/migrations/170-billing-schema.sql:/migrations/170-billing-schema.sql:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -875,13 +956,14 @@ services:
       VITE_KEYCLOAK_REALM: autoflow
       VITE_KEYCLOAK_CLIENT_ID: autoflow-local-client
       VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
-      # Nitro forwards the existing /catalog, /offers, /pricing, /orders and /payments
+      # Nitro forwards the existing /catalog, /offers, /pricing, /orders, /payments and /billing
       # browser routes through the gateway; the gateway preserves the upstream /api path.
       CATALOG_PROXY_TARGET: http://api-gateway
       OFFER_PROXY_TARGET: http://api-gateway
       PRICING_PROXY_TARGET: http://api-gateway
       ORDER_PROXY_TARGET: http://api-gateway
       PAYMENT_PROXY_TARGET: http://api-gateway
+      BILLING_PROXY_TARGET: http://api-gateway
     depends_on:
       api-gateway: {condition: service_healthy}
       keycloak: {condition: service_started}

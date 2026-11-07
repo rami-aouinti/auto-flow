@@ -51,7 +51,8 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 
 | Service | URL | Purpose |
 | --- | --- | --- |
-| API Gateway (Traefik) | http://localhost:8088 | Single HTTP entry point; routes Catalog, Offers, Pricing, Orders and Payments; applies CORS, security headers, in-memory IP rate limiting and in-flight request limits |
+| API Gateway (Traefik) | http://localhost:8088 | Single HTTP entry point; routes Catalog, Offers, Pricing, Orders, Payments and Billing; applies CORS, security headers, in-memory IP rate limiting and in-flight request limits |
+| Billing Service | http://localhost:8087 | Invoices, VAT breakdowns, credit notes and billing summary |
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
 | Offer Swagger UI | http://localhost:8081/api/doc | Interactive Offer REST API documentation (dev only) |
 | Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
@@ -83,6 +84,10 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | Redis | localhost:6379 | Cache and ephemeral data |
 | OTLP gRPC / HTTP | localhost:4317 / 4318 | OpenTelemetry trace ingestion |
 
+## Billing Service
+
+Billing consumes PaymentCaptured and refund events, creates tenant-scoped invoices and credit notes, and exposes read APIs. Payment remains the only Stripe integration. The local VAT default is 19%; jurisdiction-aware tax calculation and legally compliant invoice rendering remain production requirements. See [Billing Service documentation](apps/billing-service/README.md).
+
 ## API Gateway routes
 
 | Public path | Upstream service | Notes |
@@ -92,6 +97,7 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | `/api/pricing/**` | Pricing (`pricing-service:8080`) | Tenant-scoped quote calculation and retrieval |
 | `/api/v1/orders/**` | Order (`order-service:8080`) | Versioned order lifecycle API |
 | `/api/v1/payments/**` | Payment (`payment-service:8080`) | Payment intent, payment lifecycle and Stripe webhook API |
+| `/api/v1/billing/**` | Billing (`billing-service:8080`) | Tenant invoices, VAT breakdowns, credit notes and summary |
 
 The gateway does **not** replace authentication or authorization. It does not decode or trust JWT claims: every backend continues to validate the Keycloak RS256 token, issuer, audience, tenant and service-owned scopes. The local edge rate limiter is in-memory and per gateway replica; distributed per-tenant quotas backed by Redis remain a separate production hardening task. TLS termination and trusted-proxy configuration must be completed for the target deployment.
 

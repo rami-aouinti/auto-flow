@@ -1,0 +1,5 @@
+<?php
+declare(strict_types=1);
+use Nyholm\Psr7\Factory\Psr17Factory;use Spiral\RoadRunner\Http\PSR7Worker;use Spiral\RoadRunner\Worker;use Symfony\Component\HttpFoundation\Request;use Symfony\Component\HttpKernel\HttpKernelInterface;
+require dirname(__DIR__).'/vendor/autoload.php';$kernel=new App\Kernel($_SERVER['APP_ENV']??'prod',(bool)($_SERVER['APP_DEBUG']??false));$kernel->boot();$worker=Worker::create();$psr7=new PSR7Worker($worker,new Psr17Factory(),new Psr17Factory(),new Psr17Factory());
+while($req=$psr7->waitRequest()){try{$r=Request::create((string)$req->getUri(),$req->getMethod(),$req->getQueryParams(),$req->getCookieParams(),[],$req->getServerParams(),(string)$req->getBody());foreach($req->getHeaders() as $k=>$v)$r->headers->set($k,implode(', ',$v));$res=$kernel->handle($r,HttpKernelInterface::MAIN_REQUEST,false);$psr7->respond($psr7->createResponse($res));$kernel->terminate($r,$res);}catch(Throwable $e){fwrite(STDERR,(string)$e.PHP_EOL);$psr7->respond(new Nyholm\Psr7\Response(500,['content-type'=>'application/problem+json'],'{"type":"about:blank","title":"Internal Server Error","status":500}'));}}

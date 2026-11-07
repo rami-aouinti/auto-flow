@@ -91,7 +91,7 @@ final readonly class TransitionPaymentHandler
                 );
             }
             $this->db->update('payments', ['status'=>$newStatus,'updated_at'=>$this->clock->now()->format(DATE_ATOM)], ['tenant_id'=>$tenant,'payment_id'=>$paymentId]);
-            $payload = ['paymentId'=>$paymentId,'orderId'=>$row['order_id'],'status'=>$newStatus,'operation'=>$operation];
+            $payload = ['paymentId'=>$paymentId,'orderId'=>$row['order_id'],'status'=>$newStatus,'operation'=>$operation,'amountMinor'=>(int)$row['amount_minor'],'currency'=>(string)$row['currency'],'refundAmountMinor'=>$operation==='refund'?$refundAmount:null,'amountRefundedMinor'=>$operation==='refund'?(int)$row['amount_refunded_minor']+(int)$refundAmount:(int)$row['amount_refunded_minor']];
             $eventType = match ($operation) {
                 'capture' => 'PaymentCaptured',
                 'refund' => $newStatus === 'refunded' ? 'PaymentRefunded' : 'PaymentPartiallyRefunded',

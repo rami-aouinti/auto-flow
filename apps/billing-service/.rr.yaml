@@ -1,0 +1,14 @@
+version: "3"
+server:
+  command: "php bin/http-worker.php"
+  relay: "pipes"
+  relay_timeout: 20s
+http:
+  address: "0.0.0.0:8080"
+  max_request_size: 16
+  middleware: ["gzip"]
+  pool:
+    num_workers: 1
+    max_jobs: 1000
+    allocate_timeout: 60s
+    destroy_timeout: 60s

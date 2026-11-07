@@ -78,6 +78,16 @@ export const payments = {
       { headers: { 'Idempotency-Key': key } }),
 };
 
+const billingBase = import.meta.env.VITE_BILLING_API_BASE || '/billing';
+export const billing = {
+  summary: () => api.get(`${billingBase}/api/v1/billing/summary`),
+  invoices: (limit = 20, offset = 0) => api.get(`${billingBase}/api/v1/billing/invoices`, { params: { limit, offset } }),
+  invoice: (id: string) => api.get(`${billingBase}/api/v1/billing/invoices/${encodeURIComponent(id)}`),
+  creditNotes: (limit = 20, offset = 0) => api.get(`${billingBase}/api/v1/billing/credit-notes`, { params: { limit, offset } }),
+  creditNote: (id: string) => api.get(`${billingBase}/api/v1/billing/credit-notes/${encodeURIComponent(id)}`),
+};
+
+
 export function errorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as { detail?: string; message?: string; title?: string } | undefined;

@@ -1,0 +1,11 @@
+core:
+    correlation_id: true
+    authentication:
+        enabled: true
+        issuer: '%env(resolve:AUTOFLOW_JWT_ISSUER)%'
+        audience: 'autoflow-billing'
+        jwks_uri: '%env(resolve:AUTOFLOW_JWT_JWKS_URI)%'
+        jwks_cache_ttl: 300
+        protected_path_prefixes: ['/api/']
+        tenant_required_path_prefixes: ['/api/v1/billing']
+        excluded_paths: ['/api/doc', '/api/doc.json']

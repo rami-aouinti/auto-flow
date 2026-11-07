@@ -53,6 +53,12 @@ http:
           - api-in-flight
 
   routers:
+    billing:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/billing`)"
+      service: billing
+      middlewares: [api-defaults]
+
     catalog:
       entryPoints:
         - web
@@ -94,6 +100,16 @@ http:
         - api-defaults
 
   services:
+    billing:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://billing-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
     catalog:
       loadBalancer:
         passHostHeader: true
