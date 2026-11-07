@@ -238,7 +238,12 @@ function moneyMinor(amount: number, currency: string) {
 function label(value?: string) { return (value || '–').replaceAll('_', ' '); }
 function date(value?: string) { return value ? new Date(value).toLocaleString('de-DE') : '–'; }
 onMounted(() => {
-  const returnedPaymentId = new URLSearchParams(window.location.search).get('paymentId');
+  const params = new URLSearchParams(window.location.search);
+  const requestedTab = params.get('tab');
+  if (requestedTab === 'payments' || requestedTab === 'quotes' || requestedTab === 'orders') {
+    tab.value = requestedTab;
+  }
+  const returnedPaymentId = params.get('paymentId');
   if (returnedPaymentId) {
     paymentIdInput.value = returnedPaymentId;
     tab.value = 'payments';
