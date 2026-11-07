@@ -87,11 +87,11 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 
 | Public path | Upstream service | Notes |
 | --- | --- | --- |
-| `/api/catalog/**` | Vehicle Catalog (`vehicle-catalog-service:8080`) | Manufacturer, model, generation and variant APIs |
+| `/api/v1/manufacturers/**`, `/api/v1/vehicles/**`, `/api/v1/admin/catalog/**` | Vehicle Catalog (`vehicle-catalog-service:8080`) | Public catalogue reads and admin catalogue management |
 | `/api/offers/**` | Offer (`offer-service:8080`) | Offer lifecycle and quote composition |
 | `/api/pricing/**` | Pricing (`pricing-service:8080`) | Tenant-scoped quote calculation and retrieval |
 | `/api/v1/orders/**` | Order (`order-service:8080`) | Versioned order lifecycle API |
-| `/api/payments/**` | Payment (`payment-service:8080`) | Payment intent and payment lifecycle API |
+| `/api/v1/payments/**` | Payment (`payment-service:8080`) | Payment intent, payment lifecycle and Stripe webhook API |
 
 The gateway does **not** replace authentication or authorization. It does not decode or trust JWT claims: every backend continues to validate the Keycloak RS256 token, issuer, audience, tenant and service-owned scopes. The local edge rate limiter is in-memory and per gateway replica; distributed per-tenant quotas backed by Redis remain a separate production hardening task. TLS termination and trusted-proxy configuration must be completed for the target deployment.
 

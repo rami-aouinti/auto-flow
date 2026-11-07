@@ -45,7 +45,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      test: ["CMD", "traefik", "healthcheck", "--entryPoints.traefik.address=:8081", "--ping.entryPoint=traefik", "--ping"]
       interval: 10s
       timeout: 3s
       retries: 5
