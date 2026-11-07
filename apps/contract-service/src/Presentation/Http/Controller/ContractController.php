@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controller;
 
+use App\Application\Port\SignatureProviderInterface;
 use App\Infrastructure\Document\ContractDocumentManager;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use Doctrine\DBAL\Connection;
@@ -34,6 +35,7 @@ final readonly class ContractController
         private HttpClientInterface $http,
         private string $orderServiceUrl,
         private ContractDocumentManager $documents,
+        private SignatureProviderInterface $signatureProvider,
     ) {
     }
 
@@ -274,6 +276,44 @@ final readonly class ContractController
         try {
             $principal = $this->principal($request, 'contracts:manage');
             $tenant = $this->tenant($principal);
+            $key = trim((string) $request->headers->get('Idempotency-Key', ''));
+            if ($key === '' || strlen($key) > 128) {
+                return $this->problem(400, 'A valid Idempotency-Key is required.');
+            }
+            $requestHash = hash('sha256', json_encode([
+                'contractId' => $contractId,
+                'action' => 'send_for_signature',
+            ], JSON_THROW_ON_ERROR));
+
+            $replay = $this->db->transactional(function (Connection $db) use (
+                $tenant,
+                $principal,
+                $key,
+                $requestHash,
+            ): ?JsonResponse {
+                $this->setTenant($db, $tenant);
+                $existing = $db->fetchAssociative(
+                    'SELECT request_hash, response_body FROM contract_transition_idempotency
+                     WHERE tenant_id = :tenant AND actor_id = :actor AND idempotency_key = :key',
+                    ['tenant' => $tenant, 'actor' => $principal->subject, 'key' => $key],
+                );
+                if (!is_array($existing)) {
+                    return null;
+                }
+                if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
+                    return $this->problem(409, 'Idempotency-Key was used for another contract command.');
+                }
+
+                return new JsonResponse(
+                    $this->decode($existing['response_body']),
+                    200,
+                    ['Cache-Control' => 'no-store'],
+                );
+            });
+            if ($replay instanceof JsonResponse) {
+                return $replay;
+            }
+
             $contract = $this->db->transactional(function (Connection $db) use ($tenant, $contractId): ?array {
                 $this->setTenant($db, $tenant);
 
@@ -285,15 +325,105 @@ final readonly class ContractController
             if ($contract['status'] !== 'prepared') {
                 return $this->problem(409, 'Only prepared contracts can be sent for signature.');
             }
+
+            $document = $this->documents->findLatest($tenant, $contractId);
+            if ($document === null) {
+                return $this->problem(409, 'Generate the immutable PDF document before requesting a signature.');
+            }
+            $customer = $contract['legalSnapshot']['customer'] ?? [];
+            if (!is_array($customer)) {
+                return $this->problem(422, 'The contract snapshot does not contain customer signing details.');
+            }
+            $email = $customer['email'] ?? '';
+            $name = $customer['displayName'] ?? $customer['name'] ?? $customer['legalName'] ?? '';
+            if (!is_string($email) || !is_string($name)) {
+                return $this->problem(422, 'The customer signing details are invalid.');
+            }
+
+            // The provider receives the same idempotency key. If the API process dies
+            // after envelope creation but before the DB commit, a retry remains safe.
+            $envelope = $this->signatureProvider->send($document['path'], $email, $name, $key);
+
+            return $this->db->transactional(function (Connection $db) use (
+                $tenant,
+                $principal,
+                $contractId,
+                $key,
+                $requestHash,
+                $envelope,
+            ): JsonResponse {
+                $this->setTenant($db, $tenant);
+                $db->executeQuery(
+                    'SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))',
+                    ['lock_key' => $tenant . ':' . $principal->subject . ':' . $key],
+                );
+                $existing = $db->fetchAssociative(
+                    'SELECT request_hash, response_body FROM contract_transition_idempotency
+                     WHERE tenant_id = :tenant AND actor_id = :actor AND idempotency_key = :key',
+                    ['tenant' => $tenant, 'actor' => $principal->subject, 'key' => $key],
+                );
+                if (is_array($existing)) {
+                    if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
+                        return $this->problem(409, 'Idempotency-Key was used for another contract command.');
+                    }
+
+                    return new JsonResponse(
+                        $this->decode($existing['response_body']),
+                        200,
+                        ['Cache-Control' => 'no-store'],
+                    );
+                }
+
+                $db->fetchOne(
+                    'SELECT contract_id FROM contract_records
+                     WHERE tenant_id = :tenant AND contract_id = :id FOR UPDATE',
+                    ['tenant' => $tenant, 'id' => $contractId],
+                );
+                $current = $this->find($db, $tenant, $contractId);
+                if ($current === null) {
+                    return $this->problem(404, 'Contract not found.');
+                }
+                if ($current['status'] !== 'prepared') {
+                    return $this->problem(409, 'Contract state changed while the signature request was being sent.');
+                }
+
+                $timestamp = (new \\DateTimeImmutable())->format(DATE_ATOM);
+                $db->update('contract_records', [
+                    'status' => 'awaiting_signature',
+                    'signature_provider' => $envelope['provider'],
+                    'provider_envelope_id' => $envelope['envelopeId'],
+                    'updated_at' => $timestamp,
+                ], ['tenant_id' => $tenant, 'contract_id' => $contractId]);
+                $this->audit($db, $tenant, $contractId, $principal->subject, 'ContractSentForSignature', [
+                    'provider' => $envelope['provider'],
+                    'envelopeId' => $envelope['envelopeId'],
+                ]);
+                $this->outbox($db, $tenant, $contractId, 'contract.signature.requested.v1', [
+                    'contractId' => $contractId,
+                    'provider' => $envelope['provider'],
+                    'envelopeId' => $envelope['envelopeId'],
+                ]);
+                $response = $this->find($db, $tenant, $contractId);
+                $db->insert('contract_transition_idempotency', [
+                    'tenant_id' => $tenant,
+                    'actor_id' => $principal->subject,
+                    'idempotency_key' => $key,
+                    'request_hash' => $requestHash,
+                    'contract_id' => $contractId,
+                    'response_body' => json_encode($response, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
+                ]);
+
+                return new JsonResponse($response, 202, ['Cache-Control' => 'no-store']);
+            });
         } catch (AccessDeniedHttpException $exception) {
             return $this->problem(403, $exception->getMessage());
+        } catch (DomainException $exception) {
+            return $this->problem(422, $exception->getMessage());
+        } catch (UniqueConstraintViolationException) {
+            return $this->problem(409, 'A signature request already exists for this contract.');
         } catch (Throwable) {
-            return $this->problem(503, 'Contract could not be checked.');
+            return $this->problem(503, 'The e-signature provider is unavailable or the request could not be persisted.');
         }
-
-        // Never mark a contract as signed or sent without a real provider response.
-        // The adapter is deliberately not configured yet; the endpoint is explicit.
-        return $this->problem(503, 'No e-signature provider is configured. Contract state was not changed.');
     }
 
     #[Route('/{contractId}/document', requirements: ['contractId' => '[0-9a-fA-F-]{36}'], methods: ['POST'])]
