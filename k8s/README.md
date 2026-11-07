@@ -3,6 +3,7 @@
 Apply the namespace first: `kubectl apply -f k8s/pricing/namespace.yaml`.
 
 - `pricing/`: existing Pricing Service example.
+- `contract/`: Contract API, durable PDF storage, DocuSign webhook configuration and RabbitMQ Outbox publisher.
 - `offer/`: Offer API, Outbox publisher and scheduled expiration CronJob.
 - `vehicle-catalog/`: Vehicle Catalog API and Outbox publisher.
 
