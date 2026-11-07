@@ -172,7 +172,7 @@ function clearFilters() {
   sortBy.value = 'relevance';
   void loadVehicles(true);
 }
-function quickFilter(key: 'fuelType' | 'bodyStyle', value: string) {
+function quickFilter(key: 'fuelType' | 'bodyStyle' | 'transmission', value: string) {
   filters[key] = filters[key] === value ? '' : value;
   void loadVehicles(true);
 }
@@ -328,7 +328,11 @@ async function downloadOfferPdf(id: string) {
 
 onMounted(async () => {
   const requestedFuel = typeof route.query.fuelType === 'string' ? route.query.fuelType : '';
+  const requestedBodyStyle = typeof route.query.bodyStyle === 'string' ? route.query.bodyStyle : '';
+  const requestedTransmission = typeof route.query.transmission === 'string' ? route.query.transmission : '';
   if (fuelOptions.some((item) => item.value === requestedFuel)) filters.fuelType = requestedFuel;
+  if (bodyOptions.some((item) => item.value === requestedBodyStyle)) filters.bodyStyle = requestedBodyStyle;
+  if (transmissionOptions.some((item) => item.value === requestedTransmission)) filters.transmission = requestedTransmission;
   try {
     const response = await catalog.manufacturers();
     manufacturers.value = response.data.items ?? [];
