@@ -35,7 +35,11 @@ final readonly class ContractController
             $orderId = $this->uuid($body['orderId'] ?? null, 'orderId');
             $type = $body['contractType'] ?? 'vehicle_lease';
             $version = $body['contractVersion'] ?? 1;
-            if (!is_string($type) || !in_array($type, ['vehicle_purchase', 'vehicle_lease', 'vehicle_subscription'], true)) {
+            if (!is_string($type) || !in_array(
+                $type,
+                ['vehicle_purchase', 'vehicle_lease', 'vehicle_subscription'],
+                true,
+            )) {
                 return $this->problem(422, 'contractType is not supported.');
             }
             if (!is_int($version) || $version < 1 || $version > 100) {
@@ -54,7 +58,8 @@ final readonly class ContractController
 
             // Replay a committed command before calling Order Service. A retry must
             // remain safe even if the order has since moved to another lifecycle state.
-            $replay = $this->db->transactional(function (Connection $db) use ($tenant, $principal, $key, $requestHash): ?JsonResponse {
+            $replay = $this->db->transactional(
+                function (Connection $db) use ($tenant, $principal, $key, $requestHash): ?JsonResponse {
                 $this->setTenant($db, $tenant);
                 $existing = $db->fetchAssociative(
                     'SELECT request_hash, response_body FROM contract_idempotency_keys
@@ -67,7 +72,11 @@ final readonly class ContractController
                 if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
                     return $this->problem(409, 'Idempotency-Key was used with a different contract command.');
                 }
-                return new JsonResponse($this->decode($existing['response_body']), 200, ['Cache-Control' => 'no-store']);
+                return new JsonResponse(
+                    $this->decode($existing['response_body']),
+                    200,
+                    ['Cache-Control' => 'no-store'],
+                );
             });
             if ($replay instanceof JsonResponse) {
                 return $replay;
@@ -98,7 +107,11 @@ final readonly class ContractController
                     if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
                         return $this->problem(409, 'Idempotency-Key was used with a different contract command.');
                     }
-                    return new JsonResponse($this->decode($existing['response_body']), 200, ['Cache-Control' => 'no-store']);
+                    return new JsonResponse(
+                        $this->decode($existing['response_body']),
+                        200,
+                        ['Cache-Control' => 'no-store'],
+                    );
                 }
 
                 $contractId = Uuid::v7()->toRfc4122();
@@ -161,7 +174,11 @@ final readonly class ContractController
                 $status = $request->query->get('status');
                 $where = ['tenant_id = :tenant'];
                 $params = ['tenant' => $tenant, 'limit' => $limit, 'offset' => $offset];
-                if (is_string($status) && in_array($status, ['draft', 'prepared', 'awaiting_signature', 'signed', 'cancelled', 'superseded'], true)) {
+                if (is_string($status) && in_array(
+                    $status,
+                    ['draft', 'prepared', 'awaiting_signature', 'signed', 'cancelled', 'superseded'],
+                    true,
+                )) {
                     $where[] = 'status = :status';
                     $params['status'] = $status;
                 }
@@ -178,7 +195,11 @@ final readonly class ContractController
                     "SELECT COUNT(*) FROM contract_records WHERE {$predicate}",
                     array_diff_key($params, ['limit' => true, 'offset' => true]),
                 );
-                return new JsonResponse(['items' => $rows, 'total' => $total, 'limit' => $limit, 'offset' => $offset], 200, ['Cache-Control' => 'no-store']);
+                return new JsonResponse(
+                    ['items' => $rows, 'total' => $total, 'limit' => $limit, 'offset' => $offset],
+                    200,
+                    ['Cache-Control' => 'no-store'],
+                );
             });
         } catch (Throwable) {
             return $this->problem(503, 'Contracts could not be listed.');
@@ -206,13 +227,29 @@ final readonly class ContractController
     #[Route('/{contractId}/prepare', requirements: ['contractId' => '[0-9a-fA-F-]{36}'], methods: ['POST'])]
     public function prepare(Request $request, string $contractId): JsonResponse
     {
-        return $this->transition($request, $contractId, 'contracts:write', 'draft', 'prepared', 'ContractPrepared', 'contract.prepared.v1');
+        return $this->transition(
+            $request,
+            $contractId,
+            'contracts:write',
+            'draft',
+            'prepared',
+            'ContractPrepared',
+            'contract.prepared.v1',
+        );
     }
 
     #[Route('/{contractId}/cancel', requirements: ['contractId' => '[0-9a-fA-F-]{36}'], methods: ['POST'])]
     public function cancel(Request $request, string $contractId): JsonResponse
     {
-        return $this->transition($request, $contractId, 'contracts:manage', ['draft', 'prepared'], 'cancelled', 'ContractCancelled', 'contract.cancelled.v1');
+        return $this->transition(
+            $request,
+            $contractId,
+            'contracts:manage',
+            ['draft', 'prepared'],
+            'cancelled',
+            'ContractCancelled',
+            'contract.cancelled.v1',
+        );
     }
 
     #[Route('/{contractId}/send-for-signature', requirements: ['contractId' => '[0-9a-fA-F-]{36}'], methods: ['POST'])]
@@ -273,7 +310,8 @@ final readonly class ContractController
             if ($key === '' || strlen($key) > 128) {
                 return $this->problem(400, 'A valid Idempotency-Key is required.');
             }
-            return $this->db->transactional(function (Connection $db) use ($tenant, $principal, $contractId, $from, $to, $event, $eventType, $key): JsonResponse {
+            return $this->db->transactional(
+                function (Connection $db) use ($tenant, $principal, $contractId, $from, $to, $event, $eventType, $key): JsonResponse {
                 $this->setTenant($db, $tenant);
                 $db->executeQuery(
                     'SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))',
@@ -292,10 +330,15 @@ final readonly class ContractController
                     if (!hash_equals((string) $replay['request_hash'], $requestHash)) {
                         return $this->problem(409, 'Idempotency-Key was used for another contract transition.');
                     }
-                    return new JsonResponse($this->decode($replay['response_body']), 200, ['Cache-Control' => 'no-store']);
+                    return new JsonResponse(
+                        $this->decode($replay['response_body']),
+                        200,
+                        ['Cache-Control' => 'no-store'],
+                    );
                 }
                 $db->fetchOne(
-                    'SELECT contract_id FROM contract_records WHERE tenant_id = :tenant AND contract_id = :id FOR UPDATE',
+                    'SELECT contract_id FROM contract_records
+                     WHERE tenant_id = :tenant AND contract_id = :id FOR UPDATE',
                     ['tenant' => $tenant, 'id' => $contractId],
                 );
                 $item = $this->find($db, $tenant, $contractId);
@@ -314,8 +357,21 @@ final readonly class ContractController
                     $sets['cancelled_at'] = $timestamp;
                 }
                 $db->update('contract_records', $sets, ['tenant_id' => $tenant, 'contract_id' => $contractId]);
-                $this->audit($db, $tenant, $contractId, $principal->subject, $event, ['from' => $item['status'], 'to' => $to]);
-                $this->outbox($db, $tenant, $contractId, $eventType, ['contractId' => $contractId, 'orderId' => $item['orderId'], 'status' => $to]);
+                $this->audit(
+                    $db,
+                    $tenant,
+                    $contractId,
+                    $principal->subject,
+                    $event,
+                    ['from' => $item['status'], 'to' => $to],
+                );
+                $this->outbox(
+                    $db,
+                    $tenant,
+                    $contractId,
+                    $eventType,
+                    ['contractId' => $contractId, 'orderId' => $item['orderId'], 'status' => $to],
+                );
                 $response = $this->find($db, $tenant, $contractId);
                 $db->insert('contract_transition_idempotency', [
                     'tenant_id' => $tenant,
@@ -338,7 +394,9 @@ final readonly class ContractController
     private function fetchAcceptedOrder(Request $request, string $orderId, string $tenant): array|JsonResponse
     {
         $authorization = $request->headers->get('Authorization', '');
-        if (!is_string($authorization) || preg_match('/^Bearer ([A-Za-z0-9._~-]+)$/D', $authorization, $matches) !== 1) {
+        if (!is_string($authorization)
+            || preg_match('/^Bearer ([A-Za-z0-9._~-]+)$/D', $authorization, $matches) !== 1
+        ) {
             throw new AccessDeniedHttpException('A bearer token is required.');
         }
         try {
@@ -448,7 +506,14 @@ final readonly class ContractController
         ];
     }
 
-    private function audit(Connection $db, string $tenant, string $id, string $actor, string $event, array $payload): void
+    private function audit(
+        Connection $db,
+        string $tenant,
+        string $id,
+        string $actor,
+        string $event,
+        array $payload,
+    ): void
     {
         $db->insert('contract_audit_events', [
             'tenant_id' => $tenant,
