@@ -3,8 +3,12 @@ kind: Deployment
 metadata:
   name: billing-payment-event-consumer
   namespace: autoflow
+  labels:
+    app.kubernetes.io/name: billing-payment-event-consumer
+    app.kubernetes.io/part-of: autoflow
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: billing-payment-event-consumer
@@ -12,7 +16,18 @@ spec:
     metadata:
       labels:
         app: billing-payment-event-consumer
+        app.kubernetes.io/name: billing-payment-event-consumer
+        app.kubernetes.io/part-of: autoflow
     spec:
+      terminationGracePeriodSeconds: 30
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 33
+        runAsGroup: 33
+        fsGroup: 33
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: consumer
           image: autoflow/billing-service:local
@@ -30,3 +45,18 @@ spec:
             limits:
               cpu: 300m
               memory: 256Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 33
+            runAsGroup: 33
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: tmp
+          emptyDir: {}

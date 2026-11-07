@@ -6,6 +6,7 @@ parameters:
         - tests
     excludePaths:
         analyse:
+            - apps/*/vendor/*
             - apps/order-service/*
             - apps/offer-service/*
             - apps/pricing-service/*
