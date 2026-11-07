@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -49,7 +50,7 @@ final readonly class CustomerController
         } catch(\InvalidArgumentException|\JsonException $e){return $this->problem(400,$e->getMessage());}
         catch(\DomainException $e){return $this->problem(422,$e->getMessage());}
         catch(UniqueConstraintViolationException){return $this->problem(409,'Email already exists for this tenant.');}
-        catch(\RuntimeException $e){return $this->problem(403,$e->getMessage());}
+        catch(AccessDeniedHttpException $e){return $this->problem(403,$e->getMessage());}
         catch(Throwable){return $this->problem(503,'Customer could not be created.');}
     }
 
@@ -181,18 +182,18 @@ final readonly class CustomerController
     private function run(Request $r,string $scope,callable $fn):JsonResponse
     {
         try{$p=$this->principal($r,$scope);return $this->db->transactional(function(Connection $db)use($p,$fn):JsonResponse{$t=$this->tenant($p);$this->tenantContext($db,$t);return $fn($db,$t,$p);});}
-        catch(\RuntimeException $e){return $this->problem(403,$e->getMessage());}
+        catch(AccessDeniedHttpException $e){return $this->problem(403,$e->getMessage());}
         catch(Throwable){return $this->problem(503,'Customer operation is temporarily unavailable.');}
     }
     private function principal(Request $r,string $scope):AuthenticatedPrincipal
     {
         $p=$r->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
-        if(!$p instanceof AuthenticatedPrincipal||!$p->hasScope($scope))throw new \RuntimeException('Required customer permission is missing.');
+        if(!$p instanceof AuthenticatedPrincipal||!$p->hasScope($scope))throw new AccessDeniedHttpException('Required customer permission is missing.');
         return $p;
     }
     private function tenant(AuthenticatedPrincipal $p):string
     {
-        if(!is_string($p->tenantId)||$p->tenantId==='')throw new \RuntimeException('Tenant context is missing.');
+        if(!is_string($p->tenantId)||$p->tenantId==='')throw new AccessDeniedHttpException('Tenant context is missing.');
         return $p->tenantId;
     }
     private function tenantContext(Connection $db,string $t):void{$db->executeQuery("SELECT set_config('app.tenant_id',:t,true)",['t'=>$t]);}
