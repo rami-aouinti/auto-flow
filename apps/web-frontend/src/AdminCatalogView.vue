@@ -5,6 +5,9 @@ import PageHeader from '../app/components/shared/PageHeader.vue';
 import MetricCard from '../app/components/shared/MetricCard.vue';
 
 type Resource = 'manufacturers' | 'models' | 'generations' | 'variants';
+const props = withDefaults(defineProps<{ initialResource?: Resource }>(), { initialResource: 'manufacturers' });
+const route = useRoute();
+const router = useRouter();
 type RecordRow = Record<string, any> & { id: string; status: string };
 const resources: { key: Resource; label: string }[] = [
   { key: 'manufacturers', label: 'Fabricants' },
@@ -12,7 +15,7 @@ const resources: { key: Resource; label: string }[] = [
   { key: 'generations', label: 'Générations' },
   { key: 'variants', label: 'Variantes' },
 ];
-const resource = ref<Resource>('manufacturers');
+const resource = ref<Resource>(props.initialResource);
 const rows = ref<RecordRow[]>([]);
 const manufacturers = ref<RecordRow[]>([]);
 const models = ref<RecordRow[]>([]);
@@ -146,7 +149,15 @@ async function archive(row: RecordRow) {
 function displayName(row: RecordRow) {
   return row.name || row.code || row.id;
 }
-watch(resource, () => { resetForm(); void load(); });
+watch(resource, (value) => {
+  resetForm();
+  search.value = '';
+  void load();
+  if (route.path.startsWith('/admin/catalog') && route.path !== `/admin/catalog/${value}`) {
+    void router.replace(`/admin/catalog/${value}`);
+  }
+});
+watch(() => props.initialResource, (value) => { resource.value = value; });
 onMounted(() => { form.value = emptyForm(); void load(); });
 </script>
 
