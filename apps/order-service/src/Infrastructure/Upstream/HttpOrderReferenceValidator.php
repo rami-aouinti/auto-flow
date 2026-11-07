@@ -19,6 +19,7 @@ final readonly class HttpOrderReferenceValidator implements OrderReferenceValida
         private string $offerServiceUrl,
         private string $pricingServiceUrl,
         private string $catalogServiceUrl,
+        private string $customerServiceUrl,
     ) {
     }
 
@@ -26,10 +27,11 @@ final readonly class HttpOrderReferenceValidator implements OrderReferenceValida
         string $offerId,
         string $quoteId,
         string $vehicleId,
+        string $customerId,
         string $tenantId,
         string $subjectAccessToken,
     ): array {
-        foreach ([$offerId, $quoteId, $vehicleId, $tenantId] as $identifier) {
+        foreach ([$offerId, $quoteId, $vehicleId, $customerId, $tenantId] as $identifier) {
             if (trim($identifier) === '' || strlen($identifier) > 128) {
                 throw new OrderReferenceValidationException('An upstream reference is invalid.');
             }
@@ -72,10 +74,46 @@ final readonly class HttpOrderReferenceValidator implements OrderReferenceValida
             throw new OrderReferenceValidationException('The referenced vehicle is not published in the catalogue.');
         }
 
+        $customer = $this->getJson(
+            $this->customerServiceUrl,
+            '/api/v1/customers/' . rawurlencode($customerId),
+            $headers,
+        );
+        if (($customer['customer_id'] ?? null) !== $customerId
+            || ($customer['status'] ?? null) !== 'active'
+            || ($customer['archived_at'] ?? null) !== null) {
+            throw new OrderReferenceValidationException('The referenced customer is not active or does not match the order.');
+        }
+        $customerVersion = filter_var($customer['version'] ?? null, FILTER_VALIDATE_INT);
+        if (!is_int($customerVersion) || $customerVersion < 1) {
+            throw new OrderReferenceValidationException('Customer Service returned an invalid customer version.');
+        }
+
+        // Keep only fields required to understand the order later. Never copy consent data.
+        $customerSnapshot = [
+            'customerId' => $customerId,
+            'customerType' => $customer['customer_type'] ?? null,
+            'firstName' => $customer['first_name'] ?? null,
+            'lastName' => $customer['last_name'] ?? null,
+            'legalName' => $customer['legal_name'] ?? null,
+            'email' => $customer['email'] ?? null,
+            'phone' => $customer['phone'] ?? null,
+            'vatId' => $customer['vat_id'] ?? null,
+            'locale' => $customer['locale'] ?? null,
+            'addresses' => array_values(array_filter(
+                $customer['addresses'] ?? [],
+                static fn (mixed $address): bool => is_array($address)
+                    && in_array($address['address_type'] ?? null, ['billing', 'shipping'], true),
+            )),
+            'capturedAt' => (new DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(DATE_ATOM),
+        ];
+
         return [
             'offerSnapshot' => $offer,
             'quoteSnapshot' => $quote,
             'vehicleSnapshot' => $vehicle,
+            'customerSnapshot' => $customerSnapshot,
+            'customerVersion' => $customerVersion,
         ];
     }
 
