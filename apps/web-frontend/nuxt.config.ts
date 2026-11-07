@@ -17,6 +17,11 @@ export default defineNuxtConfig({
     '~/assets/css/main.css',
   ],
   vuetify: {
+    moduleOptions: {
+      // Nuxt 4.5+ provides its own useLayout composable.
+      // Keep Nuxt's composable and expose Vuetify's as useVLayout.
+      prefixComposables: ['useLayout'],
+    },
     vuetifyOptions: {
       icons: { defaultSet: 'mdi' },
       theme: {
