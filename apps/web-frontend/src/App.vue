@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { catalog, offers, errorMessage } from './api';
 import MarketplaceHero from '../app/components/marketplace/MarketplaceHero.vue';
 import VehicleCard from '../app/components/marketplace/VehicleCard.vue';
+import MarketplaceHighlights from '../app/components/marketplace/MarketplaceHighlights.vue';
 
 type Vehicle = Record<string, any> & { variantId: string; name: string };
 type Offer = Record<string, any> & { offerId: string; status: string };
@@ -175,6 +176,10 @@ function quickFilter(key: 'fuelType' | 'bodyStyle', value: string) {
   filters[key] = filters[key] === value ? '' : value;
   void loadVehicles(true);
 }
+function selectManufacturer(manufacturerId: string) {
+  filters.manufacturerId = manufacturerId;
+  void loadVehicles(true);
+}
 async function openVehicle(vehicle: Record<string, any>) {
   selectedLoading.value = true;
   catalogError.value = '';
@@ -343,6 +348,12 @@ onMounted(async () => {
         :manufacturer-count="manufacturers.length"
         :vehicle-count="total"
         @search="loadVehicles(true)"
+      />
+      <MarketplaceHighlights
+        v-if="!selected && !showOffers"
+        :manufacturers="manufacturers"
+        @manufacturer="selectManufacturer"
+        @category="quickFilter"
       />
 
       <template v-if="showOffers">
