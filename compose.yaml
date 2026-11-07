@@ -780,6 +780,7 @@ services:
       - ./apps/order-service/migrations/Version20261106000100CreateOrders.sql:/docker-entrypoint-initdb.d/130-order-schema.sql:ro
       - ./apps/order-service/migrations/Version20261106000200AddOrderTransitionIdempotency.sql:/docker-entrypoint-initdb.d/140-order-transition-idempotency.sql:ro
       - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/docker-entrypoint-initdb.d/150-payment-role.sql:ro
+      - ./apps/order-service/migrations/Version20261107000100AddCustomerReference.sql:/docker-entrypoint-initdb.d/135-order-customer-reference.sql:ro
       - ./apps/order-service/migrations/Version20261106000300AddPaymentLifecycle.sql:/docker-entrypoint-initdb.d/145-order-payment-lifecycle.sql:ro
       - ./apps/payment-service/migrations/140-payment-schema.sql:/docker-entrypoint-initdb.d/160-payment-schema.sql:ro
     healthcheck:
