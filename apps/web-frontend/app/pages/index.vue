@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import App from '../../src/App.vue';
 
-definePageMeta({ layout: 'default' });
+definePageMeta({ layout: 'marketplace' });
 </script>
 
 <template>
