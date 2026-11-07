@@ -11,6 +11,12 @@ export default defineNuxtConfig({
     },
   },
   devtools: { enabled: false },
+  experimental: {
+    // Nuxt's generated Vue Router Volar plugin is not resolvable in the
+    // current vue-router package. Keep file-based routing, disable only
+    // generated typed-route integration until the upstream package is compatible.
+    typedPages: false,
+  },
   modules: ['vuetify-nuxt-module'],
   css: [
     '@mdi/font/css/materialdesignicons.css',
