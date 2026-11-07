@@ -1,12 +1,48 @@
-@import '../../../src/style.css';
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #172b40;
+  background: #f5f7f8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 html, body, #__nuxt { min-height: 100%; }
-body { background: #101820; }
-.v-application { font-family: 'DM Sans', sans-serif; background: #101820; }
-.v-btn { letter-spacing: .02em; }
-.v-field, .v-card, .v-table { border-radius: 9px; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #f5f7f8; }
+button, input, select, textarea { font: inherit; }
+a { -webkit-tap-highlight-color: transparent; }
 
-.catalog-main { width: 100%; max-width: none; margin: 0; padding: 22px 0 38px; }
+.v-application {
+  font-family: 'DM Sans', sans-serif;
+  background: #f5f7f8;
+}
+.v-btn {
+  letter-spacing: 0;
+  text-transform: none;
+}
+.v-field, .v-card, .v-table { border-radius: 10px; }
 
-.catalog-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 0 24px; color:#82939b; font-size:9px; font-weight:700; letter-spacing:1.4px; }
-@media(max-width:560px){.catalog-toolbar{align-items:flex-start;flex-direction:column}}
+.catalog-main {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 22px 0 38px;
+}
+.catalog-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 24px;
+  color: #82939b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+@media (max-width: 560px) {
+  .catalog-toolbar { align-items: flex-start; flex-direction: column; }
+}
