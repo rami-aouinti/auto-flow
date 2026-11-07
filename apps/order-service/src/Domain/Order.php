@@ -26,6 +26,9 @@ final class Order
         public ?\DateTimeImmutable $submittedAt = null,
         public ?\DateTimeImmutable $decidedAt = null,
         public ?string $decisionReason = null,
+        public readonly ?string $customerId = null,
+        public readonly array $customerSnapshot = [],
+        public readonly ?int $customerVersion = null,
     ) {
         foreach ([$id, $tenantId, $createdBy, $offerId, $quoteId, $vehicleId] as $value) {
             if (trim($value) === '') {
