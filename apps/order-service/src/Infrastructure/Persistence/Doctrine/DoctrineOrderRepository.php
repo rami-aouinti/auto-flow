@@ -233,7 +233,9 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                     $row['decided_at'] === null ? null : new \DateTimeImmutable((string) $row['decided_at']),
                     $row['decision_reason'] === null ? null : (string) $row['decision_reason'],
                     customerId: $row['customer_id'] === null ? null : (string) $row['customer_id'],
-                    customerSnapshot: $this->decodeObject($row['customer_snapshot'] ?? '{}'),
+                    customerSnapshot: $row['customer_id'] === null
+                        ? []
+                        : $this->decodeObject($row['customer_snapshot']),
                     customerVersion: $row['customer_version'] === null ? null : (int) $row['customer_version'],
                 );
                 $order->transitionTo($target, $reason);
@@ -365,7 +367,9 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
             'offerId' => $row['offer_id'], 'quoteId' => $row['quote_id'], 'vehicleId' => $row['vehicle_id'],
             'customerId' => $row['customer_id'] ?? null,
             'customerVersion' => isset($row['customer_version']) ? (int) $row['customer_version'] : null,
-            'customerSnapshot' => $this->decodeObject($row['customer_snapshot'] ?? '{}'),
+            'customerSnapshot' => ($row['customer_id'] ?? null) === null
+                ? []
+                : $this->decodeObject($row['customer_snapshot']),
             'status' => $row['status'], 'paymentStatus' => $row['payment_status'] ?? 'not_started', 'offerSnapshot' => $this->decodeObject($row['offer_snapshot']),
             'quoteSnapshot' => $this->decodeObject($row['quote_snapshot']),
             'vehicleSnapshot' => $this->decodeObject($row['vehicle_snapshot']),
