@@ -53,6 +53,12 @@ http:
           - api-in-flight
 
   routers:
+    contract-webhook:
+      entryPoints: [web]
+      rule: "Path(`/webhooks/docusign`)"
+      service: contracts
+      middlewares: [api-defaults]
+
     contracts:
       entryPoints: [web]
       rule: "PathPrefix(`/api/v1/contracts`)"
