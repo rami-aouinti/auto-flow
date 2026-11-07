@@ -1,6 +1,15 @@
 export default defineNuxtConfig({
   compatibilityDate: '2026-11-07',
   ssr: false,
+  app: {
+    head: {
+      title: 'AutoFlow | Mobility Platform',
+      meta: [
+        { name: 'theme-color', content: '#101820' },
+        { name: 'description', content: 'AutoFlow mobility operations, vehicle catalogue and offer management.' },
+      ],
+    },
+  },
   devtools: { enabled: false },
   modules: ['vuetify-nuxt-module'],
   css: [
