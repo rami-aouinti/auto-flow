@@ -61,7 +61,30 @@ services:
         condition: service_healthy
       payment-service:
         condition: service_healthy
-      billing-service:
+      contract-outbox-publisher:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/contract-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/publish-outbox.php"]
+    environment:
+      APP_ENV: prod
+      CONTRACT_PUBLISHER_DATABASE_URL: ${CONTRACT_PUBLISHER_DATABASE_URL:-postgresql://autoflow_contract_publisher:local-only-contract-publisher-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    restart: unless-stopped
+
+  billing-service:
         condition: service_healthy
       customer-service:
         condition: service_healthy
