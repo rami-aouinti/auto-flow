@@ -13,3 +13,9 @@
 /k8s/pricing/secret.yaml
 /k8s/offer/secret.yaml
 /k8s/vehicle-catalog/secret.yaml
+
+# Nuxt frontend build artifacts
+/apps/web-frontend/.nuxt/
+/apps/web-frontend/.output/
+/apps/web-frontend/node_modules/
+/apps/web-frontend/.data/
