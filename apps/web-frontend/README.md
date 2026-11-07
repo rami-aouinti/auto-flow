@@ -6,9 +6,11 @@ The AutoFlow frontend is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is deliver
 
 - `/` — customer-facing vehicle marketplace with responsive navigation, discovery hero, advanced catalogue filters, vehicle details, quote calculation and offer lifecycle. The marketplace uses its own light Vuetify theme; operations and administration remain in the dark workspace shell.
 - `/operations/orders` — order management, payment operations, Stripe Payment Element and pricing quotes.
-- `/admin/catalog` — manufacturer, model, generation and vehicle-variant administration.
+- `/admin` — administration control center with live counts from Catalog, Order, Payment and Pricing APIs.
+- `/admin/catalog/manufacturers`, `/admin/catalog/models`, `/admin/catalog/generations`, `/admin/catalog/variants` — resource-specific catalog administration routes with shared CRUD workspace.
+- `/operations/orders`, `/operations/payments`, `/operations/pricing` — deep links into order, payment and pricing operations.
 
-Nuxt owns the route lifecycle and provides separate layouts for the customer-facing marketplace and the authenticated operations workspace. The marketplace uses reusable vehicle cards, search and filter controls, responsive navigation and a light visual theme. The operations and catalogue administration screens remain in the professional workspace shell. Catalogue filtering is delegated to the Vehicle Catalog API (manufacturer, fuel, body style, transmission, power and seats); sorting is applied to the current result page. Vehicle prices and inventory are not fabricated because those concerns do not belong to the Vehicle Catalog Service. The old independent HTML entry points and bootstrap scripts are not used.
+Nuxt owns the route lifecycle and provides separate layouts for the customer-facing marketplace and the authenticated operations workspace. The marketplace uses reusable vehicle cards, search and filter controls, responsive navigation and a light visual theme. The operations and catalogue administration screens use the authenticated workspace shell. Shared PageHeader and MetricCard components keep administration screens consistent; the catalog editor uses resource-specific routes, Vuetify form controls, searchable data tables, explicit loading/error states and soft-archive actions. Catalogue filtering is delegated to the Vehicle Catalog API (manufacturer, fuel, body style, transmission, power and seats); sorting is applied to the current result page. Vehicle prices and inventory are not fabricated because those concerns do not belong to the Vehicle Catalog Service. The old independent HTML entry points and bootstrap scripts are not used.
 
 ## Authentication
 
