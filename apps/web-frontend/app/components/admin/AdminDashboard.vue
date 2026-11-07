@@ -10,8 +10,8 @@ const loadError = ref('');
 const metrics = ref<Metric[]>([
   { key: 'vehicles', label: 'Katalogvarianten', value: '—', caption: 'Technische Fahrzeugdaten', icon: 'mdi-car-multiple', tone: 'primary', to: '/admin/catalog' },
   { key: 'orders', label: 'Aufträge', value: '—', caption: 'Auftragsübersicht', icon: 'mdi-clipboard-text-outline', tone: 'info', to: '/operations/orders' },
-  { key: 'payments', label: 'Zahlungen', value: '—', caption: 'Payment Lifecycle', icon: 'mdi-credit-card-outline', tone: 'success', to: '/operations/orders?tab=payments' },
-  { key: 'quotes', label: 'Pricing Quotes', value: '—', caption: 'Kalkulationen', icon: 'mdi-calculator-variant-outline', tone: 'warning', to: '/operations/orders?tab=quotes' },
+  { key: 'payments', label: 'Zahlungen', value: '—', caption: 'Payment Lifecycle', icon: 'mdi-credit-card-outline', tone: 'success', to: '/operations/payments' },
+  { key: 'quotes', label: 'Pricing Quotes', value: '—', caption: 'Kalkulationen', icon: 'mdi-calculator-variant-outline', tone: 'warning', to: '/operations/pricing' },
 ]);
 
 function count(data: any): number {
@@ -63,7 +63,7 @@ onMounted(async () => {
           <v-list class="pa-3" bg-color="transparent">
             <v-list-item to="/admin/catalog" prepend-icon="mdi-database-cog-outline" title="Fahrzeugkatalog" subtitle="Hersteller, Modelle, Generationen und Varianten verwalten" append-icon="mdi-chevron-right" rounded="lg" />
             <v-list-item to="/operations/orders" prepend-icon="mdi-clipboard-list-outline" title="Aufträge & Payments" subtitle="Auftragsstatus, Zahlungsvorgänge und Audit-Verläufe" append-icon="mdi-chevron-right" rounded="lg" />
-            <v-list-item to="/operations/orders?tab=quotes" prepend-icon="mdi-calculator-variant-outline" title="Pricing Quotes" subtitle="Kalkulationen und gespeicherte Angebote einsehen" append-icon="mdi-chevron-right" rounded="lg" />
+            <v-list-item to="/operations/pricing" prepend-icon="mdi-calculator-variant-outline" title="Pricing Quotes" subtitle="Kalkulationen und gespeicherte Angebote einsehen" append-icon="mdi-chevron-right" rounded="lg" />
           </v-list>
         </v-card>
       </v-col>
