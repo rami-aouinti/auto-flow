@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import AdminCatalogView from '../../../src/AdminCatalogView.vue';
-
-definePageMeta({ layout: 'default' });
-useHead({ title: 'Katalogverwaltung | AutoFlow' });
+await navigateTo('/admin/catalog/manufacturers', { replace: true });
 </script>
 
-<template>
-  <AdminCatalogView />
-</template>
+<template><div /></template>
