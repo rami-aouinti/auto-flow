@@ -236,6 +236,7 @@ ALTER ROLE autoflow_contract_publisher
 GRANT CONNECT ON DATABASE autoflow TO autoflow_contract_publisher;
 GRANT USAGE ON SCHEMA public TO autoflow_contract_outbox_owner, autoflow_contract_publisher;
 GRANT SELECT, UPDATE ON public.contract_outbox TO autoflow_contract_outbox_owner;
+GRANT SELECT ON public.contract_records TO autoflow_contract_outbox_owner;
 ALTER FUNCTION public.contract_find_tenant_for_envelope(VARCHAR) OWNER TO autoflow_contract_outbox_owner;
 ALTER FUNCTION public.contract_outbox_claim() OWNER TO autoflow_contract_outbox_owner;
 ALTER FUNCTION public.contract_outbox_mark_published(UUID) OWNER TO autoflow_contract_outbox_owner;
