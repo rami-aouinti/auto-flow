@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\\Infrastructure\\Signature;
+namespace App\Infrastructure\Signature;
 
-use App\\Application\\Port\\SignatureProviderInterface;
-use Firebase\\JWT\\JWT;
-use Symfony\\Component\\Cache\\CacheInterface;
-use Symfony\\Component\\HttpClient\\HttpClientInterface;
-use Symfony\\Contracts\\Cache\\ItemInterface;
+use App\Application\Port\SignatureProviderInterface;
+use Firebase\JWT\JWT;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Component\HttpClient\HttpClientInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 final readonly class DocuSignSignatureProvider implements SignatureProviderInterface
 {
@@ -32,21 +32,21 @@ final readonly class DocuSignSignatureProvider implements SignatureProviderInter
     ): array {
         $this->assertConfigured();
         if (!is_file($pdfPath) || !is_readable($pdfPath)) {
-            throw new \\RuntimeException('The prepared contract PDF is not readable.');
+            throw new \RuntimeException('The prepared contract PDF is not readable.');
         }
         if (filter_var($recipientEmail, FILTER_VALIDATE_EMAIL) === false) {
-            throw new \\DomainException('The customer snapshot does not contain a valid signing email address.');
+            throw new \DomainException('The customer snapshot does not contain a valid signing email address.');
         }
 
         $token = $this->accessToken();
         $pdf = file_get_contents($pdfPath);
         if (!is_string($pdf) || $pdf === '') {
-            throw new \\RuntimeException('The prepared contract PDF could not be read.');
+            throw new \RuntimeException('The prepared contract PDF could not be read.');
         }
 
         $response = $this->http->request(
             'POST',
-            'https://' . $this->oauthHost . '/oauth/token',
+            rtrim($this->apiBaseUrl, '/') . '/v2.1/accounts/' . rawurlencode($this->accountId) . '/envelopes',
             [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $token,
@@ -83,7 +83,7 @@ final readonly class DocuSignSignatureProvider implements SignatureProviderInter
         if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300
             || !is_string($envelopeId) || $envelopeId === ''
             || !is_string($status) || strtolower($status) !== 'sent') {
-            throw new \\RuntimeException('DocuSign did not confirm creation of the signature envelope.');
+            throw new \RuntimeException('DocuSign did not confirm creation of the signature envelope.');
         }
 
         return [
@@ -100,7 +100,7 @@ final readonly class DocuSignSignatureProvider implements SignatureProviderInter
         return $this->cache->get($cacheKey, function (ItemInterface $item): string {
             $privateKey = file_get_contents($this->privateKeyPath);
             if (!is_string($privateKey) || $privateKey === '') {
-                throw new \\RuntimeException('DocuSign RSA private key could not be loaded.');
+                throw new \RuntimeException('DocuSign RSA private key could not be loaded.');
             }
 
             $now = time();
@@ -131,7 +131,7 @@ final readonly class DocuSignSignatureProvider implements SignatureProviderInter
             $expiresIn = $payload['expires_in'] ?? 3600;
             if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300
                 || !is_string($token) || $token === '') {
-                throw new \\RuntimeException('DocuSign OAuth JWT grant failed. Check consent, account and integration key.');
+                throw new \RuntimeException('DocuSign OAuth JWT grant failed. Check consent, account and integration key.');
             }
 
             $item->expiresAfter(max(60, min(3300, (int) $expiresIn - 60)));
@@ -151,7 +151,7 @@ final readonly class DocuSignSignatureProvider implements SignatureProviderInter
             $this->privateKeyPath,
         ] as $value) {
             if (trim($value) === '') {
-                throw new \\RuntimeException('DocuSign is not configured. Set the DocuSign integration key, user, account, endpoints and RSA key path.');
+                throw new \RuntimeException('DocuSign is not configured. Set the DocuSign integration key, user, account, endpoints and RSA key path.');
             }
         }
     }
