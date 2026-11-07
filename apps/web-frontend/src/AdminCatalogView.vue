@@ -150,6 +150,12 @@ async function archive(row: RecordRow) {
 function displayName(row: RecordRow) {
   return row.name || row.code || row.id;
 }
+function modelTitle(item: RecordRow) {
+  return [item.manufacturerName, item.name].filter(Boolean).join(' · ');
+}
+function generationTitle(item: RecordRow) {
+  return [item.manufacturerName, item.modelName, item.name].filter(Boolean).join(' · ');
+}
 watch(resource, (value) => {
   resetForm();
   search.value = '';
@@ -205,7 +211,7 @@ onMounted(() => { form.value = emptyForm(); void load(); });
               <v-text-field v-model.trim="form.name" label="Modellname" placeholder="Golf" prepend-inner-icon="mdi-car-side" required />
             </template>
             <template v-else-if="resource === 'generations'">
-              <v-select v-model="form.modelId" :items="models" :item-title="(item: any) => [item.manufacturerName, item.name].filter(Boolean).join(' · ')" item-value="id" label="Modell" prepend-inner-icon="mdi-car-side" required />
+              <v-select v-model="form.modelId" :items="models" :item-title="modelTitle" item-value="id" label="Modell" prepend-inner-icon="mdi-car-side" required />
               <v-text-field v-model.trim="form.name" label="Generationsbezeichnung" placeholder="VIII" required />
               <v-row dense>
                 <v-col cols="6"><v-text-field v-model="form.productionStartYear" label="Baujahr ab" type="number" min="1886" max="2100" /></v-col>
@@ -213,7 +219,7 @@ onMounted(() => { form.value = emptyForm(); void load(); });
               </v-row>
             </template>
             <template v-else>
-              <v-select v-model="form.generationId" :items="generations" :item-title="(item: any) => [item.manufacturerName, item.modelName, item.name].filter(Boolean).join(' · ')" item-value="id" label="Modellgeneration" prepend-inner-icon="mdi-car-cog" required />
+              <v-select v-model="form.generationId" :items="generations" :item-title="generationTitle" item-value="id" label="Modellgeneration" prepend-inner-icon="mdi-car-cog" required />
               <v-text-field v-model.trim="form.name" label="Variantenname" placeholder="2.0 TDI DSG" required />
               <v-text-field v-model.trim="form.manufacturerCode" label="Hersteller-Referenzcode" />
               <div class="text-subtitle-2 font-weight-bold mt-1">Antrieb & Fahrzeugtyp</div>
