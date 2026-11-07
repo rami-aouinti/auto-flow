@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: contract-service
+  namespace: autoflow
+  labels:
+    app.kubernetes.io/name: contract-service
+    app.kubernetes.io/part-of: autoflow
+spec:
+  type: ClusterIP
+  selector:
+    app: contract-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
