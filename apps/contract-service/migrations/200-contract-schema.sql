@@ -139,6 +139,22 @@ GRANT SELECT, INSERT ON contract_audit_events, contract_idempotency_keys, contra
 
 -- The publisher has no direct table access. SECURITY DEFINER functions run under
 -- a narrowly scoped owner role and use a fixed search_path.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_contract_provider_envelope_unique
+    ON contract_records (provider_envelope_id)
+    WHERE provider_envelope_id IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION public.contract_find_tenant_for_envelope(p_envelope_id VARCHAR(180))
+RETURNS TABLE (tenant_id VARCHAR(128), contract_id UUID)
+LANGUAGE sql SECURITY DEFINER
+SET search_path = pg_catalog, public
+SET row_security = off
+AS $function$
+    SELECT c.tenant_id, c.contract_id
+    FROM public.contract_records c
+    WHERE c.provider_envelope_id = p_envelope_id
+    LIMIT 1
+$function$;
+
 CREATE OR REPLACE FUNCTION public.contract_outbox_claim()
 RETURNS TABLE (event_id UUID, event_type VARCHAR(100), payload JSONB, attempts INTEGER)
 LANGUAGE sql SECURITY DEFINER
@@ -219,9 +235,12 @@ ALTER ROLE autoflow_contract_publisher
 GRANT CONNECT ON DATABASE autoflow TO autoflow_contract_publisher;
 GRANT USAGE ON SCHEMA public TO autoflow_contract_outbox_owner, autoflow_contract_publisher;
 GRANT SELECT, UPDATE ON public.contract_outbox TO autoflow_contract_outbox_owner;
+ALTER FUNCTION public.contract_find_tenant_for_envelope(VARCHAR) OWNER TO autoflow_contract_outbox_owner;
 ALTER FUNCTION public.contract_outbox_claim() OWNER TO autoflow_contract_outbox_owner;
 ALTER FUNCTION public.contract_outbox_mark_published(UUID) OWNER TO autoflow_contract_outbox_owner;
 ALTER FUNCTION public.contract_outbox_schedule_retry(UUID, VARCHAR) OWNER TO autoflow_contract_outbox_owner;
+REVOKE ALL ON FUNCTION public.contract_find_tenant_for_envelope(VARCHAR) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.contract_find_tenant_for_envelope(VARCHAR) TO autoflow_contract;
 REVOKE ALL ON FUNCTION public.contract_outbox_claim() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.contract_outbox_mark_published(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.contract_outbox_schedule_retry(UUID, VARCHAR) FROM PUBLIC;
