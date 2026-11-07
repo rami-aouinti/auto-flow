@@ -8,4 +8,3 @@ core:
         jwks_cache_ttl: 300
         protected_path_prefixes: ['/api/']
         tenant_required_path_prefixes: ['/api/v1/contracts']
-        excluded_paths: ['/api/v1/contracts/webhooks/docusign']
