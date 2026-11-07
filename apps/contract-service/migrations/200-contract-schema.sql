@@ -70,6 +70,19 @@ CREATE TABLE IF NOT EXISTS contract_idempotency_keys (
         REFERENCES contract_records (tenant_id, contract_id) ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS contract_transition_idempotency (
+    tenant_id VARCHAR(128) NOT NULL,
+    actor_id VARCHAR(255) NOT NULL,
+    idempotency_key VARCHAR(128) NOT NULL,
+    request_hash CHAR(64) NOT NULL,
+    contract_id UUID NOT NULL,
+    response_body JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (tenant_id, actor_id, idempotency_key),
+    FOREIGN KEY (tenant_id, contract_id)
+        REFERENCES contract_records (tenant_id, contract_id) ON DELETE RESTRICT
+);
+
 CREATE TABLE IF NOT EXISTS contract_outbox (
     tenant_id VARCHAR(128) NOT NULL,
     event_id UUID NOT NULL,
@@ -95,7 +108,7 @@ DO $rls$
 DECLARE table_name TEXT;
 BEGIN
     FOREACH table_name IN ARRAY ARRAY[
-        'contract_records', 'contract_audit_events', 'contract_idempotency_keys', 'contract_outbox'
+        'contract_records', 'contract_audit_events', 'contract_idempotency_keys', 'contract_transition_idempotency', 'contract_outbox'
     ] LOOP
         EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', table_name);
         EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', table_name);
@@ -110,4 +123,4 @@ END
 $rls$;
 
 GRANT SELECT, INSERT, UPDATE ON contract_records TO autoflow_contract;
-GRANT SELECT, INSERT ON contract_audit_events, contract_idempotency_keys, contract_outbox TO autoflow_contract;
+GRANT SELECT, INSERT ON contract_audit_events, contract_idempotency_keys, contract_transition_idempotency, contract_outbox TO autoflow_contract;
