@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { orders, payments, pricing, errorMessage } from './api';
 import PageHeader from '../app/components/shared/PageHeader.vue';
 
@@ -22,7 +23,15 @@ type Payment = {
   currency: string; provider?: string; clientSecret?: string | null; createdAt?: string;
 };
 
+const route = useRoute();
+const router = useRouter();
 const tab = ref<'orders' | 'payments' | 'quotes'>('orders');
+watch(tab, (value) => {
+  const query = { ...route.query };
+  if (value === 'orders') delete query.tab;
+  else query.tab = value;
+  void router.replace({ query });
+});
 const orderRows = ref<Order[]>([]);
 const orderTotal = ref(0);
 const orderLoading = ref(false);
