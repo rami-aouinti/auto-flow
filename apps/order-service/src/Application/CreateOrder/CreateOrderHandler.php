@@ -37,6 +37,7 @@ final readonly class CreateOrderHandler
                 throw new InvalidArgumentException(sprintf('Field "%s" must be a non-empty string.', $field));
             }
         }
+        $input['customerId'] = strtolower($input['customerId']);
         if (strlen($input['customerId']) > 36
             || preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/D', $input['customerId']) !== 1) {
             throw new InvalidArgumentException('Field "customerId" must be a UUID.');
