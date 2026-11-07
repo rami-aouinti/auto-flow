@@ -8,7 +8,7 @@ type Metric = { key: string; label: string; value: string; caption: string; icon
 const loading = ref(true);
 const loadError = ref('');
 const metrics = ref<Metric[]>([
-  { key: 'vehicles', label: 'Katalogvarianten', value: '—', caption: 'Technische Fahrzeugdaten', icon: 'mdi-car-multiple', tone: 'primary', to: '/admin/catalog' },
+  { key: 'vehicles', label: 'Katalogvarianten', value: '—', caption: 'Technische Fahrzeugdaten', icon: 'mdi-car-multiple', tone: 'primary', to: '/admin/catalog/manufacturers' },
   { key: 'orders', label: 'Aufträge', value: '—', caption: 'Auftragsübersicht', icon: 'mdi-clipboard-text-outline', tone: 'info', to: '/operations/orders' },
   { key: 'payments', label: 'Zahlungen', value: '—', caption: 'Payment Lifecycle', icon: 'mdi-credit-card-outline', tone: 'success', to: '/operations/payments' },
   { key: 'quotes', label: 'Pricing Quotes', value: '—', caption: 'Kalkulationen', icon: 'mdi-calculator-variant-outline', tone: 'warning', to: '/operations/pricing' },
@@ -61,7 +61,7 @@ onMounted(async () => {
           <v-card-title class="pa-5 pb-2 text-h6 font-weight-bold">Arbeitsbereiche</v-card-title>
           <v-card-subtitle class="px-5">Direkter Zugriff auf die zentralen Verwaltungsfunktionen.</v-card-subtitle>
           <v-list class="pa-3" bg-color="transparent">
-            <v-list-item to="/admin/catalog" prepend-icon="mdi-database-cog-outline" title="Fahrzeugkatalog" subtitle="Hersteller, Modelle, Generationen und Varianten verwalten" append-icon="mdi-chevron-right" rounded="lg" />
+            <v-list-item to="/admin/catalog/manufacturers" prepend-icon="mdi-database-cog-outline" title="Fahrzeugkatalog" subtitle="Hersteller, Modelle, Generationen und Varianten verwalten" append-icon="mdi-chevron-right" rounded="lg" />
             <v-list-item to="/operations/orders" prepend-icon="mdi-clipboard-list-outline" title="Aufträge & Payments" subtitle="Auftragsstatus, Zahlungsvorgänge und Audit-Verläufe" append-icon="mdi-chevron-right" rounded="lg" />
             <v-list-item to="/operations/pricing" prepend-icon="mdi-calculator-variant-outline" title="Pricing Quotes" subtitle="Kalkulationen und gespeicherte Angebote einsehen" append-icon="mdi-chevron-right" rounded="lg" />
           </v-list>
