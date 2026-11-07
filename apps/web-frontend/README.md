@@ -1,14 +1,14 @@
 # AutoFlow Web Frontend
 
-The AutoFlow workspace is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is delivered as a client-rendered authenticated workspace because Keycloak Authorization Code + PKCE is initialized in the browser.
+The AutoFlow frontend is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is delivered as a client-rendered authenticated workspace because Keycloak Authorization Code + PKCE is initialized in the browser.
 
 ## Application routes
 
-- `/` — vehicle catalogue, vehicle details, quote calculation and offer lifecycle.
+- `/` — customer-facing vehicle marketplace with responsive navigation, discovery hero, advanced catalogue filters, vehicle details, quote calculation and offer lifecycle. The marketplace uses its own light Vuetify theme; operations and administration remain in the dark workspace shell.
 - `/operations/orders` — order management, payment operations, Stripe Payment Element and pricing quotes.
 - `/admin/catalog` — manufacturer, model, generation and vehicle-variant administration.
 
-Nuxt owns the application shell and route lifecycle. Vuetify provides the responsive navigation, workspace chrome, menus, chips and shared interaction primitives. The existing domain screens remain focused Vue components and are mounted by Nuxt pages; the old independent HTML entry points and bootstrap scripts are not used.
+Nuxt owns the route lifecycle and provides separate layouts for the customer-facing marketplace and the authenticated operations workspace. The marketplace uses reusable vehicle cards, search and filter controls, responsive navigation and a light visual theme. The operations and catalogue administration screens remain in the professional workspace shell. Catalogue filtering is delegated to the Vehicle Catalog API (manufacturer, fuel, body style, transmission, power and seats); sorting is applied to the current result page. Vehicle prices and inventory are not fabricated because those concerns do not belong to the Vehicle Catalog Service. The old independent HTML entry points and bootstrap scripts are not used.
 
 ## Authentication
 
