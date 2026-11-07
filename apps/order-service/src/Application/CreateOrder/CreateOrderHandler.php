@@ -32,10 +32,14 @@ final readonly class CreateOrderHandler
         array $input,
         string $subjectAccessToken,
     ): array {
-        foreach (['offerId', 'quoteId', 'vehicleId'] as $field) {
-            if (!isset($input[$field]) || !is_string($input[$field])) {
-                throw new InvalidArgumentException(sprintf('Field "%s" must be a string.', $field));
+        foreach (['offerId', 'quoteId', 'vehicleId', 'customerId'] as $field) {
+            if (!isset($input[$field]) || !is_string($input[$field]) || trim($input[$field]) === '') {
+                throw new InvalidArgumentException(sprintf('Field "%s" must be a non-empty string.', $field));
             }
+        }
+        if (strlen($input['customerId']) > 36
+            || preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/D', $input['customerId']) !== 1) {
+            throw new InvalidArgumentException('Field "customerId" must be a UUID.');
         }
 
         $existing = $this->orders->findIdempotentCreate(
@@ -45,6 +49,7 @@ final readonly class CreateOrderHandler
             $input['offerId'],
             $input['quoteId'],
             $input['vehicleId'],
+            $input['customerId'],
         );
         if ($existing !== null) {
             $this->metrics->recordCreated();
@@ -56,6 +61,7 @@ final readonly class CreateOrderHandler
                 $input['offerId'],
                 $input['quoteId'],
                 $input['vehicleId'],
+                $input['customerId'],
                 $tenantId,
                 $subjectAccessToken,
             );
@@ -68,6 +74,7 @@ final readonly class CreateOrderHandler
                 $input['offerId'],
                 $input['quoteId'],
                 $input['vehicleId'],
+                $input['customerId'],
             );
             if ($existing !== null) {
                 $this->metrics->recordCreated();
@@ -76,10 +83,12 @@ final readonly class CreateOrderHandler
             throw $exception;
         }
 
-        // Snapshots are resolved from authoritative services, never accepted from the browser.
+        // Every snapshot is resolved from its owning service, never accepted from the browser.
         $input['offerSnapshot'] = $verifiedSnapshots['offerSnapshot'];
         $input['quoteSnapshot'] = $verifiedSnapshots['quoteSnapshot'];
         $input['vehicleSnapshot'] = $verifiedSnapshots['vehicleSnapshot'];
+        $input['customerSnapshot'] = $verifiedSnapshots['customerSnapshot'];
+        $input['customerVersion'] = $verifiedSnapshots['customerVersion'];
 
         $result = $this->orders->create($tenantId, $actor, $input, $idempotencyKey);
         $this->metrics->recordCreated();
