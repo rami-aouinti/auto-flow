@@ -2,6 +2,8 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { catalog, offers, errorMessage } from './api';
+import MarketplaceHero from '../app/components/marketplace/MarketplaceHero.vue';
+import VehicleCard from '../app/components/marketplace/VehicleCard.vue';
 
 type Vehicle = Record<string, any> & { variantId: string; name: string };
 type Offer = Record<string, any> & { offerId: string; status: string };
