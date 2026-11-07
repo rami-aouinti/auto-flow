@@ -368,6 +368,7 @@ services:
       ORDER_OFFER_SERVICE_URL: ${ORDER_OFFER_SERVICE_URL:-http://offer-service:8080}
       ORDER_PRICING_SERVICE_URL: ${ORDER_PRICING_SERVICE_URL:-http://pricing-service:8080}
       ORDER_CATALOG_SERVICE_URL: ${ORDER_CATALOG_SERVICE_URL:-http://vehicle-catalog-service:8080}
+      ORDER_CUSTOMER_SERVICE_URL: ${ORDER_CUSTOMER_SERVICE_URL:-http://customer-service:8080}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-order-service
@@ -389,6 +390,7 @@ services:
       offer-service: {condition: service_healthy}
       pricing-service: {condition: service_healthy}
       vehicle-catalog-service: {condition: service_healthy}
+      customer-service: {condition: service_healthy}
       tempo: {condition: service_started}
       alloy: {condition: service_started}
       keycloak: {condition: service_started}
@@ -801,6 +803,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/160-payment-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/170-billing-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/180-customer-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/190-order-customer-reference.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -816,6 +819,7 @@ services:
       - ./apps/payment-service/migrations/140-payment-schema.sql:/migrations/160-payment-schema.sql:ro
       - ./apps/billing-service/migrations/170-billing-schema.sql:/migrations/170-billing-schema.sql:ro
       - ./apps/customer-service/migrations/00-customer-schema.sql:/migrations/180-customer-schema.sql:ro
+      - ./apps/order-service/migrations/Version20261107000100AddCustomerReference.sql:/migrations/190-order-customer-reference.sql:ro
     depends_on:
       postgres:
         condition: service_healthy
