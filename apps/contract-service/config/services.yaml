@@ -28,10 +28,10 @@ services:
         arguments:
             $storagePath: '%app.contract_document_storage_path%'
 
-    App\\Application\\Port\\SignatureProviderInterface:
-        alias: App\\Infrastructure\\Signature\\DocuSignSignatureProvider
+    App\Application\Port\SignatureProviderInterface:
+        alias: App\Infrastructure\Signature\DocuSignSignatureProvider
 
-    App\\Infrastructure\\Signature\\DocuSignSignatureProvider:
+    App\Infrastructure\Signature\DocuSignSignatureProvider:
         arguments:
             $integrationKey: '%app.docusign_integration_key%'
             $userId: '%app.docusign_user_id%'
