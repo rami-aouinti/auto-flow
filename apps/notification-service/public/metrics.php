@@ -29,7 +29,12 @@ $pdo->exec(<<<'SQL'
         sent_at TIMESTAMPTZ NULL
     )
     SQL);
-$rows = $pdo->query("SELECT status, COUNT(*) AS total FROM notification_deliveries GROUP BY status")->fetchAll(PDO::FETCH_KEY_PAIR);
+$statement = $pdo->query("SELECT status, COUNT(*) AS total FROM notification_deliveries GROUP BY status");
+if ($statement === false) {
+    http_response_code(503);
+    exit;
+}
+$rows = $statement->fetchAll(PDO::FETCH_KEY_PAIR);
 header('Content-Type: text/plain; version=0.0.4; charset=utf-8');
 echo "# HELP autoflow_notification_deliveries_total Number of persisted notification deliveries by state.\n";
 echo "# TYPE autoflow_notification_deliveries_total gauge\n";

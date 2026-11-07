@@ -85,6 +85,11 @@ class VehicleModelRecord
         return $this->name;
     }
 
+    public function getNormalizedName(): string
+    {
+        return $this->normalizedName;
+    }
+
     public function getStatus(): CatalogStatus
     {
         return $this->status;

@@ -19,7 +19,6 @@ final class StripeWebhookVerifierTest extends TestCase
 
         (new StripeWebhookVerifier($secret))->verify($payload, 't=' . $timestamp . ',v1=' . $signature);
 
-        self::assertTrue(true);
     }
 
     public function testRejectsInvalidSignature(): void

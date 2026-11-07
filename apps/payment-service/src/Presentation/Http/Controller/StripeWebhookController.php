@@ -25,7 +25,7 @@ final readonly class StripeWebhookController
     {
         $payload = $request->getContent();
         try {
-            $this->verifier->verify($payload, $request->headers->get('Stripe-Signature', ''));
+            $this->verifier->verify($payload, $request->headers->get('Stripe-Signature') ?? '');
             $event = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($event)) {
                 return new JsonResponse(['error'=>'invalid_event'], 400);

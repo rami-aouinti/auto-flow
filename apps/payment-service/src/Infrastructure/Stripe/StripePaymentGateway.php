@@ -65,7 +65,7 @@ final readonly class StripePaymentGateway implements PaymentGatewayInterface
             ]);
             $status = $response->getStatusCode();
             $data = $response->toArray(false);
-            if ($status < 200 || $status >= 300 || !is_array($data) || isset($data['error'])) {
+            if ($status < 200 || $status >= 300 || isset($data['error'])) {
                 $message = $data['error']['message'] ?? 'Payment provider rejected the request.';
                 throw new RuntimeException((string) $message);
             }

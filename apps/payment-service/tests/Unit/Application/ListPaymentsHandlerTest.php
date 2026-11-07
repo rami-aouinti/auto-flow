@@ -30,24 +30,21 @@ final class ListPaymentsHandlerTest extends TestCase
         );
     }
 
-    public function testItRejectsMissingTenantAndInvalidPaginationBeforeRepositoryCall(): void
+    public function testItRejectsMissingTenantBeforeRepositoryCall(): void
     {
         $repository = $this->createMock(PaymentRepositoryInterface::class);
         $repository->expects(self::never())->method('listByTenant');
-        $handler = new ListPaymentsHandler($repository);
+        $this->expectException(DomainException::class);
 
-        try {
-            $handler('', 20, 0);
-            self::fail('An empty tenant must be rejected.');
-        } catch (DomainException) {
-            self::assertTrue(true);
-        }
+        (new ListPaymentsHandler($repository))('', 20, 0);
+    }
 
-        try {
-            $handler('tenant-1', 101, 0);
-            self::fail('A limit above 100 must be rejected.');
-        } catch (DomainException) {
-            self::assertTrue(true);
-        }
+    public function testItRejectsInvalidPaginationBeforeRepositoryCall(): void
+    {
+        $repository = $this->createMock(PaymentRepositoryInterface::class);
+        $repository->expects(self::never())->method('listByTenant');
+        $this->expectException(DomainException::class);
+
+        (new ListPaymentsHandler($repository))('tenant-1', 101, 0);
     }
 }

@@ -214,11 +214,6 @@ final readonly class CatalogController
         );
     }
 
-    private function invalidJson(Request $request): JsonResponse
-    {
-        return $this->problem(400, 'INVALID_JSON', 'Request body must contain valid JSON.', $request);
-    }
-
     private function problem(
         int $status,
         string $code,

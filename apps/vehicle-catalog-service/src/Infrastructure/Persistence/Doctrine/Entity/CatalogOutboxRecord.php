@@ -73,4 +73,61 @@ class CatalogOutboxRecord
         $this->occurredAt = $now;
         $this->nextAttemptAt = $now;
     }
+
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getAggregateId(): string
+    {
+        return $this->aggregateId;
+    }
+
+    public function getEventType(): string
+    {
+        return $this->eventType;
+    }
+
+    public function getSchemaVersion(): int
+    {
+        return $this->schemaVersion;
+    }
+
+    /** @return array<string, mixed> */
+    public function getPayload(): array
+    {
+        return $this->payload;
+    }
+
+    public function getOccurredAt(): DateTimeImmutable
+    {
+        return $this->occurredAt;
+    }
+
+    public function getPublishedAt(): ?DateTimeImmutable
+    {
+        return $this->publishedAt;
+    }
+
+    public function getAttempts(): int
+    {
+        return $this->attempts;
+    }
+
+    public function getNextAttemptAt(): DateTimeImmutable
+    {
+        return $this->nextAttemptAt;
+    }
+
+    public function getLockedUntil(): ?DateTimeImmutable
+    {
+        return $this->lockedUntil;
+    }
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
+    }
+
 }

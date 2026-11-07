@@ -106,6 +106,9 @@ final class OutboxPublisherIntegrationTest extends TestCase
             // Verify that the confirmed event was actually routed to this test's
             // isolated queue. Never publish integration-test messages to offer.events.
             $queue = $channel->queue_declare($testQueue, false, true, false, false);
+            if (!is_array($queue) || !array_key_exists(1, $queue)) {
+                self::fail('The isolated test queue could not be inspected.');
+            }
             self::assertSame(1, $queue[1], 'The event must be present in the isolated test queue.');
 
             $published = $this->database->prepare(
@@ -129,9 +132,10 @@ final class OutboxPublisherIntegrationTest extends TestCase
 
                 // The application role intentionally has no DELETE privilege on the outbox.
                 // Clean the test row only when the configured integration DB role permits it.
-                $canDelete = $this->database->query(
+                $privilegeStatement = $this->database->query(
                     "SELECT has_table_privilege(current_user, 'offer_outbox_events', 'DELETE')",
-                )->fetchColumn();
+                );
+                $canDelete = $privilegeStatement !== false && $privilegeStatement->fetchColumn();
 
                 if ($canDelete) {
                     $delete = $this->database->prepare(

@@ -30,7 +30,7 @@ final readonly class StripeWebhookVerifier
 
         $expected = hash_hmac('sha256', $timestamp . '.' . $payload, $this->webhookSecret);
         foreach ($parts['v1'] ?? [] as $signature) {
-            if (is_string($signature) && hash_equals($expected, $signature)) {
+            if (hash_equals($expected, $signature)) {
                 return;
             }
         }

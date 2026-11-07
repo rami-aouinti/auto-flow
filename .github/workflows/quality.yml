@@ -26,7 +26,7 @@ jobs:
         with:
           php-version: "8.4"
           coverage: xdebug
-          extensions: pdo_pgsql, mbstring
+          extensions: pdo_pgsql, mbstring, sockets
           tools: composer:v2
       - name: Setup Go for Temporal Order worker
         uses: actions/setup-go@v7
@@ -50,6 +50,8 @@ jobs:
           composer validate --strict --working-dir=apps/vehicle-catalog-service
           composer validate --strict --working-dir=apps/order-service
           composer validate --strict --working-dir=apps/payment-service
+          composer validate --strict --working-dir=apps/notification-service
+          composer validate --strict --working-dir=apps/billing-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
@@ -129,7 +131,7 @@ jobs:
           composer install --working-dir=apps/payment-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/payment-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher
+        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
@@ -208,6 +210,17 @@ jobs:
         run: |
           composer install \
             --working-dir=apps/vehicle-catalog-service \
+            --ignore-platform-req=ext-opentelemetry \
+            --no-interaction --prefer-dist --no-progress
+      - name: Install Notification Service dependencies for static analysis
+        run: |
+          composer install \
+            --working-dir=apps/notification-service \
+            --no-interaction --prefer-dist --no-progress
+      - name: Install Billing Service dependencies for static analysis
+        run: |
+          composer install \
+            --working-dir=apps/billing-service \
             --ignore-platform-req=ext-opentelemetry \
             --no-interaction --prefer-dist --no-progress
       - name: Run PHPStan analysis

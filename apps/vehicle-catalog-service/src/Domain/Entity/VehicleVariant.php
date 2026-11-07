@@ -205,6 +205,7 @@ final readonly class VehicleVariant
             'bev' => $fuelType === 'electric',
             'fcev' => $fuelType === 'hydrogen',
             'other' => true,
+            default => false,
         };
 
         if (!$compatible) {

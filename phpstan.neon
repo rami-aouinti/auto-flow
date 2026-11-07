@@ -12,6 +12,10 @@ parameters:
             - apps/pricing-service/*
     bootstrapFiles:
         - apps/vehicle-catalog-service/vendor/autoload.php
+    scanDirectories:
+        - apps/payment-service/vendor
+        - apps/notification-service/vendor
+        - apps/billing-service/vendor
     tmpDir: var/phpstan
 
     ignoreErrors:
@@ -24,6 +28,8 @@ parameters:
           path: tests/Unit/CoreBundle/Security/JwtTokenVerifierTest.php
         - identifier: phpDoc.parseError
           path: apps/vehicle-catalog-service/src/Presentation/Http/Controller/CatalogController.php
+        - identifier: phpDoc.parseError
+          path: apps/vehicle-catalog-service/src/Presentation/Http/Controller/CatalogManagementController.php
         - identifier: phpDoc.parseError
           path: apps/vehicle-catalog-service/src/Infrastructure/Persistence/Doctrine/DoctrineVehicleCatalogRepository.php
         - identifier: phpDoc.parseError

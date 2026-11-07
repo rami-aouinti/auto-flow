@@ -57,7 +57,7 @@ final readonly class PaymentController
     {
         try {
             $principal = $this->principal($request, 'payments:write');
-            $key = $request->headers->get('Idempotency-Key', '');
+            $key = $request->headers->get('Idempotency-Key') ?? '';
             $result = ($this->createPayment)($this->tenant($principal), $principal->subject, $key, $this->body($request));
             return new JsonResponse($result, 201, ['Cache-Control'=>'no-store']);
         } catch (AccessDeniedHttpException) {

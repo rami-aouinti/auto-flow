@@ -45,7 +45,7 @@ $connect = static function (): array {
 
 [$connection, $channel] = $connect();
 try {
-    while (true) {
+    while ($channel->is_open()) {
         $event = $db->fetchAssociative('SELECT * FROM public.payment_outbox_claim()');
         if (!is_array($event)) {
             try {

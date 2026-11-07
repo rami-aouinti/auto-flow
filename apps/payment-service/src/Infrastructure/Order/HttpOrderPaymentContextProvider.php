@@ -42,7 +42,7 @@ final readonly class HttpOrderPaymentContextProvider implements OrderPaymentCont
             if ($status === 403) {
                 throw new \RuntimeException('Order service authentication failed.');
             }
-            if ($status < 200 || $status >= 300 || !is_array($payload)) {
+            if ($status < 200 || $status >= 300) {
                 throw new \RuntimeException('Order service is temporarily unavailable.');
             }
             if (($payload['tenantId'] ?? null) !== $tenantId
