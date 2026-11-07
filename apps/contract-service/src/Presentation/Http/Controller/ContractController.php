@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controller;
 
+use App\Infrastructure\Document\ContractDocumentManager;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use DomainException;
 use Symfony\Component\HttpClient\HttpClientInterface;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -31,6 +33,7 @@ final readonly class ContractController
         private Connection $db,
         private HttpClientInterface $http,
         private string $orderServiceUrl,
+        private ContractDocumentManager $documents,
     ) {
     }
 
@@ -291,6 +294,55 @@ final readonly class ContractController
         // Never mark a contract as signed or sent without a real provider response.
         // The adapter is deliberately not configured yet; the endpoint is explicit.
         return $this->problem(503, 'No e-signature provider is configured. Contract state was not changed.');
+    }
+
+    #[Route('/{contractId}/document', requirements: ['contractId' => '[0-9a-fA-F-]{36}'], methods: ['POST'])]
+    public function generateDocument(Request $request, string $contractId): JsonResponse
+    {
+        try {
+            $principal = $this->principal($request, 'contracts:write');
+            $tenant = $this->tenant($principal);
+            $document = $this->documents->generate($tenant, $principal->subject, $contractId);
+            if ($document === null) {
+                return $this->problem(404, 'Contract not found.');
+            }
+
+            unset($document['path']);
+
+            return new JsonResponse(['document' => $document], 200, ['Cache-Control' => 'no-store']);
+        } catch (AccessDeniedHttpException $exception) {
+            return $this->problem(403, $exception->getMessage());
+        } catch (DomainException $exception) {
+            return $this->problem(409, $exception->getMessage());
+        } catch (Throwable) {
+            return $this->problem(503, 'Contract PDF could not be generated.');
+        }
+    }
+
+    #[Route('/{contractId}/document', requirements: ['contractId' => '[0-9a-fA-F-]{36}'], methods: ['GET'])]
+    public function downloadDocument(Request $request, string $contractId): BinaryFileResponse|JsonResponse
+    {
+        try {
+            $principal = $this->principal($request, 'contracts:read');
+            $tenant = $this->tenant($principal);
+            $document = $this->documents->findLatest($tenant, $contractId);
+            if ($document === null) {
+                return $this->problem(404, 'Contract document not found.');
+            }
+
+            $response = new BinaryFileResponse($document['path']);
+            $response->setContentDisposition('attachment', 'contract-' . $contractId . '.pdf');
+            $response->headers->set('Content-Type', 'application/pdf');
+            $response->headers->set('Cache-Control', 'private, no-store');
+            $response->headers->set('X-Content-SHA256', $document['checksum']);
+            $response->headers->set('X-Content-Type-Options', 'nosniff');
+
+            return $response;
+        } catch (AccessDeniedHttpException $exception) {
+            return $this->problem(403, $exception->getMessage());
+        } catch (Throwable) {
+            return $this->problem(503, 'Contract PDF could not be retrieved or failed integrity verification.');
+        }
     }
 
     #[Route('/{contractId}/history', requirements: ['contractId' => '[0-9a-fA-F-]{36}'], methods: ['GET'])]
