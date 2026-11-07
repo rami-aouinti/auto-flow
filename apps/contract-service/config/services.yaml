@@ -1,5 +1,6 @@
 parameters:
     app.contract_order_service_url: '%env(resolve:CONTRACT_ORDER_SERVICE_URL)%'
+    app.contract_document_storage_path: '%env(resolve:CONTRACT_DOCUMENT_STORAGE_PATH)%'
 
 services:
     _defaults:
