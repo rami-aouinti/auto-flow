@@ -135,6 +135,7 @@ GRANT UPDATE (
     document_checksum, signature_provider, provider_envelope_id
 ) ON contract_records TO autoflow_contract;
 GRANT SELECT, INSERT ON contract_audit_events, contract_idempotency_keys, contract_transition_idempotency, contract_documents, contract_signature_webhook_inbox, contract_outbox TO autoflow_contract;
+GRANT UPDATE (processed_at) ON contract_signature_webhook_inbox TO autoflow_contract;
 
 
 -- The publisher has no direct table access. SECURITY DEFINER functions run under
