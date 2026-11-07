@@ -321,6 +321,9 @@ final readonly class ContractController
         }
     }
 
+    /**
+     * @param string|list<string> $from
+     */
     private function transition(
         Request $request,
         string $contractId,
@@ -542,6 +545,9 @@ final readonly class ContractController
         ];
     }
 
+    /**
+     * @param array<string, mixed> $payload
+     */
     private function audit(
         Connection $db,
         string $tenant,
