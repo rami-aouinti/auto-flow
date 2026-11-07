@@ -122,6 +122,17 @@
             "access.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "contract-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-contract",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
         }
       ],
       "defaultClientScopes": [
@@ -253,6 +264,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-contract",
+      "name": "Contract Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -279,7 +300,10 @@
         "billing:read",
         "customers:read",
         "customers:write",
-        "customers:manage"
+        "customers:manage",
+        "contracts:read",
+        "contracts:write",
+        "contracts:manage"
       ],
       "attributes": {
         "tenant_id": [
@@ -345,7 +369,10 @@
         "billing:read",
         "customers:read",
         "customers:write",
-        "customers:manage"
+        "customers:manage",
+        "contracts:read",
+        "contracts:write",
+        "contracts:manage"
       ],
       "attributes": {
         "tenant_id": [
@@ -419,6 +446,18 @@
       {
         "name": "customers:manage",
         "description": "Archive customer profiles in the authenticated tenant"
+      },
+      {
+        "name": "contracts:read",
+        "description": "Read contracts and legal snapshots within the authenticated tenant"
+      },
+      {
+        "name": "contracts:write",
+        "description": "Create and prepare contracts within the authenticated tenant"
+      },
+      {
+        "name": "contracts:manage",
+        "description": "Cancel contracts and manage signature workflows within the authenticated tenant"
       }
     ]
   }
