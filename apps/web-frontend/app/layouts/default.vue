@@ -41,6 +41,7 @@ function isActive(to: string) {
   if (to === '/operations/payments') return route.path === '/operations/orders' && route.query.tab === 'payments';
   if (to === '/operations/pricing') return route.path === '/operations/orders' && route.query.tab === 'quotes';
   if (to === '/operations/orders') return route.path === to && (!route.query.tab || route.query.tab === 'orders');
+  if (to === '/admin/catalog/manufacturers') return route.path.startsWith('/admin/catalog');
   return route.path === to || route.path.startsWith(`${to}/`);
 }
 function logout() {
