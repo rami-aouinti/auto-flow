@@ -42,5 +42,9 @@ Health: http://localhost:8089/health/ready
 
 The PostgreSQL bootstrap applies the idempotent migration to fresh and existing volumes without deleting data. Keycloak imports the new audience and roles only when the realm is first created; existing realms require the mapper and roles to be added manually.
 
+## Downstream order integration
+
+Order Service resolves `GET /api/v1/customers/{customerId}` with the authenticated caller token and its own `customers:read` permission. The customer profile response includes the profile version, status, archival timestamp and active addresses. Order stores a minimal immutable snapshot in its own database; Customer does not expose its database or create cross-service foreign keys. Consent records are not copied into orders. The synchronous Order integration is implemented; Customer Outbox publication remains future work.
+
 ## Boundary
 Customer does not own credentials, orders, offers, payments, invoices or contracts. Other bounded contexts keep customer identifiers and integrate through this API or a future versioned Customer outbox event. No cross-service database joins are introduced.
