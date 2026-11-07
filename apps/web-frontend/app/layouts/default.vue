@@ -16,26 +16,32 @@ const sections = [
   {
     title: 'GESCHÄFTSPROZESSE',
     items: [
-      { title: 'Aufträge & Payments', subtitle: 'Bestellungen und Zahlungen', icon: 'mdi-clipboard-text-outline', to: '/operations/orders' },
+      { title: 'Aufträge', subtitle: 'Bestellungen & Status', icon: 'mdi-clipboard-text-outline', to: '/operations/orders' },
+      { title: 'Payments', subtitle: 'Zahlungsvorgänge', icon: 'mdi-credit-card-outline', to: '/operations/payments' },
+      { title: 'Pricing Quotes', subtitle: 'Kalkulationen', icon: 'mdi-calculator-variant-outline', to: '/operations/pricing' },
     ],
   },
   {
     title: 'STAMMDATEN',
     items: [
-      { title: 'Fahrzeugkatalog', subtitle: 'Marken, Modelle & Varianten', icon: 'mdi-car-cog', to: '/admin/catalog' },
+      { title: 'Fahrzeugkatalog', subtitle: 'Marken, Modelle & Varianten', icon: 'mdi-car-cog', to: '/admin/catalog/manufacturers' },
     ],
   },
 ];
 const pageTitle = computed(() => {
   if (route.path === '/admin') return 'Kontrollzentrum';
   if (route.path.startsWith('/admin/catalog')) return 'Fahrzeugkatalog';
-  if (route.path.startsWith('/operations/orders')) return 'Aufträge & Payments';
+  if (route.path.startsWith('/operations/orders')) return route.query.tab === 'payments' ? 'Payments' : route.query.tab === 'quotes' ? 'Pricing Quotes' : 'Aufträge';
   return 'Workspace';
 });
 const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'AutoFlow User');
 
 function isActive(to: string) {
-  return to === '/admin' ? route.path === to : route.path === to || route.path.startsWith(`${to}/`);
+  if (to === '/admin') return route.path === to;
+  if (to === '/operations/payments') return route.path === '/operations/orders' && route.query.tab === 'payments';
+  if (to === '/operations/pricing') return route.path === '/operations/orders' && route.query.tab === 'quotes';
+  if (to === '/operations/orders') return route.path === to && (!route.query.tab || route.query.tab === 'orders');
+  return route.path === to || route.path.startsWith(`${to}/`);
 }
 function logout() {
   void $keycloak.logout({ redirectUri: window.location.origin });
