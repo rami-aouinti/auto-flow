@@ -23,7 +23,8 @@
     "symfony/psr-http-message-bridge": "7.4.*",
     "symfony/uid": "7.4.*",
     "symfony/yaml": "7.4.*",
-    "php-amqplib/php-amqplib": "^3.7"
+    "php-amqplib/php-amqplib": "^3.7",
+    "dompdf/dompdf": "^3.1"
   },
   "repositories": [
     {
