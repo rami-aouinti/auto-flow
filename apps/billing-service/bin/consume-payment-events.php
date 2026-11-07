@@ -97,8 +97,8 @@ $ch->basic_consume($q, '', false, false, false, false, static function (AMQPMess
         $process($m);
         $m->ack();
     } catch (Throwable $e) {
-        fwrite(STDERR,'Billing event failed: '.$e->getMessage().PHP_EOL);
-        $m->nack(false,true);
+        fwrite(STDERR, 'Billing event failed: '.$e->getMessage().PHP_EOL);
+        $m->nack(false, true);
     }
 });
 try {

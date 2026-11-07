@@ -88,6 +88,6 @@ final readonly class BillingController
     {
         return new JsonResponse(['type' => 'about:blank','title' => match($s) {
             403 => 'Forbidden',404 => 'Not Found',default => 'Service Unavailable'
-        },'status' => $s,'detail' => $d],$s,['Content-Type' => 'application/problem+json','Cache-Control' => 'no-store']);
+        },'status' => $s,'detail' => $d], $s, ['Content-Type' => 'application/problem+json','Cache-Control' => 'no-store']);
     }
 }
