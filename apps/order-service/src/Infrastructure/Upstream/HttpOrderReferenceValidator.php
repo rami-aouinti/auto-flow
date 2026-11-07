@@ -89,6 +89,11 @@ final readonly class HttpOrderReferenceValidator implements OrderReferenceValida
             throw new OrderReferenceValidationException('Customer Service returned an invalid customer version.');
         }
 
+        $addresses = $customer['addresses'] ?? [];
+        if (!is_array($addresses) || !array_is_list($addresses)) {
+            throw new OrderReferenceValidationException('Customer Service returned an invalid address collection.');
+        }
+
         // Keep only fields required to understand the order later. Never copy consent data.
         $customerSnapshot = [
             'customerId' => $customerId,
@@ -101,7 +106,7 @@ final readonly class HttpOrderReferenceValidator implements OrderReferenceValida
             'vatId' => $customer['vat_id'] ?? null,
             'locale' => $customer['locale'] ?? null,
             'addresses' => array_values(array_filter(
-                $customer['addresses'] ?? [],
+                $addresses,
                 static fn (mixed $address): bool => is_array($address)
                     && in_array($address['address_type'] ?? null, ['billing', 'shipping'], true),
             )),
