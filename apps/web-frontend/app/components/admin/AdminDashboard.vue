@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { catalog, orders, payments, pricing, errorMessage } from '../../../src/api';
+import { catalog, orders, payments, pricing } from '../../../src/api';
+import PageHeader from '../shared/PageHeader.vue';
+import MetricCard from '../shared/MetricCard.vue';
 
 type Metric = { key: string; label: string; value: string; caption: string; icon: string; tone: string; to: string };
 const loading = ref(true);
@@ -41,32 +43,15 @@ onMounted(async () => {
 
 <template>
   <div class="admin-dashboard">
-    <div class="d-flex flex-wrap align-center justify-space-between ga-4 mb-8">
-      <div>
-        <div class="text-overline text-medium-emphasis font-weight-bold">AUTOFLOW · ADMINISTRATION</div>
-        <h1 class="text-h4 text-md-h3 font-weight-bold mt-1">Kontrollzentrum</h1>
-        <p class="text-body-2 text-medium-emphasis mt-2">Verwalte Fahrzeugstammdaten und behalte die wichtigsten Geschäftsprozesse im Blick.</p>
-      </div>
-      <v-chip color="success" variant="tonal" prepend-icon="mdi-shield-check-outline">Geschützter Bereich</v-chip>
-    </div>
+    <PageHeader eyebrow="AUTOFLOW · ADMINISTRATION" title="Kontrollzentrum" description="Verwalte Fahrzeugstammdaten und behalte die wichtigsten Geschäftsprozesse im Blick.">
+      <template #actions><v-chip color="success" variant="tonal" prepend-icon="mdi-shield-check-outline">Geschützter Bereich</v-chip></template>
+    </PageHeader>
 
     <v-alert v-if="loadError" type="warning" variant="tonal" density="comfortable" class="mb-6">{{ loadError }}</v-alert>
 
     <v-row>
       <v-col v-for="metric in metrics" :key="metric.key" cols="12" sm="6" xl="3">
-        <v-card :to="metric.to" class="metric-card h-100" rounded="xl" border elevation="0">
-          <v-card-text class="pa-5">
-            <div class="d-flex align-center justify-space-between">
-              <span class="text-body-2 text-medium-emphasis font-weight-medium">{{ metric.label }}</span>
-              <v-avatar :color="metric.tone" variant="tonal" rounded="lg" size="42"><v-icon :icon="metric.icon" /></v-avatar>
-            </div>
-            <div class="d-flex align-end ga-2 mt-5">
-              <span class="text-h3 font-weight-bold metric-value">{{ loading ? '…' : metric.value }}</span>
-              <v-icon v-if="!loading && metric.value !== '—'" icon="mdi-arrow-top-right" color="medium-emphasis" size="small" class="mb-2" />
-            </div>
-            <div class="text-caption text-medium-emphasis mt-1">{{ metric.caption }}</div>
-          </v-card-text>
-        </v-card>
+        <MetricCard :label="metric.label" :value="loading ? '…' : metric.value" :caption="metric.caption" :icon="metric.icon" :tone="metric.tone" :to="metric.to" />
       </v-col>
     </v-row>
 
@@ -100,9 +85,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.metric-card{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
-.metric-card:hover{transform:translateY(-3px);border-color:rgba(var(--v-theme-primary),.55)!important;box-shadow:0 12px 28px rgba(0,0,0,.12)!important}
-.metric-value{letter-spacing:-1.5px}
 .principle-row{display:flex;align-items:flex-start;gap:14px}
 .principle-row strong,.principle-row span{display:block}
 .principle-row strong{font-size:13px;font-weight:700}
