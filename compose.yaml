@@ -798,12 +798,14 @@ services:
   web-frontend:
     image: node:22-alpine
     working_dir: /app
-    command: ["sh", "-lc", "npm install && npm run dev -- --host 0.0.0.0"]
+    command: ["sh", "-lc", "npm install --no-audit --no-fund && npm run dev"]
     ports: ["3000:3000"]
     volumes:
       - ./apps/web-frontend:/app
       - web-frontend-node-modules:/app/node_modules
     environment:
+      NUXT_TELEMETRY_DISABLED: "1"
+      NITRO_PORT: "3000"
       VITE_KEYCLOAK_URL: http://localhost:8080
       VITE_KEYCLOAK_REALM: autoflow
       VITE_KEYCLOAK_CLIENT_ID: autoflow-local-client
