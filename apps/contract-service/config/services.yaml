@@ -6,13 +6,13 @@ services:
         autowire: true
         autoconfigure: true
 
-    App\\:
+    App\:
         resource: '../src/'
         exclude: ['../src/Kernel.php']
 
-    App\\Infrastructure\\Health\\ContractDatabaseHealthCheck:
+    App\Infrastructure\Health\ContractDatabaseHealthCheck:
         tags: ['autoflow_core.health_check']
 
-    App\\Presentation\\Http\\Controller\\ContractController:
+    App\Presentation\Http\Controller\ContractController:
         arguments:
             $orderServiceUrl: '%app.contract_order_service_url%'
