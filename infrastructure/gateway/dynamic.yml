@@ -53,6 +53,12 @@ http:
           - api-in-flight
 
   routers:
+    contracts:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/contracts`)"
+      service: contracts
+      middlewares: [api-defaults]
+
     billing:
       entryPoints: [web]
       rule: "PathPrefix(`/api/v1/billing`)"
@@ -106,6 +112,16 @@ http:
         - api-defaults
 
   services:
+    contracts:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://contract-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
     billing:
       loadBalancer:
         passHostHeader: true
