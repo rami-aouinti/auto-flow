@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: AutoFlow Order Management API
   version: 1.0.0
-  description: Tenant-scoped order lifecycle API. All routes require a verified JWT bearer token. Order creation additionally requires Offer, Pricing and Catalog read permissions.
+  description: Tenant-scoped order lifecycle API. All routes require a verified JWT bearer token. Order creation additionally requires Customer, Offer, Pricing and Catalog read permissions.
 servers:
   - url: http://localhost:8085
 security:
@@ -22,18 +22,19 @@ paths:
           application/json:
             schema:
               type: object
-              required: [offerId, quoteId, vehicleId]
+              required: [offerId, quoteId, vehicleId, customerId]
               properties:
                 offerId: { type: string }
                 quoteId: { type: string }
                 vehicleId: { type: string }
+                customerId: { type: string, format: uuid, description: Active customer owned by the authenticated tenant }
       responses:
         '201': { description: Draft order created }
         '400': { description: Invalid request or missing idempotency key }
         '403': { description: Missing permission or tenant context }
         '409': { description: Idempotency key conflict }
-        '422': { description: Invalid order input or invalid upstream references }
-        '503': { description: Offer, Pricing or Vehicle Catalog is unavailable }
+        '422': { description: Invalid order input or invalid Customer, Offer, Pricing or Catalog references }
+        '503': { description: Customer, Offer, Pricing or Vehicle Catalog is unavailable }
     get:
       summary: List orders for the authenticated tenant
       parameters:
