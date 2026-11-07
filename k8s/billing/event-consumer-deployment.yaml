@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-payment-event-consumer
+  namespace: autoflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing-payment-event-consumer
+  template:
+    metadata:
+      labels:
+        app: billing-payment-event-consumer
+    spec:
+      containers:
+        - name: consumer
+          image: autoflow/billing-service:local
+          imagePullPolicy: IfNotPresent
+          command: ["php", "bin/consume-payment-events.php"]
+          envFrom:
+            - configMapRef:
+                name: billing-config
+            - secretRef:
+                name: billing-secret
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
