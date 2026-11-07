@@ -1,0 +1,18 @@
+parameters:
+    app.contract_order_service_url: '%env(resolve:CONTRACT_ORDER_SERVICE_URL)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\\:
+        resource: '../src/'
+        exclude: ['../src/Kernel.php']
+
+    App\\Infrastructure\\Health\\ContractDatabaseHealthCheck:
+        tags: ['autoflow_core.health_check']
+
+    App\\Presentation\\Http\\Controller\\ContractController:
+        arguments:
+            $orderServiceUrl: '%app.contract_order_service_url%'
