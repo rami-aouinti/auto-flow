@@ -122,5 +122,9 @@ BEGIN
 END
 $rls$;
 
-GRANT SELECT, INSERT, UPDATE ON contract_records TO autoflow_contract;
+GRANT SELECT, INSERT ON contract_records TO autoflow_contract;
+GRANT UPDATE (
+    status, updated_at, prepared_at, signed_at, cancelled_at,
+    document_checksum, signature_provider, provider_envelope_id
+) ON contract_records TO autoflow_contract;
 GRANT SELECT, INSERT ON contract_audit_events, contract_idempotency_keys, contract_transition_idempotency, contract_outbox TO autoflow_contract;
