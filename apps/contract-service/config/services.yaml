@@ -1,6 +1,12 @@
 parameters:
     app.contract_order_service_url: '%env(resolve:CONTRACT_ORDER_SERVICE_URL)%'
     app.contract_document_storage_path: '%env(resolve:CONTRACT_DOCUMENT_STORAGE_PATH)%'
+    app.docusign_integration_key: '%env(DOCUSIGN_INTEGRATION_KEY)%'
+    app.docusign_user_id: '%env(DOCUSIGN_USER_ID)%'
+    app.docusign_account_id: '%env(DOCUSIGN_ACCOUNT_ID)%'
+    app.docusign_oauth_host: '%env(DOCUSIGN_OAUTH_HOST)%'
+    app.docusign_api_base_url: '%env(DOCUSIGN_API_BASE_URL)%'
+    app.docusign_private_key_path: '%env(DOCUSIGN_PRIVATE_KEY_PATH)%'
 
 services:
     _defaults:
@@ -21,3 +27,15 @@ services:
     App\Infrastructure\Document\ContractDocumentManager:
         arguments:
             $storagePath: '%app.contract_document_storage_path%'
+
+    App\\Application\\Port\\SignatureProviderInterface:
+        alias: App\\Infrastructure\\Signature\\DocuSignSignatureProvider
+
+    App\\Infrastructure\\Signature\\DocuSignSignatureProvider:
+        arguments:
+            $integrationKey: '%app.docusign_integration_key%'
+            $userId: '%app.docusign_user_id%'
+            $accountId: '%app.docusign_account_id%'
+            $oauthHost: '%app.docusign_oauth_host%'
+            $apiBaseUrl: '%app.docusign_api_base_url%'
+            $privateKeyPath: '%app.docusign_private_key_path%'
