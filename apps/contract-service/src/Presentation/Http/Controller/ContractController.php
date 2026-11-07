@@ -13,9 +13,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Uid\Uuid;
-use DomainException;
 use Throwable;
 
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ */
 #[Route('/api/v1/contracts')]
 final readonly class ContractController
 {
@@ -261,12 +265,27 @@ final readonly class ContractController
     public function sendForSignature(Request $request, string $contractId): JsonResponse
     {
         try {
-            $this->principal($request, 'contracts:manage');
-        } catch (Throwable $exception) {
+            $principal = $this->principal($request, 'contracts:manage');
+            $tenant = $this->tenant($principal);
+            $contract = $this->db->transactional(function (Connection $db) use ($tenant, $contractId): ?array {
+                $this->setTenant($db, $tenant);
+
+                return $this->find($db, $tenant, $contractId);
+            });
+            if ($contract === null) {
+                return $this->problem(404, 'Contract not found.');
+            }
+            if ($contract['status'] !== 'prepared') {
+                return $this->problem(409, 'Only prepared contracts can be sent for signature.');
+            }
+        } catch (AccessDeniedHttpException $exception) {
             return $this->problem(403, $exception->getMessage());
+        } catch (Throwable) {
+            return $this->problem(503, 'Contract could not be checked.');
         }
+
         // Never mark a contract as signed or sent without a real provider response.
-        // The adapter is deliberately not configured yet; this endpoint is explicit.
+        // The adapter is deliberately not configured yet; the endpoint is explicit.
         return $this->problem(503, 'No e-signature provider is configured. Contract state was not changed.');
     }
 
@@ -541,6 +560,7 @@ final readonly class ContractController
         ]);
     }
 
+    /** @param array<string, mixed> $payload */
     private function outbox(Connection $db, string $tenant, string $id, string $type, array $payload): void
     {
         $db->insert('contract_outbox', [
@@ -574,6 +594,7 @@ final readonly class ContractController
         return $principal->tenantId;
     }
 
+    /** @return array<string, mixed> */
     private function body(Request $request): array
     {
         $body = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
@@ -591,6 +612,7 @@ final readonly class ContractController
         return strtolower($value);
     }
 
+    /** @return array<string, mixed> */
     private function decode(mixed $value): array
     {
         $decoded = is_array($value) ? $value : json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
