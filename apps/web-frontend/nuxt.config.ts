@@ -34,12 +34,25 @@ export default defineNuxtConfig({
         defaultTheme: 'dark',
         themes: {
           dark: {
+            dark: true,
             colors: {
               background: '#101820',
               surface: '#17232d',
               primary: '#c8f169',
               secondary: '#82939b',
               error: '#ef8d91',
+            },
+          },
+          marketplace: {
+            dark: false,
+            colors: {
+              background: '#f5f7f8',
+              surface: '#ffffff',
+              primary: '#173b56',
+              secondary: '#5d826e',
+              success: '#347653',
+              error: '#b94b50',
+              info: '#3d7593',
             },
           },
         },
