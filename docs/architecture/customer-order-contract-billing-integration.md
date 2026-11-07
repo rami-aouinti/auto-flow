@@ -45,14 +45,15 @@ Order create command evolves to:
 ```
 The server resolves and persists the customer snapshot. A client-supplied customer snapshot is ignored/rejected. The order response exposes `customerId`, `customerVersion` and the safe snapshot fields needed by the caller.
 
-### Contract Service (target)
-- `POST /api/v1/contracts` — create a draft for an accepted order.
-- `GET /api/v1/contracts/{contractId}`
+### Contract Service (first implementation slice)
+- `POST /api/v1/contracts` — create a draft for an accepted or contract-pending order.
+- `GET /api/v1/contracts` and `GET /api/v1/contracts/{contractId}`
+- `GET /api/v1/contracts/{contractId}/history`
 - `POST /api/v1/contracts/{contractId}/prepare`
-- `POST /api/v1/contracts/{contractId}/send-for-signature`
 - `POST /api/v1/contracts/{contractId}/cancel`
+- `POST /api/v1/contracts/{contractId}/send-for-signature` — currently returns 503 until a real provider adapter is configured.
 
-Contract creation is idempotent on `tenantId + orderId + contractType + contractVersion`. It reads the accepted order and captures immutable customer, vehicle, quote and commercial terms. E-signature is a provider adapter and must not be simulated as a successful signature.
+Contract creation is idempotent on tenant + actor + key and enforces uniqueness on `tenantId + orderId + contractType + contractVersion`. It reads the accepted order with the caller's verified bearer token and captures immutable customer, offer, vehicle, quote and commercial snapshots. Contract audit and Outbox records are committed with each state change. The Outbox publisher, PDF/document storage and real e-signature integration remain future work; the API never simulates a successful signature.
 
 ### Billing Service
 Billing consumes payment lifecycle events, but invoice creation must be enriched with authoritative order/customer billing context. Before issuing an invoice it captures:
@@ -115,7 +116,7 @@ Event type and schema version are separate. Additive optional fields may be intr
 1. **Customer reference in Order — implemented**: nullable `customer_id`, customer version/snapshot columns and index preserve old rows; new order creation requires a UUID customerId.
 2. **Order → Customer verification — implemented**: the HTTP reference validator uses the caller's verified bearer token and tenant context, short timeout, and maps invalid/unauthorized/unavailable upstream responses. It persists the verified snapshot in the same Order transaction as the order and Outbox event. Bounded retry/circuit-breaker policy remains future hardening.
 3. **Customer Outbox**: add Customer event table, publisher, event schemas and Inbox consumer tests. Publish IDs/versions, not PII.
-4. **Contract bounded context**: create a separate service/database only when contract lifecycle, templates, document storage and signature integration are ready. Do not put contract tables in Order or Billing.
+4. **Contract bounded context — first slice implemented**: separate service/database, tenant-isolated contract records, immutable Order snapshots, draft/prepared/cancelled lifecycle, audit and durable Outbox rows exist. Outbox publication, PDF/document storage, template governance and e-signature provider integration remain open. Do not put contract tables in Order or Billing.
 5. **Billing enrichment**: consume a versioned Order/Contract event or fetch authoritative context before invoice issuance; persist immutable legal billing snapshot. Never assume PaymentCaptured alone contains legal invoice data.
 6. **End-to-end verification**: test tenant isolation, duplicate events, out-of-order delivery, customer archive during order creation, customer update after order creation, payment retry, invoice immutability and DLQ recovery.
 
@@ -124,6 +125,6 @@ Event type and schema version are separate. Additive optional fields may be intr
 - Customer Service exists with tenant-scoped profiles, addresses, consent, audit history and idempotent creation.
 - Order now requires `customerId` for new orders, validates the active customer through Customer Service using the caller's verified JWT and tenant context, and persists a minimal immutable customer snapshot plus customer version. The migration preserves historical orders with a null customer reference. Customer consent records are intentionally excluded from the order snapshot.
 - Billing currently consumes PaymentCaptured/refund events and creates invoices/credit notes. It does not yet have the complete legal customer/order snapshot enrichment described above.
-- A dedicated Contract Service and e-signature integration are not yet implemented.
+- Contract Service first slice is implemented: tenant-isolated draft creation from accepted Order snapshots, list/get/history, prepare/cancel, idempotency, audit and transactional Outbox writes. RabbitMQ Outbox publishing, immutable PDF artifact storage and e-signature provider/webhook verification are not implemented yet.
 
 Keep this status section current. Do not describe the target flow as operational until the migrations, adapters, publishers/consumers, authorization and integration tests have landed.
