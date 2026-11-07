@@ -19,6 +19,7 @@ parameters:
         - apps/payment-service/vendor
         - apps/notification-service/vendor
         - apps/billing-service/vendor
+        - apps/contract-service/vendor
     tmpDir: var/phpstan
 
     ignoreErrors:
