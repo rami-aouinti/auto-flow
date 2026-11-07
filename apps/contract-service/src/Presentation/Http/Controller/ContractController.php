@@ -202,6 +202,8 @@ final readonly class ContractController
                     ['Cache-Control' => 'no-store'],
                 );
             });
+        } catch (AccessDeniedHttpException $exception) {
+            return $this->problem(403, $exception->getMessage());
         } catch (Throwable) {
             return $this->problem(503, 'Contracts could not be listed.');
         }
@@ -220,6 +222,8 @@ final readonly class ContractController
                     ? $this->problem(404, 'Contract not found.')
                     : new JsonResponse($item, 200, ['Cache-Control' => 'no-store']);
             });
+        } catch (AccessDeniedHttpException $exception) {
+            return $this->problem(403, $exception->getMessage());
         } catch (Throwable) {
             return $this->problem(503, 'Contract could not be retrieved.');
         }
@@ -290,6 +294,8 @@ final readonly class ContractController
                 unset($item);
                 return new JsonResponse(['items' => $items], 200, ['Cache-Control' => 'no-store']);
             });
+        } catch (AccessDeniedHttpException $exception) {
+            return $this->problem(403, $exception->getMessage());
         } catch (Throwable) {
             return $this->problem(503, 'Contract history could not be retrieved.');
         }
