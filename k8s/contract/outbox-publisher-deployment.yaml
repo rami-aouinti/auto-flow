@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contract-outbox-publisher
+  namespace: autoflow
+  labels:
+    app.kubernetes.io/name: contract-outbox-publisher
+    app.kubernetes.io/part-of: autoflow
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: contract-outbox-publisher
+  template:
+    metadata:
+      labels:
+        app: contract-outbox-publisher
+        app.kubernetes.io/name: contract-outbox-publisher
+        app.kubernetes.io/part-of: autoflow
+    spec:
+      terminationGracePeriodSeconds: 30
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 33
+        runAsGroup: 33
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: publisher
+          image: autoflow/contract-service:local
+          imagePullPolicy: Never
+          command: ["php", "bin/publish-outbox.php"]
+          env:
+            - name: APP_ENV
+              value: "prod"
+            - name: CONTRACT_PUBLISHER_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: contract-publisher-secret
+                  key: CONTRACT_PUBLISHER_DATABASE_URL
+            - name: RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: password
+            - name: RABBITMQ_VHOST
+              value: "/"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 33
+            runAsGroup: 33
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
