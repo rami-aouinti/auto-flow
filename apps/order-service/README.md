@@ -1,6 +1,6 @@
 # AutoFlow Order Management Service
 
-Order Management owns the lifecycle of a vehicle-leasing order. The Application layer validates commands and depends on an `OrderRepositoryInterface`; a Doctrine DBAL adapter owns SQL, transactions and tenant-local RLS context. It stores references to Offer, Pricing and Vehicle Catalog records plus immutable snapshots captured at order creation. It does not own vehicle taxonomy, commercial offer policy or pricing calculations.
+Order Management owns the lifecycle of a vehicle-leasing order. The Application layer validates commands and depends on an `OrderRepositoryInterface`; a Doctrine DBAL adapter owns SQL, transactions and tenant-local RLS context. It stores references to Customer, Offer, Pricing and Vehicle Catalog records plus immutable snapshots captured at order creation. It does not own customer profiles, vehicle taxonomy, commercial offer policy or pricing calculations.
 
 ## Local API
 
@@ -21,7 +21,7 @@ The service listens on host port **8085** (container port 8080). Every `/api/` r
 
 Every lifecycle `POST` also requires an `Idempotency-Key` header. The key is scoped to tenant and authenticated actor. A repeated key with the same order, target status and reason returns the original response without adding another history row or Outbox event; reusing the key for a different command returns `409 Conflict`.
 
-The full OpenAPI contract is in [docs/openapi.yaml](docs/openapi.yaml). Order creation requires `orders:write`, `offers:read`, `pricing:quote` and `catalog:read` in the caller token because the API validates the references against their owning services.
+The full OpenAPI contract is in [docs/openapi.yaml](docs/openapi.yaml). Order creation requires `orders:write`, `customers:read`, `offers:read`, `pricing:quote` and `catalog:read` in the caller token because the API validates the references against their owning services. The caller token must also contain the `autoflow-customer` audience.
 
 Example create body:
 
@@ -29,11 +29,12 @@ Example create body:
 {
   "offerId": "offer-123",
   "quoteId": "quote-456",
-  "vehicleId": "variant-789"
+  "vehicleId": "variant-789",
+  "customerId": "c4f0f45a-9f7a-4c87-9db0-9c5db6b7b001"
 }
 ```
 
-Order Management now resolves all three snapshots itself before persisting the order. It calls Offer, Pricing and Vehicle Catalog with the caller's verified bearer token and tenant context. The offer must be accepted and unexpired, the quote must belong to the same vehicle and remain valid, and the catalogue variant must be published. Client-supplied snapshots are overwritten and never trusted. The local `order-operator` therefore needs `offers:read`, `pricing:quote` and `catalog:read` in addition to the order roles; the local token client already carries the three upstream audiences. A 503 means an upstream dependency could not be reached and no order was created.
+Order Management resolves all four snapshots itself before persisting the order. It calls Customer, Offer, Pricing and Vehicle Catalog with the caller's verified bearer token and tenant context. Customer must be active and belong to the caller's tenant; archived or unknown customers are rejected. The offer must be accepted and unexpired, the quote must belong to the same vehicle and remain valid, and the catalogue variant must be published. Client-supplied snapshots are overwritten and never trusted. The customer snapshot contains the minimal order-time identity/contact and billing/shipping address fields; consent records are never copied. The snapshot and customer version are immutable for the lifetime of the order. The local `order-operator` therefore needs `customers:read`, `offers:read`, `pricing:quote` and `catalog:read` in addition to the order roles; the local token client carries the corresponding upstream audiences. A 503 means an upstream dependency could not be reached and no order was created.
 
 ## Domain lifecycle
 
@@ -50,8 +51,8 @@ The Domain model enforces allowed transitions. The application locks the order r
 
 - Dedicated PostgreSQL login `autoflow_order`; tenant RLS protects orders, history, idempotency and Outbox.
 - Tenant context comes from the verified JWT principal and is set with transaction-local `set_config`; it is never trusted from the JSON body.
-- Creation and every lifecycle transition require idempotency keys scoped to tenant and authenticated actor. Repeating the same key and Offer/quote/vehicle references replays the stored response before any upstream call; reusing it with different references is rejected. The idempotency fingerprint is based on stable references, not refreshed upstream snapshots.
-- Offer, quote and vehicle snapshots are immutable through the lifecycle API.
+- Creation and every lifecycle transition require idempotency keys scoped to tenant and authenticated actor. Repeating the same key and Customer/Offer/quote/vehicle references replays the stored response before any upstream call; reusing it with different references is rejected. The idempotency fingerprint is based on stable references, not refreshed upstream snapshots.
+- Customer, Offer, quote and vehicle snapshots are immutable through the lifecycle API. Customer references are UUIDs only; no cross-service foreign key or database join is used. Existing orders created before this migration retain a null customer reference, while all new order commands require one.
 - Each state change appends an audit row and an integration event in the same transaction.
 - The Outbox publisher has a separate `autoflow_order_publisher` login that can only execute narrow SECURITY DEFINER claim/ack/retry functions. Those functions are owned by a dedicated non-login BYPASSRLS role with access only to the Outbox table; neither runtime login receives BYPASSRLS. Retries stop after ten failed attempts and leave a terminal failed row for operator inspection.
 - RabbitMQ delivery is at-least-once. Consumers must deduplicate by `eventId`.
@@ -60,7 +61,7 @@ The Domain model enforces allowed transitions. The application locks the order r
 
 ## Local database setup
 
-Compose runs the one-shot `postgres-bootstrap` service after PostgreSQL is healthy and before the Order/Payment APIs and workers start. It reapplies the idempotent Order and Payment role/schema migrations on both fresh and existing PostgreSQL volumes, including the Order payment-lifecycle migration and both Outbox publisher grants.
+Compose runs the one-shot `postgres-bootstrap` service after PostgreSQL is healthy and before the Order/Payment APIs and workers start. It reapplies the idempotent Order, Payment, Billing and Customer schema migrations on both fresh and existing PostgreSQL volumes, including the Order customer-reference migration, payment-lifecycle migration and Outbox publisher grants.
 
 To rerun the bootstrap explicitly after changing one of these SQL files:
 
@@ -70,7 +71,7 @@ docker compose --env-file .env.example run --rm postgres-bootstrap
 
 The bootstrap also reconciles the local database role passwords with the connection URLs in `.env.example`. It does not delete or recreate the PostgreSQL volume.
 
-Keycloak imports the realm file only when the `autoflow` realm does not already exist. If you already have that realm, the new client audience, roles and `order-operator` user will not be merged automatically. The order operator also needs the upstream read roles `offers:read`, `pricing:quote` and `catalog:read`. For a disposable local Keycloak container, recreate it with `docker compose up -d --force-recreate keycloak` (this resets its local realm data); otherwise add the `autoflow-order` audience mapper, `orders:read/write/manage` realm roles and the `order-operator` user with `tenant_id=tenant-demo` manually.
+Keycloak imports the realm file only when the `autoflow` realm does not already exist. If you already have that realm, the new client audience, roles and `order-operator` user will not be merged automatically. The order operator also needs the upstream read roles `customers:read`, `offers:read`, `pricing:quote` and `catalog:read`, plus the `autoflow-customer` audience mapper. For a disposable local Keycloak container, recreate it with `docker compose up -d --force-recreate keycloak` (this resets its local realm data); otherwise add the `autoflow-order` audience mapper, `orders:read/write/manage` realm roles and the `order-operator` user with `tenant_id=tenant-demo` manually.
 
 Then rebuild and start the service:
 
