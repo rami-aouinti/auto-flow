@@ -3,6 +3,7 @@ import type Keycloak from 'keycloak-js';
 
 const route = useRoute();
 const drawer = ref(false);
+const { mdAndUp } = useDisplay();
 const { $keycloak } = useNuxtApp() as unknown as { $keycloak: Keycloak };
 
 const navigation = [
@@ -20,7 +21,15 @@ function logout() {
 
 <template>
   <v-app>
-    <v-navigation-drawer v-model="drawer" color="surface" border="end" width="272">
+    <v-navigation-drawer
+      :model-value="mdAndUp || drawer"
+      :permanent="mdAndUp"
+      :temporary="!mdAndUp"
+      color="surface"
+      border="end"
+      width="272"
+      @update:model-value="drawer = $event"
+    >
       <div class="brand-lockup">
         <v-avatar color="primary" rounded="lg" size="42">
           <span class="brand-mark">A</span>
@@ -63,7 +72,7 @@ function logout() {
     </v-navigation-drawer>
 
     <v-app-bar color="surface" flat border="bottom" height="72">
-      <v-app-bar-nav-icon aria-label="Navigation öffnen" @click="drawer = !drawer" />
+      <v-app-bar-nav-icon v-if="!mdAndUp" aria-label="Navigation öffnen" @click="drawer = !drawer" />
       <v-toolbar-title class="topbar-title">
         <span class="topbar-overline">AUTOFLOW WORKSPACE</span>
         <span class="topbar-heading">{{ navigation.find((item) => item.to === route.path)?.title || 'Operations' }}</span>
