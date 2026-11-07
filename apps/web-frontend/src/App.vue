@@ -173,7 +173,7 @@ function quickFilter(key: 'fuelType' | 'bodyStyle', value: string) {
   filters[key] = filters[key] === value ? '' : value;
   void loadVehicles(true);
 }
-async function openVehicle(vehicle: Vehicle) {
+async function openVehicle(vehicle: Record<string, any>) {
   selectedLoading.value = true;
   catalogError.value = '';
   try {
