@@ -193,6 +193,7 @@ services:
       APP_SECRET: local-only-contract-service-secret
       CONTRACT_DATABASE_URL: ${CONTRACT_DATABASE_URL:-postgresql://autoflow_contract:local-only-contract-password@postgres:5432/autoflow}
       CONTRACT_ORDER_SERVICE_URL: ${CONTRACT_ORDER_SERVICE_URL:-http://order-service:8080}
+      CONTRACT_DOCUMENT_STORAGE_PATH: /var/lib/autoflow/contracts
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-contract-service
@@ -208,6 +209,8 @@ services:
       OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
       OTEL_PROPAGATORS: tracecontext,baggage
       OTEL_PHP_EXCLUDED_URLS: ^/health
+    volumes:
+      - contract-documents:/var/lib/autoflow/contracts
     depends_on:
       postgres: {condition: service_healthy}
       postgres-bootstrap: {condition: service_completed_successfully}
@@ -1107,4 +1110,5 @@ volumes:
   loki-data:
   tempo-data:
   temporal-data:
+  contract-documents:
   web-frontend-node-modules:
