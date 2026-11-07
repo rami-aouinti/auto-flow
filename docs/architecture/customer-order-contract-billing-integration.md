@@ -37,7 +37,7 @@ Order creation requires a customer read permission/audience in its service token
 Order create command evolves to:
 ```json
 {
-  "customerId": "cus_opaque_uuid",
+  "customerId": "c4f0f45a-9f7a-4c87-9db0-9c5db6b7b001",
   "offerId": "offer-123",
   "quoteId": "quote-456",
   "vehicleId": "variant-789"
