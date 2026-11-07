@@ -2,9 +2,9 @@
 
 ## Purpose and ownership
 
-Order Management owns the submitted customer order and its lifecycle. It references Offer, Pricing and Vehicle Catalog identifiers but does not own their business models or persistence.
+Order Management owns the submitted customer order and its lifecycle. It references Customer, Offer, Pricing and Vehicle Catalog identifiers but does not own their business models or persistence.
 
-The order captures immutable snapshots of the offer, quote and vehicle facts accepted at creation. This protects the historical order from later catalogue or commercial changes.
+The order captures immutable snapshots of the customer, offer, quote and vehicle facts accepted at creation. This protects the historical order from later profile, catalogue or commercial changes.
 
 ## Implemented increment
 
@@ -13,17 +13,18 @@ The new independently deployable Symfony 7.4 application lives at `apps/order-se
 Implemented capabilities:
 - Domain lifecycle aggregate and explicit transition policy.
 - REST API for create, list, retrieve, submit, review, accept, reject, cancel, contract-pending and complete.
-- Before creation, resolves Offer, Pricing and Vehicle Catalog over authenticated HTTP; verifies accepted/unexpired offer, quote-to-vehicle consistency and published catalogue variant; persists only server-resolved immutable snapshots.
+- Before creation, resolves Customer, Offer, Pricing and Vehicle Catalog over authenticated HTTP; verifies the customer is active and tenant-scoped, the offer is accepted/unexpired, quote-to-vehicle consistency and published catalogue variant; persists only server-resolved immutable snapshots.
+- Requires a customer UUID for every new order and captures customer identity/contact fields, billing/shipping addresses and profile version. Customer consent data is excluded. Historical orders retain a nullable customer reference.
 - Tenant-scoped PostgreSQL tables with forced row-level security.
-- Immutable offer, quote and vehicle JSONB snapshots; PostgreSQL column-level grants prevent the API role from updating snapshot columns.
+- Immutable customer, offer, quote and vehicle JSONB snapshots; PostgreSQL column-level grants prevent the API role from updating snapshot columns.
 - Append-only lifecycle history.
-- Create-request idempotency using a tenant-and-actor-scoped key, a stable Offer/quote/vehicle reference fingerprint, a preflight replay lookup and a transaction-scoped PostgreSQL advisory lock. A retry replays the original response before contacting upstream services.
+- Create-request idempotency using a tenant-and-actor-scoped key, a stable Customer/Offer/quote/vehicle reference fingerprint, a preflight replay lookup and a transaction-scoped PostgreSQL advisory lock. A retry replays the original response before contacting upstream services.
 - Transactional Outbox: state, history and event intent commit in the same local transaction.
 - Narrow SECURITY DEFINER functions for cross-tenant Outbox claim/ack/retry; the service login does not have BYPASSRLS.
 - RabbitMQ topic exchange plus a durable holding queue `autoflow.order.events`, persistent messages, publisher confirms and bounded exponential retry.
 - Separate Go Temporal worker consuming lifecycle events with manual acknowledgements, idempotent workflow IDs, dead-letter handling and durable SLA timers.
 - Separate Go Temporal worker consuming lifecycle events with manual acknowledgements, idempotent workflow IDs, dead-letter handling and durable SLA timers.
-- JWT audience `autoflow-order`, tenant claim and `orders:read`, `orders:write`, `orders:manage` roles.
+- JWT audience `autoflow-order`, tenant claim and `orders:read`, `orders:write`, `orders:manage` roles. Creation additionally requires `customers:read` and the `autoflow-customer` audience.
 - Readiness database check, OpenTelemetry business counters and producer spans that continue the originating HTTP trace through the Outbox into RabbitMQ.
 
 ## Lifecycle
@@ -46,6 +47,10 @@ See [the service README](../../apps/order-service/README.md) and [OpenAPI contra
 - Review/accept/reject/contract-pending/complete: `orders:manage`.
 - All API requests require a verified bearer token and tenant context from the authenticated principal.
 - Rejection requires a reason of at most 500 characters.
+
+## Customer reference and snapshot
+
+New order creation requires `customerId`. Order calls `GET /api/v1/customers/{customerId}` with the caller's bearer token and tenant context. Customer Service enforces its own audience, `customers:read` permission and PostgreSQL tenant RLS. Archived or unknown customers cannot be used for new orders. The Order database stores the UUID, customer profile version and a minimal immutable snapshot in its own database; there is deliberately no foreign key to Customer's database. Customer updates do not rewrite historical orders. The synchronous integration is implemented; a Customer Outbox/event publisher is not yet implemented.
 
 ## Data ownership
 
