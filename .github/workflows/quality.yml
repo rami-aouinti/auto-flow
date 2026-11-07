@@ -140,7 +140,7 @@ jobs:
           composer install --working-dir=apps/customer-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/customer-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer customer-service contract-service
+        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer customer-service contract-service contract-outbox-publisher
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
@@ -237,6 +237,7 @@ jobs:
           composer install --working-dir=apps/contract-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           php -l apps/contract-service/src/Presentation/Http/Controller/ContractController.php
           php -l apps/contract-service/src/Infrastructure/Health/ContractDatabaseHealthCheck.php
+          php -l apps/contract-service/bin/publish-outbox.php
       - name: Run PHPStan analysis
         run: composer phpstan
       - name: Run quality checks
