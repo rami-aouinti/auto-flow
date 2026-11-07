@@ -22,11 +22,12 @@ final readonly class OrderApplicationService
         string $offerId,
         string $quoteId,
         string $vehicleId,
+        string $customerId,
     ): ?array {
         $this->assertIdentifier($tenantId, 'tenantId');
         $this->assertIdentifier($actor, 'actor');
         $this->assertIdentifier($idempotencyKey, 'Idempotency-Key');
-        foreach ([$offerId, $quoteId, $vehicleId] as $identifier) {
+        foreach ([$offerId, $quoteId, $vehicleId, $customerId] as $identifier) {
             $this->assertIdentifier($identifier, 'upstream reference');
         }
 
@@ -37,6 +38,7 @@ final readonly class OrderApplicationService
             $offerId,
             $quoteId,
             $vehicleId,
+            $customerId,
         );
     }
 
@@ -49,12 +51,12 @@ final readonly class OrderApplicationService
         $this->assertIdentifier($actor, 'actor');
         $this->assertIdentifier($idempotencyKey, 'Idempotency-Key');
 
-        foreach (['offerId', 'quoteId', 'vehicleId', 'offerSnapshot', 'quoteSnapshot', 'vehicleSnapshot'] as $field) {
+        foreach (['offerId', 'quoteId', 'vehicleId', 'customerId', 'customerVersion', 'customerSnapshot', 'offerSnapshot', 'quoteSnapshot', 'vehicleSnapshot'] as $field) {
             if (!array_key_exists($field, $input)) {
                 throw new DomainException(sprintf('Missing required field: %s.', $field));
             }
         }
-        foreach (['offerSnapshot', 'quoteSnapshot', 'vehicleSnapshot'] as $field) {
+        foreach (['offerSnapshot', 'quoteSnapshot', 'vehicleSnapshot', 'customerSnapshot'] as $field) {
             if (!is_array($input[$field]) || $input[$field] === [] || array_is_list($input[$field])) {
                 throw new DomainException(sprintf('%s must be a non-empty JSON object.', $field));
             }
@@ -65,10 +67,19 @@ final readonly class OrderApplicationService
             }
         }
 
+        if (!is_string($input['customerId'])
+            || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/D', $input['customerId']) !== 1
+            || !is_int($input['customerVersion'])
+            || $input['customerVersion'] < 1
+            || ($input['customerSnapshot']['customerId'] ?? null) !== $input['customerId']) {
+            throw new DomainException('Customer reference, snapshot and version are invalid or inconsistent.');
+        }
+
         $snapshotSize = strlen(json_encode([
             $input['offerSnapshot'],
             $input['quoteSnapshot'],
             $input['vehicleSnapshot'],
+            $input['customerSnapshot'],
         ], JSON_THROW_ON_ERROR));
         if ($snapshotSize > 65536) {
             throw new DomainException('Combined order snapshots must not exceed 64 KiB.');
