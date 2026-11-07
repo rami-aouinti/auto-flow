@@ -111,6 +111,17 @@
             "access.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "customer-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-customer",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
         }
       ],
       "defaultClientScopes": [
@@ -232,6 +243,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-customer",
+      "name": "Customer Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -255,7 +276,10 @@
         "pricing:quote",
         "catalog:read",
         "orders:read",
-        "billing:read"
+        "billing:read",
+        "customers:read",
+        "customers:write",
+        "customers:manage"
       ],
       "attributes": {
         "tenant_id": [
@@ -318,7 +342,10 @@
         "payments:write",
         "payments:capture",
         "payments:refund",
-        "billing:read"
+        "billing:read",
+        "customers:read",
+        "customers:write",
+        "customers:manage"
       ],
       "attributes": {
         "tenant_id": [
@@ -380,6 +407,18 @@
       {
         "name": "billing:read",
         "description": "Read tenant invoices, credit notes and billing summaries"
+      },
+      {
+        "name": "customers:read",
+        "description": "Read tenant customer profiles and contact details"
+      },
+      {
+        "name": "customers:write",
+        "description": "Create and update customer profiles, addresses and consents"
+      },
+      {
+        "name": "customers:manage",
+        "description": "Archive customer profiles in the authenticated tenant"
       }
     ]
   }
