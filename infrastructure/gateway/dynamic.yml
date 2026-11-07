@@ -59,6 +59,12 @@ http:
       service: billing
       middlewares: [api-defaults]
 
+    customers:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/customers`)"
+      service: customers
+      middlewares: [api-defaults]
+
     catalog:
       entryPoints:
         - web
@@ -105,6 +111,16 @@ http:
         passHostHeader: true
         servers:
           - url: "http://billing-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    customers:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://customer-service:8080"
         healthCheck:
           path: /health/ready
           interval: 10s
