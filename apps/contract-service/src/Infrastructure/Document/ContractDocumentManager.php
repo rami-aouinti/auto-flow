@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\\Infrastructure\\Document;
+namespace App\Infrastructure\Document;
 
-use Dompdf\\Dompdf;
-use Dompdf\\Options;
-use Doctrine\\DBAL\\Connection;
-use Symfony\\Component\\Uid\\Uuid;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+use Doctrine\DBAL\Connection;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 final readonly class ContractDocumentManager
@@ -44,7 +44,7 @@ final readonly class ContractDocumentManager
                     return null;
                 }
                 if ($contract['status'] !== 'prepared') {
-                    throw new \\DomainException('Only prepared contracts can have a PDF document generated.');
+                    throw new \DomainException('Only prepared contracts can have a PDF document generated.');
                 }
 
                 $existing = $db->fetchAssociative(
@@ -60,7 +60,7 @@ final readonly class ContractDocumentManager
 
                 $snapshot = json_decode((string) $contract['legal_snapshot'], true, 512, JSON_THROW_ON_ERROR);
                 if (!is_array($snapshot) || $snapshot === []) {
-                    throw new \\UnexpectedValueException('Contract legal snapshot is invalid.');
+                    throw new \UnexpectedValueException('Contract legal snapshot is invalid.');
                 }
                 $pdf = $this->render($contractId, $contract, $snapshot);
                 $checksum = hash('sha256', $pdf);
@@ -69,22 +69,22 @@ final readonly class ContractDocumentManager
                 $storageKey = $tenantDirectory . '/' . $contractId . '/contract-v' . $version . '.pdf';
                 $directory = rtrim($this->storagePath, '/') . '/' . $tenantDirectory . '/' . $contractId;
                 if (!is_dir($directory) && !mkdir($directory, 0770, true) && !is_dir($directory)) {
-                    throw new \\RuntimeException('Could not create the contract document directory.');
+                    throw new \RuntimeException('Could not create the contract document directory.');
                 }
 
                 $finalPath = $directory . '/contract-v' . $version . '.pdf';
                 $temporaryPath = $finalPath . '.' . bin2hex(random_bytes(8)) . '.tmp';
                 if (file_put_contents($temporaryPath, $pdf, LOCK_EX) !== strlen($pdf)) {
                     @unlink($temporaryPath);
-                    throw new \\RuntimeException('Could not persist the generated PDF.');
+                    throw new \RuntimeException('Could not persist the generated PDF.');
                 }
                 if (!rename($temporaryPath, $finalPath)) {
                     @unlink($temporaryPath);
-                    throw new \\RuntimeException('Could not atomically publish the generated PDF.');
+                    throw new \RuntimeException('Could not atomically publish the generated PDF.');
                 }
 
                 $documentId = Uuid::v7()->toRfc4122();
-                $generatedAt = (new \\DateTimeImmutable())->format(DATE_ATOM);
+                $generatedAt = (new \DateTimeImmutable())->format(DATE_ATOM);
                 $db->insert('contract_documents', [
                     'tenant_id' => $tenant,
                     'document_id' => $documentId,
@@ -231,18 +231,18 @@ final readonly class ContractDocumentManager
     private function metadata(array $row, string $contractId): array
     {
         $key = (string) $row['storage_key'];
-        if (preg_match('~^[a-f0-9]{64}/[0-9a-f-]{36}/contract-v[1-9][0-9]*\\.pdf$~D', $key) !== 1) {
-            throw new \\UnexpectedValueException('Stored contract document key is invalid.');
+        if (preg_match('~^[a-f0-9]{64}/[0-9a-f-]{36}/contract-v[1-9][0-9]*\.pdf$~D', $key) !== 1) {
+            throw new \UnexpectedValueException('Stored contract document key is invalid.');
         }
         $root = realpath($this->storagePath);
         $path = rtrim($this->storagePath, '/') . '/' . $key;
         $realPath = realpath($path);
         if ($root === false || $realPath === false || !str_starts_with($realPath, $root . DIRECTORY_SEPARATOR)) {
-            throw new \\RuntimeException('Stored contract PDF is missing.');
+            throw new \RuntimeException('Stored contract PDF is missing.');
         }
         $checksum = hash_file('sha256', $realPath);
         if (!is_string($checksum) || !hash_equals((string) $row['checksum_sha256'], $checksum)) {
-            throw new \\RuntimeException('Stored contract PDF failed its SHA-256 integrity check.');
+            throw new \RuntimeException('Stored contract PDF failed its SHA-256 integrity check.');
         }
 
         return [
