@@ -24,6 +24,12 @@ const form = ref<Record<string, any>>({});
 const total = ref(0);
 const limit = 100;
 const title = computed(() => resources.find((item) => item.key === resource.value)?.label ?? 'Catalogue');
+const search = ref('');
+const filteredRows = computed(() => {
+  const term = search.value.trim().toLocaleLowerCase('de');
+  if (!term) return rows.value;
+  return rows.value.filter((row) => Object.values(row).some((value) => String(value ?? '').toLocaleLowerCase('de').includes(term)));
+});
 
 function emptyForm(): Record<string, any> {
   if (resource.value === 'manufacturers') return { code: '', name: '', status: 'draft' };
@@ -143,76 +149,147 @@ onMounted(() => { form.value = emptyForm(); void load(); });
 </script>
 
 <template>
-  <section class="catalog-admin">
-    <div class="admin-heading">
-      <div><p class="eyebrow">AUTOFLOW · CATALOG ADMIN</p><h1>Fahrzeugkatalog <em>verwalten.</em></h1><p>Stammdaten für Hersteller, Modellreihen, Generationen und technische Varianten.</p></div>
-      <a class="admin-back" href="/">← Zum Fahrzeugkatalog</a>
+  <div class="catalog-admin-page">
+    <div class="d-flex flex-wrap align-start justify-space-between ga-4 mb-7">
+      <div>
+        <div class="text-overline text-medium-emphasis font-weight-bold">STAMMDATEN · VEHICLE CATALOG</div>
+        <h1 class="text-h4 text-md-h3 font-weight-bold mt-1">Fahrzeugkatalog</h1>
+        <p class="text-body-2 text-medium-emphasis mt-2">Verwalte die Datenhierarchie von Herstellern bis zu technischen Fahrzeugvarianten.</p>
+      </div>
+      <v-btn to="/admin" variant="tonal" prepend-icon="mdi-arrow-left" color="primary">Zur Übersicht</v-btn>
     </div>
-    <div class="admin-tabs">
-      <button v-for="item in resources" :key="item.key" :class="{ active: resource === item.key }" @click="resource = item.key">{{ item.label }}</button>
-    </div>
-    <p v-if="error" class="admin-error">{{ error }}</p>
-    <p v-if="notice" class="admin-notice">{{ notice }}</p>
-    <div class="admin-layout">
-      <section class="admin-panel">
-        <div class="admin-panel-title"><div><p class="eyebrow">{{ editingId ? 'BEARBEITEN' : 'NEUER EINTRAG' }}</p><h2>{{ editingId ? 'Eintrag ändern' : title + ' hinzufügen' }}</h2></div><button v-if="editingId" class="admin-secondary" @click="resetForm">Abbrechen</button></div>
-        <form class="admin-form" @submit.prevent="save">
-          <template v-if="resource === 'manufacturers'">
-            <label>Code<input v-model.trim="form.code" required maxlength="40" placeholder="VOLKSWAGEN" /></label>
-            <label>Name<input v-model.trim="form.name" required maxlength="120" placeholder="Volkswagen" /></label>
-          </template>
-          <template v-else-if="resource === 'models'">
-            <label>Hersteller<select v-model="form.manufacturerId" required><option value="" disabled>Hersteller auswählen</option><option v-for="item in manufacturers" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
-            <label>Modellname<input v-model.trim="form.name" required maxlength="120" placeholder="Golf" /></label>
-          </template>
-          <template v-else-if="resource === 'generations'">
-            <label>Modell<select v-model="form.modelId" required><option value="" disabled>Modell auswählen</option><option v-for="item in models" :key="item.id" :value="item.id">{{ item.manufacturerName }} · {{ item.name }}</option></select></label>
-            <label>Generation<input v-model.trim="form.name" required maxlength="80" placeholder="VIII" /></label>
-            <div class="admin-two"><label>Baujahr ab<input v-model="form.productionStartYear" type="number" min="1886" max="2100" /></label><label>Baujahr bis<input v-model="form.productionEndYear" type="number" min="1886" max="2100" /></label></div>
-          </template>
-          <template v-else>
-            <label>Generation<select v-model="form.generationId" required><option value="" disabled>Generation auswählen</option><option v-for="item in generations" :key="item.id" :value="item.id">{{ item.manufacturerName }} · {{ item.modelName }} · {{ item.name }}</option></select></label>
-            <label>Variantenname<input v-model.trim="form.name" required maxlength="160" placeholder="2.0 TDI DSG" /></label>
-            <label>Hersteller-Referenzcode<input v-model.trim="form.manufacturerCode" maxlength="64" placeholder="Optional" /></label>
-            <div class="admin-two">
-              <label>Kraftstoff<select v-model="form.fuelType"><option v-for="v in ['petrol','diesel','electric','hybrid','plug_in_hybrid','hydrogen','lpg','cng','other']" :key="v" :value="v">{{ v }}</option></select></label>
-              <label>Antrieb<select v-model="form.powertrain"><option v-for="v in ['ice','mhev','hev','phev','bev','fcev','other']" :key="v" :value="v">{{ v }}</option></select></label>
-              <label>Karosserie<select v-model="form.bodyStyle"><option v-for="v in ['suv','sedan','hatchback','estate','coupe','convertible','van','pickup','other']" :key="v" :value="v">{{ v }}</option></select></label>
-              <label>Getriebe<select v-model="form.transmission"><option v-for="v in ['manual','automatic','single_speed','other']" :key="v" :value="v">{{ v }}</option></select></label>
-            </div>
-            <div class="admin-two">
-              <label>Leistung (kW)<input v-model="form.powerKw" type="number" min="1" max="10000" /></label>
-              <label>Hubraum (cc)<input v-model="form.displacementCc" type="number" min="1" max="20000" /></label>
-              <label>Sitze<input v-model="form.seats" type="number" min="1" max="20" /></label>
-              <label>Türen<input v-model="form.doors" type="number" min="1" max="8" /></label>
-              <label>Gewicht (kg)<input v-model="form.curbWeightKg" type="number" min="1" /></label>
-              <label>CO₂ (g/km)<input v-model="form.co2EmissionGPerKm" type="number" min="0" max="2000" /></label>
-              <label>Länge (mm)<input v-model="form.lengthMm" type="number" min="1" /></label>
-              <label>Breite (mm)<input v-model="form.widthMm" type="number" min="1" /></label>
-              <label>Höhe (mm)<input v-model="form.heightMm" type="number" min="1" /></label>
-            </div>
-          </template>
-          <label v-if="editingId">Status<select v-model="form.status"><option value="draft">draft</option><option value="published">published</option><option value="discontinued">discontinued</option><option value="archived">archived</option></select></label>
-          <div class="admin-actions"><button class="admin-primary" :disabled="saving">{{ saving ? 'Speichern …' : editingId ? 'Änderungen speichern' : 'Eintrag erstellen' }}</button><button v-if="editingId" type="button" class="admin-secondary" @click="resetForm">Zurücksetzen</button></div>
-        </form>
-        <p class="admin-hint">Neue Datensätze werden zunächst als Entwurf angelegt. Archivieren ist ein Soft-Delete, damit bestehende Aufträge und Angebote ihre Fahrzeugreferenzen behalten.</p>
-      </section>
-      <section class="admin-panel">
-        <div class="admin-panel-title"><div><p class="eyebrow">MASTER DATA</p><h2>{{ title }} <small>({{ total }})</small></h2></div><button class="admin-secondary" :disabled="loading" @click="load">↻ Aktualisieren</button></div>
-        <p v-if="loading" class="admin-empty">Einträge werden geladen …</p>
-        <p v-else-if="!rows.length" class="admin-empty">Noch keine Einträge vorhanden.</p>
-        <div v-else class="admin-records">
-          <article v-for="row in rows" :key="row.id" class="admin-record" :class="{ selected: editingId === row.id }">
-            <div class="admin-record-main"><b>{{ displayName(row) }}</b><small>{{ row.manufacturerName || row.modelName || row.code || row.id }}</small><span class="admin-status">{{ row.status }}</span></div>
-            <div class="admin-record-actions"><button @click="startEdit(row)">Bearbeiten</button><button class="archive" :disabled="row.status === 'archived'" @click="archive(row)">Archivieren</button></div>
-          </article>
+
+    <v-row class="mb-2">
+      <v-col cols="12" sm="4">
+        <v-card rounded="xl" border elevation="0"><v-card-text class="d-flex align-center ga-3 pa-4"><v-avatar color="primary" variant="tonal" rounded="lg"><v-icon icon="mdi-domain" /></v-avatar><div><div class="text-caption text-medium-emphasis">Aktueller Bereich</div><div class="text-subtitle-1 font-weight-bold">{{ title }}</div></div></v-card-text></v-card>
+      </v-col>
+      <v-col cols="12" sm="4">
+        <v-card rounded="xl" border elevation="0"><v-card-text class="d-flex align-center ga-3 pa-4"><v-avatar color="info" variant="tonal" rounded="lg"><v-icon icon="mdi-database-outline" /></v-avatar><div><div class="text-caption text-medium-emphasis">Gefundene Einträge</div><div class="text-h5 font-weight-bold">{{ total.toLocaleString('de-DE') }}</div></div></v-card-text></v-card>
+      </v-col>
+      <v-col cols="12" sm="4">
+        <v-card rounded="xl" border elevation="0"><v-card-text class="d-flex align-center ga-3 pa-4"><v-avatar color="success" variant="tonal" rounded="lg"><v-icon icon="mdi-shield-check-outline" /></v-avatar><div><div class="text-caption text-medium-emphasis">Datenintegrität</div><div class="text-subtitle-1 font-weight-bold">Referenzsicher</div></div></v-card-text></v-card>
+      </v-col>
+    </v-row>
+
+    <v-card rounded="xl" border elevation="0" class="overflow-hidden">
+      <div class="catalog-toolbar">
+        <div class="px-5 pt-5">
+          <div class="text-overline text-medium-emphasis font-weight-bold">MASTER DATA MANAGEMENT</div>
+          <div class="text-h6 font-weight-bold">Katalogstruktur</div>
+          <div class="text-caption text-medium-emphasis mt-1">Wähle einen Datentyp, um Einträge zu durchsuchen oder zu bearbeiten.</div>
         </div>
-        <p class="admin-hint">Die Administration benötigt den Keycloak-Scope <code>catalog:manage</code>. Der Backend-Service prüft die Berechtigung für jede Änderung.</p>
-      </section>
-    </div>
-  </section>
+        <v-tabs v-model="resource" color="primary" class="catalog-tabs px-3 mt-3" show-arrows>
+          <v-tab v-for="item in resources" :key="item.key" :value="item.key" :prepend-icon="item.key === 'manufacturers' ? 'mdi-domain' : item.key === 'models' ? 'mdi-car-side' : item.key === 'generations' ? 'mdi-calendar-range' : 'mdi-cog-outline'">{{ item.label }}</v-tab>
+        </v-tabs>
+      </div>
+      <v-divider />
+      <v-alert v-if="error" type="error" variant="tonal" density="comfortable" class="ma-4">{{ error }}</v-alert>
+      <v-alert v-if="notice" type="success" variant="tonal" density="comfortable" class="ma-4">{{ notice }}</v-alert>
+
+      <v-row class="ma-0">
+        <v-col cols="12" xl="4" class="pa-4 pa-md-6">
+          <div class="d-flex align-center justify-space-between mb-4">
+            <div><div class="text-overline text-medium-emphasis font-weight-bold">{{ editingId ? 'DATENSATZ BEARBEITEN' : 'NEUER DATENSATZ' }}</div><div class="text-h6 font-weight-bold">{{ editingId ? 'Eintrag bearbeiten' : title + ' hinzufügen' }}</div></div>
+            <v-btn v-if="editingId" icon="mdi-close" variant="text" size="small" aria-label="Bearbeitung abbrechen" @click="resetForm" />
+          </div>
+          <form class="d-grid ga-3" @submit.prevent="save">
+            <template v-if="resource === 'manufacturers'">
+              <v-text-field v-model.trim="form.code" label="Hersteller-Code" placeholder="VOLKSWAGEN" maxlength="40" prepend-inner-icon="mdi-identifier" required />
+              <v-text-field v-model.trim="form.name" label="Herstellername" placeholder="Volkswagen" maxlength="120" prepend-inner-icon="mdi-domain" required />
+            </template>
+            <template v-else-if="resource === 'models'">
+              <v-select v-model="form.manufacturerId" :items="manufacturers" item-title="name" item-value="id" label="Hersteller" prepend-inner-icon="mdi-domain" required />
+              <v-text-field v-model.trim="form.name" label="Modellname" placeholder="Golf" prepend-inner-icon="mdi-car-side" required />
+            </template>
+            <template v-else-if="resource === 'generations'">
+              <v-select v-model="form.modelId" :items="models" :item-title="(item: any) => [item.manufacturerName, item.name].filter(Boolean).join(' · ')" item-value="id" label="Modell" prepend-inner-icon="mdi-car-side" required />
+              <v-text-field v-model.trim="form.name" label="Generationsbezeichnung" placeholder="VIII" required />
+              <v-row dense>
+                <v-col cols="6"><v-text-field v-model="form.productionStartYear" label="Baujahr ab" type="number" min="1886" max="2100" /></v-col>
+                <v-col cols="6"><v-text-field v-model="form.productionEndYear" label="Baujahr bis" type="number" min="1886" max="2100" /></v-col>
+              </v-row>
+            </template>
+            <template v-else>
+              <v-select v-model="form.generationId" :items="generations" :item-title="(item: any) => [item.manufacturerName, item.modelName, item.name].filter(Boolean).join(' · ')" item-value="id" label="Modellgeneration" prepend-inner-icon="mdi-car-cog" required />
+              <v-text-field v-model.trim="form.name" label="Variantenname" placeholder="2.0 TDI DSG" required />
+              <v-text-field v-model.trim="form.manufacturerCode" label="Hersteller-Referenzcode" />
+              <div class="text-subtitle-2 font-weight-bold mt-1">Antrieb & Fahrzeugtyp</div>
+              <v-row dense>
+                <v-col cols="6"><v-select v-model="form.fuelType" :items="['petrol','diesel','electric','hybrid','plug_in_hybrid','hydrogen','lpg','cng','other']" label="Kraftstoff" /></v-col>
+                <v-col cols="6"><v-select v-model="form.powertrain" :items="['ice','mhev','hev','phev','bev','fcev','other']" label="Antriebsart" /></v-col>
+                <v-col cols="6"><v-select v-model="form.bodyStyle" :items="['suv','sedan','hatchback','estate','coupe','convertible','van','pickup','other']" label="Karosserie" /></v-col>
+                <v-col cols="6"><v-select v-model="form.transmission" :items="['manual','automatic','single_speed','other']" label="Getriebe" /></v-col>
+              </v-row>
+              <div class="text-subtitle-2 font-weight-bold mt-1">Technische Daten</div>
+              <v-row dense>
+                <v-col cols="6"><v-text-field v-model="form.powerKw" label="Leistung (kW)" type="number" min="1" /></v-col>
+                <v-col cols="6"><v-text-field v-model="form.displacementCc" label="Hubraum (cc)" type="number" min="1" /></v-col>
+                <v-col cols="6"><v-text-field v-model="form.seats" label="Sitze" type="number" min="1" /></v-col>
+                <v-col cols="6"><v-text-field v-model="form.doors" label="Türen" type="number" min="1" /></v-col>
+                <v-col cols="6"><v-text-field v-model="form.curbWeightKg" label="Gewicht (kg)" type="number" min="1" /></v-col>
+                <v-col cols="6"><v-text-field v-model="form.co2EmissionGPerKm" label="CO₂ (g/km)" type="number" min="0" /></v-col>
+                <v-col cols="4"><v-text-field v-model="form.lengthMm" label="Länge" type="number" min="1" /></v-col>
+                <v-col cols="4"><v-text-field v-model="form.widthMm" label="Breite" type="number" min="1" /></v-col>
+                <v-col cols="4"><v-text-field v-model="form.heightMm" label="Höhe" type="number" min="1" /></v-col>
+              </v-row>
+            </template>
+            <v-select v-if="editingId" v-model="form.status" :items="['draft','published','discontinued','archived']" label="Status" />
+            <div class="d-flex flex-wrap ga-2 mt-2">
+              <v-btn type="submit" color="primary" :loading="saving" prepend-icon="mdi-content-save-outline">{{ editingId ? 'Änderungen speichern' : 'Eintrag erstellen' }}</v-btn>
+              <v-btn v-if="editingId" variant="text" @click="resetForm">Abbrechen</v-btn>
+            </div>
+          </form>
+          <v-alert type="info" variant="tonal" density="compact" class="mt-5 text-caption">Neue Datensätze werden als Entwurf angelegt. Archivieren ist ein Soft-Delete, damit bestehende Angebote und Aufträge ihre Referenzen behalten.</v-alert>
+        </v-col>
+
+        <v-divider vertical class="d-none d-xl-flex" />
+        <v-col cols="12" xl="8" class="pa-4 pa-md-6 catalog-list-column">
+          <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-4">
+            <div><div class="text-overline text-medium-emphasis font-weight-bold">DATENSATZÜBERSICHT</div><div class="text-h6 font-weight-bold">{{ title }} <span class="text-medium-emphasis">({{ total }})</span></div></div>
+            <v-btn variant="tonal" color="primary" prepend-icon="mdi-refresh" :loading="loading" @click="load">Aktualisieren</v-btn>
+          </div>
+          <v-text-field v-model="search" label="Einträge durchsuchen" placeholder="Name, Code oder ID ..." prepend-inner-icon="mdi-magnify" clearable hide-details class="mb-4" />
+          <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-3" />
+          <div v-if="!loading && filteredRows.length === 0" class="empty-state">
+            <v-icon icon="mdi-database-search-outline" size="42" color="medium-emphasis" />
+            <div class="text-subtitle-1 font-weight-bold mt-3">{{ rows.length ? 'Keine passenden Einträge' : 'Noch keine Einträge vorhanden' }}</div>
+            <div class="text-body-2 text-medium-emphasis mt-1">{{ rows.length ? 'Passe deinen Suchbegriff an.' : 'Lege den ersten Datensatz über das Formular an.' }}</div>
+          </div>
+          <v-table v-else density="comfortable" hover class="catalog-table">
+            <thead><tr><th>Eintrag</th><th>Zuordnung</th><th>Status</th><th class="text-right">Aktionen</th></tr></thead>
+            <tbody>
+              <tr v-for="row in filteredRows" :key="row.id" :class="{ 'selected-row': editingId === row.id }">
+                <td><div class="font-weight-bold">{{ displayName(row) }}</div><div class="text-caption text-medium-emphasis text-truncate record-id">{{ row.id }}</div></td>
+                <td><span class="text-body-2">{{ row.manufacturerName || row.modelName || row.code || '—' }}</span></td>
+                <td><v-chip size="small" :color="row.status === 'published' ? 'success' : row.status === 'archived' ? 'default' : 'warning'" variant="tonal">{{ row.status || 'unknown' }}</v-chip></td>
+                <td class="text-right text-no-wrap">
+                  <v-btn icon="mdi-pencil-outline" size="small" variant="text" color="primary" :aria-label="'Bearbeiten: ' + displayName(row)" @click="startEdit(row)" />
+                  <v-btn icon="mdi-archive-outline" size="small" variant="text" color="error" :disabled="row.status === 'archived'" :aria-label="'Archivieren: ' + displayName(row)" @click="archive(row)" />
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+          <div class="d-flex align-center justify-space-between mt-4 flex-wrap ga-2">
+            <span class="text-caption text-medium-emphasis">Anzeige: {{ filteredRows.length }} von {{ total }} geladenen Datensätzen</span>
+            <v-chip size="small" color="info" variant="tonal" prepend-icon="mdi-lock-check-outline">Scope: catalog:manage</v-chip>
+          </div>
+        </v-col>
+      </v-row>
+    </v-card>
+  </div>
 </template>
 
 <style scoped>
-.catalog-admin{display:grid;gap:18px}.admin-heading{display:flex;justify-content:space-between;align-items:end;gap:20px}.admin-heading h1{font:800 clamp(32px,4vw,48px) Manrope;margin:0;letter-spacing:-2px}.admin-heading h1 em{font-style:normal;color:#82939b}.admin-heading p:last-child{font-size:11px;color:#91a1a9}.admin-back{color:#c4d0d5;text-decoration:none;font-size:11px;border:1px solid #40525c;padding:10px 12px;border-radius:7px}.admin-tabs{display:flex;gap:8px;flex-wrap:wrap}.admin-tabs button,.admin-secondary{background:transparent;border:1px solid #40525c;color:#c4d0d5;border-radius:7px;padding:9px 12px;font-size:10px;cursor:pointer}.admin-tabs button.active{background:var(--accent);border-color:var(--accent);color:#17232a}.admin-layout{display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:16px;align-items:start}.admin-panel{background:#18252e;border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}.admin-panel-title{display:flex;justify-content:space-between;align-items:center;gap:12px}.admin-panel-title h2{font:700 19px Manrope;margin:0}.admin-panel-title h2 small{color:#82939b;font-size:11px}.admin-form{display:grid;gap:12px;margin-top:18px}.admin-form label{display:grid;gap:6px;color:#aebbc1;font-size:10px}.admin-form input,.admin-form select{background:#101a22;border:1px solid #354751;border-radius:7px;padding:10px;color:#edf2f4;min-width:0;width:100%}.admin-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.admin-actions{display:flex;gap:8px}.admin-primary{background:var(--accent);border:0;color:#18232a;border-radius:7px;padding:11px 14px;font-size:10px;font-weight:700;cursor:pointer}.admin-primary:disabled{opacity:.5}.admin-hint,.admin-empty{font-size:10px;line-height:1.6;color:#91a1a9}.admin-records{display:grid;gap:8px;max-height:650px;overflow:auto;margin-top:12px}.admin-record{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px;background:#101a22;border:1px solid #2d404a;border-radius:8px}.admin-record.selected{border-color:var(--accent)}.admin-record-main{min-width:0;display:grid;gap:5px}.admin-record-main b{font-size:11px;overflow-wrap:anywhere}.admin-record-main small{font-size:9px;color:#82939b;overflow-wrap:anywhere}.admin-status{font-size:9px;color:#c5d2d7}.admin-record-actions{display:flex;gap:6px;flex-shrink:0}.admin-record-actions button{background:transparent;border:1px solid #40525c;color:#dce5e8;border-radius:5px;padding:6px 8px;font-size:9px;cursor:pointer}.admin-record-actions .archive{border-color:#74494c;color:#f3a6a9}.admin-error,.admin-notice{padding:11px;border-radius:7px;font-size:10px}.admin-error{background:#432c30;color:#f3a6a9}.admin-notice{background:#233a31;color:#b6e2c7}@media(max-width:900px){.admin-layout{grid-template-columns:1fr}.admin-heading{align-items:start;flex-direction:column}}@media(max-width:560px){.admin-panel{padding:14px}.admin-record{align-items:flex-start;flex-direction:column}.admin-two{grid-template-columns:1fr}.admin-record-actions{width:100%}}
+.catalog-admin-page{max-width:1500px;margin:0 auto}
+.catalog-toolbar{background:rgba(var(--v-theme-surface-variant),.18)}
+.catalog-tabs{min-height:54px}
+.catalog-list-column{min-width:0}
+.catalog-table{background:transparent}
+.catalog-table th{font-size:10px!important;font-weight:800!important;letter-spacing:.6px;color:rgba(var(--v-theme-on-surface),.65)!important;text-transform:uppercase}
+.catalog-table td{height:66px!important}
+.record-id{max-width:260px}
+.selected-row{background:rgba(var(--v-theme-primary),.07)}
+.empty-state{min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border:1px dashed rgba(var(--v-theme-on-surface),.2);border-radius:14px;padding:25px}
+:deep(.v-field){border-radius:10px}
+@media(max-width:600px){.catalog-tabs :deep(.v-tab){font-size:10px;padding-inline:10px}}
 </style>
