@@ -128,3 +128,96 @@ GRANT UPDATE (
     document_checksum, signature_provider, provider_envelope_id
 ) ON contract_records TO autoflow_contract;
 GRANT SELECT, INSERT ON contract_audit_events, contract_idempotency_keys, contract_transition_idempotency, contract_outbox TO autoflow_contract;
+
+
+-- The publisher has no direct table access. SECURITY DEFINER functions run under
+-- a narrowly scoped owner role and use a fixed search_path.
+CREATE OR REPLACE FUNCTION public.contract_outbox_claim()
+RETURNS TABLE (event_id UUID, event_type VARCHAR(100), payload JSONB, attempts INTEGER)
+LANGUAGE sql SECURITY DEFINER
+SET search_path = pg_catalog, public
+SET row_security = off
+AS $function$
+    WITH candidate AS (
+        SELECT o.event_id
+        FROM public.contract_outbox o
+        WHERE o.published_at IS NULL
+          AND o.failed_at IS NULL
+          AND o.next_attempt_at <= CURRENT_TIMESTAMP
+          AND (o.locked_until IS NULL OR o.locked_until < CURRENT_TIMESTAMP)
+        ORDER BY o.occurred_at
+        FOR UPDATE SKIP LOCKED
+        LIMIT 1
+    )
+    UPDATE public.contract_outbox o
+    SET locked_until = CURRENT_TIMESTAMP + INTERVAL '30 seconds',
+        attempts = o.attempts + 1
+    FROM candidate c
+    WHERE o.event_id = c.event_id
+    RETURNING o.event_id, o.event_type, o.payload, o.attempts
+$function$;
+
+CREATE OR REPLACE FUNCTION public.contract_outbox_mark_published(p_event_id UUID)
+RETURNS VOID
+LANGUAGE sql SECURITY DEFINER
+SET search_path = pg_catalog, public
+SET row_security = off
+AS $function$
+    UPDATE public.contract_outbox
+    SET published_at = CURRENT_TIMESTAMP,
+        locked_until = NULL,
+        last_error = NULL
+    WHERE event_id = p_event_id
+$function$;
+
+CREATE OR REPLACE FUNCTION public.contract_outbox_schedule_retry(
+    p_event_id UUID,
+    p_error VARCHAR(500)
+)
+RETURNS VOID
+LANGUAGE sql SECURITY DEFINER
+SET search_path = pg_catalog, public
+SET row_security = off
+AS $function$
+    UPDATE public.contract_outbox
+    SET locked_until = NULL,
+        failed_at = CASE WHEN attempts >= 10 THEN CURRENT_TIMESTAMP ELSE NULL END,
+        next_attempt_at = CASE
+            WHEN attempts >= 10 THEN next_attempt_at
+            ELSE CURRENT_TIMESTAMP
+                + make_interval(secs => LEAST(300, POWER(2, LEAST(attempts, 8))::integer))
+        END,
+        last_error = p_error
+    WHERE event_id = p_event_id
+$function$;
+
+DO $publisher_role$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'autoflow_contract_outbox_owner') THEN
+        CREATE ROLE autoflow_contract_outbox_owner
+            NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE BYPASSRLS;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'autoflow_contract_publisher') THEN
+        CREATE ROLE autoflow_contract_publisher
+            LOGIN PASSWORD 'local-only-contract-publisher-password'
+            NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+    END IF;
+END
+$publisher_role$;
+
+ALTER ROLE autoflow_contract_outbox_owner NOLOGIN BYPASSRLS;
+ALTER ROLE autoflow_contract_publisher
+    LOGIN PASSWORD 'local-only-contract-publisher-password'
+    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+GRANT CONNECT ON DATABASE autoflow TO autoflow_contract_publisher;
+GRANT USAGE ON SCHEMA public TO autoflow_contract_outbox_owner, autoflow_contract_publisher;
+GRANT SELECT, UPDATE ON public.contract_outbox TO autoflow_contract_outbox_owner;
+ALTER FUNCTION public.contract_outbox_claim() OWNER TO autoflow_contract_outbox_owner;
+ALTER FUNCTION public.contract_outbox_mark_published(UUID) OWNER TO autoflow_contract_outbox_owner;
+ALTER FUNCTION public.contract_outbox_schedule_retry(UUID, VARCHAR) OWNER TO autoflow_contract_outbox_owner;
+REVOKE ALL ON FUNCTION public.contract_outbox_claim() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.contract_outbox_mark_published(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.contract_outbox_schedule_retry(UUID, VARCHAR) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.contract_outbox_claim() TO autoflow_contract_publisher;
+GRANT EXECUTE ON FUNCTION public.contract_outbox_mark_published(UUID) TO autoflow_contract_publisher;
+GRANT EXECUTE ON FUNCTION public.contract_outbox_schedule_retry(UUID, VARCHAR) TO autoflow_contract_publisher;
