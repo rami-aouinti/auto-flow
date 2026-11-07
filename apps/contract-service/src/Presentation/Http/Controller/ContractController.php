@@ -46,6 +46,33 @@ final readonly class ContractController
                 return $this->problem(400, 'A valid Idempotency-Key is required.');
             }
 
+            $requestHash = hash('sha256', json_encode([
+                'orderId' => $orderId,
+                'contractType' => $type,
+                'contractVersion' => $version,
+            ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+
+            // Replay a committed command before calling Order Service. A retry must
+            // remain safe even if the order has since moved to another lifecycle state.
+            $replay = $this->db->transactional(function (Connection $db) use ($tenant, $principal, $key, $requestHash): ?JsonResponse {
+                $this->setTenant($db, $tenant);
+                $existing = $db->fetchAssociative(
+                    'SELECT request_hash, response_body FROM contract_idempotency_keys
+                     WHERE tenant_id = :tenant AND actor_id = :actor AND idempotency_key = :key',
+                    ['tenant' => $tenant, 'actor' => $principal->subject, 'key' => $key],
+                );
+                if (!is_array($existing)) {
+                    return null;
+                }
+                if (!hash_equals((string) $existing['request_hash'], $requestHash)) {
+                    return $this->problem(409, 'Idempotency-Key was used with a different contract command.');
+                }
+                return new JsonResponse($this->decode($existing['response_body']), 200, ['Cache-Control' => 'no-store']);
+            });
+            if ($replay instanceof JsonResponse) {
+                return $replay;
+            }
+
             // The browser never supplies legal snapshots. They are captured from the
             // authoritative Order API using the caller's verified token and tenant.
             $order = $this->fetchAcceptedOrder($request, $orderId, $tenant);
@@ -53,11 +80,6 @@ final readonly class ContractController
                 return $order;
             }
             $snapshot = $this->legalSnapshot($order);
-            $requestHash = hash('sha256', json_encode([
-                'orderId' => $orderId,
-                'contractType' => $type,
-                'contractVersion' => $version,
-            ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
 
             return $this->db->transactional(function (Connection $db) use (
                 $tenant, $principal, $orderId, $type, $version, $key, $requestHash, $snapshot,
