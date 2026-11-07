@@ -65,7 +65,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                 || ($response['vehicleId'] ?? null) !== $vehicleId
                 || ($response['customerId'] ?? null) !== $customerId) {
                 throw new IdempotencyConflictException(
-                    'Idempotency-Key was already used with different Offer, quote or vehicle references.',
+                    'Idempotency-Key was already used with different Offer, quote, vehicle or customer references.',
                 );
             }
             return $response;
