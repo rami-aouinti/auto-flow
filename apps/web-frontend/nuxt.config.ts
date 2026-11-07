@@ -9,6 +9,7 @@ export default defineNuxtConfig({
   ],
   vuetify: {
     vuetifyOptions: {
+      icons: { defaultSet: 'mdi' },
       theme: {
         defaultTheme: 'dark',
         themes: {
