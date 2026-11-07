@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: contract-config
+  namespace: autoflow
+data:
+  APP_ENV: "prod"
+  APP_DEBUG: "0"
+  CONTRACT_ORDER_SERVICE_URL: "http://order-service:8080"
+  CONTRACT_DOCUMENT_STORAGE_PATH: "/var/lib/autoflow/contracts"
+  AUTOFLOW_JWT_ISSUER: "http://keycloak:8080/realms/autoflow"
+  AUTOFLOW_JWT_JWKS_URI: "http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs"
+  DOCUSIGN_OAUTH_HOST: "account-d.docusign.com"
+  DOCUSIGN_API_BASE_URL: "https://demo.docusign.net/restapi"
+  DOCUSIGN_PRIVATE_KEY_PATH: "/var/run/secrets/docusign/private.pem"
+  OTEL_SERVICE_NAME: "autoflow-contract-service"
+  OTEL_RESOURCE_ATTRIBUTES: "service.namespace=autoflow,deployment.environment=production"
+  OTEL_PHP_AUTOLOAD_ENABLED: "true"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://tempo:4318"
