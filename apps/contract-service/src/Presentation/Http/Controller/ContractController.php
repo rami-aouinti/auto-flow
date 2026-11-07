@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Uid\Uuid;
+use DomainException;
 use Throwable;
 
 #[Route('/api/v1/contracts')]
@@ -154,7 +155,7 @@ final readonly class ContractController
             return $this->problem(400, $exception->getMessage());
         } catch (UniqueConstraintViolationException) {
             return $this->problem(409, 'A contract already exists for this order, type and version.');
-        } catch (\\DomainException $exception) {
+        } catch (DomainException $exception) {
             return $this->problem(422, $exception->getMessage());
         } catch (Throwable) {
             return $this->problem(503, 'Contract creation is temporarily unavailable.');
@@ -311,7 +312,16 @@ final readonly class ContractController
                 return $this->problem(400, 'A valid Idempotency-Key is required.');
             }
             return $this->db->transactional(
-                function (Connection $db) use ($tenant, $principal, $contractId, $from, $to, $event, $eventType, $key): JsonResponse {
+                function (Connection $db) use (
+                    $tenant,
+                    $principal,
+                    $contractId,
+                    $from,
+                    $to,
+                    $event,
+                    $eventType,
+                    $key,
+                ): JsonResponse {
                 $this->setTenant($db, $tenant);
                 $db->executeQuery(
                     'SELECT pg_advisory_xact_lock(hashtextextended(:lock_key, 0))',
