@@ -1,0 +1,7 @@
+@import '../../../src/style.css';
+
+html, body, #__nuxt { min-height: 100%; }
+body { background: #101820; }
+.v-application { font-family: 'DM Sans', sans-serif; background: #101820; }
+.v-btn { letter-spacing: .02em; }
+.v-field, .v-card, .v-table { border-radius: 9px; }
