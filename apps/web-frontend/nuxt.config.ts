@@ -4,7 +4,6 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   modules: ['vuetify-nuxt-module'],
   css: [
-    'vuetify/styles',
     '@mdi/font/css/materialdesignicons.css',
     '~/assets/css/main.css',
   ],
@@ -14,7 +13,6 @@ export default defineNuxtConfig({
         defaultTheme: 'dark',
         themes: {
           dark: {
-            dark: true,
             colors: {
               background: '#101820',
               surface: '#17232d',
