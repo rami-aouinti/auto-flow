@@ -36,6 +36,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         string $offerId,
         string $quoteId,
         string $vehicleId,
+        string $customerId,
     ): ?array {
         return $this->connection->transactional(function (Connection $db) use (
             $tenantId,
@@ -44,6 +45,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
             $offerId,
             $quoteId,
             $vehicleId,
+            $customerId,
         ): ?array {
             $this->setTenant($db, $tenantId);
             $existing = $db->fetchAssociative(
@@ -60,7 +62,8 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
             $response = $this->decodeObject($existing['response_json']);
             if (($response['offerId'] ?? null) !== $offerId
                 || ($response['quoteId'] ?? null) !== $quoteId
-                || ($response['vehicleId'] ?? null) !== $vehicleId) {
+                || ($response['vehicleId'] ?? null) !== $vehicleId
+                || ($response['customerId'] ?? null) !== $customerId) {
                 throw new IdempotencyConflictException(
                     'Idempotency-Key was already used with different Offer, quote or vehicle references.',
                 );
@@ -79,6 +82,7 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
             'offerId' => $input['offerId'],
             'quoteId' => $input['quoteId'],
             'vehicleId' => $input['vehicleId'],
+            'customerId' => $input['customerId'],
         ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
 
         return $this->connection->transactional(
@@ -113,17 +117,22 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                     $input['offerSnapshot'],
                     $input['quoteSnapshot'],
                     $input['vehicleSnapshot'],
+                    customerId: $input['customerId'],
+                    customerSnapshot: $input['customerSnapshot'],
+                    customerVersion: $input['customerVersion'],
                 );
                 $now = $this->now();
                 $db->executeStatement(
                     <<<'SQL'
                         INSERT INTO orders (
                             tenant_id, order_id, created_by, offer_id, quote_id, vehicle_id, status,
-                            offer_snapshot, quote_snapshot, vehicle_snapshot, created_at, updated_at
+                            offer_snapshot, quote_snapshot, vehicle_snapshot,
+                            customer_id, customer_version, customer_snapshot, created_at, updated_at
                         ) VALUES (
                             :tenant, :id, :actor, :offer, :quote, :vehicle, :status,
                             CAST(:offer_snapshot AS JSONB), CAST(:quote_snapshot AS JSONB),
-                            CAST(:vehicle_snapshot AS JSONB), :now, :now
+                            CAST(:vehicle_snapshot AS JSONB), :customer_id, :customer_version,
+                            CAST(:customer_snapshot AS JSONB), :now, :now
                         )
                         SQL,
                     [
@@ -133,6 +142,9 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                         'offer_snapshot' => json_encode($order->offerSnapshot, JSON_THROW_ON_ERROR),
                         'quote_snapshot' => json_encode($order->quoteSnapshot, JSON_THROW_ON_ERROR),
                         'vehicle_snapshot' => json_encode($order->vehicleSnapshot, JSON_THROW_ON_ERROR),
+                        'customer_id' => $order->customerId,
+                        'customer_version' => $order->customerVersion,
+                        'customer_snapshot' => json_encode($order->customerSnapshot, JSON_THROW_ON_ERROR),
                         'now' => $now,
                     ],
                 );
@@ -142,6 +154,8 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                     'offerId' => $order->offerId,
                     'quoteId' => $order->quoteId,
                     'vehicleId' => $order->vehicleId,
+                    'customerId' => $order->customerId,
+                    'customerVersion' => $order->customerVersion,
                 ]);
                 $response = $this->findInTransaction($db, $tenantId, $order->id);
                 $db->executeStatement(
@@ -218,6 +232,9 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                     $row['submitted_at'] === null ? null : new \DateTimeImmutable((string) $row['submitted_at']),
                     $row['decided_at'] === null ? null : new \DateTimeImmutable((string) $row['decided_at']),
                     $row['decision_reason'] === null ? null : (string) $row['decision_reason'],
+                    customerId: $row['customer_id'] === null ? null : (string) $row['customer_id'],
+                    customerSnapshot: $this->decodeObject($row['customer_snapshot'] ?? '{}'),
+                    customerVersion: $row['customer_version'] === null ? null : (int) $row['customer_version'],
                 );
                 $order->transitionTo($target, $reason);
                 $now = $this->now();
@@ -346,6 +363,9 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
         return [
             'orderId' => $row['order_id'], 'tenantId' => $row['tenant_id'], 'createdBy' => $row['created_by'],
             'offerId' => $row['offer_id'], 'quoteId' => $row['quote_id'], 'vehicleId' => $row['vehicle_id'],
+            'customerId' => $row['customer_id'] ?? null,
+            'customerVersion' => isset($row['customer_version']) ? (int) $row['customer_version'] : null,
+            'customerSnapshot' => $this->decodeObject($row['customer_snapshot'] ?? '{}'),
             'status' => $row['status'], 'paymentStatus' => $row['payment_status'] ?? 'not_started', 'offerSnapshot' => $this->decodeObject($row['offer_snapshot']),
             'quoteSnapshot' => $this->decodeObject($row['quote_snapshot']),
             'vehicleSnapshot' => $this->decodeObject($row['vehicle_snapshot']),
