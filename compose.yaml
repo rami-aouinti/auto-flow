@@ -194,6 +194,13 @@ services:
       CONTRACT_DATABASE_URL: ${CONTRACT_DATABASE_URL:-postgresql://autoflow_contract:local-only-contract-password@postgres:5432/autoflow}
       CONTRACT_ORDER_SERVICE_URL: ${CONTRACT_ORDER_SERVICE_URL:-http://order-service:8080}
       CONTRACT_DOCUMENT_STORAGE_PATH: /var/lib/autoflow/contracts
+      DOCUSIGN_INTEGRATION_KEY: ${DOCUSIGN_INTEGRATION_KEY:-}
+      DOCUSIGN_USER_ID: ${DOCUSIGN_USER_ID:-}
+      DOCUSIGN_ACCOUNT_ID: ${DOCUSIGN_ACCOUNT_ID:-}
+      DOCUSIGN_OAUTH_HOST: ${DOCUSIGN_OAUTH_HOST:-account-d.docusign.com}
+      DOCUSIGN_API_BASE_URL: ${DOCUSIGN_API_BASE_URL:-https://demo.docusign.net/restapi}
+      DOCUSIGN_PRIVATE_KEY_PATH: ${DOCUSIGN_PRIVATE_KEY_PATH:-/run/secrets/docusign-rsa-private.pem}
+      DOCUSIGN_WEBHOOK_HMAC_KEY: ${DOCUSIGN_WEBHOOK_HMAC_KEY:-}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-contract-service
