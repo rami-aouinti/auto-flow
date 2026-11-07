@@ -20,7 +20,7 @@ docker build -f docker/php/service.Dockerfile \
 3. Create `contract-publisher-secret` from `publisher-secret.example.yaml`.
 4. Create `docusign-rsa-key` from the actual private key; never apply the placeholder example.
 5. Configure `rabbitmq-secret` to match the existing RabbitMQ installation.
-6. Ensure the cluster has a StorageClass that supports `ReadWriteMany` for the PDF PVC. The single Contract API replica is intentional for the filesystem-backed first version.
+6. Ensure the cluster has a StorageClass that supports `ReadWriteOnce` for the PDF PVC. The single Contract API replica is intentional for the filesystem-backed first version.
 
 ## Apply
 
@@ -39,7 +39,7 @@ Create the Kubernetes Secrets separately from a secret manager or a protected lo
 
 ## Operational constraints
 
-- The document PVC must be backed by a durable shared filesystem. For multiple API replicas or multi-region deployments, replace the filesystem adapter with S3-compatible object storage and immutable object versioning.
+- The document PVC must be backed by durable storage. The first implementation deliberately runs one API replica with a ReadWriteOnce claim. For multiple API replicas or multi-region deployments, replace the filesystem adapter with S3-compatible object storage and immutable object versioning.
 - The DocuSign private key is mounted read-only at `/var/run/secrets/docusign/private.pem`.
 - Set the DocuSign Connect HMAC key in `DOCUSIGN_WEBHOOK_HMAC_KEY` and configure the Connect listener URL as `/api/v1/contracts/webhooks/docusign`.
 - NetworkPolicy selectors assume the listed pod labels; adapt them to the labels used by the actual PostgreSQL, RabbitMQ, Keycloak, Tempo and gateway deployments.
