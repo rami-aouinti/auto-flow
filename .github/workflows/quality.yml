@@ -100,6 +100,8 @@ jobs:
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.order_payment_event_inbox') IS NOT NULL AS order_payment_inbox_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'payment_status') AS order_payment_status_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'customer_snapshot') AS order_customer_snapshot_ready"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.contract_records') IS NOT NULL AS contract_records_ready"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.contract_outbox') IS NOT NULL AS contract_outbox_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.payments') IS NOT NULL AS payments_ready"
           docker compose exec -T rabbitmq rabbitmqctl await_startup --timeout 60
           docker compose exec -T rabbitmq rabbitmq-diagnostics listeners
