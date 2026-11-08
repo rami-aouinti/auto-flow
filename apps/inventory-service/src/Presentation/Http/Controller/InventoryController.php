@@ -230,9 +230,9 @@ final readonly class InventoryController
         if ($mileage !== null && (!is_int($mileage) || $mileage < 0)) throw new \DomainException('mileageKm must be a non-negative integer.');
         $registration = $body['firstRegistrationDate'] ?? null;
         if ($registration !== null) {
-            if (!is_string($registration)) throw new \\DomainException('firstRegistrationDate must use YYYY-MM-DD.');
+            if (!is_string($registration)) throw new \DomainException('firstRegistrationDate must use YYYY-MM-DD.');
             $date = \\DateTimeImmutable::createFromFormat('!Y-m-d', $registration);
-            if ($date === false || $date->format('Y-m-d') !== $registration) throw new \\DomainException('firstRegistrationDate must be a valid calendar date in YYYY-MM-DD format.');
+            if ($date === false || $date->format('Y-m-d') !== $registration) throw new \DomainException('firstRegistrationDate must be a valid calendar date in YYYY-MM-DD format.');
         }
         return ['vehicleVariantId'=>$variant,'vin'=>$vin,'dealerId'=>$dealer,'locationCode'=>$location,'countryCode'=>$country,'condition'=>$condition,'mileageKm'=>$mileage,'firstRegistrationDate'=>$registration];
     }
@@ -250,7 +250,7 @@ final readonly class InventoryController
         $eventType = match ($event) {
             'InventoryUnitCreated' => 'inventory.unit.created.v1',
             'InventoryStatusChanged' => 'inventory.status.changed.v1',
-            default => throw new \\LogicException('Unsupported inventory event type.'),
+            default => throw new \LogicException('Unsupported inventory event type.'),
         };
         $envelope = [
             'eventId'=>$eventId,'eventType'=>$eventType,'schemaVersion'=>1,'producer'=>'inventory-service',
