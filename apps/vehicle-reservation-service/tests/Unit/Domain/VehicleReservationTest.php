@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\VehicleReservation\\Tests\\Unit\\Domain;
+namespace AutoFlow\VehicleReservation\Tests\Unit\Domain;
 
-use AutoFlow\\VehicleReservation\\Domain\\ReservationStatus;
-use AutoFlow\\VehicleReservation\\Domain\\VehicleReservation;
+use AutoFlow\VehicleReservation\Domain\ReservationStatus;
+use AutoFlow\VehicleReservation\Domain\VehicleReservation;
 use DomainException;
-use PHPUnit\\Framework\\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class VehicleReservationTest extends TestCase
 {
@@ -102,8 +102,8 @@ final class VehicleReservationTest extends TestCase
         );
     }
 
-    private function at(string $relative): \\DateTimeImmutable
+    private function at(string $relative): \DateTimeImmutable
     {
-        return new \\DateTimeImmutable($relative, new \\DateTimeZone('UTC'));
+        return new \DateTimeImmutable($relative, new \DateTimeZone('UTC'));
     }
 }
