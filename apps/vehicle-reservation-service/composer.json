@@ -1,23 +1,47 @@
 {
   "name": "autoflow/vehicle-reservation-service",
-  "description": "Vehicle stock reservation bounded context for AutoFlow.",
+  "description": "Physical vehicle stock reservation bounded context for AutoFlow.",
   "type": "project",
   "license": "proprietary",
   "require": {
     "php": "^8.4",
-    "ext-json": "*"
+    "ext-json": "*",
+    "ext-pdo": "*",
+    "ext-pdo_pgsql": "*",
+    "autoflow/core-bundle": "^2.0",
+    "doctrine/dbal": "^4.3",
+    "doctrine/doctrine-bundle": "^3.3",
+    "roadrunner/http": "^4.0",
+    "nyholm/psr7": "^1.8",
+    "symfony/flex": "^2.7",
+    "symfony/framework-bundle": "7.4.*",
+    "symfony/uid": "7.4.*",
+    "symfony/yaml": "7.4.*",
+    "ext-mbstring": "*"
   },
   "require-dev": {
-    "phpunit/phpunit": "^11.5"
+    "phpunit/phpunit": "^11.5",
+    "symfony/dotenv": "7.4.*"
   },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../../packages/core-bundle",
+      "options": {
+        "symlink": false
+      }
+    }
+  ],
   "autoload": {
     "psr-4": {
-      "AutoFlow\\VehicleReservation\\": "src/"
+      "App\\\\": "src/",
+      "AutoFlow\\\\VehicleReservation\\\\": "src/Domain/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "AutoFlow\\VehicleReservation\\Tests\\": "tests/"
+      "App\\\\Tests\\\\": "tests/",
+      "AutoFlow\\\\VehicleReservation\\\\Tests\\\\": "tests/"
     }
   },
   "scripts": {
@@ -25,10 +49,19 @@
   },
   "config": {
     "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true,
+      "symfony/flex": true
+    },
     "platform": {
-      "php": "8.4.0"
+      "php": "8.4.27"
     }
   },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "extra": {
+    "symfony": {
+      "require": "7.4.*"
+    }
+  }
 }
