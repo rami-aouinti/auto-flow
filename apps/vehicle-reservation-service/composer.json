@@ -17,7 +17,9 @@
     "symfony/framework-bundle": "7.4.*",
     "symfony/uid": "7.4.*",
     "symfony/yaml": "7.4.*",
-    "ext-mbstring": "*"
+    "ext-mbstring": "*",
+    "php-amqplib/php-amqplib": "^3.7.5",
+    "ext-sockets": "*"
   },
   "require-dev": {
     "phpunit/phpunit": "^11.5",
