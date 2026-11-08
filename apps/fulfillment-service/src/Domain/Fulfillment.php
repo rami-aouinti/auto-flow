@@ -10,8 +10,10 @@ final class Fulfillment
 {
     private bool $paymentCaptured = false;
     private bool $contractSigned = false;
+    private bool $reservationConfirmed = false;
     private ?\DateTimeImmutable $paymentCapturedAt = null;
     private ?\DateTimeImmutable $contractSignedAt = null;
+    private ?\DateTimeImmutable $reservationConfirmedAt = null;
     private ?\DateTimeImmutable $scheduledFor = null;
     private ?\DateTimeImmutable $dispatchedAt = null;
     private ?\DateTimeImmutable $deliveredAt = null;
@@ -53,7 +55,7 @@ final class Fulfillment
         $this->refreshReadiness();
     }
 
-    public function recordReservationConfirmed(\\DateTimeImmutable $occurredAt): void
+    public function recordReservationConfirmed(\DateTimeImmutable $occurredAt): void
     {
         $this->assertNotTerminal();
         if (!$this->reservationConfirmed) {
