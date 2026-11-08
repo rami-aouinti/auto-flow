@@ -119,6 +119,12 @@ http:
       middlewares:
         - api-defaults
 
+    reservations:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/reservations`)"
+      service: reservations
+      middlewares: [api-defaults]
+
   services:
     contracts:
       loadBalancer:
@@ -195,6 +201,16 @@ http:
         passHostHeader: true
         servers:
           - url: "http://payment-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    reservations:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://vehicle-reservation-service:8080"
         healthCheck:
           path: /health/ready
           interval: 10s
