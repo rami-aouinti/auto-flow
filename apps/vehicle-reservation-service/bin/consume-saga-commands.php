@@ -138,6 +138,16 @@ $channel->basic_consume(
                     throw new RuntimeException('Stock allocation function returned no result.');
                 }
                 // The database Outbox publishes reservation.held.v1 atomically with the hold.
+            } elseif ($eventType === 'reservation.confirm.requested.v1') {
+                $reservationId = $data['reservationId'] ?? null;
+                if (!is_string($reservationId) || !Uuid::isValid($reservationId)) {
+                    throw new InvalidArgumentException('Command data.reservationId must be a UUID.');
+                }
+                $db->fetchOne(
+                    'SELECT public.vehicle_reservation_confirm_for_order(:tenant, :reservation, :order)::text',
+                    ['tenant' => $tenantId, 'reservation' => $reservationId, 'order' => $orderId],
+                );
+                // The database Outbox publishes reservation.confirmed.v1 atomically with confirmation.
             } elseif ($eventType === 'reservation.release.requested.v1') {
                 $reservationId = $data['reservationId'] ?? null;
                 if (!is_string($reservationId) || !Uuid::isValid($reservationId)) {
