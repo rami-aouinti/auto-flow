@@ -28,6 +28,7 @@ func main() {
 	taskQueue := env("TEMPORAL_TASK_QUEUE", "autoflow-order-workflows")
 	temporalWorker := worker.New(temporalClient, taskQueue, worker.Options{})
 	temporalWorker.RegisterWorkflow(orders.OrderLifecycleWorkflow)
+	temporalWorker.RegisterWorkflow(orders.OrderFulfillmentSagaWorkflow)
 	temporalWorker.RegisterActivity(&orders.Activities{})
 	if err := temporalWorker.Start(); err != nil {
 		log.Fatalf("start Temporal worker: %v", err)
@@ -36,6 +37,7 @@ func main() {
 
 	log.Printf("Order workflow worker started; taskQueue=%s", taskQueue)
 	go orders.ConsumeOrderEvents(ctx, temporalClient)
+	go orders.ConsumeSagaEvents(ctx, temporalClient)
 	<-ctx.Done()
 	log.Print("Order workflow worker stopping")
 }
