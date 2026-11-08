@@ -152,6 +152,18 @@ jobs:
           composer install --working-dir=apps/vehicle-reservation-service --no-interaction --prefer-dist --no-progress
           cd apps/vehicle-reservation-service && vendor/bin/phpunit --configuration phpunit.xml.dist
 
+      - name: Run Vehicle Reservation expiry and RabbitMQ end-to-end test
+        run: |
+          docker compose --env-file .env.example up -d vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8092/health/ready >/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8092/health/ready
+          docker compose --env-file .env.example exec -T vehicle-reservation-service php bin/smoke-test-rabbitmq.php
+
       - name: Install Customer Service dependencies and run unit tests
         run: |
           composer install --working-dir=apps/customer-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
