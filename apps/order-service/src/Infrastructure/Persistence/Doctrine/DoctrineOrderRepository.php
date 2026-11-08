@@ -256,9 +256,14 @@ final readonly class DoctrineOrderRepository implements OrderRepositoryInterface
                 );
                 $this->recordHistory($db, $tenantId, $orderId, $from, $target, $actor, $reason);
                 $event = 'Order' . str_replace(' ', '', ucwords(str_replace('_', ' ', $target->value)));
-                $this->writeOutbox($db, $tenantId, $orderId, $event, [
+                $eventPayload = [
                     'orderId' => $orderId, 'previousStatus' => $from->value, 'status' => $target->value,
-                ]);
+                ];
+                if ($target === OrderStatus::SUBMITTED) {
+                    // vehicle_id is validated upstream as the catalogue variant identifier.
+                    $eventPayload['vehicleVariantId'] = (string) $row['vehicle_id'];
+                }
+                $this->writeOutbox($db, $tenantId, $orderId, $event, $eventPayload);
                 $response = $this->findInTransaction($db, $tenantId, $orderId);
                 $db->executeStatement(
                     <<<'SQL'
