@@ -1,0 +1,27 @@
+services:
+  inventory-outbox-publisher:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/inventory-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/publish-outbox.php"]
+    environment:
+      APP_ENV: prod
+      INVENTORY_PUBLISHER_DATABASE_URL: ${INVENTORY_PUBLISHER_DATABASE_URL:-postgresql://autoflow_inventory_publisher:local-only-inventory-publisher-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-bootstrap:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    init: true
+    restart: unless-stopped
