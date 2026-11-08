@@ -75,9 +75,12 @@ final readonly class InventoryController
             $variant = $r->query->get('vehicleVariantId');
             $status = $r->query->get('status');
             $dealer = $r->query->get('dealerId');
-            if (is_string($variant) && Uuid::isValid($variant)) { $where[]='vehicle_variant_id=:variant'; $params['variant']=$variant; }
-            if (is_string($status) && in_array($status, self::STATUSES, true)) { $where[]='status=:status'; $params['status']=$status; }
-            if (is_string($dealer) && Uuid::isValid($dealer)) { $where[]='dealer_id=:dealer'; $params['dealer']=$dealer; }
+            if ($variant !== null && (!is_string($variant) || !Uuid::isValid($variant))) return $this->problem(400, 'vehicleVariantId must be a UUID.');
+            if ($status !== null && (!is_string($status) || !in_array($status, self::STATUSES, true))) return $this->problem(400, 'status is not supported.');
+            if ($dealer !== null && (!is_string($dealer) || !Uuid::isValid($dealer))) return $this->problem(400, 'dealerId must be a UUID.');
+            if ($variant !== null) { $where[]='vehicle_variant_id=:variant'; $params['variant']=$variant; }
+            if ($status !== null) { $where[]='status=:status'; $params['status']=$status; }
+            if ($dealer !== null) { $where[]='dealer_id=:dealer'; $params['dealer']=$dealer; }
             $sql = implode(' AND ', $where);
             $items = $db->fetchAllAssociative(
                 "SELECT inventory_unit_id,vehicle_variant_id,vin,dealer_id,location_code,country_code,status,condition,mileage_km,first_registration_date,version,acquired_at,created_at,updated_at FROM inventory_units WHERE $sql ORDER BY acquired_at DESC LIMIT :limit OFFSET :offset",
@@ -144,7 +147,14 @@ final readonly class InventoryController
                 return new JsonResponse($replayed, 200, ['Cache-Control'=>'no-store','ETag'=>'"'.$replayed['version'].'"']);
             }
             if ((int)$old['version'] !== (int)$expected) return $this->problem(412, 'Inventory unit version is stale.');
-            if ($old['status'] === $target) return new JsonResponse($this->load($db, $tenant, $id), 200, ['ETag'=>'"'.$old['version'].'"']);
+            if ($old['status'] === $target) {
+                $item = $this->load($db, $tenant, $id);
+                $db->insert('inventory_idempotency_keys', [
+                    'tenant_id'=>$tenant,'idempotency_key'=>$key,'request_hash'=>$hash,
+                    'response_body'=>json_encode($item, JSON_THROW_ON_ERROR)
+                ]);
+                return new JsonResponse($item, 200, ['Cache-Control'=>'no-store','ETag'=>'"'.$old['version'].'"']);
+            }
             if (!$this->transitionAllowed($old['status'], $target)) return $this->problem(409, 'Inventory status transition is not allowed.');
             $db->executeStatement('UPDATE inventory_units SET status=:status,version=version+1,updated_by=:actor,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=:tenant AND inventory_unit_id=:id', ['status'=>$target,'actor'=>$p->subject,'tenant'=>$tenant,'id'=>$id]);
             $this->record($db, $tenant, $id, $p->subject, 'InventoryStatusChanged', $old['status'], $target, $old['location_code'], $old['location_code'], ['reason'=>$reason]);
@@ -219,7 +229,11 @@ final readonly class InventoryController
         $mileage = $body['mileageKm'] ?? null;
         if ($mileage !== null && (!is_int($mileage) || $mileage < 0)) throw new \DomainException('mileageKm must be a non-negative integer.');
         $registration = $body['firstRegistrationDate'] ?? null;
-        if ($registration !== null && (!is_string($registration) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $registration))) throw new \DomainException('firstRegistrationDate must use YYYY-MM-DD.');
+        if ($registration !== null) {
+            if (!is_string($registration)) throw new \\DomainException('firstRegistrationDate must use YYYY-MM-DD.');
+            $date = \\DateTimeImmutable::createFromFormat('!Y-m-d', $registration);
+            if ($date === false || $date->format('Y-m-d') !== $registration) throw new \\DomainException('firstRegistrationDate must be a valid calendar date in YYYY-MM-DD format.');
+        }
         return ['vehicleVariantId'=>$variant,'vin'=>$vin,'dealerId'=>$dealer,'locationCode'=>$location,'countryCode'=>$country,'condition'=>$condition,'mileageKm'=>$mileage,'firstRegistrationDate'=>$registration];
     }
 
@@ -233,14 +247,19 @@ final readonly class InventoryController
     {
         $eventId = Uuid::v7()->toRfc4122();
         $occurred = (new \DateTimeImmutable())->format(DATE_ATOM);
+        $eventType = match ($event) {
+            'InventoryUnitCreated' => 'inventory.unit.created.v1',
+            'InventoryStatusChanged' => 'inventory.status.changed.v1',
+            default => throw new \\LogicException('Unsupported inventory event type.'),
+        };
         $envelope = [
-            'eventId'=>$eventId,'eventType'=>$event.'.v1','schemaVersion'=>1,'producer'=>'inventory-service',
+            'eventId'=>$eventId,'eventType'=>$eventType,'schemaVersion'=>1,'producer'=>'inventory-service',
             'aggregate'=>['type'=>'InventoryUnit','id'=>$id],'tenantId'=>$tenant,'occurredAt'=>$occurred,
             'data'=>['inventoryUnitId'=>$id,'fromStatus'=>$from,'toStatus'=>$to,'fromLocationCode'=>$fromLocation,'toLocationCode'=>$toLocation] + $payload
         ];
         $db->insert('inventory_movements', ['tenant_id'=>$tenant,'movement_id'=>Uuid::v7()->toRfc4122(),'inventory_unit_id'=>$id,'from_status'=>$from,'to_status'=>$to,'from_location_code'=>$fromLocation,'to_location_code'=>$toLocation,'reason'=>$payload['reason']??null,'actor_id'=>$actor]);
         $db->insert('inventory_audit_events', ['tenant_id'=>$tenant,'event_id'=>$eventId,'inventory_unit_id'=>$id,'actor_id'=>$actor,'event_type'=>$event,'payload'=>json_encode($envelope,JSON_THROW_ON_ERROR)]);
-        $db->insert('inventory_outbox_events', ['tenant_id'=>$tenant,'event_id'=>$eventId,'inventory_unit_id'=>$id,'event_type'=>$event.'.v1','payload'=>json_encode($envelope,JSON_THROW_ON_ERROR)]);
+        $db->insert('inventory_outbox_events', ['tenant_id'=>$tenant,'event_id'=>$eventId,'inventory_unit_id'=>$id,'event_type'=>$eventType,'payload'=>json_encode($envelope,JSON_THROW_ON_ERROR)]);
     }
 
     private function transitionAllowed(string $from, string $to): bool
