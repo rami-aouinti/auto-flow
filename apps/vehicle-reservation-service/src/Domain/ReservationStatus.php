@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\VehicleReservation\\Domain;
+namespace AutoFlow\VehicleReservation\Domain;
 
 enum ReservationStatus: string
 {
