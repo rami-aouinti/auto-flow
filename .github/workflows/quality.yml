@@ -56,6 +56,7 @@ jobs:
           composer validate --strict --working-dir=apps/contract-service
           composer validate --strict --working-dir=apps/fulfillment-service
           composer validate --strict --working-dir=apps/vehicle-reservation-service
+          composer validate --strict --working-dir=apps/inventory-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
@@ -143,6 +144,10 @@ jobs:
         run: |
           composer install --working-dir=apps/fulfillment-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/fulfillment-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Install Inventory Service dependencies and run unit tests
+        run: |
+          composer install --working-dir=apps/inventory-service --no-interaction --prefer-dist --no-progress
+          cd apps/inventory-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Install Vehicle Reservation Service dependencies and run unit/integration tests
         env:
           RESERVATION_TEST_DATABASE_URL: postgresql://autoflow_reservation:local-only-reservation-password@127.0.0.1:5432/autoflow
