@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Doctrine\\DBAL\\DriverManager;
+use Doctrine\DBAL\DriverManager;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
