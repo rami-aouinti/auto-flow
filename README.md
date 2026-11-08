@@ -113,7 +113,8 @@ Contract owns contract drafts and their immutable legal snapshots, referencing a
 | `/api/v1/payments/**` | Payment (`payment-service:8080`) | Payment intent, payment lifecycle and Stripe webhook API |
 | `/api/v1/billing/**` | Billing (`billing-service:8080`) | Tenant invoices, VAT breakdowns, credit notes and summary |
 | `/api/v1/customers/**` | Customer (`customer-service:8080`) | Tenant customer profiles, addresses, consents and audit history |
-| `/api/v1/contracts/**` | Contract (`contract-service:8080`) | Contract drafts, legal snapshots, lifecycle and audit history |\n| `/api/v1/reservations/**` | Vehicle Reservation (`vehicle-reservation-service:8080`) | Physical stock holds, confirmation, release and fulfilment |
+| `/api/v1/contracts/**` | Contract (`contract-service:8080`) | Contract drafts, legal snapshots, lifecycle and audit history 
+| `/api/v1/reservations/**` | Vehicle Reservation (`vehicle-reservation-service:8080`) | Physical stock holds, confirmation, release and fulfilment |
 
 The gateway routes `/api/v1/contracts/**` to Contract Service at `contract-service:8080`. The gateway does **not** replace authentication or authorization. It does not decode or trust JWT claims: every backend continues to validate the Keycloak RS256 token, issuer, audience, tenant and service-owned scopes. The local edge rate limiter is in-memory and per gateway replica; distributed per-tenant quotas backed by Redis remain a separate production hardening task. TLS termination and trusted-proxy configuration must be completed for the target deployment.
 
