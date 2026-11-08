@@ -140,9 +140,13 @@ BEGIN
         CREATE ROLE autoflow_reservation_publisher LOGIN PASSWORD 'local-only-reservation-publisher-password'
             NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'autoflow_reservation_worker_owner') THEN
+        CREATE ROLE autoflow_reservation_worker_owner NOLOGIN
+            NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
+    END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'autoflow_reservation_worker') THEN
         CREATE ROLE autoflow_reservation_worker LOGIN PASSWORD 'local-only-reservation-worker-password'
-            NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
+            NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
     END IF;
 END
 $roles$;
@@ -150,14 +154,16 @@ $roles$;
 ALTER ROLE autoflow_reservation_publisher WITH LOGIN PASSWORD 'local-only-reservation-publisher-password'
     NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
 ALTER ROLE autoflow_reservation_worker WITH LOGIN PASSWORD 'local-only-reservation-worker-password'
+    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+ALTER ROLE autoflow_reservation_worker_owner NOLOGIN
     NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
 
 GRANT CONNECT ON DATABASE autoflow TO autoflow_reservation_publisher, autoflow_reservation_worker;
 GRANT USAGE ON SCHEMA public TO autoflow_reservation_publisher, autoflow_reservation_worker;
 
-GRANT SELECT, UPDATE ON vehicle_reservation_outbox TO autoflow_reservation_worker;
-GRANT SELECT, UPDATE ON vehicle_reservations TO autoflow_reservation_worker;
-GRANT INSERT ON vehicle_reservation_audit_events TO autoflow_reservation_worker;
+GRANT SELECT, UPDATE ON vehicle_reservation_outbox TO autoflow_reservation_worker_owner;
+GRANT SELECT, UPDATE ON vehicle_reservations TO autoflow_reservation_worker_owner;
+GRANT INSERT ON vehicle_reservation_audit_events TO autoflow_reservation_worker_owner;
 
 CREATE OR REPLACE FUNCTION public.vehicle_reservation_expire_due(p_limit INTEGER DEFAULT 100)
 RETURNS INTEGER
@@ -284,10 +290,10 @@ AS $function$
     WHERE tenant_id = p_tenant_id AND event_id = p_event_id
 $function$;
 
-ALTER FUNCTION public.vehicle_reservation_expire_due(INTEGER) OWNER TO autoflow_reservation_worker;
-ALTER FUNCTION public.vehicle_reservation_outbox_claim() OWNER TO autoflow_reservation_worker;
-ALTER FUNCTION public.vehicle_reservation_outbox_mark_published(VARCHAR, UUID) OWNER TO autoflow_reservation_worker;
-ALTER FUNCTION public.vehicle_reservation_outbox_schedule_retry(VARCHAR, UUID, VARCHAR) OWNER TO autoflow_reservation_worker;
+ALTER FUNCTION public.vehicle_reservation_expire_due(INTEGER) OWNER TO autoflow_reservation_worker_owner;
+ALTER FUNCTION public.vehicle_reservation_outbox_claim() OWNER TO autoflow_reservation_worker_owner;
+ALTER FUNCTION public.vehicle_reservation_outbox_mark_published(VARCHAR, UUID) OWNER TO autoflow_reservation_worker_owner;
+ALTER FUNCTION public.vehicle_reservation_outbox_schedule_retry(VARCHAR, UUID, VARCHAR) OWNER TO autoflow_reservation_worker_owner;
 
 REVOKE ALL ON FUNCTION public.vehicle_reservation_expire_due(INTEGER) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.vehicle_reservation_outbox_claim() FROM PUBLIC;
