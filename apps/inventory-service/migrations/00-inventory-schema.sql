@@ -206,7 +206,7 @@ BEGIN
  SET locked_until = NULL,
      last_error = left(p_error, 500),
      dead_lettered_at = CASE WHEN attempts >= 12 THEN clock_timestamp() ELSE NULL END,
-     next_attempt_at = clock_timestamp() + make_interval(secs => LEAST(3600, (5 * power(2, GREATEST(attempts - 1, 0)))::INTEGER)
+     next_attempt_at = clock_timestamp() + make_interval(secs => LEAST(3600, (5 * power(2, GREATEST(attempts - 1, 0)))::INTEGER))
  WHERE tenant_id = p_tenant AND event_id = p_event
    AND published_at IS NULL AND dead_lettered_at IS NULL;
 END
