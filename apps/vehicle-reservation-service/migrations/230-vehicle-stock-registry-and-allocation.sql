@@ -249,4 +249,99 @@ ALTER FUNCTION public.vehicle_reservation_hold_available(VARCHAR, UUID, UUID, TI
 
 GRANT EXECUTE ON FUNCTION public.vehicle_reservation_hold_available(VARCHAR, UUID, UUID, TIMESTAMPTZ)
     TO autoflow_reservation_worker;
+
+CREATE OR REPLACE FUNCTION public.vehicle_reservation_release_for_order(
+    p_tenant_id VARCHAR(128),
+    p_reservation_id UUID,
+    p_order_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+SET row_security = off
+AS $function$
+DECLARE
+    reservation RECORD;
+    event_id UUID;
+    now_at TIMESTAMPTZ := clock_timestamp();
+    response JSONB;
+    envelope JSONB;
+BEGIN
+    SELECT * INTO reservation
+    FROM public.vehicle_reservations
+    WHERE tenant_id = p_tenant_id
+      AND reservation_id = p_reservation_id
+      AND order_id = p_order_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'reservation does not belong to the supplied tenant and order'
+            USING ERRCODE = 'P0002';
+    END IF;
+
+    IF reservation.status = 'released' THEN
+        RETURN jsonb_build_object(
+            'reservationId', reservation.reservation_id,
+            'orderId', reservation.order_id,
+            'vehicleUnitId', reservation.vehicle_unit_id,
+            'status', 'released',
+            'replayed', true
+        );
+    END IF;
+
+    IF reservation.status NOT IN ('held', 'confirmed') THEN
+        RAISE EXCEPTION 'reservation cannot be compensated from status %', reservation.status
+            USING ERRCODE = '23514';
+    END IF;
+
+    UPDATE public.vehicle_reservations
+    SET status = 'released',
+        released_at = now_at,
+        version = version + 1,
+        updated_at = now_at
+    WHERE tenant_id = p_tenant_id
+      AND reservation_id = p_reservation_id;
+
+    event_id := gen_random_uuid();
+    response := jsonb_build_object(
+        'reservationId', reservation.reservation_id,
+        'orderId', reservation.order_id,
+        'vehicleUnitId', reservation.vehicle_unit_id,
+        'vehicleVariantId', reservation.vehicle_variant_id,
+        'status', 'released'
+    );
+    envelope := jsonb_build_object(
+        'eventId', event_id,
+        'eventType', 'reservation.released.v1',
+        'schemaVersion', 1,
+        'producer', 'vehicle-reservation-service',
+        'aggregate', jsonb_build_object('type', 'VehicleReservation', 'id', reservation.reservation_id),
+        'tenantId', p_tenant_id,
+        'occurredAt', now_at,
+        'data', response
+    );
+
+    INSERT INTO public.vehicle_reservation_audit_events (
+        tenant_id, event_id, reservation_id, actor_id, event_type, payload, occurred_at
+    ) VALUES (
+        p_tenant_id, event_id, reservation.reservation_id, 'order-saga',
+        'ReservationReleased', envelope, now_at
+    );
+    INSERT INTO public.vehicle_reservation_outbox (
+        tenant_id, event_id, reservation_id, event_type, payload, occurred_at
+    ) VALUES (
+        p_tenant_id, event_id, reservation.reservation_id,
+        'reservation.released.v1', envelope, now_at
+    );
+
+    RETURN response;
+END
+$function$;
+
+ALTER FUNCTION public.vehicle_reservation_release_for_order(VARCHAR, UUID, UUID)
+    OWNER TO autoflow_reservation_stock_owner;
+GRANT EXECUTE ON FUNCTION public.vehicle_reservation_release_for_order(VARCHAR, UUID, UUID)
+    TO autoflow_reservation_worker;
+
 REVOKE CREATE ON SCHEMA public FROM autoflow_reservation_stock_owner;
