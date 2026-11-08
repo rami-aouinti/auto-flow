@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Doctrine\\DBAL\\DriverManager;
-use PhpAmqpLib\\Connection\\AMQPStreamConnection;
+use Doctrine\DBAL\DriverManager;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -51,7 +51,7 @@ $channel->exchange_declare($exchange, 'topic', false, true, false);
 $channel->queue_bind($queue, $exchange, $routingKey);
 
 $tenant = 'reservation-smoke-' . bin2hex(random_bytes(6));
-$reservationId = (string) \\Symfony\\Component\\Uid\\Uuid::v7();
+$reservationId = (string) \Symfony\Component\Uid\Uuid::v7();
 $statement = $db->prepare(
     "SELECT set_config('app.tenant_id', :tenant, false)"
 );
@@ -60,9 +60,9 @@ $statement->executeStatement(['tenant' => $tenant]);
 $db->insert('vehicle_reservations', [
     'tenant_id' => $tenant,
     'reservation_id' => $reservationId,
-    'vehicle_unit_id' => (string) \\Symfony\\Component\\Uid\\Uuid::v7(),
-    'vehicle_variant_id' => (string) \\Symfony\\Component\\Uid\\Uuid::v7(),
-    'order_id' => (string) \\Symfony\\Component\\Uid\\Uuid::v7(),
+    'vehicle_unit_id' => (string) \Symfony\Component\Uid\Uuid::v7(),
+    'vehicle_variant_id' => (string) \Symfony\Component\Uid\Uuid::v7(),
+    'order_id' => (string) \Symfony\Component\Uid\Uuid::v7(),
     'status' => 'held',
     'expires_at' => (new DateTimeImmutable('-1 minute', new DateTimeZone('UTC')))->format(DATE_ATOM),
 ]);
