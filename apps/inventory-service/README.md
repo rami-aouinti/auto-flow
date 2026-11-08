@@ -33,8 +33,8 @@ Supported stock states: available, blocked, in_transit, delivered, sold, mainten
 
 ```bash
 docker compose --env-file .env.example run --rm postgres-bootstrap
-docker compose --env-file .env.example -f compose.yaml -f compose.inventory.yaml up -d --build inventory-service inventory-outbox-publisher api-gateway
-docker compose --env-file .env.example -f compose.yaml -f compose.inventory.yaml ps inventory-service inventory-outbox-publisher api-gateway
+docker compose --env-file .env.example up -d --build inventory-service inventory-outbox-publisher api-gateway
+docker compose --env-file .env.example ps inventory-service inventory-outbox-publisher api-gateway
 curl -i http://localhost:8093/health/ready
 ```
 
@@ -42,11 +42,11 @@ The local Keycloak realm must contain the `autoflow-inventory` audience and `inv
 
 ## Outbox operations
 
-The root Compose file contains the HTTP service. The publisher is defined in the optional compose.inventory.yaml overlay so it can be started independently:
+The root Compose file contains both the HTTP service and its Outbox publisher:
 
 ```bash
-docker compose --env-file .env.example -f compose.yaml -f compose.inventory.yaml up -d --build inventory-outbox-publisher
-docker compose --env-file .env.example -f compose.yaml -f compose.inventory.yaml logs -f inventory-outbox-publisher
+docker compose --env-file .env.example up -d --build inventory-outbox-publisher
+docker compose --env-file .env.example logs -f inventory-outbox-publisher
 ```
 
 The worker publishes to the durable topic exchange and queue autoflow.inventory.events. Consumers should bind their own durable queues to the exchange using the event routing keys. The shared queue is a local diagnostic buffer, not a replacement for service-specific consumer queues.
