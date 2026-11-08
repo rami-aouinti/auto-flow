@@ -53,6 +53,16 @@ final class Fulfillment
         $this->refreshReadiness();
     }
 
+    public function recordReservationConfirmed(\\DateTimeImmutable $occurredAt): void
+    {
+        $this->assertNotTerminal();
+        if (!$this->reservationConfirmed) {
+            $this->reservationConfirmed = true;
+            $this->reservationConfirmedAt = $occurredAt;
+        }
+        $this->refreshReadiness();
+    }
+
     public function startPreparation(): void
     {
         $this->transition(FulfillmentStatus::READY_FOR_PREPARATION, FulfillmentStatus::PREPARING);
@@ -151,7 +161,7 @@ final class Fulfillment
 
     public function isReadyForPreparation(): bool
     {
-        return $this->paymentCaptured && $this->contractSigned;
+        return $this->paymentCaptured && $this->contractSigned && $this->reservationConfirmed;
     }
 
     /** @return array<string, mixed> */
@@ -164,8 +174,10 @@ final class Fulfillment
             'status' => $this->status->value,
             'paymentCaptured' => $this->paymentCaptured,
             'contractSigned' => $this->contractSigned,
+            'reservationConfirmed' => $this->reservationConfirmed,
             'paymentCapturedAt' => $this->paymentCapturedAt?->format(DATE_ATOM),
             'contractSignedAt' => $this->contractSignedAt?->format(DATE_ATOM),
+            'reservationConfirmedAt' => $this->reservationConfirmedAt?->format(DATE_ATOM),
             'scheduledFor' => $this->scheduledFor?->format(DATE_ATOM),
             'dispatchedAt' => $this->dispatchedAt?->format(DATE_ATOM),
             'deliveredAt' => $this->deliveredAt?->format(DATE_ATOM),
