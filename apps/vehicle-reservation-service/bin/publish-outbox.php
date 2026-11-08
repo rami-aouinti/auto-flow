@@ -47,6 +47,8 @@ $connect = static function (): array {
     );
     $channel = $connection->channel();
     $channel->exchange_declare('autoflow.vehicle-reservation.events', 'topic', false, true, false);
+    $channel->queue_declare('autoflow.vehicle-reservation.events', false, true, false, false);
+    $channel->queue_bind('autoflow.vehicle-reservation.events', 'autoflow.vehicle-reservation.events', '#');
     $channel->confirm_select();
 
     return [$connection, $channel];
