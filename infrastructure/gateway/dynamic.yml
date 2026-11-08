@@ -125,6 +125,12 @@ http:
       service: reservations
       middlewares: [api-defaults]
 
+    inventory:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/inventory`)"
+      service: inventory
+      middlewares: [api-defaults]
+
   services:
     contracts:
       loadBalancer:
@@ -211,6 +217,16 @@ http:
         passHostHeader: true
         servers:
           - url: "http://vehicle-reservation-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    inventory:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://inventory-service:8080"
         healthCheck:
           path: /health/ready
           interval: 10s
