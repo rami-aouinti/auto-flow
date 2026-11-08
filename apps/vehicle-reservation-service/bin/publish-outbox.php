@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Doctrine\\DBAL\\DriverManager;
-use PhpAmqpLib\\Connection\\AMQPStreamConnection;
-use PhpAmqpLib\\Message\\AMQPMessage;
+use Doctrine\DBAL\DriverManager;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -96,7 +96,7 @@ try {
                 'message_id' => $eventId,
                 'type' => $eventType,
                 'timestamp' => time(),
-                'application_headers' => new \\PhpAmqpLib\\Wire\\AMQPTable([
+                'application_headers' => new \PhpAmqpLib\Wire\AMQPTable([
                     'tenantId' => $tenantId,
                     'producer' => 'vehicle-reservation-service',
                 ]),
