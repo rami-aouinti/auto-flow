@@ -89,6 +89,7 @@ final readonly class VehicleReservationController
 
             return $this->db->transactional(function (Connection $db) use ($principal, $tenant, $payload, $expiresAt, $idempotencyKey, $requestHash): JsonResponse {
                 $this->tenantContext($db, $tenant);
+                $db->executeQuery('SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))', ['key' => $tenant . ':' . $principal->subject . ':' . $idempotencyKey]);
                 $previous = $this->findIdempotency($db, $tenant, $principal->subject, $idempotencyKey);
                 if ($previous !== null) {
                     return $this->replay($previous, $requestHash);
@@ -273,10 +274,11 @@ final readonly class VehicleReservationController
                     'release' => 'ReservationReleased',
                     default => 'ReservationFulfilled',
                 };
-                $eventType = 'reservation.' . $action . 'ed.v1';
-                if ($action === 'fulfill') {
-                    $eventType = 'reservation.fulfilled.v1';
-                }
+                $eventType = match ($action) {
+                    'confirm' => 'reservation.confirmed.v1',
+                    'release' => 'reservation.released.v1',
+                    default => 'reservation.fulfilled.v1',
+                };
                 $this->recordEvent($db, $tenant, $id, $principal->subject, $eventName, $eventType, $response);
                 $this->saveIdempotency($db, $tenant, $principal->subject, $idempotencyKey, $requestHash, $id, $response);
 
