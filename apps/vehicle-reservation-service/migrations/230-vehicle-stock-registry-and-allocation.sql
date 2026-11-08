@@ -46,7 +46,7 @@ CREATE POLICY vehicle_stock_units_tenant_isolation ON vehicle_stock_units
     USING (tenant_id = current_setting('app.tenant_id', true))
     WITH CHECK (tenant_id = current_setting('app.tenant_id', true));
 
-GRANT SELECT ON vehicle_stock_units TO autoflow_reservation;
+GRANT SELECT, INSERT ON vehicle_stock_units TO autoflow_reservation;
 GRANT SELECT, INSERT, UPDATE ON vehicle_stock_units TO autoflow_reservation_stock_owner;
 GRANT SELECT, INSERT, UPDATE ON vehicle_reservations TO autoflow_reservation_stock_owner;
 GRANT INSERT ON vehicle_reservation_audit_events, vehicle_reservation_outbox TO autoflow_reservation_stock_owner;
@@ -67,7 +67,15 @@ BEGIN
             updated_at = CURRENT_TIMESTAMP
         WHERE vehicle_unit_id = NEW.vehicle_unit_id
           AND tenant_id = NEW.tenant_id
+          AND vehicle_variant_id = NEW.vehicle_variant_id
           AND status = 'available';
+        IF NOT FOUND AND EXISTS (
+            SELECT 1 FROM public.vehicle_stock_units
+            WHERE vehicle_unit_id = NEW.vehicle_unit_id AND tenant_id = NEW.tenant_id
+        ) THEN
+            RAISE EXCEPTION 'physical stock unit is not available for this tenant and variant'
+                USING ERRCODE = '23505';
+        END IF;
     ELSIF OLD.status IN ('held', 'confirmed') AND NEW.status IN ('expired', 'released') THEN
         UPDATE public.vehicle_stock_units
         SET status = 'available',
