@@ -154,7 +154,7 @@ jobs:
 
       - name: Run Vehicle Reservation expiry and RabbitMQ end-to-end test
         run: |
-          docker compose --env-file .env.example up -d vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher
+          docker compose --env-file .env.example up -d vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer
           for attempt in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8092/health/ready >/dev/null; then
               break
@@ -169,7 +169,7 @@ jobs:
           composer install --working-dir=apps/customer-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/customer-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer customer-service contract-service contract-outbox-publisher fulfillment-service fulfillment-event-consumer fulfillment-outbox-publisher vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher
+        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer customer-service contract-service contract-outbox-publisher fulfillment-service fulfillment-event-consumer fulfillment-outbox-publisher vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
