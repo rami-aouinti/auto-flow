@@ -21,6 +21,7 @@ final class FulfillmentTest extends TestCase
         self::assertFalse($fulfillment->isReadyForPreparation());
 
         $fulfillment->recordContractSigned($this->at('-30 minutes'));
+        $fulfillment->recordReservationConfirmed($this->at('-15 minutes'));
 
         self::assertSame(FulfillmentStatus::READY_FOR_PREPARATION, $fulfillment->status);
         self::assertTrue($fulfillment->isReadyForPreparation());
@@ -34,6 +35,7 @@ final class FulfillmentTest extends TestCase
         self::assertSame(FulfillmentStatus::AWAITING_PREREQUISITES, $fulfillment->status);
 
         $fulfillment->recordPaymentCaptured($this->at('-1 hour'));
+        $fulfillment->recordReservationConfirmed($this->at('-15 minutes'));
 
         self::assertSame(FulfillmentStatus::READY_FOR_PREPARATION, $fulfillment->status);
     }
@@ -47,9 +49,12 @@ final class FulfillmentTest extends TestCase
         $fulfillment->recordPaymentCaptured($this->at('-10 minutes'));
         $fulfillment->recordContractSigned($first);
         $fulfillment->recordContractSigned($this->at('-10 minutes'));
+        $fulfillment->recordReservationConfirmed($first);
+        $fulfillment->recordReservationConfirmed($this->at('-10 minutes'));
 
         self::assertSame($first->format(DATE_ATOM), $fulfillment->toArray()['paymentCapturedAt']);
         self::assertSame($first->format(DATE_ATOM), $fulfillment->toArray()['contractSignedAt']);
+        self::assertSame($first->format(DATE_ATOM), $fulfillment->toArray()['reservationConfirmedAt']);
         self::assertSame(FulfillmentStatus::READY_FOR_PREPARATION, $fulfillment->status);
     }
 
@@ -136,6 +141,7 @@ final class FulfillmentTest extends TestCase
         $occurredAt = $this->at('-1 hour');
         $fulfillment->recordPaymentCaptured($occurredAt);
         $fulfillment->recordContractSigned($occurredAt);
+        $fulfillment->recordReservationConfirmed($occurredAt);
 
         return $fulfillment;
     }
