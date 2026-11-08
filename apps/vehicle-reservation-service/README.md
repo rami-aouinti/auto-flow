@@ -12,7 +12,7 @@ A `vehicleUnitId` identifies one physical stock unit (for example a VIN-backed f
 
 - A hold has an explicit expiry timestamp.
 - A hold can be confirmed only before its expiry.
-- Only held reservations expire automatically; confirmed reservations require an explicit release or fulfilment action.
+- Only held reservations are eligible for automatic expiry; confirmed reservations require an explicit release or fulfilment action.
 - PostgreSQL's partial unique index allows only one active (held or confirmed) reservation per physical unit across all tenants.
 - A reservation can be fulfilled only after confirmation.
 - Terminal reservations cannot be reactivated; a new reservation is a new aggregate.
