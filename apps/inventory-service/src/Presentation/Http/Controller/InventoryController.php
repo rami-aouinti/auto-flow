@@ -235,7 +235,7 @@ final readonly class InventoryController
         $envelope = [
             'eventId'=>$eventId,'eventType'=>$event.'.v1','schemaVersion'=>1,'producer'=>'inventory-service',
             'aggregate'=>['type'=>'InventoryUnit','id'=>$id],'tenantId'=>$tenant,'occurredAt'=>$occurred,
-            'data'=>['inventoryUnitId'=>$id] + $payload
+            'data'=>['inventoryUnitId'=>$id,'fromStatus'=>$from,'toStatus'=>$to,'fromLocationCode'=>$fromLocation,'toLocationCode'=>$toLocation] + $payload
         ];
         $db->insert('inventory_movements', ['tenant_id'=>$tenant,'movement_id'=>Uuid::v7()->toRfc4122(),'inventory_unit_id'=>$id,'from_status'=>$from,'to_status'=>$to,'from_location_code'=>$fromLocation,'to_location_code'=>$toLocation,'reason'=>$payload['reason']??null,'actor_id'=>$actor]);
         $db->insert('inventory_audit_events', ['tenant_id'=>$tenant,'event_id'=>$eventId,'inventory_unit_id'=>$id,'actor_id'=>$actor,'event_type'=>$event,'payload'=>json_encode($envelope,JSON_THROW_ON_ERROR)]);
