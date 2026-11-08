@@ -51,6 +51,16 @@ docker compose --env-file .env.example logs -f inventory-outbox-publisher
 
 The worker publishes to the durable topic exchange and queue autoflow.inventory.events. Consumers should bind their own durable queues to the exchange using the event routing keys. The shared queue is a local diagnostic buffer, not a replacement for service-specific consumer queues.
 
+### RabbitMQ smoke test
+
+Once PostgreSQL, RabbitMQ, the Inventory API and the Outbox publisher are running, execute the end-to-end smoke test from the Inventory container:
+
+```bash
+docker compose --env-file .env.example exec -T inventory-service php bin/smoke-test-rabbitmq.php
+```
+
+The test writes a tenant-scoped physical unit and Outbox event in one transaction, then waits for the event to arrive from RabbitMQ. Run it against a disposable local database because it creates a smoke-test inventory unit.
+
 ## Current integration boundary
 
 - Vehicle Catalog remains the owner of vehicle variants. Inventory stores the opaque variant ID and does not yet perform a synchronous or event-projection check that the variant exists and is published.
