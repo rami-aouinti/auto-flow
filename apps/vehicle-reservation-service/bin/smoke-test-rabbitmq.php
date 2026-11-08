@@ -71,7 +71,7 @@ $deadline = microtime(true) + 60;
 try {
     while (microtime(true) < $deadline) {
         $message = $channel->basic_get($queue, false);
-        if ($message !== null) {
+        if ($message instanceof \\PhpAmqpLib\\Message\\AMQPMessage) {
             $payload = json_decode($message->getBody(), true, 512, JSON_THROW_ON_ERROR);
             if (($payload['eventType'] ?? null) !== $routingKey
                 || ($payload['tenantId'] ?? null) !== $tenant
