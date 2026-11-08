@@ -159,7 +159,7 @@ ALTER ROLE autoflow_reservation_worker_owner NOLOGIN
     NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
 
 GRANT CONNECT ON DATABASE autoflow TO autoflow_reservation_publisher, autoflow_reservation_worker;
-GRANT USAGE ON SCHEMA public TO autoflow_reservation_publisher, autoflow_reservation_worker;
+GRANT USAGE ON SCHEMA public TO autoflow_reservation_publisher, autoflow_reservation_worker, autoflow_reservation_worker_owner;
 
 GRANT SELECT, UPDATE ON vehicle_reservation_outbox TO autoflow_reservation_worker_owner;
 GRANT SELECT, UPDATE ON vehicle_reservations TO autoflow_reservation_worker_owner;
