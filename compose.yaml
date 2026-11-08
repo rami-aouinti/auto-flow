@@ -148,6 +148,50 @@ services:
     init: true
     restart: unless-stopped
 
+  reservation-expiry-worker:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/vehicle-reservation-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/expire-reservations.php"]
+    environment:
+      APP_ENV: prod
+      RESERVATION_WORKER_DATABASE_URL: ${RESERVATION_WORKER_DATABASE_URL:-postgresql://autoflow_reservation_worker:local-only-reservation-worker-password@postgres:5432/autoflow}
+      RESERVATION_EXPIRY_INTERVAL_SECONDS: ${RESERVATION_EXPIRY_INTERVAL_SECONDS:-5}
+      RESERVATION_EXPIRY_BATCH_SIZE: ${RESERVATION_EXPIRY_BATCH_SIZE:-100}
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+    init: true
+    restart: unless-stopped
+
+  reservation-outbox-publisher:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/vehicle-reservation-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/publish-outbox.php"]
+    environment:
+      APP_ENV: prod
+      RESERVATION_PUBLISHER_DATABASE_URL: ${RESERVATION_PUBLISHER_DATABASE_URL:-postgresql://autoflow_reservation_publisher:local-only-reservation-publisher-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
   fulfillment-event-consumer:
     build:
       context: .
