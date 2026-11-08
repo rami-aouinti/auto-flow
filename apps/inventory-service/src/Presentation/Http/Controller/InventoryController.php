@@ -231,7 +231,7 @@ final readonly class InventoryController
         $registration = $body['firstRegistrationDate'] ?? null;
         if ($registration !== null) {
             if (!is_string($registration)) throw new \DomainException('firstRegistrationDate must use YYYY-MM-DD.');
-            $date = \\DateTimeImmutable::createFromFormat('!Y-m-d', $registration);
+            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $registration);
             if ($date === false || $date->format('Y-m-d') !== $registration) throw new \DomainException('firstRegistrationDate must be a valid calendar date in YYYY-MM-DD format.');
         }
         return ['vehicleVariantId'=>$variant,'vin'=>$vin,'dealerId'=>$dealer,'locationCode'=>$location,'countryCode'=>$country,'condition'=>$condition,'mileageKm'=>$mileage,'firstRegistrationDate'=>$registration];
