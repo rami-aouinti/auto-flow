@@ -192,6 +192,30 @@ services:
     init: true
     restart: unless-stopped
 
+  reservation-saga-command-consumer:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/vehicle-reservation-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/consume-saga-commands.php"]
+    environment:
+      APP_ENV: prod
+      RESERVATION_WORKER_DATABASE_URL: ${RESERVATION_WORKER_DATABASE_URL:-postgresql://autoflow_reservation_worker:local-only-reservation-worker-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
   fulfillment-event-consumer:
     build:
       context: .
