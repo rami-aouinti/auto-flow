@@ -17,6 +17,31 @@ A `vehicleUnitId` identifies one physical stock unit (for example a VIN-backed f
 - A reservation can be fulfilled only after confirmation.
 - Terminal reservations cannot be reactivated; a new reservation is a new aggregate.
 
+## Physical stock registry and Saga commands
+
+The additive migration `230-vehicle-stock-registry-and-allocation.sql` creates `vehicle_stock_units`. Each row is one real physical vehicle unit, not a catalogue variant. A unit belongs to one tenant and variant and has a globally unique unit ID and optional VIN. The stock lifecycle is `available -> reserved -> available` (release/expiry) or `available -> reserved -> sold` (fulfilment).
+
+The allocation function `vehicle_reservation_hold_available(tenantId, vehicleVariantId, orderId, expiresAt)` selects one available unit using `FOR UPDATE SKIP LOCKED`, creates the reservation, updates stock, and writes audit + Outbox records in one database transaction. Repeating the same order/variant returns the existing active reservation. It never allocates the same physical unit twice. The companion `vehicle_reservation_release_for_order` is the Saga compensation; it releases only held/confirmed reservations and emits a durable Outbox event. A confirmed reservation cannot be compensated after fulfilment.
+
+The dedicated `reservation-saga-command-consumer` reads durable commands from `autoflow.vehicle-reservation.commands`. It supports:
+- `reservation.hold.requested.v1`: allocate a real unit for an order and variant.
+- `reservation.release.requested.v1`: compensate an earlier hold/confirmation.
+- `reservation.hold.rejected.v1`: emitted when no matching available unit exists.
+
+Successful state changes are emitted by the transactional Outbox to `autoflow.vehicle-reservation.events`. RabbitMQ delivery is at-least-once; consumers must deduplicate by event ID. The command consumer uses a narrowly scoped database worker role that can execute only the stock allocation/release functions; it has no direct table access.
+
+### Seed local demo stock
+
+After applying the migrations, seed three physical demo units for a real catalogue variant UUID:
+
+```bash
+docker compose --env-file .env.example up -d postgres postgres-bootstrap
+docker compose --env-file .env.example run --rm vehicle-reservation-service \
+  php bin/seed-demo-stock.php tenant-demo YOUR_VEHICLE_VARIANT_UUID
+```
+
+The seeder is deterministic and safe to run repeatedly. It creates three units for the supplied tenant and variant. Replace the placeholder with a UUID that exists in your Vehicle Catalog data.
+
 ## HTTP API
 
 The service listens on port `8092`; through the gateway use `http://localhost:8088/api/v1/reservations`.
@@ -67,7 +92,7 @@ Tenant-owned tables enforce PostgreSQL Row-Level Security using transaction-loca
 ## Local setup and tests
 
 ```bash
-docker compose --env-file .env.example up -d --build vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher
+docker compose --env-file .env.example up -d --build vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer
 composer install --working-dir=apps/vehicle-reservation-service
 RESERVATION_TEST_DATABASE_URL=postgresql://autoflow_reservation:local-only-reservation-password@127.0.0.1:5432/autoflow \
 RESERVATION_WORKER_TEST_DATABASE_URL=postgresql://autoflow_reservation_worker:local-only-reservation-worker-password@127.0.0.1:5432/autoflow \
