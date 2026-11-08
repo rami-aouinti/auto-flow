@@ -320,6 +320,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-inventory",
+      "name": "Inventory Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -358,7 +368,9 @@
         "fulfillment:cancel",
         "reservations:read",
         "reservations:write",
-        "reservations:manage"
+        "reservations:manage",
+        "inventory:read",
+        "inventory:write"
       ],
       "attributes": {
         "tenant_id": [
@@ -436,7 +448,9 @@
         "fulfillment:cancel",
         "reservations:read",
         "reservations:write",
-        "reservations:manage"
+        "reservations:manage",
+        "inventory:read",
+        "inventory:write"
       ],
       "attributes": {
         "tenant_id": [
@@ -558,6 +572,14 @@
       {
         "name": "reservations:manage",
         "description": "Mark confirmed vehicle reservations as fulfilled"
+      },
+      {
+        "name": "inventory:read",
+        "description": "Read tenant-scoped physical vehicle stock, availability and movement history"
+      },
+      {
+        "name": "inventory:write",
+        "description": "Register physical vehicles and change inventory stock states"
       }
     ]
   }
