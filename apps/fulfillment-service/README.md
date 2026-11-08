@@ -53,8 +53,29 @@ The worker entrypoint is `bin/consume-events.php`. It requires:
 - `FULFILLMENT_DATABASE_URL` using the restricted `autoflow_fulfillment` role.
 - `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`, and optional `RABBITMQ_VHOST`.
 
-The publisher is a separate worker and must use the restricted `autoflow_fulfillment_publisher` role. The HTTP API and publisher are intentionally not started by this consumer process.
+The publisher is a separate worker and must use the restricted `autoflow_fulfillment_publisher` role. The HTTP API is served by RoadRunner on port 8091 locally. The API requires a Keycloak access token with the `autoflow-fulfillment` audience and one of the operation-specific realm roles. State-changing commands require both `Idempotency-Key` and the current `If-Match` ETag. The publisher is a separate worker and must use the restricted `autoflow_fulfillment_publisher` role.
 
 ## Quality gates
 
 Unit tests cover both supported event envelopes, schema version validation, producer/type matching and malformed identifiers. Database integration tests should additionally exercise PostgreSQL RLS, transaction rollback, duplicate delivery, out-of-order prerequisites and concurrent consumers before production rollout.
+
+## HTTP API
+
+All endpoints are tenant-scoped and protected by the CoreBundle JWT verifier.
+
+| Method | Endpoint | Permission | Purpose |
+|---|---|---|---|
+| GET | `/api/v1/fulfillments` | `fulfillment:read` | List and filter deliveries |
+| GET | `/api/v1/fulfillments/{id}` | `fulfillment:read` | Read one delivery |
+| GET | `/api/v1/fulfillments/{id}/history` | `fulfillment:read` | Read audit history |
+| POST | `/{id}/preparation/start` | `fulfillment:prepare` | Start preparation |
+| POST | `/{id}/preparation/complete` | `fulfillment:prepare` | Complete preparation |
+| POST | `/{id}/schedule` | `fulfillment:schedule` | Schedule or reschedule delivery |
+| POST | `/{id}/dispatch` | `fulfillment:dispatch` | Dispatch the vehicle |
+| POST | `/{id}/delivery/confirm` | `fulfillment:deliver` | Confirm handover |
+| POST | `/{id}/delivery/fail` | `fulfillment:deliver` | Record failed delivery |
+| POST | `/{id}/cancel` | `fulfillment:cancel` | Cancel before dispatch |
+
+State-changing commands require `Idempotency-Key` and `If-Match: "version"`. The service locks the tenant-owned row, checks the expected version, updates the aggregate, writes the audit record and Outbox envelope, and stores the idempotent response in one transaction. A stale ETag returns HTTP 412; an invalid state transition returns HTTP 409. CORS explicitly permits `If-Match` and exposes `ETag` so browser clients can use optimistic concurrency.
+
+The realm import file adds the `autoflow-fulfillment` audience and six `fulfillment:*` roles to the local `demo` and `order-operator` users. Keycloak does not merge realm-import changes into a realm that already exists; on an existing local realm, add the audience mapper and roles through the Admin Console or re-import the realm only after backing up its current data.

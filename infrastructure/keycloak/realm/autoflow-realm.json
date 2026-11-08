@@ -23,14 +23,16 @@
         "http://localhost:8081/*",
         "http://localhost:8082/*",
         "http://localhost:8084/*",
-        "http://localhost:8085/*"
+        "http://localhost:8085/*",
+        "http://localhost:8091/*"
       ],
       "webOrigins": [
         "http://localhost:3000",
         "http://localhost:8081",
         "http://localhost:8082",
         "http://localhost:8084",
-        "http://localhost:8085"
+        "http://localhost:8085",
+        "http://localhost:8091"
       ],
       "protocolMappers": [
         {
@@ -129,6 +131,17 @@
           "protocolMapper": "oidc-audience-mapper",
           "config": {
             "included.client.audience": "autoflow-contract",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "fulfillment-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-fulfillment",
             "id.token.claim": "false",
             "access.token.claim": "true",
             "introspection.token.claim": "true"
@@ -274,6 +287,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-fulfillment",
+      "name": "Fulfillment Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -303,7 +326,13 @@
         "customers:manage",
         "contracts:read",
         "contracts:write",
-        "contracts:manage"
+        "contracts:manage",
+        "fulfillment:read",
+        "fulfillment:prepare",
+        "fulfillment:schedule",
+        "fulfillment:dispatch",
+        "fulfillment:deliver",
+        "fulfillment:cancel"
       ],
       "attributes": {
         "tenant_id": [
@@ -372,7 +401,13 @@
         "customers:manage",
         "contracts:read",
         "contracts:write",
-        "contracts:manage"
+        "contracts:manage",
+        "fulfillment:read",
+        "fulfillment:prepare",
+        "fulfillment:schedule",
+        "fulfillment:dispatch",
+        "fulfillment:deliver",
+        "fulfillment:cancel"
       ],
       "attributes": {
         "tenant_id": [
@@ -458,6 +493,30 @@
       {
         "name": "contracts:manage",
         "description": "Cancel contracts and manage signature workflows within the authenticated tenant"
+      },
+      {
+        "name": "fulfillment:read",
+        "description": "Read tenant fulfillment records and delivery history"
+      },
+      {
+        "name": "fulfillment:prepare",
+        "description": "Start and complete vehicle preparation"
+      },
+      {
+        "name": "fulfillment:schedule",
+        "description": "Schedule and reschedule vehicle delivery"
+      },
+      {
+        "name": "fulfillment:dispatch",
+        "description": "Dispatch scheduled vehicles"
+      },
+      {
+        "name": "fulfillment:deliver",
+        "description": "Confirm delivery or record delivery failure"
+      },
+      {
+        "name": "fulfillment:cancel",
+        "description": "Cancel eligible fulfillments"
       }
     ]
   }

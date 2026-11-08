@@ -26,9 +26,11 @@ http:
           - Authorization
           - Content-Type
           - Idempotency-Key
+          - If-Match
           - Origin
           - X-Correlation-ID
         accessControlExposeHeaders:
+          - ETag
           - Retry-After
           - X-Correlation-ID
         accessControlMaxAge: 600
