@@ -24,7 +24,8 @@
         "http://localhost:8082/*",
         "http://localhost:8084/*",
         "http://localhost:8085/*",
-        "http://localhost:8091/*"
+        "http://localhost:8091/*",
+        "http://localhost:8092/*"
       ],
       "webOrigins": [
         "http://localhost:3000",
@@ -32,7 +33,8 @@
         "http://localhost:8082",
         "http://localhost:8084",
         "http://localhost:8085",
-        "http://localhost:8091"
+        "http://localhost:8091",
+        "http://localhost:8092"
       ],
       "protocolMappers": [
         {
@@ -142,6 +144,17 @@
           "protocolMapper": "oidc-audience-mapper",
           "config": {
             "included.client.audience": "autoflow-fulfillment",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "vehicle-reservation-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-vehicle-reservation",
             "id.token.claim": "false",
             "access.token.claim": "true",
             "introspection.token.claim": "true"
@@ -297,6 +310,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-vehicle-reservation",
+      "name": "Vehicle Reservation Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -332,7 +355,10 @@
         "fulfillment:schedule",
         "fulfillment:dispatch",
         "fulfillment:deliver",
-        "fulfillment:cancel"
+        "fulfillment:cancel",
+        "reservations:read",
+        "reservations:write",
+        "reservations:manage"
       ],
       "attributes": {
         "tenant_id": [
@@ -407,7 +433,10 @@
         "fulfillment:schedule",
         "fulfillment:dispatch",
         "fulfillment:deliver",
-        "fulfillment:cancel"
+        "fulfillment:cancel",
+        "reservations:read",
+        "reservations:write",
+        "reservations:manage"
       ],
       "attributes": {
         "tenant_id": [
@@ -517,6 +546,18 @@
       {
         "name": "fulfillment:cancel",
         "description": "Cancel eligible fulfillments"
+      },
+      {
+        "name": "reservations:read",
+        "description": "Read vehicle stock reservations within the authenticated tenant"
+      },
+      {
+        "name": "reservations:write",
+        "description": "Create, confirm and release vehicle stock reservations"
+      },
+      {
+        "name": "reservations:manage",
+        "description": "Mark confirmed vehicle reservations as fulfilled"
       }
     ]
   }
