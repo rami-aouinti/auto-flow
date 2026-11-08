@@ -120,7 +120,7 @@ The gateway routes `/api/v1/contracts/**` to Contract Service at `contract-servi
 
 ## Authentication quick start
 
-Customer, Offer, Pricing, Vehicle Catalog, Order Management, Billing and Contract validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog`, `autoflow-order`, `autoflow-billing`, `autoflow-customer` and `autoflow-contract`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
+Customer, Offer, Pricing, Vehicle Catalog, Order Management, Billing, Contract, Fulfillment and Vehicle Reservation validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog`, `autoflow-order`, `autoflow-billing`, `autoflow-customer`, `autoflow-contract`, `autoflow-fulfillment` and `autoflow-vehicle-reservation`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
 
 The imported `demo` user/password `demo`, `order-operator` user/password `order-operator`, and the local password-grant client below are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
 
