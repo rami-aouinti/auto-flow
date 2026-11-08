@@ -34,6 +34,17 @@ final class IntegrationEventTest extends TestCase
         self::assertSame('contract-service', $event->producer);
     }
 
+    public function testParsesConfirmedReservationEnvelope(): void
+    {
+        $event = IntegrationEvent::fromJson(json_encode($this->envelope(
+            'reservation.confirmed.v1',
+            'vehicle-reservation-service',
+        ), JSON_THROW_ON_ERROR));
+
+        self::assertSame('reservation.confirmed.v1', $event->eventType);
+        self::assertSame('vehicle-reservation-service', $event->producer);
+    }
+
     public function testRejectsUnsupportedSchemaVersion(): void
     {
         $envelope = $this->envelope('PaymentCaptured', 'payment-service');
