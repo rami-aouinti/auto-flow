@@ -94,6 +94,10 @@ Billing consumes PaymentCaptured and refund events, creates tenant-scoped invoic
 
 Customer owns customer profiles, contact details, addresses, consent decisions and audit history. It enforces tenant isolation in PostgreSQL and exposes a protected API at `/api/v1/customers/**`. See [Customer Service documentation](apps/customer-service/README.md).
 
+## Inventory Service
+
+Inventory owns physical VIN-bearing vehicle units, their location, condition, stock status and movement history. It is separate from Vehicle Catalog (vehicle specifications) and Vehicle Reservation (temporary holds). The first API slice exposes tenant-scoped stock registration, listing, availability counts and versioned status changes. See [Inventory Service documentation](apps/inventory-service/README.md).
+
 ## Vehicle Reservation Service
 
 Vehicle Reservation owns physical stock-unit holds and their lifecycle (held, confirmed, expired, released, fulfilled). It is separate from Vehicle Catalog: a catalogue variant describes a configuration, while a reservation locks one physical stock unit. The service exposes a tenant-protected API at `/api/v1/reservations`, uses Keycloak audience `autoflow-vehicle-reservation`, PostgreSQL RLS, idempotency keys, ETags, audit events and a transactional Outbox. See [Vehicle Reservation Service documentation](apps/vehicle-reservation-service/README.md).
