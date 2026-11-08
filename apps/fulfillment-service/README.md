@@ -7,11 +7,29 @@ Fulfillment is the bounded context responsible for physical vehicle handover aft
 A fulfillment is created once per tenant/order. It becomes eligible for preparation only after both independent prerequisites have been observed:
 
 - `PaymentCaptured` from Payment Service.
-- `ContractSigned` from Contract Service.
+- `contract.signed.v1` from Contract Service.
 
-The events may arrive in either order and may be delivered more than once. The application layer must persist each event in a tenant-scoped Inbox, deduplicate by provider event ID, and update the prerequisite state in the same PostgreSQL transaction. The fulfillment must be created idempotently using the unique tenant/order key. A delivery must never start merely because an order was accepted or a payment was only authorized.
+The events may arrive in either order and may be delivered more than once. The application layer persists each event in a tenant-scoped Inbox and updates the prerequisite state in the same PostgreSQL transaction. A fulfillment is created idempotently using the unique tenant/order key. The RabbitMQ message is acknowledged only after the database commit.
 
-The first delivery integration consumes Payment Service's `autoflow.payment.events` exchange (`PaymentCaptured`) and Contract Service's `autoflow.contract.events` exchange (`contract.signed.v1`). Contract's signed event includes `orderId` so Fulfillment can correlate without querying another service's database. The event envelope must carry `eventId`, `eventType`, `occurredAt`, `tenantId`, `aggregateId` and `payload`. Consumers must reject malformed/unsupported versions, acknowledge only after commit, and route poison messages to a dead-letter queue.
+## Event contracts and RabbitMQ
+
+Both producers publish versioned JSON envelopes. Payment publishes `PaymentCaptured` to the durable topic exchange `autoflow.payment.events`; Contract publishes `contract.signed.v1` to `autoflow.contract.events`. Both envelopes include `eventId`, `eventType`, `schemaVersion`, `producer`, `tenantId`, `occurredAt` and `data.orderId`.
+
+The consumer binds only the two prerequisite routing keys to the durable queue `autoflow.fulfillment.integration-events`. Invalid JSON, unsupported schema versions, unsupported event types and malformed identifiers are rejected without requeue and routed to `autoflow.fulfillment.integration-events.dlq`. Database or transient infrastructure errors are negatively acknowledged with requeue.
+
+## Transaction and idempotency
+
+For every delivery, Fulfillment:
+
+1. Starts a PostgreSQL transaction and sets `app.tenant_id` locally for RLS.
+2. Inserts the event into `fulfillment_event_inbox` with a unique tenant/event key.
+3. Treats a repeated event ID with the same payload hash as an already processed delivery. Reuse of an event ID with a different payload is rejected.
+4. Creates the fulfillment with `ON CONFLICT (tenant_id, order_id) DO NOTHING`, then locks the record with `SELECT ... FOR UPDATE`.
+5. Records the payment or contract prerequisite only once. When both timestamps exist, it transitions to `ready_for_preparation`.
+6. Writes the audit event and the `fulfillment.ready_for_preparation.v1` Outbox event in the same transaction.
+7. Marks the Inbox row processed and commits. Only then does the consumer ACK RabbitMQ.
+
+The unique order key and row lock make concurrent Payment/Contract deliveries safe: the second transaction observes the first transaction's committed prerequisite before evaluating readiness. A crash after commit but before ACK results in a redelivery that the Inbox deduplicates.
 
 ## Lifecycle
 
@@ -28,35 +46,15 @@ in_transit -> delivery_failed -> scheduled (reschedule)
 non-terminal states -> cancelled (subject to business policy)
 ```
 
-The domain aggregate enforces transitions. A delivered fulfillment is terminal and cannot be silently reopened. Corrections must be represented by an explicit compensating workflow/audit event.
+## Runtime
 
-## Ownership and integration
+The worker entrypoint is `bin/consume-events.php`. It requires:
 
-- Fulfillment stores only external identifiers and the minimum immutable delivery snapshot required for execution. It never joins another service's database.
-- Customer contact/address and vehicle details are resolved through the owning service at the application boundary and snapshotted with provenance/version; event payloads are not trusted as authoritative PII unless the producing contract explicitly guarantees that snapshot.
-- Order completion is requested from Order Service only after proof of delivery is committed locally. A failed upstream call is retried from a durable Outbox; the local delivery is not rolled back.
-- Notifications are published as integration events; Notification Service owns channel delivery.
-- No synchronous call to Payment or Contract is required in the delivery hot path.
+- `FULFILLMENT_DATABASE_URL` using the restricted `autoflow_fulfillment` role.
+- `RABBITMQ_HOST`, `RABBITMQ_PORT`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`, and optional `RABBITMQ_VHOST`.
 
-## Initial implementation slice
-
-The domain model and unit tests are established. The PostgreSQL migration now defines tenant-isolated fulfillment, event Inbox, audit, idempotency and Outbox tables plus a restricted publisher role. Compose applies this migration on both fresh volumes and existing local volumes. HTTP endpoints, the RabbitMQ consumers and runtime service wiring are the next implementation slice. The domain has no Symfony, Doctrine, RabbitMQ or HTTP dependency. This keeps business rules testable without infrastructure.
-
-## Planned API
-
-- `GET /api/v1/fulfillments` — tenant-scoped paginated list.
-- `GET /api/v1/fulfillments/{id}` — fulfillment details and current state.
-- `POST /api/v1/fulfillments/{id}/start-preparation` — `fulfillments:manage`.
-- `POST /api/v1/fulfillments/{id}/complete-preparation` — `fulfillments:manage`.
-- `POST /api/v1/fulfillments/{id}/schedule` — carrier and delivery slot.
-- `POST /api/v1/fulfillments/{id}/dispatch` — mark vehicle in transit.
-- `POST /api/v1/fulfillments/{id}/confirm-delivery` — recipient and proof metadata.
-- `POST /api/v1/fulfillments/{id}/delivery-failed` — reason and rescheduling workflow.
-
-Every command will require an actor-scoped `Idempotency-Key`. All routes will require a verified Keycloak tenant claim and the `autoflow-fulfillment` audience.
+The publisher is a separate worker and must use the restricted `autoflow_fulfillment_publisher` role. The HTTP API and publisher are intentionally not started by this consumer process.
 
 ## Quality gates
 
-Before this service is considered operational, it must have PostgreSQL RLS, transactional Inbox/Outbox, at-least-once RabbitMQ consumption, idempotent commands, OpenAPI, readiness/liveness checks, unit and integration tests (including RLS and duplicate/out-of-order events), Compose wiring, Kubernetes manifests, observability and an end-to-end test from Payment + Contract through delivery completion.
-
-Do not mark an order complete before a verified delivery confirmation is persisted. Do not store card data or duplicate the customer master record.
+Unit tests cover both supported event envelopes, schema version validation, producer/type matching and malformed identifiers. Database integration tests should additionally exercise PostgreSQL RLS, transaction rollback, duplicate delivery, out-of-order prerequisites and concurrent consumers before production rollout.

@@ -21,7 +21,7 @@ ALTER ROLE autoflow_fulfillment WITH LOGIN PASSWORD 'local-only-fulfillment-pass
     NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
 ALTER ROLE autoflow_fulfillment_publisher WITH LOGIN PASSWORD 'local-only-fulfillment-publisher-password'
     NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
-ALTER ROLE autoflow_fulfillment WITH LOGIN PASSWORD 'local-only-fulfillment-password'\n    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;\nALTER ROLE autoflow_fulfillment_publisher WITH LOGIN PASSWORD 'local-only-fulfillment-publisher-password'\n    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;\nALTER ROLE autoflow_fulfillment_outbox_owner NOLOGIN BYPASSRLS;
+ALTER ROLE autoflow_fulfillment_outbox_owner NOLOGIN BYPASSRLS;
 GRANT CONNECT ON DATABASE autoflow TO autoflow_fulfillment, autoflow_fulfillment_publisher;
 GRANT USAGE ON SCHEMA public TO autoflow_fulfillment, autoflow_fulfillment_publisher, autoflow_fulfillment_outbox_owner;
 

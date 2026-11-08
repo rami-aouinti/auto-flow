@@ -57,7 +57,45 @@ services:
         condition: service_healthy
       vehicle-catalog-service:
         condition: service_healthy
-      order-service:
+      fulfillment-event-consumer:
+    build:
+      context: .
+      dockerfile: apps/fulfillment-service/Dockerfile
+    command: ["php", "bin/consume-events.php"]
+    environment:
+      FULFILLMENT_DATABASE_URL: ${FULFILLMENT_DATABASE_URL:-postgresql://autoflow_fulfillment:local-only-fulfillment-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  fulfillment-outbox-publisher:
+    build:
+      context: .
+      dockerfile: apps/fulfillment-service/Dockerfile
+    command: ["php", "bin/publish-outbox.php"]
+    environment:
+      FULFILLMENT_PUBLISHER_DATABASE_URL: ${FULFILLMENT_PUBLISHER_DATABASE_URL:-postgresql://autoflow_fulfillment_publisher:local-only-fulfillment-publisher-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  order-service:
         condition: service_healthy
       payment-service:
         condition: service_healthy
@@ -864,6 +902,7 @@ services:
       - ./apps/payment-service/migrations/140-payment-schema.sql:/docker-entrypoint-initdb.d/160-payment-schema.sql:ro
       - ./apps/contract-service/migrations/200-contract-schema.sql:/docker-entrypoint-initdb.d/170-contract-schema.sql:ro
       - ./apps/contract-service/migrations/205-contract-outbox-envelope.sql:/docker-entrypoint-initdb.d/175-contract-outbox-envelope.sql:ro
+      - ./apps/fulfillment-service/migrations/210-fulfillment-schema.sql:/docker-entrypoint-initdb.d/180-fulfillment-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
@@ -888,6 +927,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/190-order-customer-reference.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/200-contract-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/205-contract-outbox-envelope.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/210-fulfillment-schema.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -906,6 +946,7 @@ services:
       - ./apps/order-service/migrations/Version20261107000100AddCustomerReference.sql:/migrations/190-order-customer-reference.sql:ro
       - ./apps/contract-service/migrations/200-contract-schema.sql:/migrations/200-contract-schema.sql:ro
       - ./apps/contract-service/migrations/205-contract-outbox-envelope.sql:/migrations/205-contract-outbox-envelope.sql:ro
+      - ./apps/fulfillment-service/migrations/210-fulfillment-schema.sql:/migrations/210-fulfillment-schema.sql:ro
     depends_on:
       postgres:
         condition: service_healthy
