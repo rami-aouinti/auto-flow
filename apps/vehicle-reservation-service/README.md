@@ -60,17 +60,21 @@ The PostgreSQL schema includes:
 - `vehicle_reservation_event_inbox`: event deduplication foundation.
 - `vehicle_reservation_audit_events`: append-only business history.
 - `vehicle_reservation_idempotency`: replay-safe command records.
-- `vehicle_reservation_outbox`: transactional event publication records.
+- `vehicle_reservation_outbox`: transactional event publication records. Events are published to the durable topic exchange `autoflow.vehicle-reservation.events` with publisher confirms; the durable queue of the same name retains messages until consumers bind their own queues.
 
-Tenant-owned tables enforce PostgreSQL Row-Level Security using transaction-local `app.tenant_id`. The runtime role is not a table owner and does not bypass RLS. The API validates Keycloak RS256 tokens against issuer, JWKS and audience `autoflow-vehicle-reservation`; tenant and permission checks are performed per request.
+Tenant-owned tables enforce PostgreSQL Row-Level Security using transaction-local `app.tenant_id`. The API runtime role is not a table owner and does not bypass RLS. The expiry worker login can only execute a narrowly scoped function; the function runs under a separate no-login `BYPASSRLS` owner. The publisher login can only execute the Outbox claim/ack/retry functions and cannot read reservation tables directly. The API validates Keycloak RS256 tokens against issuer, JWKS and audience `autoflow-vehicle-reservation`; tenant and permission checks are performed per request.
 
 ## Local setup and tests
 
 ```bash
-docker compose --env-file .env.example up -d --build vehicle-reservation-service
+docker compose --env-file .env.example up -d --build vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher
 composer install --working-dir=apps/vehicle-reservation-service
+RESERVATION_TEST_DATABASE_URL=postgresql://autoflow_reservation:local-only-reservation-password@127.0.0.1:5432/autoflow \
+RESERVATION_WORKER_TEST_DATABASE_URL=postgresql://autoflow_reservation_worker:local-only-reservation-worker-password@127.0.0.1:5432/autoflow \
+RESERVATION_PUBLISHER_TEST_DATABASE_URL=postgresql://autoflow_reservation_publisher:local-only-reservation-publisher-password@127.0.0.1:5432/autoflow \
 composer test --working-dir=apps/vehicle-reservation-service
 curl -i http://localhost:8092/health/ready
+docker compose --env-file .env.example exec -T vehicle-reservation-service php bin/smoke-test-rabbitmq.php
 ```
 
-The current delivery covers the domain lifecycle, tenant-secured REST API, transactional audit/idempotency/outbox writes, PostgreSQL RLS and gateway/Keycloak/Compose wiring. RabbitMQ outbox publishing and the scheduled expiry worker remain separate follow-up work; outbox rows are persisted but are not yet emitted to RabbitMQ by this milestone.
+The service now includes the automatic expiry worker and transactional Outbox publisher. Expiry changes, audit records and Outbox events are committed atomically. The publisher uses durable persistent messages, publisher confirms, retry backoff and a terminal failed state after 12 attempts. Delivery is at-least-once: consumers must deduplicate by `eventId`. The RabbitMQ smoke test exercises the full expiry → Outbox → exchange → queue path.
