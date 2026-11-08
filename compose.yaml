@@ -1062,6 +1062,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/205-contract-outbox-envelope.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/210-fulfillment-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/220-vehicle-reservation-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/230-vehicle-stock-registry-and-allocation.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -1082,6 +1083,7 @@ services:
       - ./apps/contract-service/migrations/205-contract-outbox-envelope.sql:/migrations/205-contract-outbox-envelope.sql:ro
       - ./apps/fulfillment-service/migrations/210-fulfillment-schema.sql:/migrations/210-fulfillment-schema.sql:ro
       - ./apps/vehicle-reservation-service/migrations/220-vehicle-reservation-schema.sql:/migrations/220-vehicle-reservation-schema.sql:ro
+      - ./apps/vehicle-reservation-service/migrations/230-vehicle-stock-registry-and-allocation.sql:/migrations/230-vehicle-stock-registry-and-allocation.sql:ro
     depends_on:
       postgres:
         condition: service_healthy
