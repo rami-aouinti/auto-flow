@@ -73,7 +73,7 @@ final readonly class FulfillmentEventHandler
             );
 
             $record = $this->db->fetchAssociative(
-                'SELECT fulfillment_id, status, payment_captured_at, contract_signed_at
+                'SELECT fulfillment_id, status, payment_captured_at, contract_signed_at, reservation_confirmed_at
                  FROM fulfillment_records
                  WHERE tenant_id=:tenant AND order_id=:order
                  FOR UPDATE',
@@ -92,9 +92,12 @@ final readonly class FulfillmentEventHandler
                 return true;
             }
 
-            $column = $event->eventType === IntegrationEvent::PAYMENT_CAPTURED
-                ? 'payment_captured_at'
-                : 'contract_signed_at';
+            $column = match ($event->eventType) {
+                IntegrationEvent::PAYMENT_CAPTURED => 'payment_captured_at',
+                IntegrationEvent::CONTRACT_SIGNED => 'contract_signed_at',
+                IntegrationEvent::RESERVATION_CONFIRMED => 'reservation_confirmed_at',
+                default => throw new \\LogicException('Unsupported fulfillment prerequisite event.'),
+            };
             $alreadyObserved = $record[$column] !== null;
             $previousStatus = (string) $record['status'];
 
@@ -130,6 +133,7 @@ final readonly class FulfillmentEventHandler
                 $previousStatus === 'awaiting_prerequisites'
                 && $updated['payment_captured_at'] !== null
                 && $updated['contract_signed_at'] !== null
+                && $updated['reservation_confirmed_at'] !== null
             ) {
                 $newStatus = 'ready_for_preparation';
                 $this->db->executeStatement(
