@@ -12,7 +12,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - Supervisor-managed Offer background processes in Docker Compose
 - Temporal CLI development server with persistent local SQLite state
 - RoadRunner 3.0.1 HTTP and gRPC workers for the Offer and Pricing services
-- Symfony 7.4 microservices with independent Composer projects (Customer, Offer, Pricing, Vehicle Catalog, Order, Payment, Billing and Contract)
+- Symfony 7.4 microservices with independent Composer projects (Customer, Inventory, Offer, Pricing, Vehicle Catalog, Order, Payment, Billing and Contract)
 - OpenTelemetry PHP extension, SDK and Symfony auto-instrumentation
 - PostgreSQL 16, RabbitMQ 4, Redis 7, Elasticsearch 8 and Kibana
 - Mercure Hub for real-time Server-Sent Events
@@ -39,7 +39,7 @@ docker compose --env-file .env.example up -d --build
 docker compose --env-file .env.example ps
 docker compose --env-file .env.example exec php composer install
 docker compose --env-file .env.example exec php php -v
-docker compose --env-file .env.example up -d --build vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher payment-service payment-outbox-publisher order-payment-event-consumer order-workflow-worker customer-service contract-service
+docker compose --env-file .env.example up -d --build inventory-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher payment-service payment-outbox-publisher order-payment-event-consumer order-workflow-worker customer-service contract-service
 ~~~
 
 The first local build installs each service's independent Composer dependencies. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
@@ -51,9 +51,10 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 
 | Service | URL | Purpose |
 | --- | --- | --- |
-| API Gateway (Traefik) | http://localhost:8088 | Single HTTP entry point; routes Catalog, Offers, Pricing, Orders, Payments and Billing; applies CORS, security headers, in-memory IP rate limiting and in-flight request limits |
+| API Gateway (Traefik) | http://localhost:8088 | Single HTTP entry point; routes Catalog, Inventory, Offers, Pricing, Orders, Payments and Billing; applies CORS, security headers, in-memory IP rate limiting and in-flight request limits |
 | Billing Service | http://localhost:8087 | Invoices, VAT breakdowns, credit notes and billing summary |
 | Customer Service | http://localhost:8089 | Tenant-scoped individual/company profiles, addresses, consents and audit history |
+| Inventory Service | http://localhost:8093 | Physical vehicle units, VIN registry, stock availability and movement history |
 | Contract Service | http://localhost:8090 | Tenant-scoped contract drafts, immutable legal snapshots and lifecycle audit |
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
 | Offer Swagger UI | http://localhost:8081/api/doc | Interactive Offer REST API documentation (dev only) |
