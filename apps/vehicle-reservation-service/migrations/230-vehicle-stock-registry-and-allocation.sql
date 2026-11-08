@@ -13,6 +13,7 @@ ALTER ROLE autoflow_reservation_stock_owner NOLOGIN
     NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT BYPASSRLS;
 GRANT CONNECT ON DATABASE autoflow TO autoflow_reservation_stock_owner;
 GRANT USAGE ON SCHEMA public TO autoflow_reservation_stock_owner;
+GRANT CREATE ON SCHEMA public TO autoflow_reservation_stock_owner;
 
 CREATE TABLE IF NOT EXISTS vehicle_stock_units (
     tenant_id VARCHAR(128) NOT NULL,
@@ -248,3 +249,4 @@ ALTER FUNCTION public.vehicle_reservation_hold_available(VARCHAR, UUID, UUID, TI
 
 GRANT EXECUTE ON FUNCTION public.vehicle_reservation_hold_available(VARCHAR, UUID, UUID, TIMESTAMPTZ)
     TO autoflow_reservation_worker;
+REVOKE CREATE ON SCHEMA public FROM autoflow_reservation_stock_owner;
