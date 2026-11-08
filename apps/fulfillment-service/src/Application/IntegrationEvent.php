@@ -12,6 +12,7 @@ final readonly class IntegrationEvent
 {
     public const PAYMENT_CAPTURED = 'PaymentCaptured';
     public const CONTRACT_SIGNED = 'contract.signed.v1';
+    public const RESERVATION_CONFIRMED = 'reservation.confirmed.v1';
 
     private function __construct(
         public string $eventId,
@@ -57,6 +58,7 @@ final readonly class IntegrationEvent
         $expectedProducer = match ($eventType) {
             self::PAYMENT_CAPTURED => 'payment-service',
             self::CONTRACT_SIGNED => 'contract-service',
+            self::RESERVATION_CONFIRMED => 'vehicle-reservation-service',
             default => throw new InvalidArgumentException(sprintf('Unsupported fulfillment prerequisite event "%s".', $eventType)),
         };
 
