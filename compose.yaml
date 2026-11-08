@@ -61,6 +61,7 @@ services:
       contract-service: {condition: service_healthy}
       fulfillment-service: {condition: service_healthy}
       vehicle-reservation-service: {condition: service_healthy}
+      inventory-service: {condition: service_healthy}
 
   fulfillment-service:
     build:
@@ -330,6 +331,49 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+    restart: unless-stopped
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/inventory-service
+        COMPOSER_NO_DEV: ""
+    ports: ["8093:8080"]
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: local-only-inventory-service-secret
+      INVENTORY_DATABASE_URL: ${INVENTORY_DATABASE_URL:-postgresql://autoflow_inventory:local-only-inventory-password@postgres:5432/autoflow}
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      OTEL_SERVICE_NAME: autoflow-inventory-service
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_PHP_EXCLUDED_URLS: ^/health
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      keycloak: {condition: service_started}
+      tempo: {condition: service_started}
+      alloy: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    init: true
     restart: unless-stopped
 
   customer-service:
@@ -1060,6 +1104,7 @@ services:
       - ./apps/contract-service/migrations/205-contract-outbox-envelope.sql:/docker-entrypoint-initdb.d/175-contract-outbox-envelope.sql:ro
       - ./apps/fulfillment-service/migrations/210-fulfillment-schema.sql:/docker-entrypoint-initdb.d/180-fulfillment-schema.sql:ro
       - ./apps/vehicle-reservation-service/migrations/220-vehicle-reservation-schema.sql:/docker-entrypoint-initdb.d/190-vehicle-reservation-schema.sql:ro
+      - ./apps/inventory-service/migrations/00-inventory-schema.sql:/docker-entrypoint-initdb.d/250-inventory-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
@@ -1089,6 +1134,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/220-vehicle-reservation-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/230-vehicle-stock-registry-and-allocation.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/240-vehicle-reservation-confirm.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/250-inventory-schema.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -1112,6 +1158,7 @@ services:
       - ./apps/vehicle-reservation-service/migrations/220-vehicle-reservation-schema.sql:/migrations/220-vehicle-reservation-schema.sql:ro
       - ./apps/vehicle-reservation-service/migrations/230-vehicle-stock-registry-and-allocation.sql:/migrations/230-vehicle-stock-registry-and-allocation.sql:ro
       - ./apps/vehicle-reservation-service/migrations/231-confirm-reservation-for-saga.sql:/migrations/240-vehicle-reservation-confirm.sql:ro
+      - ./apps/inventory-service/migrations/00-inventory-schema.sql:/migrations/250-inventory-schema.sql:ro
     depends_on:
       postgres:
         condition: service_healthy
