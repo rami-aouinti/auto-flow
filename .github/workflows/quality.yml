@@ -143,7 +143,11 @@ jobs:
         run: |
           composer install --working-dir=apps/fulfillment-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/fulfillment-service && vendor/bin/phpunit --configuration phpunit.xml.dist
-      - name: Install Vehicle Reservation Service dependencies and run unit tests
+      - name: Install Vehicle Reservation Service dependencies and run unit/integration tests
+        env:
+          RESERVATION_TEST_DATABASE_URL: postgresql://autoflow_reservation:local-only-reservation-password@127.0.0.1:5432/autoflow
+          RESERVATION_WORKER_TEST_DATABASE_URL: postgresql://autoflow_reservation_worker:local-only-reservation-worker-password@127.0.0.1:5432/autoflow
+          RESERVATION_PUBLISHER_TEST_DATABASE_URL: postgresql://autoflow_reservation_publisher:local-only-reservation-publisher-password@127.0.0.1:5432/autoflow
         run: |
           composer install --working-dir=apps/vehicle-reservation-service --no-interaction --prefer-dist --no-progress
           cd apps/vehicle-reservation-service && vendor/bin/phpunit --configuration phpunit.xml.dist
@@ -153,7 +157,7 @@ jobs:
           composer install --working-dir=apps/customer-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/customer-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Build instrumented Symfony services
-        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer customer-service contract-service contract-outbox-publisher fulfillment-service fulfillment-event-consumer fulfillment-outbox-publisher
+        run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer customer-service contract-service contract-outbox-publisher fulfillment-service fulfillment-event-consumer fulfillment-outbox-publisher vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
