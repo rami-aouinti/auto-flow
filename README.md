@@ -94,6 +94,10 @@ Billing consumes PaymentCaptured and refund events, creates tenant-scoped invoic
 
 Customer owns customer profiles, contact details, addresses, consent decisions and audit history. It enforces tenant isolation in PostgreSQL and exposes a protected API at `/api/v1/customers/**`. See [Customer Service documentation](apps/customer-service/README.md).
 
+## Vehicle Reservation Service
+
+Vehicle Reservation owns physical stock-unit holds and their lifecycle (held, confirmed, expired, released, fulfilled). It is separate from Vehicle Catalog: a catalogue variant describes a configuration, while a reservation locks one physical stock unit. The service exposes a tenant-protected API at `/api/v1/reservations`, uses Keycloak audience `autoflow-vehicle-reservation`, PostgreSQL RLS, idempotency keys, ETags, audit events and a transactional Outbox. See [Vehicle Reservation Service documentation](apps/vehicle-reservation-service/README.md).
+
 ## Contract Service
 
 Contract owns contract drafts and their immutable legal snapshots, referencing accepted orders without cross-service database joins. The first slice includes tenant-isolated storage, idempotent creation, prepare/cancel transitions, audit history and transactional Outbox writes. PDF rendering, Outbox publishing and real e-signature integration are still open. See [Contract Service documentation](apps/contract-service/README.md).
@@ -109,7 +113,7 @@ Contract owns contract drafts and their immutable legal snapshots, referencing a
 | `/api/v1/payments/**` | Payment (`payment-service:8080`) | Payment intent, payment lifecycle and Stripe webhook API |
 | `/api/v1/billing/**` | Billing (`billing-service:8080`) | Tenant invoices, VAT breakdowns, credit notes and summary |
 | `/api/v1/customers/**` | Customer (`customer-service:8080`) | Tenant customer profiles, addresses, consents and audit history |
-| `/api/v1/contracts/**` | Contract (`contract-service:8080`) | Contract drafts, legal snapshots, lifecycle and audit history |
+| `/api/v1/contracts/**` | Contract (`contract-service:8080`) | Contract drafts, legal snapshots, lifecycle and audit history |\n| `/api/v1/reservations/**` | Vehicle Reservation (`vehicle-reservation-service:8080`) | Physical stock holds, confirmation, release and fulfilment |
 
 The gateway routes `/api/v1/contracts/**` to Contract Service at `contract-service:8080`. The gateway does **not** replace authentication or authorization. It does not decode or trust JWT claims: every backend continues to validate the Keycloak RS256 token, issuer, audience, tenant and service-owned scopes. The local edge rate limiter is in-memory and per gateway replica; distributed per-tenant quotas backed by Redis remain a separate production hardening task. TLS termination and trusted-proxy configuration must be completed for the target deployment.
 
