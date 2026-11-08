@@ -34,16 +34,11 @@
   ],
   "autoload": {
     "psr-4": {
-      "App\\\\": "src/",
-      "AutoFlow\\\\VehicleReservation\\\\": "src/Domain/",
       "AutoFlow\\VehicleReservation\\": "src/"
     }
   },
   "autoload-dev": {
-    "psr-4": {
-      "App\\\\Tests\\\\": "tests/",
-      "AutoFlow\\\\VehicleReservation\\\\Tests\\\\": "tests/"
-    }
+    "psr-4": {}
   },
   "scripts": {
     "test": "phpunit --configuration phpunit.xml.dist"
