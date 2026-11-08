@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace AutoFlow\\VehicleReservation\\Domain;
+namespace AutoFlow\VehicleReservation\Domain;
 
 use DomainException;
 
 final class VehicleReservation
 {
     public private(set) ReservationStatus $status;
-    private ?\\DateTimeImmutable $confirmedAt = null;
-    private ?\\DateTimeImmutable $releasedAt = null;
-    private ?\\DateTimeImmutable $fulfilledAt = null;
+    private ?\DateTimeImmutable $confirmedAt = null;
+    private ?\DateTimeImmutable $releasedAt = null;
+    private ?\DateTimeImmutable $fulfilledAt = null;
 
     public function __construct(
         public readonly string $id,
@@ -19,7 +19,7 @@ final class VehicleReservation
         public readonly string $vehicleUnitId,
         public readonly string $vehicleVariantId,
         public readonly string $orderId,
-        public readonly \\DateTimeImmutable $expiresAt,
+        public readonly \DateTimeImmutable $expiresAt,
         ReservationStatus $status = ReservationStatus::HELD,
     ) {
         foreach ([
@@ -34,14 +34,14 @@ final class VehicleReservation
             }
         }
 
-        if ($expiresAt <= new \\DateTimeImmutable('now', new \\DateTimeZone('UTC'))) {
+        if ($expiresAt <= new \DateTimeImmutable('now', new \DateTimeZone('UTC'))) {
             throw new DomainException('Reservation expiry must be in the future.');
         }
 
         $this->status = $status;
     }
 
-    public function confirm(\\DateTimeImmutable $now): void
+    public function confirm(\DateTimeImmutable $now): void
     {
         $this->assertStatus(ReservationStatus::HELD, 'Only a held reservation can be confirmed.');
 
@@ -53,7 +53,7 @@ final class VehicleReservation
         $this->status = ReservationStatus::CONFIRMED;
     }
 
-    public function expire(\\DateTimeImmutable $now): bool
+    public function expire(\DateTimeImmutable $now): bool
     {
         if ($this->status !== ReservationStatus::HELD || $now < $this->expiresAt) {
             return false;
@@ -64,7 +64,7 @@ final class VehicleReservation
         return true;
     }
 
-    public function release(\\DateTimeImmutable $now): void
+    public function release(\DateTimeImmutable $now): void
     {
         if (!$this->status->isActive()) {
             throw new DomainException(sprintf('A %s reservation cannot be released.', $this->status->value));
@@ -74,7 +74,7 @@ final class VehicleReservation
         $this->status = ReservationStatus::RELEASED;
     }
 
-    public function markFulfilled(\\DateTimeImmutable $now): void
+    public function markFulfilled(\DateTimeImmutable $now): void
     {
         $this->assertStatus(ReservationStatus::CONFIRMED, 'Only a confirmed reservation can be fulfilled.');
 
@@ -82,7 +82,7 @@ final class VehicleReservation
         $this->status = ReservationStatus::FULFILLED;
     }
 
-    public function isExpiredAt(\\DateTimeImmutable $now): bool
+    public function isExpiredAt(\DateTimeImmutable $now): bool
     {
         return $this->status === ReservationStatus::HELD && $now >= $this->expiresAt;
     }
