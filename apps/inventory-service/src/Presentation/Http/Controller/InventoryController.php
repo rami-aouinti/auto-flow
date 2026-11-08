@@ -135,15 +135,16 @@ final readonly class InventoryController
         return $this->run($r, 'inventory:write', function (Connection $db, string $tenant, AuthenticatedPrincipal $p) use ($id, $target, $reason, $key, $expected): JsonResponse {
             $old = $db->fetchAssociative('SELECT status,location_code,version FROM inventory_units WHERE tenant_id=:tenant AND inventory_unit_id=:id FOR UPDATE', ['tenant'=>$tenant,'id'=>$id]);
             if ($old === false) return $this->problem(404, 'Inventory unit not found.');
-            if ((int)$old['version'] !== (int)$expected) return $this->problem(412, 'Inventory unit version is stale.');
-            if ($old['status'] === $target) return new JsonResponse($this->load($db, $tenant, $id), 200, ['ETag'=>'"'.$old['version'].'"']);
-            if (!$this->transitionAllowed($old['status'], $target)) return $this->problem(409, 'Inventory status transition is not allowed.');
             $hash = hash('sha256', json_encode([$id,$target,$reason,$expected], JSON_THROW_ON_ERROR));
             $existing = $db->fetchAssociative('SELECT request_hash,response_body FROM inventory_idempotency_keys WHERE tenant_id=:tenant AND idempotency_key=:key', ['tenant'=>$tenant,'key'=>$key]);
             if ($existing !== false) {
                 if (!hash_equals($existing['request_hash'], $hash)) return $this->problem(409, 'Idempotency-Key was used for another command.');
-                return new JsonResponse($this->jsonValue($existing['response_body']), 200, ['ETag'=>'"'.$old['version'].'"']);
+                $replayed = $this->jsonValue($existing['response_body']);
+                return new JsonResponse($replayed, 200, ['Cache-Control'=>'no-store','ETag'=>'"'.$replayed['version'].'"']);
             }
+            if ((int)$old['version'] !== (int)$expected) return $this->problem(412, 'Inventory unit version is stale.');
+            if ($old['status'] === $target) return new JsonResponse($this->load($db, $tenant, $id), 200, ['ETag'=>'"'.$old['version'].'"']);
+            if (!$this->transitionAllowed($old['status'], $target)) return $this->problem(409, 'Inventory status transition is not allowed.');
             $db->executeStatement('UPDATE inventory_units SET status=:status,version=version+1,updated_by=:actor,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=:tenant AND inventory_unit_id=:id', ['status'=>$target,'actor'=>$p->subject,'tenant'=>$tenant,'id'=>$id]);
             $this->record($db, $tenant, $id, $p->subject, 'InventoryStatusChanged', $old['status'], $target, $old['location_code'], $old['location_code'], ['reason'=>$reason]);
             $item = $this->load($db, $tenant, $id);
@@ -243,16 +244,7 @@ final readonly class InventoryController
 
     private function transitionAllowed(string $from, string $to): bool
     {
-        $allowed = [
-            'available'=>['blocked','in_transit','maintenance','quarantined','sold'],
-            'blocked'=>['available','maintenance','quarantined'],
-            'in_transit'=>['available','delivered','quarantined'],
-            'delivered'=>['available','sold','maintenance','quarantined'],
-            'maintenance'=>['available','quarantined'],
-            'quarantined'=>['maintenance','available'],
-            'sold'=>[],
-        ];
-        return in_array($to, $allowed[$from] ?? [], true);
+        return InventoryStatus::from($from)->canTransitionTo(InventoryStatus::from($to));
     }
 
     private function jsonValue(mixed $value): array
