@@ -51,6 +51,7 @@ $channel = $connection->channel();
 
 $channel->exchange_declare('autoflow.payment.events', 'topic', false, true, false);
 $channel->exchange_declare('autoflow.contract.events', 'topic', false, true, false);
+$channel->exchange_declare('autoflow.vehicle-reservation.events', 'topic', false, true, false);
 $channel->exchange_declare('autoflow.fulfillment.dlx', 'topic', false, true, false);
 $channel->queue_declare('autoflow.fulfillment.integration-events.dlq', false, true, false, false);
 $channel->queue_bind('autoflow.fulfillment.integration-events.dlq', 'autoflow.fulfillment.dlx', '#');
@@ -65,6 +66,7 @@ $channel->queue_declare(
 );
 $channel->queue_bind('autoflow.fulfillment.integration-events', 'autoflow.payment.events', 'PaymentCaptured');
 $channel->queue_bind('autoflow.fulfillment.integration-events', 'autoflow.contract.events', 'contract.signed.v1');
+$channel->queue_bind('autoflow.fulfillment.integration-events', 'autoflow.vehicle-reservation.events', 'reservation.confirmed.v1');
 $channel->basic_qos(null, 20, null);
 
 $handler = new FulfillmentEventHandler($db);
