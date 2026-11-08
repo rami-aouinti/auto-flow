@@ -55,6 +55,7 @@ jobs:
           composer validate --strict --working-dir=apps/customer-service
           composer validate --strict --working-dir=apps/contract-service
           composer validate --strict --working-dir=apps/fulfillment-service
+          composer validate --strict --working-dir=apps/vehicle-reservation-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
@@ -142,6 +143,10 @@ jobs:
         run: |
           composer install --working-dir=apps/fulfillment-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/fulfillment-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Install Vehicle Reservation Service dependencies and run unit tests
+        run: |
+          composer install --working-dir=apps/vehicle-reservation-service --no-interaction --prefer-dist --no-progress
+          cd apps/vehicle-reservation-service && vendor/bin/phpunit --configuration phpunit.xml.dist
 
       - name: Install Customer Service dependencies and run unit tests
         run: |
