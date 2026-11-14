@@ -132,6 +132,22 @@ jobs:
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.contract_outbox') IS NOT NULL AS contract_outbox_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('document_service.documents') IS NOT NULL AS document_schema_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT relrowsecurity AND relforcerowsecurity AS document_tenant_rls_ready FROM pg_class WHERE oid = 'document_service.documents'::regclass"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'document_service' AND table_name = 'documents' AND column_name = 'legal_hold') AS document_legal_hold_ready"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('document_service.document_purge_events') IS NOT NULL AS document_purge_audit_ready"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT relrowsecurity AND relforcerowsecurity AS document_grant_rls_ready FROM pg_class WHERE oid = 'document_service.document_access_grants'::regclass"
+          docker compose --env-file .env.example up -d document-object-storage document-object-storage-init clamav document-service document-outbox-publisher document-retention-worker
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8100/health/ready >/dev/null; then ready=1; break; fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            docker compose --env-file .env.example logs --no-color --tail=200 document-service document-object-storage document-object-storage-init clamav postgres-bootstrap
+            curl -sS -i http://127.0.0.1:8100/health/ready || true
+            exit 1
+          fi
+          curl -fsS http://127.0.0.1:8100/api/doc.json | jq -e '.paths["/api/v1/documents/{id}/legal-hold"].post and .paths["/api/v1/documents/{id}/access-grants"].post' >/dev/null
+          docker compose --env-file .env.example exec -T -e DOCUMENT_STORAGE_INTEGRATION_TEST=1 document-service php /app/bin/test-storage.php
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.payments') IS NOT NULL AS payments_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.fulfillment_records') IS NOT NULL AS fulfillment_records_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.fulfillment_event_inbox') IS NOT NULL AS fulfillment_inbox_ready"
