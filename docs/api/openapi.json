@@ -567,7 +567,10 @@
             ]
           },
           "expires_at": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time",
             "nullable": true
           }
