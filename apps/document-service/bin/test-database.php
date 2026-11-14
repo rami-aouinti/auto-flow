@@ -27,5 +27,12 @@ try{
     $assert(($row['legal_hold']??false)===true||($row['legal_hold']??null)==='t','legal hold migration is writable under tenant RLS');
     $db->prepare("INSERT INTO document_purge_events(id,tenant_id,document_id,checksum_sha256,reason) VALUES(:id,:t,:d,:h,'test')")->execute(['id'=>'66666666-6666-4666-8666-666666666666','t'=>$tenantA,'d'=>$id,'h'=>hash('sha256','x')]);
     $db->rollBack();
-    fwrite(STDOUT,"Document PostgreSQL RLS and retention schema tests passed.\n");
+    $maintenanceUrl=parse_url(getenv('DOCUMENT_MAINTENANCE_TEST_DATABASE_URL')?:'');
+    if(is_array($maintenanceUrl)&&!empty($maintenanceUrl['host'])&&!empty($maintenanceUrl['path'])){
+        $maintenance=new PDO('pgsql:host='.$maintenanceUrl['host'].';port='.($maintenanceUrl['port']??5432).';dbname='.ltrim($maintenanceUrl['path'],'/'),rawurldecode($maintenanceUrl['user']??''),rawurldecode($maintenanceUrl['pass']??''),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+        $maintenance->beginTransaction();
+        $maintenance->query('SELECT id FROM document_service.documents ORDER BY id LIMIT 1 FOR UPDATE')->fetchAll();
+        $maintenance->rollBack();
+    }
+    fwrite(STDOUT,"Document PostgreSQL RLS, legal hold and maintenance-role tests passed.\n");
 }catch(Throwable $e){if($db->inTransaction())$db->rollBack();throw $e;}
