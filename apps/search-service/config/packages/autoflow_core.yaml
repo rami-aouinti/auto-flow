@@ -1,0 +1,16 @@
+core:
+    correlation_id: true
+    correlation_header: X-Correlation-ID
+    authentication:
+        enabled: true
+        issuer: '%env(AUTOFLOW_JWT_ISSUER)%'
+        audience: 'autoflow-search'
+        jwks_uri: '%env(AUTOFLOW_JWT_JWKS_URI)%'
+        jwks_cache_ttl: 300
+        protected_path_prefixes:
+            - /api/
+        # Vehicle catalogue data is shared master data, not tenant-owned data.
+        tenant_required_path_prefixes: []
+        excluded_paths:
+            - /api/doc
+            - /api/doc.json
