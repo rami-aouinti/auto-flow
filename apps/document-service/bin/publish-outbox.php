@@ -18,11 +18,14 @@ $publish=function(string $method,string $path,?array $body=null)use($base,$user,
     return is_string($response)&&$response!==''?(json_decode($response,true)?:[]):[];
 };
 $publish('PUT','/api/exchanges/%2F/'.rawurlencode($exchange),['type'=>'topic','durable'=>true,'auto_delete'=>false,'internal'=>false,'arguments'=>new stdClass()]);
+$queue='autoflow.document.events';
+$publish('PUT','/api/queues/%2F/'.rawurlencode($queue),['durable'=>true,'auto_delete'=>false,'arguments'=>new stdClass()]);
+$publish('POST','/api/bindings/%2F/e/'.rawurlencode($exchange).'/q/'.rawurlencode($queue),['routing_key'=>'#','arguments'=>new stdClass()]);
 fwrite(STDOUT,"Document outbox publisher started; exchange={$exchange}\n");
 while(true){
     $pdo->beginTransaction();
     try{
-        $rows=$pdo->query("SELECT id,tenant_id,aggregate_id,event_type,payload,occurred_at FROM document_outbox_events WHERE published_at IS NULL AND attempts < 20 ORDER BY occurred_at FOR UPDATE SKIP LOCKED LIMIT 25")->fetchAll();
+        $rows=$pdo->query("SELECT id,tenant_id,aggregate_id,event_type,payload,occurred_at FROM document_outbox_events WHERE published_at IS NULL AND attempts < 20 ORDER BY occurred_at LIMIT 25 FOR UPDATE SKIP LOCKED")->fetchAll();
         if($rows===[]){$pdo->commit();sleep($interval);continue;}
         foreach($rows as $row){
             try{
