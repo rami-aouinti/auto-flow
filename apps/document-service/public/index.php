@@ -52,7 +52,7 @@ function auth():array {
     $sc=preg_split('/\s+/',trim((string)($c['scope']??'')))?:[];$roles=$c['realm_access']['roles']??[];if(is_array($roles))$sc=array_merge($sc,$roles);
     return ['sub'=>$sub,'tenant'=>$tenant,'scopes'=>array_unique($sc)];
 }
-function permit(array $u,string $s):void{if(!in_array($s,$u['scopes'],true))fail(403,'Forbidden','Missing permission '.$s.'.');}
+function permit(array $u,string $s):void{$allowed=match($s){'documents:read'=>['documents:read','documents:write','documents:manage'],'documents:write'=>['documents:write','documents:manage'],default=>[$s]};if(array_intersect($allowed,$u['scopes'])===[])fail(403,'Forbidden','Missing permission '.$s.'.');}
 function dbBool(mixed $v):bool{return $v===true||$v===1||$v==='1'||$v==='t'||$v==='true';}
 function hasGrant(PDO $db,array $u,string $documentId,string $permission):bool {
     $q=$db->prepare("SELECT 1 FROM document_access_grants WHERE tenant_id=:t AND document_id=:d AND subject_id=:s AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>NOW()) AND permission IN (:p,'manage') LIMIT 1");
