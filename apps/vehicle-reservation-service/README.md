@@ -42,6 +42,23 @@ docker compose --env-file .env.example run --rm vehicle-reservation-service \
 
 The seeder is deterministic and safe to run repeatedly. It creates three units for the supplied tenant and variant. Replace the placeholder with a UUID that exists in your Vehicle Catalog data.
 
+## Inventory-backed physical stock projection
+
+Inventory is the source of truth for physical vehicle identity and operational status. The `reservation-inventory-event-consumer` binds a dedicated durable queue to `autoflow.inventory.events` and consumes `inventory.unit.created.v1` and `inventory.status.changed.v1`.
+
+The consumer applies events through a database function with an inbox key (tenant + event ID) and per-unit Inventory version. Duplicate events are acknowledged without reapplying them; older versions cannot overwrite newer state. Inventory status is stored separately from reservation allocation status, so an active hold remains reserved while its latest Inventory status is tracked. Releasing or expiring a hold restores availability only when Inventory still reports `available`; blocked, in-transit, delivered, maintenance, quarantined and sold units remain unavailable. Fulfilled units remain terminally sold in the Reservation projection.
+
+Both Inventory event types carry `inventoryUnitId`, `vehicleVariantId`, `vin`, `toStatus` and monotonically increasing `version` inside `data`. The Inventory API emits these fields for creation and status changes.
+
+Start the projection consumer:
+
+```bash
+docker compose --env-file .env.example up -d --build reservation-inventory-event-consumer
+docker compose --env-file .env.example logs -f reservation-inventory-event-consumer
+```
+
+The projection is eventually consistent: a new or changed Inventory unit becomes visible to Reservation after its RabbitMQ event is processed. Do not seed duplicate Reservation stock for units managed by Inventory.
+
 ## HTTP API
 
 The service listens on port `8092`; through the gateway use `http://localhost:8088/api/v1/reservations`.
