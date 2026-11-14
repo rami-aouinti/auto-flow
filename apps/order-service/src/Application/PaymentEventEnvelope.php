@@ -5,13 +5,9 @@ declare(strict_types=1);
 namespace App\Application;
 
 use InvalidArgumentException;
-use Symfony\Component\Uid\Uuid;
 
 final readonly class PaymentEventEnvelope
 {
-    /**
-     * @param array<string, mixed> $data
-     */
     private function __construct(
         public string $eventId,
         public string $eventType,
