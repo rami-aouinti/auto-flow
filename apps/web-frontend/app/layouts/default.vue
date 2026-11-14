@@ -26,12 +26,14 @@ const sections = [
     title: 'STAMMDATEN',
     items: [
       { title: 'Fahrzeugkatalog', subtitle: 'Marken, Modelle & Varianten', icon: 'mdi-car-cog', to: '/admin/catalog/manufacturers' },
+      { title: 'Kunden', subtitle: 'Profile, Adressen & Einwilligungen', icon: 'mdi-account-group-outline', to: '/admin/customers' },
     ],
   },
 ];
 const pageTitle = computed(() => {
   if (route.path === '/admin') return 'Kontrollzentrum';
   if (route.path.startsWith('/admin/catalog')) return 'Fahrzeugkatalog';
+  if (route.path.startsWith('/admin/customers')) return 'Kunden';
   if (route.path === '/operations/services') return 'Service Operations';
   if (route.path.startsWith('/operations/orders')) return route.query.tab === 'payments' ? 'Payments' : route.query.tab === 'quotes' ? 'Pricing Quotes' : 'Aufträge';
   return 'Workspace';
