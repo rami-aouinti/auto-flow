@@ -42,6 +42,7 @@ test('Customer 360 loads customer profile and related activity', async ({ page }
   await page.route('**/customers/api/v1/customers/customer-demo/addresses', route => route.fulfill({ json: { items: [{ address_id: 'address-1', address_type: 'billing', line1: 'Demo Street 1', postal_code: '50667', city: 'Köln', country_code: 'DE', is_default: true }] } }));
   await page.route('**/customers/api/v1/customers/customer-demo/consents', route => route.fulfill({ json: { items: [{ purpose: 'marketing.email', granted: true }] } }));
   await page.route('**/customers/api/v1/customers/customer-demo/history', route => route.fulfill({ json: { items: [{ event_id: 'customer-event', event_type: 'CustomerCreated', occurred_at: '2026-11-14T08:00:00Z' }] } }));
+  await page.route('**/customers/api/v1/customers/customer-demo/identity', route => route.fulfill({ json: { customerId: 'customer-demo', linked: true } }));
   await page.route('**/orders/api/v1/orders**', route => route.fulfill({ json: { items: [{ order_id: 'order-demo', customer_id: 'customer-demo', status: 'accepted', vehicle_id: 'vehicle-demo' }] } }));
   await page.route('**/contracts/api/v1/contracts**', route => route.fulfill({ json: { items: [] } }));
   await page.route('**/fulfillments/api/v1/fulfillments**', route => route.fulfill({ json: { items: [] } }));
@@ -53,6 +54,9 @@ test('Customer 360 loads customer profile and related activity', async ({ page }
   await expect(page.getByText('Rami Demo')).toBeVisible();
   await expect(page.getByText('order-demo')).toBeVisible();
   await expect(page.getByText('Demo Street 1')).toBeVisible();
+  await page.getByLabel('Keycloak Subject (sub)').fill('00000000-0000-4000-8000-000000000001');
+  await page.getByRole('button', { name: 'Konto verknüpfen' }).click();
+  await expect(page.getByText('Keycloak-Konto wurde sicher mit diesem Kundenprofil verknüpft.')).toBeVisible();
 });
 
 test('business event monitor renders service activity', async ({ page }) => {
@@ -146,6 +150,9 @@ test('customer self-service portal reads and updates only the linked profile', a
   await page.getByRole('button', { name: 'Adresse entfernen portal-address-new' }).click();
   await page.getByRole('button', { name: 'Entfernen' }).click();
   await expect(page.getByText(/Demo Street 3/)).toHaveCount(0);
+
+  await page.getByRole('switch').first().click();
+  await expect(page.getByText('Deine Einwilligung wurde aktualisiert.')).toBeVisible();
 });
 
 
