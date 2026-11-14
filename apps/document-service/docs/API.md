@@ -81,4 +81,4 @@ curl -i http://localhost:8100/health/ready
 curl -i http://localhost:8100/api/doc.json
 ```
 
-For an existing PostgreSQL volume, `postgres-bootstrap` reapplies the idempotent role/schema/fixture SQL. Fresh database initialization also mounts the same SQL scripts. Demo rows are metadata-only and do not include downloadable binary files. Local Compose uses MinIO with a dedicated least-privilege service user and SSE-C encryption; replace all example credentials and the encryption key before any non-local deployment.
+For an existing PostgreSQL volume, `postgres-bootstrap` reapplies the idempotent role/schema/fixture SQL. Fresh database initialization also mounts the same SQL scripts. Demo rows are metadata-only and do not include downloadable binary files. Local Compose uses RustFS as the S3-compatible object store and AWS CLI to create the `autoflow-documents` bucket. Local development uses the configured RustFS S3 credentials directly; production must use a dedicated least-privilege IAM identity and SSE-C encryption. Replace all example credentials and the encryption key before any non-local deployment.
