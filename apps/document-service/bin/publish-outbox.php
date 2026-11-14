@@ -25,7 +25,7 @@ fwrite(STDOUT,"Document outbox publisher started; exchange={$exchange}\n");
 while(true){
     $pdo->beginTransaction();
     try{
-        $rows=$pdo->query("SELECT id,tenant_id,aggregate_id,event_type,payload,occurred_at FROM document_outbox_events WHERE published_at IS NULL AND attempts < 20 ORDER BY occurred_at LIMIT 25 FOR UPDATE SKIP LOCKED")->fetchAll();
+        $rows=$pdo->query("SELECT id,tenant_id,aggregate_id,event_type,payload,occurred_at FROM document_outbox_events WHERE published_at IS NULL ORDER BY occurred_at LIMIT 25 FOR UPDATE SKIP LOCKED")->fetchAll();
         if($rows===[]){$pdo->commit();sleep($interval);continue;}
         foreach($rows as $row){
             try{
