@@ -6,10 +6,10 @@
   "version": "2.0.0",
   "require": {
     "php": "^8.4",
-    "symfony/config": "8.1.*",
+    "symfony/config": "7.4.*",
     "symfony/dependency-injection": "7.4.*",
     "symfony/framework-bundle": "7.4.*",
-    "symfony/http-client": "8.1.*",
+    "symfony/http-client": "7.4.*",
     "symfony/http-kernel": "7.4.*",
     "symfony/messenger": "7.4.*",
     "symfony/routing": "7.4.*",
@@ -17,7 +17,7 @@
     "firebase/php-jwt": "^7.2.1",
     "nyholm/psr7": "^1.8",
     "roadrunner/http": "^4.0",
-    "symfony/psr-http-message-bridge": "8.1.*"
+    "symfony/psr-http-message-bridge": "7.4.*"
   },
   "suggest": {
     "google/protobuf": "Required when using the ProtobufSerializer adapter.",
