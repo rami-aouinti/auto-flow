@@ -47,6 +47,7 @@ const selected = ref<Customer | null>(null);
 const history = ref<HistoryEvent[]>([]);
 const detailLoading = ref(false);
 const addressDialog = ref(false);
+const editingAddressId = ref('');
 const addressSaving = ref(false);
 const addressError = ref('');
 const addressForm = ref({ addressType: 'billing', label: '', line1: '', line2: '', postalCode: '', city: '', region: '', countryCode: 'DE', isDefault: true });
@@ -153,15 +154,22 @@ async function archive(customer: Customer) {
   try { await customers.archive(customer.customer_id); notice.value = 'Kunde archiviert.'; await load(); }
   catch (e) { error.value = errorMessage(e); }
 }
-function openAddress() {
-  addressForm.value = { addressType: 'billing', label: '', line1: '', line2: '', postalCode: '', city: '', region: '', countryCode: 'DE', isDefault: true };
+function openAddress(address?: Address) {
+  editingAddressId.value = address?.address_id ?? '';
+  addressForm.value = address ? {
+    addressType: address.address_type, label: address.label ?? '', line1: address.line1,
+    line2: address.line2 ?? '', postalCode: address.postal_code, city: address.city,
+    region: address.region ?? '', countryCode: address.country_code, isDefault: address.is_default,
+  } : { addressType: 'billing', label: '', line1: '', line2: '', postalCode: '', city: '', region: '', countryCode: 'DE', isDefault: true };
   addressError.value = ''; addressDialog.value = true;
 }
 async function saveAddress() {
   if (!selected.value) return;
   addressSaving.value = true; addressError.value = '';
   try {
-    await customers.addAddress(selected.value.customer_id, { ...addressForm.value, line2: addressForm.value.line2 || null, region: addressForm.value.region || null });
+    const payload = { ...addressForm.value, line2: addressForm.value.line2 || null, region: addressForm.value.region || null };
+    if (editingAddressId.value) await customers.updateAddress(selected.value.customer_id, editingAddressId.value, payload);
+    else await customers.addAddress(selected.value.customer_id, payload);
     const response = await customers.get(selected.value.customer_id);
     selected.value = response.data; addressDialog.value = false;
   } catch (e) { addressError.value = errorMessage(e); }
@@ -274,9 +282,9 @@ onMounted(() => { void load(); });
             <v-col cols="12" md="6"><v-card variant="tonal" rounded="lg"><v-card-title class="text-subtitle-1">Profil</v-card-title><v-card-text><div>{{ selected.email || 'Keine E-Mail' }}</div><div>{{ selected.phone || 'Keine Telefonnummer' }}</div><div>Locale: {{ selected.locale || '–' }} · Version {{ selected.version || 1 }}</div><div>Status: {{ selected.status }}</div></v-card-text></v-card></v-col>
             <v-col cols="12" md="6"><v-card variant="tonal" rounded="lg"><v-card-title class="text-subtitle-1">Einwilligungen</v-card-title><v-card-text><div v-for="consent in selected.consents || []" :key="consent.purpose" class="d-flex justify-space-between mb-2"><span>{{ consent.purpose }}</span><v-chip size="x-small" :color="consent.granted ? 'success' : 'warning'">{{ consent.granted ? 'Erteilt' : 'Widerrufen' }}</v-chip></div><div class="d-flex ga-2 align-center mt-3"><v-text-field v-model="consentPurpose" label="Zweck" density="compact" hide-details /><v-switch v-model="consentGranted" label="Erteilt" color="success" hide-details /><v-btn size="small" color="primary" :loading="consentSaving" @click="saveConsent">Speichern</v-btn></div></v-card-text></v-card></v-col>
           </v-row>
-          <div class="d-flex align-center mt-5 mb-2"><h3 class="text-subtitle-1 font-weight-bold">Adressen</h3><v-spacer /><v-btn size="small" variant="tonal" prepend-icon="mdi-plus" @click="openAddress">Adresse hinzufügen</v-btn></div>
+          <div class="d-flex align-center mt-5 mb-2"><h3 class="text-subtitle-1 font-weight-bold">Adressen</h3><v-spacer /><v-btn size="small" variant="tonal" prepend-icon="mdi-plus" @click="openAddress()">Adresse hinzufügen</v-btn></div>
           <v-row>
-            <v-col v-for="address in selected.addresses || []" :key="address.address_id" cols="12" md="6"><v-card border rounded="lg"><v-card-text><div class="d-flex justify-space-between"><strong>{{ address.label || address.address_type }}</strong><v-chip v-if="address.is_default" size="x-small" color="success">Standard</v-chip></div><div>{{ address.line1 }} {{ address.line2 }}</div><div>{{ address.postal_code }} {{ address.city }}</div><div>{{ address.country_code }}</div><div class="d-flex justify-end"><v-btn size="x-small" color="error" variant="text" @click="removeAddress(address)">Entfernen</v-btn></div></v-card-text></v-card></v-col>
+            <v-col v-for="address in selected.addresses || []" :key="address.address_id" cols="12" md="6"><v-card border rounded="lg"><v-card-text><div class="d-flex justify-space-between"><strong>{{ address.label || address.address_type }}</strong><v-chip v-if="address.is_default" size="x-small" color="success">Standard</v-chip></div><div>{{ address.line1 }} {{ address.line2 }}</div><div>{{ address.postal_code }} {{ address.city }}</div><div>{{ address.country_code }}</div><div class="d-flex justify-end ga-1"><v-btn size="x-small" variant="text" @click="openAddress(address)">Bearbeiten</v-btn><v-btn size="x-small" color="error" variant="text" @click="removeAddress(address)">Entfernen</v-btn></div></v-card-text></v-card></v-col>
             <v-col v-if="!(selected.addresses || []).length" cols="12"><p class="text-body-2 text-medium-emphasis">Noch keine Adressen hinterlegt.</p></v-col>
           </v-row>
           <h3 class="text-subtitle-1 font-weight-bold mt-5 mb-2">Audit-Verlauf</h3>
@@ -289,7 +297,7 @@ onMounted(() => { void load(); });
     </v-dialog>
 
     <v-dialog v-model="addressDialog" max-width="620">
-      <v-card rounded="xl"><v-card-title class="pa-5">Adresse hinzufügen</v-card-title><v-card-text>
+      <v-card rounded="xl"><v-card-title class="pa-5">{{ editingAddressId ? 'Adresse bearbeiten' : 'Adresse hinzufügen' }}</v-card-title><v-card-text>
         <v-form @submit.prevent="saveAddress">
           <v-select v-model="addressForm.addressType" :items="['billing','shipping','residential','business']" label="Adresstyp" variant="outlined" />
           <v-text-field v-model="addressForm.label" label="Bezeichnung" variant="outlined" />
@@ -299,7 +307,7 @@ onMounted(() => { void load(); });
           <v-row><v-col cols="6"><v-text-field v-model="addressForm.region" label="Region" variant="outlined" /></v-col><v-col cols="6"><v-text-field v-model="addressForm.countryCode" label="Land (ISO)" variant="outlined" /></v-col></v-row>
           <v-switch v-model="addressForm.isDefault" label="Standardadresse" color="success" />
           <v-alert v-if="addressError" type="error" variant="tonal">{{ addressError }}</v-alert>
-          <div class="d-flex justify-end ga-2"><v-btn variant="text" @click="addressDialog = false">Abbrechen</v-btn><v-btn type="submit" color="primary" :loading="addressSaving">Adresse speichern</v-btn></div>
+          <div class="d-flex justify-end ga-2"><v-btn variant="text" @click="addressDialog = false">Abbrechen</v-btn><v-btn type="submit" color="primary" :loading="addressSaving">{{ editingAddressId ? 'Änderungen speichern' : 'Adresse speichern' }}</v-btn></div>
         </v-form>
       </v-card-text></v-card>
     </v-dialog>
