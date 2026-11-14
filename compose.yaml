@@ -1291,6 +1291,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/130-order-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/140-order-transition-idempotency.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/145-order-payment-lifecycle.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/146-order-payment-inbox-payload-hash.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/150-payment-role.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/160-payment-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/170-billing-schema.sql
@@ -1320,6 +1321,7 @@ services:
       - ./apps/order-service/migrations/Version20261106000100CreateOrders.sql:/migrations/130-order-schema.sql:ro
       - ./apps/order-service/migrations/Version20261106000200AddOrderTransitionIdempotency.sql:/migrations/140-order-transition-idempotency.sql:ro
       - ./apps/order-service/migrations/Version20261106000300AddPaymentLifecycle.sql:/migrations/145-order-payment-lifecycle.sql:ro
+      - ./apps/order-service/migrations/Version20261106000400AddPaymentInboxPayloadHash.sql:/migrations/146-order-payment-inbox-payload-hash.sql:ro
       - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/migrations/150-payment-role.sql:ro
       - ./apps/payment-service/migrations/140-payment-schema.sql:/migrations/160-payment-schema.sql:ro
       - ./apps/billing-service/migrations/170-billing-schema.sql:/migrations/170-billing-schema.sql:ro
