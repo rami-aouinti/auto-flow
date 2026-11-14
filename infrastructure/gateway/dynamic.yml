@@ -170,6 +170,18 @@ http:
       service: audit
       middlewares: [api-defaults]
 
+    analytics:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/analytics`)"
+      service: analytics
+      middlewares: [api-defaults]
+
+    integrations:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/integrations`) || PathPrefix(`/webhooks/`)"
+      service: integrations
+      middlewares: [api-defaults]
+
   services:
     ai:
       loadBalancer:
@@ -322,6 +334,27 @@ http:
         passHostHeader: true
         servers:
           - url: "http://audit-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+
+    analytics:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://analytics-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    integrations:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://integration-service:8080"
         healthCheck:
           path: /health/ready
           interval: 10s
