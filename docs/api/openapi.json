@@ -3,7 +3,7 @@
   "info": {
     "title": "AutoFlow Microservices API",
     "version": "1.0.0",
-    "description": "Central OpenAPI 3.0 catalog for all implemented business HTTP APIs. Swagger UI is served locally at http://localhost:8096. Paths are routed through Traefik at localhost:8088 unless an operation declares a direct service server. Health-only scaffold routes and the Notification background worker are documented in their per-service API.md files. Per-service API references describe parameters, authentication, request examples and possible responses. Request schemas are only declared where grounded in the implementation contract. Audit Service now documents public health probes and complete authenticated ingestion, search and detail response contracts."
+    "description": "Central OpenAPI 3.0 catalog for implemented AutoFlow HTTP APIs. Swagger UI is served locally at http://localhost:8096. Paths are routed through Traefik at localhost:8088 unless an operation declares a direct service server. Analytics and Integration endpoint contracts, request/response schemas, authentication and error responses are documented here and in each service's docs/API.md."
   },
   "servers": [
     {
@@ -581,6 +581,201 @@
       },
       "DocumentProblem": {
         "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "AnalyticsEventRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "eventId",
+          "eventType"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[a-zA-Z0-9._:-]+$"
+          },
+          "eventType": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9._:-]+$"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": {
+            "type": "object",
+            "description": "JSON object; maximum serialized size 16 KiB."
+          }
+        }
+      },
+      "AnalyticsOverview": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "periodDays": {
+                "type": "integer"
+              },
+              "eventsByType": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              },
+              "offersCreated": {
+                "type": "integer"
+              },
+              "offersAccepted": {
+                "type": "integer"
+              },
+              "offerConversionRate": {
+                "type": "number"
+              },
+              "successfulPayments": {
+                "type": "integer"
+              },
+              "lastEventAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "AnalyticsSeries": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "day",
+                "value"
+              ],
+              "properties": {
+                "day": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "value": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "IntegrationDeliveryRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provider",
+          "targetUrl",
+          "eventType",
+          "payload"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]{2,40}$"
+          },
+          "targetUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "HTTPS URL with an exact hostname entry in INTEGRATION_OUTBOUND_ALLOWED_HOSTS."
+          },
+          "eventType": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "payload": {
+            "type": "object",
+            "description": "JSON object; maximum serialized size 16 KiB."
+          }
+        }
+      },
+      "IntegrationWebhookEvent": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "receivedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IntegrationDelivery": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "delivered",
+              "failed"
+            ]
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "nextAttemptAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastError": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProblemResponse": {
+        "type": "object",
+        "required": [
+          "title",
+          "status",
+          "detail"
+        ],
         "properties": {
           "type": {
             "type": "string"
@@ -6394,15 +6589,24 @@
     "/health/ready": {
       "get": {
         "tags": [
-          "Document Service"
+          "Analytics Service",
+          "Integration Service"
         ],
-        "summary": "Document Service readiness",
+        "summary": "Readiness probe",
+        "description": "Public PostgreSQL readiness endpoint; the same path is implemented by both services.",
         "responses": {
           "200": {
-            "description": "Database and storage are ready"
+            "description": "Database is reachable"
           },
           "503": {
-            "description": "Service is not ready"
+            "description": "Database unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -8044,27 +8248,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "eventId",
-                  "eventType"
-                ],
-                "properties": {
-                  "eventId": {
-                    "type": "string",
-                    "maxLength": 200
-                  },
-                  "eventType": {
-                    "type": "string"
-                  },
-                  "occurredAt": {
-                    "type": "string",
-                    "format": "date-time"
-                  },
-                  "payload": {
-                    "type": "object"
-                  }
-                }
+                "$ref": "#/components/schemas/AnalyticsEventRequest"
               }
             }
           }
@@ -8084,6 +8268,9 @@
           },
           "422": {
             "description": "Invalid event"
+          },
+          "503": {
+            "description": "Database or dependency unavailable"
           }
         }
       }
@@ -8113,7 +8300,14 @@
         ],
         "responses": {
           "200": {
-            "description": "KPI overview"
+            "description": "KPI overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsOverview"
+                }
+              }
+            }
           },
           "401": {
             "description": "Invalid token"
@@ -8157,7 +8351,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Daily series"
+            "description": "Daily series",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsSeries"
+                }
+              }
+            }
           },
           "401": {
             "description": "Invalid token"
@@ -8211,7 +8412,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^[a-z0-9_-]{2,40}$"
             }
           },
           {
@@ -8222,6 +8424,15 @@
               "type": "string",
               "example": "sha256=..."
             }
+          },
+          {
+            "name": "X-Signature",
+            "in": "header",
+            "required": false,
+            "description": "Alternative accepted signature header.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -8230,6 +8441,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "id"
+                ],
+                "description": "Raw body used to calculate HMAC-SHA256; maximum 64 KiB. Accepts id or eventId and type or eventType.",
                 "additionalProperties": true
               }
             }
@@ -8242,11 +8457,23 @@
           "202": {
             "description": "Webhook accepted"
           },
+          "400": {
+            "description": "Invalid JSON body"
+          },
           "401": {
             "description": "Invalid signature"
           },
           "404": {
             "description": "Provider not configured"
+          },
+          "413": {
+            "description": "Webhook body exceeds 64 KiB"
+          },
+          "422": {
+            "description": "Missing event ID or invalid event type"
+          },
+          "503": {
+            "description": "Persistence unavailable"
           }
         }
       }
@@ -8276,7 +8503,22 @@
         ],
         "responses": {
           "200": {
-            "description": "Tenant webhook events"
+            "description": "Tenant webhook events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/IntegrationWebhookEvent"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Invalid token"
@@ -8300,7 +8542,22 @@
         ],
         "responses": {
           "200": {
-            "description": "Delivery attempts"
+            "description": "Delivery attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/IntegrationDelivery"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Invalid token"
@@ -8325,29 +8582,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "provider",
-                  "targetUrl",
-                  "eventType",
-                  "payload"
-                ],
-                "properties": {
-                  "provider": {
-                    "type": "string"
-                  },
-                  "targetUrl": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "HTTPS URL whose hostname is in INTEGRATION_OUTBOUND_ALLOWED_HOSTS"
-                  },
-                  "eventType": {
-                    "type": "string"
-                  },
-                  "payload": {
-                    "type": "object"
-                  }
-                }
+                "$ref": "#/components/schemas/IntegrationDeliveryRequest"
               }
             }
           }
@@ -8355,6 +8590,9 @@
         "responses": {
           "202": {
             "description": "Delivery queued"
+          },
+          "400": {
+            "description": "Invalid JSON body"
           },
           "401": {
             "description": "Invalid token"
@@ -8364,6 +8602,9 @@
           },
           "422": {
             "description": "Invalid request or non-allowlisted target"
+          },
+          "503": {
+            "description": "Database unavailable"
           }
         }
       }
@@ -8381,13 +8622,59 @@
         ],
         "responses": {
           "200": {
-            "description": "Provider names only; secrets are never returned"
+            "description": "Provider names only; secrets are never returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Invalid token"
           },
           "403": {
             "description": "Missing integrations:read"
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "tags": [
+          "Analytics Service",
+          "Integration Service"
+        ],
+        "summary": "Liveness probe",
+        "description": "Public process liveness endpoint; the same path is implemented by both services.",
+        "responses": {
+          "200": {
+            "description": "Service process is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "service": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
