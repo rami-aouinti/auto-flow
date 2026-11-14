@@ -7,7 +7,6 @@ namespace App\Tests\Unit\Application;
 use App\Application\PaymentEventEnvelope;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Uid\Uuid;
 
 final class PaymentEventEnvelopeTest extends TestCase
 {
