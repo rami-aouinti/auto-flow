@@ -78,6 +78,13 @@ export const customers = {
   setConsent: (id: string, payload: { purpose: string; granted: boolean; source?: string }) =>
     api.put(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/consents`, payload),
   history: (id: string) => api.get(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/history`),
+  linkIdentity: (id: string, subject: string) => api.put(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/identity`, { subject }),
+  mercureAccess: () => api.get('/customers/api/v1/realtime/access', { withCredentials: true }),
+  portalMe: () => api.get(`${customerBase}/api/v1/customers/me`),
+  portalUpdate: (payload: Record<string, unknown>) => api.patch(`${customerBase}/api/v1/customers/me`, payload),
+  portalAddresses: () => api.get(`${customerBase}/api/v1/customers/me/addresses`),
+  portalConsents: () => api.get(`${customerBase}/api/v1/customers/me/consents`),
+  portalSetConsent: (purpose: string, granted: boolean) => api.put(`${customerBase}/api/v1/customers/me/consents`, { purpose, granted }),
 };
 
 export const orders = {
