@@ -12,7 +12,7 @@ The AutoFlow frontend is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is deliver
 - `/admin/catalog/manufacturers`, `/admin/catalog/models`, `/admin/catalog/generations`, `/admin/catalog/variants` — resource-specific catalog administration routes with shared CRUD workspace.
 - `/operations/orders`, `/operations/payments`, `/operations/pricing` — deep links into order, payment and pricing operations.
 - `/operations/services` — cross-service read-only overview for Customers, CRM, Contracts, Billing, Fulfillment, Inventory and Reservations.
-- `/operations/orders/:id` — dedicated order dossier with lifecycle timeline, audit history, linked payments/reservations/fulfillment/invoices and downloadable offer/contract PDFs.
+- `/operations/order/:id` — dedicated order dossier with lifecycle timeline, audit history, linked payments/reservations/fulfillment/invoices and downloadable offer/contract PDFs.
 - `/admin/customer-360` — customer 360 workspace with profile editing, addresses, consents, orders, contracts and audit history.
 - `/operations/events` — cross-service business activity feed with API read errors and 30-second refresh.
 - `/operations/workflow` — operational workspace for contract creation/preparation/signature documents, inventory registration/status changes, vehicle reservations, fulfillment and delivery transitions, invoice/credit-note details, and audit timelines. Accepted marketplace offers can now be handed over to Order Service with the selected vehicle, quote and active customer. Tabs can be deep-linked with `?tab=contracts`, `?tab=inventory`, `?tab=reservations`, `?tab=fulfillment` or `?tab=billing`.
