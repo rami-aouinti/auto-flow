@@ -46,6 +46,16 @@ Check indexed documents:
 curl -fsS 'http://localhost:9200/autoflow-vehicles-v1/_count'
 ```
 
+## Tests
+
+Run the service unit tests inside the local development image:
+
+```bash
+docker compose --env-file .env.example exec search-service composer test
+```
+
+The test suite covers Elasticsearch connectivity and response decoding. Full integration and load tests against a real Elasticsearch cluster remain part of the production-readiness backlog.
+
 ## Local runtime
 
 ```bash
