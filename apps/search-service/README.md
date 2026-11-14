@@ -1,43 +1,61 @@
-# Search Service
+# AutoFlow Search Service
 
-**Status: scaffold only — health endpoints and local Docker wiring.**
+Elasticsearch-backed search projection for the shared vehicle catalogue.
 
-## Responsibility
+## Implemented capabilities
 
-Fast, tenant-safe search projections across vehicles, customers, offers, orders, contracts and approved domain records.
+- Authenticated vehicle search with relevance ranking and typo tolerance.
+- Filters for manufacturer, fuel type, powertrain, body style, transmission, power and seats.
+- Pagination, deterministic sorting and aggregations (facets).
+- Lightweight autocomplete suggestions.
+- Explicit index mapping and a repeatable catalogue reindex command.
+- Readiness check against Elasticsearch; JWT verification uses the shared CoreBundle and Keycloak JWKS.
 
-## Existing-platform boundary
+The indexed catalogue is shared master data. Search stores no customer PII, tenant-specific data, offers, orders or contracts.
 
-Elasticsearch already exists. This scaffold does not create indexes or expose search queries.
+## API
 
-## Implemented endpoints
+Business routes require a Keycloak bearer token with either `catalog:read` or `search:read`.
 
-| Method | Path | Purpose | Responses |
-|---|---|---|---|
-| GET | /health | Liveness compatibility | 200 |
-| GET | /health/live | Process liveness | 200 |
-| GET | /health/ready | Readiness plus configured TCP checks | 200, 503 |
-| Any | Other paths | Business API not implemented | 404 Problem Details |
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/search/vehicles` | Search published vehicle variants |
+| GET | `/api/v1/search/vehicles/suggest?q=gol` | Suggestions |
+| GET | `/health`, `/health/live`, `/health/ready` | Health probes |
 
-Health endpoints are unauthenticated and disclose no credentials. No business endpoints, database schema, migrations, fixtures or domain events are claimed as implemented.
+Example:
 
-## Local Docker
+```http
+GET /api/v1/search/vehicles?q=volkswagen%20golf&fuelType=diesel&page=1&limit=10
+Authorization: Bearer <access-token>
+```
+
+Query parameters: `q`, `manufacturer`, `fuelType`, `powertrain`, `bodyStyle`, `transmission`, `minPowerKw`, `maxPowerKw`, `seats`, `sort`, `page`, `limit`. Sort values: `relevance`, `power_asc`, `power_desc`, `name`.
+
+## Initial index build / reindex
+
+The catalogue database role is read-only from this service. Reindexing is safe to repeat and uses stable variant IDs.
+
+```bash
+docker compose --env-file .env.example exec search-service php bin/reindex-vehicles.php
+```
+
+Check indexed documents:
+
+```bash
+curl -fsS 'http://localhost:9200/autoflow-vehicles-v1/_count'
+```
+
+## Local runtime
 
 ```bash
 docker compose --env-file .env.example up -d --build search-service
-docker compose --env-file .env.example ps search-service
-curl -i http://localhost:8097/health/live
+docker compose --env-file .env.example exec search-service php bin/reindex-vehicles.php
 curl -i http://localhost:8097/health/ready
 ```
 
-Shared bootstrap image: docker/php/skeleton-service.Dockerfile. It uses PHP's built-in HTTP server for local scaffolding only; replace it with the Symfony + RoadRunner runtime before implementing business capabilities.
+The gateway route is `/api/v1/search/*`; direct local diagnostics use port 8097.
 
-## Environment
+## Consistency boundary
 
-- APP_ENV=dev for this bootstrap.
-- HEALTH_DEPENDENCIES: optional semicolon-separated host:port values checked by readiness.
-- Configured readiness dependency: elasticsearch:9200.
-
-## Implementation backlog
-
-See docs/FEATURE_BACKLOG.md for planned capabilities, future API design, data ownership, events, reliability, security and acceptance criteria. Do not add generic CRUD without a defined owned use case.
+This first production-shaped slice rebuilds its search projection from the catalogue's published read model. It does not yet claim continuous RabbitMQ event synchronization, delete propagation, alias-based zero-downtime reindexing, or tenant-owned cross-domain projections. Those require versioned catalogue events and are tracked in the feature backlog.
