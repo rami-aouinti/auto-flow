@@ -13,7 +13,8 @@ The AutoFlow frontend is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is deliver
 - `/operations/orders`, `/operations/payments`, `/operations/pricing` — deep links into order, payment and pricing operations.
 - `/operations/services` — cross-service read-only overview for Customers, CRM, Contracts, Billing, Fulfillment, Inventory and Reservations.
 - `/operations/order/:id` — dedicated order dossier with lifecycle timeline, audit history, linked payments/reservations/fulfillment/invoices and downloadable offer/contract PDFs.
-- `/admin/customer-360` — customer 360 workspace with profile editing, addresses, consents, orders, contracts and audit history.
+- `/admin/customer-360` — customer 360 workspace with profile editing, addresses, consents, orders, contracts, audit history and audited Keycloak identity linking.
+- `/portal` — self-service profile and consent workspace, restricted to the customer record mapped to the verified Keycloak subject.
 - `/operations/events` — searchable cross-service activity explorer with source filters, JSON payload inspection, API read errors, Mercure live messages and 30-second refresh.
 - `/operations/workflow` — operational workspace for contract creation/preparation/signature documents, inventory registration/status changes, vehicle reservations, fulfillment and delivery transitions, invoice/credit-note details, and audit timelines. Accepted marketplace offers can now be handed over to Order Service with the selected vehicle, quote and active customer. Tabs can be deep-linked with `?tab=contracts`, `?tab=inventory`, `?tab=reservations`, `?tab=fulfillment` or `?tab=billing`.
 
@@ -21,7 +22,7 @@ Nuxt owns the route lifecycle and provides separate layouts for the customer-fac
 
 ## Realtime notifications and event monitoring
 
-The global notification menu subscribes to a configured Mercure hub using `VITE_MERCURE_HUB_URL` and comma-separated `VITE_MERCURE_TOPICS`. The hub must be reachable from the browser and authorize the current session (normally via secure same-site cookies or a reverse-proxy-issued subscriber cookie). Use tenant-scoped topics only; never put a Mercure publisher JWT in a `VITE_` variable. The Mercure hub is already included in `compose.yaml` and exposed at `http://localhost:3001/.well-known/mercure`; Compose passes that URL to the frontend. The current service outbox publishers publish to RabbitMQ exchanges, not directly to Mercure, so a tenant-aware RabbitMQ-to-Mercure publisher bridge is still required before domain events will arrive live. The UI reports connection state and does not fabricate events. Without a hub, the event monitor continues to refresh service snapshots every 30 seconds.
+The global notification menu requests a short-lived tenant-scoped subscriber cookie from Customer Service after Keycloak authentication. The browser subscribes only to the topic returned by that API; it never supplies a tenant ID or stores a signing key. The RabbitMQ-to-Mercure bridge consumes service event exchanges, validates tenant identifiers and publishes a minimal event summary to a private topic. Raw event payloads and PII are not forwarded. Without the hub, the event monitor continues to refresh service snapshots every 30 seconds.
 
 ## End-to-end tests
 
@@ -50,7 +51,7 @@ Nuxt server routes proxy the same-origin prefixes to the internal Compose servic
 | `/inventory/**` | Inventory |
 | `/reservations/**` | Vehicle Reservation |
 
-The proxy forwards the original HTTP method, query string, request body and Authorization header for every service prefix. Customer personal-data responses remain `no-store`; the browser never receives internal service addresses. The Customer Service requires the `autoflow-customer` audience plus `customers:read`, `customers:write` or `customers:manage` as appropriate. Customer 360 is an internal tenant-scoped admin workspace, not an end-customer portal. A self-service portal must wait for a server-enforced Keycloak-subject-to-customer association; filtering tenant-wide customer data in the browser is not an acceptable authorization boundary. CRM actions require the corresponding `crm:applications:*`, `crm:eligibility:manage`, `crm:tasks:*` and `crm:interactions:*` scopes.
+The proxy forwards the original HTTP method, query string, request body and Authorization header for every service prefix. Customer personal-data responses remain `no-store`; the browser never receives internal service addresses. The Customer Service requires the `autoflow-customer` audience plus `customers:read`, `customers:write` or `customers:manage` as appropriate. Customer 360 is an internal tenant-scoped admin workspace. The `/portal` self-service endpoints enforce a server-side tenant + Keycloak-subject mapping and never trust a customer ID supplied by the browser. CRM actions require the corresponding `crm:applications:*`, `crm:eligibility:manage`, `crm:tasks:*` and `crm:interactions:*` scopes.
 
 ## Local development
 
