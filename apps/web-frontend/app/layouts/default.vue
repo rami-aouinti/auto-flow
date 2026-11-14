@@ -23,6 +23,7 @@ const sections = [
       { title: 'Service Operations', subtitle: 'Contracts, Billing, Stock & Fulfillment', icon: 'mdi-application-cog-outline', to: '/operations/services' },
       { title: 'Business Workflows', subtitle: 'Contracts, stock & delivery actions', icon: 'mdi-workflow-outline', to: '/operations/workflow' },
       { title: 'Events & Errors', subtitle: 'Business activity and service failures', icon: 'mdi-pulse', to: '/operations/events' },
+      { title: 'Platform Services', subtitle: 'Analytics, Audit, Config, Documents & Search', icon: 'mdi-apps', to: '/operations/platform' },
     ],
   },
   {
@@ -43,6 +44,7 @@ const pageTitle = computed(() => {
   if (route.path.startsWith('/operations/order/')) return 'Auftragsdossier';
   if (route.path.startsWith('/operations/workflow')) return 'Business Workflows';
   if (route.path.startsWith('/operations/events')) return 'Events & Errors';
+  if (route.path.startsWith('/operations/platform')) return 'Platform Services';
   if (route.path.startsWith('/admin/customer-360')) return 'Customer 360';
   if (route.path.startsWith('/operations/services')) return 'Service Operations';
   if (route.path.startsWith('/operations/orders')) return route.query.tab === 'payments' ? 'Payments' : route.query.tab === 'quotes' ? 'Pricing Quotes' : 'Aufträge';
