@@ -1,0 +1,15 @@
+# Production-only Compose overrides.
+# Keep private key material outside the repository and provide
+# DOCUSIGN_PRIVATE_KEY_HOST_PATH in the deployment environment.
+services:
+  contract-service:
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      DOCUSIGN_PRIVATE_KEY_PATH: /run/secrets/docusign_rsa_private_key
+    secrets:
+      - docusign_rsa_private_key
+
+secrets:
+  docusign_rsa_private_key:
+    file: ${DOCUSIGN_PRIVATE_KEY_HOST_PATH:?Set DOCUSIGN_PRIVATE_KEY_HOST_PATH to the mounted DocuSign RSA private-key file}
