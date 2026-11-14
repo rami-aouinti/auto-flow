@@ -493,6 +493,8 @@ services:
       CUSTOMER_DATABASE_URL: ${CUSTOMER_DATABASE_URL:-postgresql://autoflow_customer:local-only-customer-password@postgres:5432/autoflow}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:-!ChangeThisMercureSubscriberKeyForLocalDevelopmentOnly!}
+      AUTOFLOW_MERCURE_TOPIC_BASE: https://autoflow.local/tenants
       OTEL_SERVICE_NAME: autoflow-customer-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
       OTEL_PHP_AUTOLOAD_ENABLED: "true"
@@ -1135,6 +1137,26 @@ services:
     init: true
     restart: unless-stopped
 
+  mercure-event-bridge:
+    build:
+      context: .
+      dockerfile: apps/notification-service/Dockerfile
+    command: ["php", "bin/relay-to-mercure.php"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+      MERCURE_URL: http://mercure/.well-known/mercure
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:-!ChangeThisMercurePublisherKeyForLocalDevelopmentOnly!}
+      AUTOFLOW_MERCURE_TOPIC_BASE: https://autoflow.local/tenants
+    depends_on:
+      rabbitmq: {condition: service_healthy}
+      mercure: {condition: service_started}
+    init: true
+    restart: unless-stopped
+
   notification-metrics:
     build:
       context: .
@@ -1304,6 +1326,8 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/171-billing-inbox-payload-hash.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/172-billing-credit-note-snapshot.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/180-customer-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/181-customer-keycloak-subject.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/182-local-customer-portal-seed.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/190-order-customer-reference.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/200-contract-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/205-contract-outbox-envelope.sql
@@ -1336,6 +1360,8 @@ services:
       - ./apps/billing-service/migrations/171-billing-inbox-payload-hash.sql:/migrations/171-billing-inbox-payload-hash.sql:ro
       - ./apps/billing-service/migrations/172-billing-credit-note-snapshot.sql:/migrations/172-billing-credit-note-snapshot.sql:ro
       - ./apps/customer-service/migrations/00-customer-schema.sql:/migrations/180-customer-schema.sql:ro
+      - ./apps/customer-service/migrations/181-customer-keycloak-subject.sql:/migrations/181-customer-keycloak-subject.sql:ro
+      - ./apps/customer-service/migrations/182-local-customer-portal-seed.sql:/migrations/182-local-customer-portal-seed.sql:ro
       - ./apps/order-service/migrations/Version20261107000100AddCustomerReference.sql:/migrations/190-order-customer-reference.sql:ro
       - ./apps/contract-service/migrations/200-contract-schema.sql:/migrations/200-contract-schema.sql:ro
       - ./apps/contract-service/migrations/205-contract-outbox-envelope.sql:/migrations/205-contract-outbox-envelope.sql:ro
