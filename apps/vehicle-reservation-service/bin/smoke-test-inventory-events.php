@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Doctrine\\DBAL\\DriverManager;
-use PhpAmqpLib\\Connection\\AMQPStreamConnection;
-use PhpAmqpLib\\Message\\AMQPMessage;
-use PhpAmqpLib\\Wire\\AMQPTable;
-use Symfony\\Component\\Uid\\Uuid;
+use Doctrine\DBAL\DriverManager;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
+use Symfony\Component\Uid\Uuid;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -111,7 +111,7 @@ try {
     $waitForProjection('available', 'available', 1);
     $publish('blocked', 2);
     $waitForProjection('unavailable', 'blocked', 2);
-    fwrite(STDOUT, "Inventory -> Reservation event projection smoke test passed.\\n");
+    fwrite(STDOUT, "Inventory -> Reservation event projection smoke test passed.\n");
 } finally {
     if ($channel->is_open()) {
         $channel->close();
