@@ -71,7 +71,7 @@ services:
       args:
         SERVICE_PATH: apps/ai-service
         COMPOSER_NO_DEV: ""
-    ports: ["8094:8080"]
+    ports: ["8095:8080"]
     environment:
       APP_ENV: prod
       APP_DEBUG: "0"
