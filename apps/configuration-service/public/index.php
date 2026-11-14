@@ -83,7 +83,9 @@ function expectedVersion(array $input): ?int {
         if (preg_match('/^(?:W\\/)?"?(\\d+)"?$/', $raw, $matches)) $raw = $matches[1];
     }
     if (!is_int($raw) && !(is_string($raw) && ctype_digit($raw))) problem(400, 'Bad Request', 'expectedVersion or If-Match must contain a non-negative version or *.');
-    return (int)$raw;
+    $version = (int)$raw;
+    if ($version < 0) problem(400, 'Bad Request', 'expectedVersion must be non-negative.');
+    return $version;
 }
 function jsonValue(mixed $value): array {
     $type = match (true) { is_string($value)=>'string', is_int($value)||is_float($value)=>'number', is_bool($value)=>'boolean', $value instanceof stdClass=>'object', is_array($value)&&array_is_list($value)=>'array', is_array($value)=>'object', $value===null=>'null', default=>null };
