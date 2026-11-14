@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { customers } from '../../../src/api';
+import type Keycloak from 'keycloak-js';
 
 type Notice = { id: string; title: string; detail: string; receivedAt: string; type: string };
+const { $keycloak } = useNuxtApp() as unknown as { $keycloak: Keycloak };
 const hubUrl = import.meta.env.VITE_MERCURE_HUB_URL || '';
 const connection = ref<'disabled' | 'connecting' | 'connected' | 'reconnecting'>('disabled');
 const notices = ref<Notice[]>([]);
@@ -11,7 +13,7 @@ let source: EventSource | null = null;
 let disposed = false;
 
 async function connect() {
-  if (!hubUrl || typeof window === 'undefined') {
+  if (!$keycloak.hasRealmRole('customers:read') || !hubUrl || typeof window === 'undefined') {
     connection.value = 'disabled';
     return;
   }
