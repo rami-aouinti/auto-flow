@@ -71,6 +71,7 @@ func consumeSagaEventsOnce(ctx context.Context, temporal client.Client) error {
 		{"autoflow.order.events", "OrderPaymentCaptured"},
 		{"autoflow.order.events", "OrderPaymentFailed"},
 		{"autoflow.order.events", "OrderPaymentRefunded"},
+		{"autoflow.order.events", "OrderPaymentCancelled"},
 		{"autoflow.vehicle-reservation.events", "reservation.held.v1"},
 		{"autoflow.vehicle-reservation.events", "reservation.hold.rejected.v1"},
 		{"autoflow.vehicle-reservation.events", "reservation.confirmed.v1"},
@@ -156,7 +157,7 @@ func DecodeSagaEvent(body []byte) (Event, error) {
 	allowed := map[string]bool{
 		"OrderCreated": true, "OrderSubmitted": true, "OrderAccepted": true, "OrderRejected": true,
 		"OrderCancelled": true, "OrderPaymentCaptured": true, "OrderPaymentFailed": true,
-		"OrderPaymentRefunded": true, "reservation.held.v1": true,
+		"OrderPaymentRefunded": true, "OrderPaymentCancelled": true, "reservation.held.v1": true,
 		"reservation.hold.rejected.v1": true, "reservation.confirmed.v1": true,
 		"reservation.expired.v1": true, "reservation.released.v1": true,
 		"contract.signed.v1": true, "fulfillment.ready_for_preparation.v1": true,
@@ -183,7 +184,7 @@ func DecodeSagaEvent(body []byte) (Event, error) {
 	case event.EventType == "OrderCreated" || event.EventType == "OrderSubmitted" ||
 		event.EventType == "OrderAccepted" || event.EventType == "OrderRejected" ||
 		event.EventType == "OrderCancelled" || event.EventType == "OrderPaymentCaptured" ||
-		event.EventType == "OrderPaymentFailed" || event.EventType == "OrderPaymentRefunded":
+		event.EventType == "OrderPaymentFailed" || event.EventType == "OrderPaymentRefunded" || event.EventType == "OrderPaymentCancelled":
 		expectedProducer = "order-service"
 	case strings.HasPrefix(event.EventType, "reservation."):
 		expectedProducer = "vehicle-reservation-service"
