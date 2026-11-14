@@ -1348,6 +1348,27 @@ services:
       start_period: 20s
     init: true
     restart: unless-stopped
+  analytics-event-consumer:
+    build:
+      context: .
+      dockerfile: docker/php/business-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/analytics-service
+    command: ["php", "bin/consume-events.php"]
+    environment:
+      ANALYTICS_DATABASE_URL: postgresql://autoflow_analytics:local-only-analytics-password@postgres:5432/${POSTGRES_DB:-autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
   media-service:
     build:
       context: .
