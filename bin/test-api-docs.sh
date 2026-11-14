@@ -42,7 +42,7 @@ echo "[3/3] Checking gateway preflight CORS for Swagger origin"
 curl --silent --show-error -D "$HEADERS_FILE" -o /dev/null -X OPTIONS \
   -H 'Origin: http://localhost:8096' \
   -H 'Access-Control-Request-Method: GET' \
-  -H 'Access-Control-Request-Headers: authorization,content-type' \
+  -H 'Access-Control-Request-Headers: authorization,content-type,idempotency-key,if-match,stripe-signature' \
   "$GATEWAY_URL/api/v1/orders"
 if ! grep -qi 'access-control-allow-origin: http://localhost:8096' "$HEADERS_FILE"; then
   echo "ERROR: Gateway did not return the expected Swagger CORS header."
