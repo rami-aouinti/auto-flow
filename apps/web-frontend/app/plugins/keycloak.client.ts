@@ -2,6 +2,10 @@ import Keycloak from 'keycloak-js';
 import { setAuth } from '../../src/api';
 
 export default defineNuxtPlugin(async () => {
+  if (import.meta.env.VITE_E2E_TEST_MODE === 'true') {
+    setAuth({ token: 'autoflow-playwright-token' } as Keycloak);
+    return { provide: { keycloak: { tokenParsed: { preferred_username: 'playwright' }, logout: async () => undefined } } };
+  }
   const keycloak = new Keycloak({
     url: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
     realm: import.meta.env.VITE_KEYCLOAK_REALM || 'autoflow',
