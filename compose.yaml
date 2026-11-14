@@ -64,6 +64,39 @@ services:
       inventory-service: {condition: service_healthy}
       crm-service: {condition: service_healthy}
 
+  # Local LLM runtime. Models are persisted in the ollama-data volume.
+  ollama:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    ports: ["127.0.0.1:11434:11434"]
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  # Download the configured model once; the named volume is shared with Ollama.
+  ollama-model-init:
+    image: ollama/ollama:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull \"$OLLAMA_MODEL\""]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+    volumes:
+      - ollama-data:/root/.ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
   ai-service:
     build:
       context: .
@@ -77,11 +110,14 @@ services:
       APP_DEBUG: "0"
       APP_SECRET: ${AI_APP_SECRET:-local-only-ai-service-secret}
       DEFAULT_URI: http://localhost:8095
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
-      OPENAI_BASE_URI: ${OPENAI_BASE_URI:-https://api.openai.com/v1/}
+      AI_PROVIDER: ollama
+      OLLAMA_BASE_URI: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+    depends_on:
+      ollama-model-init:
+        condition: service_completed_successfully
     healthcheck:
-      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -1587,6 +1623,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  ollama-data:
   postgres-data:
   rabbitmq-data:
   redis-data:
