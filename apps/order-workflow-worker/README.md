@@ -26,9 +26,9 @@ Configuration:
 
 1. The Order Outbox publisher writes a persistent lifecycle event to `autoflow.order.events`.
 2. The worker's durable queue `autoflow.order.saga.events` receives Order, Reservation, Contract and Fulfillment lifecycle routing keys.
-3. `OrderCreated` starts the fulfillment Saga with ID `order-fulfillment-saga-{tenantId}-{orderId}`. The Order repository currently emits `OrderCreated` (not `OrderSubmitted`) and carries the selected variant in `data.vehicleId`; the worker accepts both field names for compatibility. Duplicate starts are rejected by Temporal and acknowledged as already processed.
+3. `OrderCreated` starts both the lifecycle workflow (`order-lifecycle-{tenantId}-{orderId}`) and the fulfillment Saga (`order-fulfillment-saga-{tenantId}-{orderId}`). The Order repository currently emits `OrderCreated` (not `OrderSubmitted`) and carries the selected variant in `data.vehicleId`; the worker accepts both field names for compatibility. Duplicate starts are rejected by Temporal and acknowledged as already processed.
 4. Subsequent lifecycle events signal that workflow. The worker acknowledges RabbitMQ only after Temporal accepts the start or signal.
-5. Malformed envelopes are dead-lettered to `autoflow.order.saga.dead`; transient Temporal failures are requeued.
+5. Malformed lifecycle/Saga envelopes are dead-lettered to `autoflow.order.workflow.dead` and `autoflow.order.saga.dead` respectively; transient Temporal failures are requeued.
 6. SLA alerts are published persistently with publisher confirms to `autoflow.order.workflow.alerts`.
 
 ## Durable lifecycle timers
@@ -48,4 +48,4 @@ go test ./...
 go build ./cmd/worker
 ```
 
-The unit suite covers workflow success, payment-failure compensation, OrderCreated event compatibility, and schema/producer validation. A full RabbitMQ + Temporal end-to-end test is still required before production rollout.
+The unit suite covers workflow success, payment-failure and payment-cancellation compensation, OrderCreated event compatibility, Contract event normalization, and schema/producer validation. A full RabbitMQ + Temporal end-to-end test is still required before production rollout.
