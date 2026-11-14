@@ -22,7 +22,7 @@ $args=new PhpAmqpLib\Wire\AMQPTable(['x-dead-letter-exchange'=>'autoflow.analyti
 [$queue]=$ch->queue_declare('analytics.events',false,true,false,false,false,$args);
 $ch->queue_declare('analytics.events.failed',false,true,false,false);
 $ch->queue_bind('analytics.events.failed','autoflow.analytics.dlx','failed');
-$retryArgs=new PhpAmqpLib\\Wire\\AMQPTable(['x-message-ttl'=>5000,'x-dead-letter-exchange'=>'autoflow.analytics.retry.dlx','x-dead-letter-routing-key'=>'retry']);
+$retryArgs=new PhpAmqpLib\Wire\AMQPTable(['x-message-ttl'=>5000,'x-dead-letter-exchange'=>'autoflow.analytics.retry.dlx','x-dead-letter-routing-key'=>'retry']);
 $ch->queue_declare('analytics.events.retry',false,true,false,false,false,$retryArgs);
 $ch->queue_bind($queue,'autoflow.analytics.retry.dlx','retry');
 foreach($exchanges as $exchange)$ch->queue_bind($queue,$exchange,'#');
@@ -40,7 +40,7 @@ $ch->basic_consume($queue,'analytics-projection-worker',false,false,false,false,
   $attempt=(int)($headerData['x-analytics-retry']??0);
   fwrite(STDERR,'Analytics projection failed (attempt '.($attempt+1).'): '.$e->getMessage().PHP_EOL);
   if($attempt<3){
-   $retryHeaders=new PhpAmqpLib\\Wire\\AMQPTable(['x-analytics-retry'=>$attempt+1]);
+   $retryHeaders=new PhpAmqpLib\Wire\AMQPTable(['x-analytics-retry'=>$attempt+1]);
    $retry=new AMQPMessage($msg->getBody(),['content_type'=>'application/json','delivery_mode'=>2,'application_headers'=>$retryHeaders]);
    $ch->basic_publish($retry,'','analytics.events.retry');
    $msg->ack();
