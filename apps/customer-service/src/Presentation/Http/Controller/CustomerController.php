@@ -68,7 +68,7 @@ final readonly class CustomerController
             $items=$db->fetchAllAssociative("SELECT customer_id,customer_type,first_name,last_name,legal_name,email,phone,vat_id,locale,status,version,created_at,updated_at FROM customer_records WHERE $sql ORDER BY created_at DESC LIMIT :limit OFFSET :offset",$params);
             $total=(int)$db->fetchOne("SELECT COUNT(*) FROM customer_records WHERE $sql",array_diff_key($params,['limit'=>true,'offset'=>true]));
             return new JsonResponse(['items'=>$items,'total'=>$total,'limit'=>$limit,'offset'=>$offset],200,['Cache-Control'=>'no-store']);
-        });}catch(Throwable){return $this->problem(503,'Customers could not be listed.');}
+        });}catch(AccessDeniedHttpException $e){return $this->problem(403,$e->getMessage());}catch(Throwable){return $this->problem(503,'Customers could not be listed.');}
     }
 
     #[Route('/{id}',requirements:['id'=>'[0-9a-fA-F-]{36}'],methods:['GET'])]
