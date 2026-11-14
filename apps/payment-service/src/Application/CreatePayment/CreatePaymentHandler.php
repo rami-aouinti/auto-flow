@@ -117,7 +117,6 @@ final readonly class CreatePaymentHandler
             $response = [
                 'paymentId' => $paymentId,'orderId' => $orderId,'provider' => 'stripe','providerPaymentId' => $providerId,
                 'amountMinor' => $amount,'currency' => $currency,'status' => $status,
-                'billingSnapshot' => $orderContext['billingSnapshot'],
                 'clientSecret' => $intent['client_secret'] ?? null,
             ];
             $this->db->insert('payment_idempotency', [
