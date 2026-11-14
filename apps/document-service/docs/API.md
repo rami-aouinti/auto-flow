@@ -60,12 +60,12 @@ curl -OJ "http://localhost:8088/api/v1/documents/$DOCUMENT_ID/content" \
 
 ## Data model and events
 
-PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived` and `DocumentDeleted` atomically with metadata changes. A RabbitMQ publisher/consumer integration is a separate next step; outbox rows are persisted but not yet published.
+PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived` and `DocumentDeleted` atomically with metadata changes. The separate publisher declares the durable topic exchange and queue `autoflow.document.events`, publishes the event envelope and retries unpublished rows until broker acknowledgement. Delivery is at-least-once: downstream consumers must deduplicate by `eventId`.
 
 ## Local startup
 
 ```bash
-docker compose --env-file .env.example up -d --build postgres postgres-bootstrap clamav document-service
+docker compose --env-file .env.example up -d --build postgres postgres-bootstrap rabbitmq clamav document-service document-outbox-publisher
 docker compose --env-file .env.example ps document-service document-outbox-publisher clamav
 curl -i http://localhost:8100/health/ready
 curl -i http://localhost:8100/api/doc.json
