@@ -58,7 +58,7 @@ func consumeOnce(ctx context.Context, temporal client.Client) error {
 		return err
 	}
 	for _, key := range []string{
-		"OrderSubmitted", "OrderUnderReview", "OrderAccepted", "OrderRejected",
+		"OrderCreated", "OrderSubmitted", "OrderUnderReview", "OrderAccepted", "OrderRejected",
 		"OrderCancelled", "OrderContractPending", "OrderCompleted",
 		"OrderPaymentAuthorized", "OrderPaymentCaptured", "OrderPaymentFailed",
 		"OrderPaymentRefunded", "OrderPaymentPartiallyRefunded", "OrderPaymentCancelled",
@@ -109,7 +109,7 @@ func consumeOnce(ctx context.Context, temporal client.Client) error {
 func forwardToTemporal(ctx context.Context, temporal client.Client, event Event) error {
 	id := WorkflowID(event)
 	input := WorkflowInput{TenantID: event.TenantID, OrderID: event.Aggregate.ID, CorrelationID: event.CorrelationID}
-	if event.EventType == "OrderSubmitted" {
+	if event.EventType == "OrderCreated" || event.EventType == "OrderSubmitted" {
 		_, err := temporal.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 			ID: id,
 			TaskQueue: env("TEMPORAL_TASK_QUEUE", "autoflow-order-workflows"),
