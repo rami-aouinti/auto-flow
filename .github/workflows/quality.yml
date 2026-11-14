@@ -146,7 +146,7 @@ jobs:
           cd apps/fulfillment-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Install Inventory Service dependencies and run unit tests
         run: |
-          composer install --working-dir=apps/inventory-service --no-interaction --prefer-dist --no-progress
+          composer install --working-dir=apps/inventory-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/inventory-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Install Vehicle Reservation Service dependencies and run unit/integration tests
         env:
