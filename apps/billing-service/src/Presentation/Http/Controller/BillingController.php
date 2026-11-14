@@ -107,7 +107,7 @@ final readonly class BillingController
                         ['t' => $tenant, 'id' => $id],
                     );
                     if ($row === false) {
-                        throw new RuntimeException('Invoice document reference was not persisted.');
+                        throw new \RuntimeException('Invoice document reference was not persisted.');
                     }
                     return $row;
                 });
@@ -115,7 +115,7 @@ final readonly class BillingController
 
             $content = $this->documentService->download((string) $document['document_id'], $token);
             if (!hash_equals((string) $document['checksum_sha256'], hash('sha256', $content))) {
-                throw new RuntimeException('Invoice PDF failed its SHA-256 integrity check.');
+                throw new \RuntimeException('Invoice PDF failed its SHA-256 integrity check.');
             }
             $filename = preg_replace('/[^A-Za-z0-9._-]/', '-', (string) $state['invoice']['invoice_number']);
             return new Response($content, 200, [
