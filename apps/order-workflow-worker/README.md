@@ -25,8 +25,8 @@ Configuration:
 ## Event flow
 
 1. The Order Outbox publisher writes a persistent lifecycle event to `autoflow.order.events`.
-2. The worker's durable queue `autoflow.order.workflow` receives only supported Order lifecycle routing keys.
-3. `OrderSubmitted` starts a workflow with ID `order-lifecycle-{tenantId}-{orderId}`. Duplicate starts are rejected by Temporal and acknowledged as already processed.
+2. The worker's durable queue `autoflow.order.saga.events` receives Order, Reservation, Contract and Fulfillment lifecycle routing keys.
+3. `OrderCreated` starts the fulfillment Saga with ID `order-fulfillment-saga-{tenantId}-{orderId}`. The Order repository currently emits `OrderCreated` (not `OrderSubmitted`) and carries the selected variant in `data.vehicleId`; the worker accepts both field names for compatibility. Duplicate starts are rejected by Temporal and acknowledged as already processed.
 4. Subsequent lifecycle events signal that workflow. The worker acknowledges RabbitMQ only after Temporal accepts the start or signal.
 5. Malformed envelopes are dead-lettered to `autoflow.order.workflow.dead`; transient Temporal failures are requeued.
 6. SLA alerts are published persistently with publisher confirms to `autoflow.order.workflow.alerts`.
