@@ -228,6 +228,23 @@ final readonly class VehicleReservationController
                     return $this->problem(412, 'Reservation has changed. Fetch the latest representation and retry.');
                 }
 
+                if (in_array($action, ['confirm', 'fulfill'], true)) {
+                    $stock = $db->fetchAssociative(
+                        'SELECT status, inventory_status, reservation_id
+                         FROM vehicle_stock_units
+                         WHERE tenant_id = :tenant AND vehicle_unit_id = :unit
+                         FOR UPDATE',
+                        ['tenant' => $tenant, 'unit' => $row['vehicle_unit_id']],
+                    );
+                    if ($stock === false
+                        || $stock['status'] !== 'reserved'
+                        || $stock['inventory_status'] !== 'available'
+                        || (string) $stock['reservation_id'] !== $id
+                    ) {
+                        throw new DomainException('The physical vehicle is no longer available in Inventory.');
+                    }
+                }
+
                 $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
                 $status = (string) $row['status'];
                 $changes = [];
