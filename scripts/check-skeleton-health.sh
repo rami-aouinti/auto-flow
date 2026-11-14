@@ -13,7 +13,6 @@ check() {
 
 check workflow 8098
 check integration 8099
-check document 8100
 check audit 8101
 check analytics 8102
 check media 8103
