@@ -418,7 +418,7 @@
           "Offer Service"
         ],
         "summary": "Create an offer",
-        "description": "offers:quote. Restricted to authenticated offer creator and tenant. Body fields and formats are defined in Offer API.md. Detailed endpoint reference: apps/offer-service/docs/API.md\n\nDetailed service reference: apps/offer-service/docs/API.md.",
+        "description": "offers:quote. Restricted to authenticated offer creator and tenant. Body fields and formats are defined in Offer API.md.\n\nDetailed service reference: apps/offer-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -478,7 +478,7 @@
           "Offer Service"
         ],
         "summary": "List offers",
-        "description": "offers:read. Returns items, total, limit and offset. Filters: status, search (max 100), limit (1..100, default 20), offset (default 0). Detailed endpoint reference: apps/offer-service/docs/API.md\n\nDetailed service reference: apps/offer-service/docs/API.md.",
+        "description": "offers:read. Returns items, total, limit and offset. Filters: status, search (max 100), limit (1..100, default 20), offset (default 0).\n\nDetailed service reference: apps/offer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -529,7 +529,7 @@
           "Offer Service"
         ],
         "summary": "Retrieve offer",
-        "description": "offers:read. Owner- and tenant-scoped. Detailed endpoint reference: apps/offer-service/docs/API.md\n\nDetailed service reference: apps/offer-service/docs/API.md.",
+        "description": "offers:read. Owner- and tenant-scoped.\n\nDetailed service reference: apps/offer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -567,7 +567,7 @@
           "Offer Service"
         ],
         "summary": "Read append-only offer lifecycle audit history",
-        "description": "offers:read. Each event includes type, previous/resulting status, actor type, timestamp and metadata. Detailed endpoint reference: apps/offer-service/docs/API.md\n\nDetailed service reference: apps/offer-service/docs/API.md.",
+        "description": "offers:read. Each event includes type, previous/resulting status, actor type, timestamp and metadata.\n\nDetailed service reference: apps/offer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -605,7 +605,7 @@
           "Offer Service"
         ],
         "summary": "Publish offer",
-        "description": "offers:quote. Only draft offers before expiry can be published. Detailed endpoint reference: apps/offer-service/docs/API.md\n\nDetailed service reference: apps/offer-service/docs/API.md.",
+        "description": "offers:quote. Only draft offers before expiry can be published.\n\nDetailed service reference: apps/offer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -646,7 +646,7 @@
           "Offer Service"
         ],
         "summary": "Accept offer",
-        "description": "offers:quote. Only published offers before expiry can be accepted. Detailed endpoint reference: apps/offer-service/docs/API.md\n\nDetailed service reference: apps/offer-service/docs/API.md.",
+        "description": "offers:quote. Only published offers before expiry can be accepted.\n\nDetailed service reference: apps/offer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -687,7 +687,7 @@
           "Offer Service"
         ],
         "summary": "Reject offer",
-        "description": "offers:quote. Only published offers before expiry can be rejected. Detailed endpoint reference: apps/offer-service/docs/API.md\n\nDetailed service reference: apps/offer-service/docs/API.md.",
+        "description": "offers:quote. Only published offers before expiry can be rejected.\n\nDetailed service reference: apps/offer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -728,7 +728,7 @@
           "Offer Service"
         ],
         "summary": "Create quote (legacy compatibility)",
-        "description": "offers:quote. Quote-only compatibility endpoint; does not create an Offer aggregate. Detailed endpoint reference: apps/offer-service/docs/API.md\n\nDetailed service reference: apps/offer-service/docs/API.md.",
+        "description": "offers:quote. Quote-only compatibility endpoint; does not create an Offer aggregate.\n\nDetailed service reference: apps/offer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -782,7 +782,7 @@
           "Pricing Service"
         ],
         "summary": "Calculate and persist lease quote",
-        "description": "pricing:quote. Money fields are decimal strings with exactly two fractional digits. Demo policy: duration 12..72 months and annual rate 0..2000 basis points. Detailed endpoint reference: apps/pricing-service/docs/API.md\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
+        "description": "pricing:quote. Money fields are decimal strings with exactly two fractional digits. Demo policy: duration 12..72 months and annual rate 0..2000 basis points.\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -821,7 +821,7 @@
           "Pricing Service"
         ],
         "summary": "List caller quotes",
-        "description": "pricing:quote. Query: limit, offset. Own quotes by default. Detailed endpoint reference: apps/pricing-service/docs/API.md\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
+        "description": "pricing:quote. Query: limit, offset. Own quotes by default.\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -872,7 +872,7 @@
           "Pricing Service"
         ],
         "summary": "Retrieve quote snapshot",
-        "description": "pricing:quote. Expired quote may return 410. Detailed endpoint reference: apps/pricing-service/docs/API.md\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
+        "description": "pricing:quote. Expired quote may return 410.\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -911,7 +911,7 @@
           "Pricing Service"
         ],
         "summary": "Soft-delete quote",
-        "description": "pricing:quote; caller-owned by default. Detailed endpoint reference: apps/pricing-service/docs/API.md\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
+        "description": "pricing:quote; caller-owned by default.\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
         "responses": {
           "204": {
             "description": "Successful operation; no response body"
@@ -949,7 +949,7 @@
           "Pricing Service"
         ],
         "summary": "Deprecated static demo compatibility endpoint",
-        "description": "Deprecated; see Pricing Service API.md. Detailed endpoint reference: apps/pricing-service/docs/API.md\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
+        "description": "Deprecated; see Pricing Service API.md.\n\nDetailed service reference: apps/pricing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -981,7 +981,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "List published manufacturers",
-        "description": "Audience autoflow-catalog; catalog:read. Catalogue is global, not tenant-owned. Detailed endpoint reference: apps/vehicle-catalog-service/docs/API.md\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
+        "description": "Audience autoflow-catalog; catalog:read. Catalogue is global, not tenant-owned.\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1004,7 +1004,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Create draft manufacturer",
-        "description": "Audience autoflow-catalog; catalog:manage. Exact request DTO fields are defined by the service. Detailed endpoint reference: apps/vehicle-catalog-service/docs/API.md\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
+        "description": "Audience autoflow-catalog; catalog:manage. Exact request DTO fields are defined by the service.\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -1049,7 +1049,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Search published vehicle variants",
-        "description": "Audience autoflow-catalog; catalog:read. Filters: q, manufacturerId, modelId, generationId, fuelType, powertrain, bodyStyle, transmission, minPowerKw, maxPowerKw, minSeats, maxSeats, limit (1..100), offset. Detailed endpoint reference: apps/vehicle-catalog-service/docs/API.md\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
+        "description": "Audience autoflow-catalog; catalog:read. Filters: q, manufacturerId, modelId, generationId, fuelType, powertrain, bodyStyle, transmission, minPowerKw, maxPowerKw, minSeats, maxSeats, limit (1..100), offset.\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1078,7 +1078,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Create draft vehicle variant",
-        "description": "Audience autoflow-catalog; catalog:manage. Measurements use explicit units in field names; exact DTO fields are defined by the service. Detailed endpoint reference: apps/vehicle-catalog-service/docs/API.md\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
+        "description": "Audience autoflow-catalog; catalog:manage. Measurements use explicit units in field names; exact DTO fields are defined by the service.\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -1120,7 +1120,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Read published variant",
-        "description": "Audience autoflow-catalog; catalog:read. Detailed endpoint reference: apps/vehicle-catalog-service/docs/API.md\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
+        "description": "Audience autoflow-catalog; catalog:read.\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1158,7 +1158,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Create draft model",
-        "description": "Audience autoflow-catalog; catalog:manage. Exact request DTO fields are defined by the service. Detailed endpoint reference: apps/vehicle-catalog-service/docs/API.md\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
+        "description": "Audience autoflow-catalog; catalog:manage. Exact request DTO fields are defined by the service.\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -1200,7 +1200,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Create draft generation",
-        "description": "Audience autoflow-catalog; catalog:manage. Exact request DTO fields are defined by the service. Detailed endpoint reference: apps/vehicle-catalog-service/docs/API.md\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
+        "description": "Audience autoflow-catalog; catalog:manage. Exact request DTO fields are defined by the service.\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -1242,7 +1242,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Publish variant and non-archived ancestors",
-        "description": "Audience autoflow-catalog; catalog:manage. Detailed endpoint reference: apps/vehicle-catalog-service/docs/API.md\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
+        "description": "Audience autoflow-catalog; catalog:manage.\n\nDetailed service reference: apps/vehicle-catalog-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1283,7 +1283,7 @@
           "Order Management Service"
         ],
         "summary": "Create draft order",
-        "description": "orders:write plus customers:read, offers:read, pricing:quote, catalog:read and autoflow-customer audience. Requires Idempotency-Key. The service resolves trusted snapshots itself; client-supplied snapshots are ignored. Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:write plus customers:read, offers:read, pricing:quote, catalog:read and autoflow-customer audience. Requires Idempotency-Key. The service resolves trusted snapshots itself; client-supplied snapshots are ignored.\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -1340,7 +1340,7 @@
           "Order Management Service"
         ],
         "summary": "List tenant orders",
-        "description": "orders:read. Query: limit (1..100, default 20), offset (default 0). Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:read. Query: limit (1..100, default 20), offset (default 0).\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1388,7 +1388,7 @@
           "Payment Service"
         ],
         "summary": "Create payment intent",
-        "description": "payments:write; Idempotency-Key required. Body contains orderId only; amount/currency are resolved from the immutable order quote snapshot. Detailed endpoint reference: apps/payment-service/docs/API.md\n\nDetailed service reference: apps/payment-service/docs/API.md.",
+        "description": "payments:write; Idempotency-Key required. Body contains orderId only; amount/currency are resolved from the immutable order quote snapshot.\n\nDetailed service reference: apps/payment-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -1447,7 +1447,7 @@
           "Payment Service"
         ],
         "summary": "Retrieve payment",
-        "description": "payments:read. Detailed endpoint reference: apps/payment-service/docs/API.md\n\nDetailed service reference: apps/payment-service/docs/API.md.",
+        "description": "payments:read.\n\nDetailed service reference: apps/payment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1485,7 +1485,7 @@
           "Payment Service"
         ],
         "summary": "Capture payment",
-        "description": "payments:capture; Idempotency-Key required. Detailed endpoint reference: apps/payment-service/docs/API.md\n\nDetailed service reference: apps/payment-service/docs/API.md.",
+        "description": "payments:capture; Idempotency-Key required.\n\nDetailed service reference: apps/payment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1537,7 +1537,7 @@
           "Payment Service"
         ],
         "summary": "Cancel payment",
-        "description": "payments:write; Idempotency-Key required. Detailed endpoint reference: apps/payment-service/docs/API.md\n\nDetailed service reference: apps/payment-service/docs/API.md.",
+        "description": "payments:write; Idempotency-Key required.\n\nDetailed service reference: apps/payment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1589,7 +1589,7 @@
           "Payment Service"
         ],
         "summary": "Refund payment",
-        "description": "payments:refund; Idempotency-Key required. Amounts use integer minor units; optional refund payload is service-defined. Detailed endpoint reference: apps/payment-service/docs/API.md\n\nDetailed service reference: apps/payment-service/docs/API.md.",
+        "description": "payments:refund; Idempotency-Key required. Amounts use integer minor units; optional refund payload is service-defined.\n\nDetailed service reference: apps/payment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1644,7 +1644,7 @@
           "Payment Service"
         ],
         "summary": "Receive Stripe webhook",
-        "description": "JWT is not used for this route. Stripe-Signature verification is mandatory; configure webhook secret. Detailed endpoint reference: apps/payment-service/docs/API.md\n\nDetailed service reference: apps/payment-service/docs/API.md.",
+        "description": "JWT is not used for this route. Stripe-Signature verification is mandatory; configure webhook secret.\n\nDetailed service reference: apps/payment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1674,7 +1674,7 @@
           "Billing Service"
         ],
         "summary": "List invoices",
-        "description": "billing:read and tenant claim. Detailed endpoint reference: apps/billing-service/docs/API.md\n\nDetailed service reference: apps/billing-service/docs/API.md.",
+        "description": "billing:read and tenant claim.\n\nDetailed service reference: apps/billing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1722,7 +1722,7 @@
           "Billing Service"
         ],
         "summary": "Retrieve invoice",
-        "description": "billing:read and tenant claim. Detailed endpoint reference: apps/billing-service/docs/API.md\n\nDetailed service reference: apps/billing-service/docs/API.md.",
+        "description": "billing:read and tenant claim.\n\nDetailed service reference: apps/billing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1760,7 +1760,7 @@
           "Billing Service"
         ],
         "summary": "Download invoice PDF",
-        "description": "billing:read. Only legally complete issued invoices are downloadable; draft returns 409. Detailed endpoint reference: apps/billing-service/docs/API.md\n\nDetailed service reference: apps/billing-service/docs/API.md.",
+        "description": "billing:read. Only legally complete issued invoices are downloadable; draft returns 409.\n\nDetailed service reference: apps/billing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation",
@@ -1809,7 +1809,7 @@
           "Billing Service"
         ],
         "summary": "List credit notes",
-        "description": "billing:read and tenant claim. Detailed endpoint reference: apps/billing-service/docs/API.md\n\nDetailed service reference: apps/billing-service/docs/API.md.",
+        "description": "billing:read and tenant claim.\n\nDetailed service reference: apps/billing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1834,7 +1834,7 @@
           "Billing Service"
         ],
         "summary": "Retrieve credit note",
-        "description": "billing:read and tenant claim. Detailed endpoint reference: apps/billing-service/docs/API.md\n\nDetailed service reference: apps/billing-service/docs/API.md.",
+        "description": "billing:read and tenant claim.\n\nDetailed service reference: apps/billing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1872,7 +1872,7 @@
           "Billing Service"
         ],
         "summary": "Billing summary",
-        "description": "billing:read and tenant claim. Detailed endpoint reference: apps/billing-service/docs/API.md\n\nDetailed service reference: apps/billing-service/docs/API.md.",
+        "description": "billing:read and tenant claim.\n\nDetailed service reference: apps/billing-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -1897,7 +1897,7 @@
           "Customer Service"
         ],
         "summary": "Create individual or company customer",
-        "description": "customers:write; Idempotency-Key required. Individuals require firstName and lastName; companies require legalName. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:write; Idempotency-Key required. Individuals require firstName and lastName; companies require legalName.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -1950,7 +1950,7 @@
           "Customer Service"
         ],
         "summary": "List customers",
-        "description": "customers:read. Query filters: q, status, type; paginated. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:read. Query filters: q, status, type; paginated.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2001,7 +2001,7 @@
           "Customer Service"
         ],
         "summary": "Retrieve customer profile",
-        "description": "customers:read. Includes profile, addresses and consents. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:read. Includes profile, addresses and consents.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2037,7 +2037,7 @@
           "Customer Service"
         ],
         "summary": "Partially update customer profile",
-        "description": "customers:write. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:write.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2090,7 +2090,7 @@
           "Customer Service"
         ],
         "summary": "Soft archive customer",
-        "description": "customers:manage. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:manage.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "204": {
             "description": "Successful operation; no response body"
@@ -2128,7 +2128,7 @@
           "Customer Service"
         ],
         "summary": "List customer addresses",
-        "description": "customers:read. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:read.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2164,7 +2164,7 @@
           "Customer Service"
         ],
         "summary": "Add customer address",
-        "description": "customers:write. countryCode uses ISO alpha-2. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:write. countryCode uses ISO alpha-2.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -2219,7 +2219,7 @@
           "Customer Service"
         ],
         "summary": "Replace customer address",
-        "description": "customers:write. countryCode uses ISO alpha-2. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:write. countryCode uses ISO alpha-2.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2280,7 +2280,7 @@
           "Customer Service"
         ],
         "summary": "Soft-delete customer address",
-        "description": "customers:write. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:write.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "204": {
             "description": "Successful operation; no response body"
@@ -2326,7 +2326,7 @@
           "Customer Service"
         ],
         "summary": "Read customer consents",
-        "description": "customers:read. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:read.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2362,7 +2362,7 @@
           "Customer Service"
         ],
         "summary": "Record customer consent decisions",
-        "description": "customers:write. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:write.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2417,7 +2417,7 @@
           "Customer Service"
         ],
         "summary": "Read customer audit history",
-        "description": "customers:read. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:read.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2455,7 +2455,7 @@
           "Customer Service"
         ],
         "summary": "Link verified Keycloak subject",
-        "description": "customers:manage; identity verification required; audited and unique per tenant. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:manage; identity verification required; audited and unique per tenant.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2496,7 +2496,7 @@
           "Customer Service"
         ],
         "summary": "Read own customer profile",
-        "description": "customers:portal; subject-to-customer mapping. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:portal; subject-to-customer mapping.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2522,7 +2522,7 @@
           "Customer Service"
         ],
         "summary": "Update own customer profile",
-        "description": "customers:portal. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:portal.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2564,7 +2564,7 @@
           "Customer Service"
         ],
         "summary": "List own addresses",
-        "description": "customers:portal. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:portal.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2587,7 +2587,7 @@
           "Customer Service"
         ],
         "summary": "Add own address",
-        "description": "customers:portal. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:portal.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -2629,7 +2629,7 @@
           "Customer Service"
         ],
         "summary": "Update own address",
-        "description": "customers:portal. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:portal.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2682,7 +2682,7 @@
           "Customer Service"
         ],
         "summary": "Delete own address",
-        "description": "customers:portal. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:portal.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "204": {
             "description": "Successful operation; no response body"
@@ -2720,7 +2720,7 @@
           "Customer Service"
         ],
         "summary": "Read own consents",
-        "description": "customers:portal. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:portal.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2743,7 +2743,7 @@
           "Customer Service"
         ],
         "summary": "Update own consents",
-        "description": "customers:portal. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:portal.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2785,7 +2785,7 @@
           "Customer Service"
         ],
         "summary": "Issue Mercure subscriber cookie",
-        "description": "customers:read; tenant-specific five-minute cookie. Detailed endpoint reference: apps/customer-service/docs/API.md\n\nDetailed service reference: apps/customer-service/docs/API.md.",
+        "description": "customers:read; tenant-specific five-minute cookie.\n\nDetailed service reference: apps/customer-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2810,7 +2810,7 @@
           "Contract Service"
         ],
         "summary": "Create draft contract from accepted order",
-        "description": "contracts:write + orders:read; requires autoflow-contract and autoflow-order audiences; Idempotency-Key required. Detailed endpoint reference: apps/contract-service/docs/API.md\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:write + orders:read; requires autoflow-contract and autoflow-order audiences; Idempotency-Key required.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -2866,7 +2866,7 @@
           "Contract Service"
         ],
         "summary": "List contracts",
-        "description": "contracts:read; optional status filter; paginated. Detailed endpoint reference: apps/contract-service/docs/API.md\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:read; optional status filter; paginated.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2917,7 +2917,7 @@
           "Contract Service"
         ],
         "summary": "Retrieve contract and immutable legal snapshot",
-        "description": "contracts:read. Detailed endpoint reference: apps/contract-service/docs/API.md\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:read.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2955,7 +2955,7 @@
           "Contract Service"
         ],
         "summary": "Read contract audit history",
-        "description": "contracts:read. Detailed endpoint reference: apps/contract-service/docs/API.md\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:read.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -2993,7 +2993,7 @@
           "Contract Service"
         ],
         "summary": "Prepare contract",
-        "description": "contracts:write; Idempotency-Key required. Detailed endpoint reference: apps/contract-service/docs/API.md\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:write; Idempotency-Key required.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3042,7 +3042,7 @@
           "Contract Service"
         ],
         "summary": "Cancel contract",
-        "description": "contracts:manage; Idempotency-Key required. Detailed endpoint reference: apps/contract-service/docs/API.md\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:manage; Idempotency-Key required.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3091,7 +3091,7 @@
           "Contract Service"
         ],
         "summary": "Generate immutable PDF draft",
-        "description": "contracts:write. Detailed endpoint reference: apps/contract-service/docs/API.md\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:write.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -3130,7 +3130,7 @@
           "Contract Service"
         ],
         "summary": "Download PDF after SHA-256 verification",
-        "description": "contracts:read. Detailed endpoint reference: apps/contract-service/docs/API.md\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:read.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation",
@@ -3176,7 +3176,7 @@
           "Contract Service"
         ],
         "summary": "Create DocuSign envelope",
-        "description": "contracts:manage; provider configuration required. Detailed endpoint reference: apps/contract-service/docs/API.md\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:manage; provider configuration required.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
         "responses": {
           "202": {
             "description": "Accepted for asynchronous provider processing"
@@ -3223,7 +3223,7 @@
           "Fulfillment Service"
         ],
         "summary": "List and filter fulfilments",
-        "description": "fulfillment:read; filter names are implementation-defined. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:read; filter names are implementation-defined.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3274,7 +3274,7 @@
           "Fulfillment Service"
         ],
         "summary": "Retrieve fulfilment",
-        "description": "fulfillment:read. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:read.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3312,7 +3312,7 @@
           "Fulfillment Service"
         ],
         "summary": "Read fulfilment history",
-        "description": "fulfillment:read. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:read.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3350,7 +3350,7 @@
           "Fulfillment Service"
         ],
         "summary": "Start preparation",
-        "description": "fulfillment:prepare; Idempotency-Key and If-Match required. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:prepare; Idempotency-Key and If-Match required.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3400,7 +3400,7 @@
           "Fulfillment Service"
         ],
         "summary": "Complete preparation",
-        "description": "fulfillment:prepare; Idempotency-Key and If-Match required. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:prepare; Idempotency-Key and If-Match required.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3450,7 +3450,7 @@
           "Fulfillment Service"
         ],
         "summary": "Schedule or reschedule delivery",
-        "description": "fulfillment:schedule; Idempotency-Key and If-Match required. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:schedule; Idempotency-Key and If-Match required.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3500,7 +3500,7 @@
           "Fulfillment Service"
         ],
         "summary": "Dispatch vehicle",
-        "description": "fulfillment:dispatch; Idempotency-Key and If-Match required. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:dispatch; Idempotency-Key and If-Match required.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3550,7 +3550,7 @@
           "Fulfillment Service"
         ],
         "summary": "Confirm vehicle handover",
-        "description": "fulfillment:deliver; Idempotency-Key and If-Match required. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:deliver; Idempotency-Key and If-Match required.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3600,7 +3600,7 @@
           "Fulfillment Service"
         ],
         "summary": "Record failed delivery",
-        "description": "fulfillment:deliver; Idempotency-Key and If-Match required. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:deliver; Idempotency-Key and If-Match required.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3650,7 +3650,7 @@
           "Fulfillment Service"
         ],
         "summary": "Cancel before dispatch",
-        "description": "fulfillment:cancel; Idempotency-Key and If-Match required. Detailed endpoint reference: apps/fulfillment-service/docs/API.md\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
+        "description": "fulfillment:cancel; Idempotency-Key and If-Match required.\n\nDetailed service reference: apps/fulfillment-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3700,7 +3700,7 @@
           "Vehicle Reservation Service"
         ],
         "summary": "List reservations",
-        "description": "reservations:read; query status, limit, offset. Detailed endpoint reference: apps/vehicle-reservation-service/docs/API.md\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
+        "description": "reservations:read; query status, limit, offset.\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3749,7 +3749,7 @@
           "Vehicle Reservation Service"
         ],
         "summary": "Hold physical stock unit",
-        "description": "reservations:write; Idempotency-Key required; body vehicleUnitId, vehicleVariantId, orderId, expiresAt. Detailed endpoint reference: apps/vehicle-reservation-service/docs/API.md\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
+        "description": "reservations:write; Idempotency-Key required; body vehicleUnitId, vehicleVariantId, orderId, expiresAt.\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -3808,7 +3808,7 @@
           "Vehicle Reservation Service"
         ],
         "summary": "Retrieve reservation",
-        "description": "reservations:read. Detailed endpoint reference: apps/vehicle-reservation-service/docs/API.md\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
+        "description": "reservations:read.\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3846,7 +3846,7 @@
           "Vehicle Reservation Service"
         ],
         "summary": "Read reservation audit history",
-        "description": "reservations:read. Detailed endpoint reference: apps/vehicle-reservation-service/docs/API.md\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
+        "description": "reservations:read.\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3884,7 +3884,7 @@
           "Vehicle Reservation Service"
         ],
         "summary": "Confirm reservation",
-        "description": "reservations:write; Idempotency-Key and current If-Match ETag required. Detailed endpoint reference: apps/vehicle-reservation-service/docs/API.md\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
+        "description": "reservations:write; Idempotency-Key and current If-Match ETag required.\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -3951,7 +3951,7 @@
           "Vehicle Reservation Service"
         ],
         "summary": "Release reservation",
-        "description": "reservations:write; Idempotency-Key and current If-Match ETag required. Detailed endpoint reference: apps/vehicle-reservation-service/docs/API.md\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
+        "description": "reservations:write; Idempotency-Key and current If-Match ETag required.\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4018,7 +4018,7 @@
           "Vehicle Reservation Service"
         ],
         "summary": "Fulfill reservation",
-        "description": "reservations:manage; Idempotency-Key and current If-Match ETag required. Detailed endpoint reference: apps/vehicle-reservation-service/docs/API.md\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
+        "description": "reservations:manage; Idempotency-Key and current If-Match ETag required.\n\nDetailed service reference: apps/vehicle-reservation-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4085,7 +4085,7 @@
           "Inventory Service"
         ],
         "summary": "Register physical vehicle unit",
-        "description": "inventory:write; Idempotency-Key required. DTO includes vehicleVariantId, VIN, dealer/location, country, condition, mileage and first registration date. Detailed endpoint reference: apps/inventory-service/docs/API.md\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
+        "description": "inventory:write; Idempotency-Key required. DTO includes vehicleVariantId, VIN, dealer/location, country, condition, mileage and first registration date.\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -4138,7 +4138,7 @@
           "Inventory Service"
         ],
         "summary": "List physical vehicle units",
-        "description": "inventory:read; filters vehicleVariantId, status, dealerId. Detailed endpoint reference: apps/inventory-service/docs/API.md\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
+        "description": "inventory:read; filters vehicleVariantId, status, dealerId.\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4189,7 +4189,7 @@
           "Inventory Service"
         ],
         "summary": "Read availability counts by status",
-        "description": "inventory:read; required query vehicleVariantId. Detailed endpoint reference: apps/inventory-service/docs/API.md\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
+        "description": "inventory:read; required query vehicleVariantId.\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4227,7 +4227,7 @@
           "Inventory Service"
         ],
         "summary": "Retrieve physical unit",
-        "description": "inventory:read. Detailed endpoint reference: apps/inventory-service/docs/API.md\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
+        "description": "inventory:read.\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4265,7 +4265,7 @@
           "Inventory Service"
         ],
         "summary": "Change stock status",
-        "description": "inventory:write; Idempotency-Key and If-Match required; target status and optional reason. Allowed states: available, blocked, in_transit, delivered, sold, maintenance, quarantined. Detailed endpoint reference: apps/inventory-service/docs/API.md\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
+        "description": "inventory:write; Idempotency-Key and If-Match required; target status and optional reason. Allowed states: available, blocked, in_transit, delivered, sold, maintenance, quarantined.\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4342,7 +4342,7 @@
           "Inventory Service"
         ],
         "summary": "Read stock movement history",
-        "description": "inventory:read. Detailed endpoint reference: apps/inventory-service/docs/API.md\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
+        "description": "inventory:read.\n\nDetailed service reference: apps/inventory-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4380,7 +4380,7 @@
           "CRM Service"
         ],
         "summary": "Submit leasing application",
-        "description": "crm:applications:write + customers:read; Idempotency-Key required. customerId required; offerId optional; vehicleId, quoteId and message optional. Upstream references require read scopes. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:applications:write + customers:read; Idempotency-Key required. customerId required; offerId optional; vehicleId, quoteId and message optional. Upstream references require read scopes.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -4438,7 +4438,7 @@
           "CRM Service"
         ],
         "summary": "List CRM applications",
-        "description": "crm:applications:read; filters status, customerId and pagination. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:applications:read; filters status, customerId and pagination.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4489,7 +4489,7 @@
           "CRM Service"
         ],
         "summary": "Retrieve application",
-        "description": "crm:applications:read. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:applications:read.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4527,7 +4527,7 @@
           "CRM Service"
         ],
         "summary": "Convert approved eligible application to Order",
-        "description": "crm:applications:manage + orders:write. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:applications:manage + orders:write.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -4574,7 +4574,7 @@
           "CRM Service"
         ],
         "summary": "Change application status",
-        "description": "crm:applications:manage; permitted lifecycle transition. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:applications:manage; permitted lifecycle transition.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4621,7 +4621,7 @@
           "CRM Service"
         ],
         "summary": "Assign advisor",
-        "description": "crm:applications:assign. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:applications:assign.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4665,7 +4665,7 @@
           "CRM Service"
         ],
         "summary": "Record eligibility review",
-        "description": "crm:eligibility:manage; review record, not automated credit decision. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:eligibility:manage; review record, not automated credit decision.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4709,7 +4709,7 @@
           "CRM Service"
         ],
         "summary": "Create advisor task",
-        "description": "crm:tasks:write. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:tasks:write.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -4751,7 +4751,7 @@
           "CRM Service"
         ],
         "summary": "List advisor tasks",
-        "description": "crm:tasks:read. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:tasks:read.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4789,7 +4789,7 @@
           "CRM Service"
         ],
         "summary": "Update advisor task",
-        "description": "crm:tasks:write. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:tasks:write.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4841,7 +4841,7 @@
           "CRM Service"
         ],
         "summary": "Record customer interaction",
-        "description": "crm:interactions:write; fields channel, subject, body, occurredAt. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:interactions:write; fields channel, subject, body, occurredAt.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -4883,7 +4883,7 @@
           "CRM Service"
         ],
         "summary": "List customer interactions",
-        "description": "crm:interactions:read. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:interactions:read.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4921,7 +4921,7 @@
           "CRM Service"
         ],
         "summary": "Read application audit history",
-        "description": "crm:applications:read. Detailed endpoint reference: apps/crm-service/docs/API.md\n\nDetailed service reference: apps/crm-service/docs/API.md.",
+        "description": "crm:applications:read.\n\nDetailed service reference: apps/crm-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4959,7 +4959,7 @@
           "AI Service"
         ],
         "summary": "Generate AI chat response",
-        "description": "Local Ollama only; no JWT/tenant authorization is currently enforced. Do not expose publicly. Request messages[] with role (system/user/assistant) and content. Detailed endpoint reference: apps/ai-service/docs/API.md\n\nDetailed service reference: apps/ai-service/docs/API.md.",
+        "description": "Local Ollama only; no JWT/tenant authorization is currently enforced. Do not expose publicly. Request messages[] with role (system/user/assistant) and content.\n\nDetailed service reference: apps/ai-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -4998,7 +4998,7 @@
           "Order Management Service"
         ],
         "summary": "Retrieve order and immutable snapshots",
-        "description": "orders:read. Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:read.\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -5045,7 +5045,7 @@
           "Order Management Service"
         ],
         "summary": "Submit draft order",
-        "description": "orders:write; Idempotency-Key required. Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:write; Idempotency-Key required.\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -5105,7 +5105,7 @@
           "Order Management Service"
         ],
         "summary": "Start manual order review",
-        "description": "orders:manage; Idempotency-Key required. Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:manage; Idempotency-Key required.\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -5165,7 +5165,7 @@
           "Order Management Service"
         ],
         "summary": "Accept order",
-        "description": "orders:manage; Idempotency-Key required. Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:manage; Idempotency-Key required.\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -5225,7 +5225,7 @@
           "Order Management Service"
         ],
         "summary": "Reject order",
-        "description": "orders:manage; Idempotency-Key required; reason is mandatory (1..500 characters). Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:manage; Idempotency-Key required; reason is mandatory (1..500 characters).\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -5301,7 +5301,7 @@
           "Order Management Service"
         ],
         "summary": "Cancel order where allowed",
-        "description": "orders:write; Idempotency-Key required. Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:write; Idempotency-Key required.\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -5361,7 +5361,7 @@
           "Order Management Service"
         ],
         "summary": "Mark order as awaiting contract preparation",
-        "description": "orders:manage; Idempotency-Key required. Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:manage; Idempotency-Key required.\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -5421,7 +5421,7 @@
           "Order Management Service"
         ],
         "summary": "Complete order fulfilment",
-        "description": "orders:manage; Idempotency-Key required. Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md.",
+        "description": "orders:manage; Idempotency-Key required.\n\nDetailed service reference: apps/order-service/docs/API.md.",
         "responses": {
           "200": {
             "description": "Successful operation"
@@ -5511,7 +5511,7 @@
             "description": "Resource not found or intentionally hidden by tenant/ownership boundary."
           }
         },
-        "description": "orders:read. Detailed endpoint reference: apps/order-management-service/docs/API.md\n\nDetailed service reference: apps/order-service/docs/API.md."
+        "description": "orders:read.\n\nDetailed service reference: apps/order-service/docs/API.md."
       }
     }
   }
