@@ -13,6 +13,7 @@ try{
     $insert=$db->prepare("INSERT INTO documents(id,tenant_id,owner_id,category,title,original_filename,mime_type,byte_size,checksum_sha256,storage_key,scan_status,retention_until) VALUES(:id,:t,'document-test-owner','other','RLS fixture','fixture.txt','text/plain',1,:hash,'test://fixture','clean',NOW()+INTERVAL '1 day')");
     $insert->execute(['id'=>$id,'t'=>$tenantA,'hash'=>hash('sha256','x')]);
     $db->prepare("INSERT INTO document_access_grants(id,tenant_id,document_id,subject_id,permission,created_by) VALUES(:g,:t,:d,'document-test-recipient','read','document-test-owner')")->execute(['g'=>$grant,'t'=>$tenantA,'d'=>$id]);
+    $db->prepare("INSERT INTO document_access_grants(id,tenant_id,document_id,subject_id,permission,created_by,expires_at) VALUES('77777777-7777-4777-8777-777777777777',:t,:d,'document-expired-recipient','read','document-test-owner',NOW()-INTERVAL '1 minute')")->execute(['t'=>$tenantA,'d'=>$id]);
     $db->prepare("SELECT set_config('app.tenant_id',:t,false)")->execute(['t'=>$tenantB]);
     $q=$db->prepare('SELECT COUNT(*) FROM documents WHERE id=:id');$q->execute(['id'=>$id]);
     $assert((int)$q->fetchColumn()===0,'tenant B cannot read tenant A document metadata');
@@ -22,7 +23,13 @@ try{
     try{$insert->execute(['id'=>'55555555-5555-4555-8555-555555555555','t'=>$tenantA,'hash'=>hash('sha256','y')]);$assert(false,'tenant B cannot insert a row for tenant A');}
     catch(PDOException){$db->exec('ROLLBACK TO SAVEPOINT cross_tenant_insert');}
     $db->prepare("SELECT set_config('app.tenant_id',:t,false)")->execute(['t'=>$tenantA]);
-    $db->prepare("UPDATE documents SET legal_hold=TRUE,legal_hold_reason='RLS test',legal_hold_set_by='document-test-owner',legal_hold_set_at=NOW() WHERE id=:id")->execute(['id'=>$id]);
+    $q=$db->prepare("SELECT COUNT(*) FROM document_access_grants WHERE tenant_id=:t AND subject_id='document-test-recipient' AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>NOW()) AND permission IN ('read','manage')");$q->execute(['t'=>$tenantA]);
+    $assert((int)$q->fetchColumn()===1,'active delegated grant is visible');
+    $q=$db->prepare("SELECT COUNT(*) FROM document_access_grants WHERE tenant_id=:t AND subject_id='document-expired-recipient' AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>NOW())");$q->execute(['t'=>$tenantA]);
+    $assert((int)$q->fetchColumn()===0,'expired delegated grant is not active');
+    $db->prepare("UPDATE documents SET retention_until=NOW()-INTERVAL '1 hour',legal_hold=TRUE,legal_hold_reason='RLS test',legal_hold_set_by='document-test-owner',legal_hold_set_at=NOW() WHERE id=:id")->execute(['id'=>$id]);
+    $q=$db->prepare("UPDATE documents SET status='deleted' WHERE id=:id AND legal_hold=FALSE RETURNING id");$q->execute(['id'=>$id]);
+    $assert($q->fetchColumn()===false,'legal hold blocks lifecycle deletion');
     $q=$db->prepare('SELECT legal_hold,legal_hold_reason FROM documents WHERE id=:id');$q->execute(['id'=>$id]);$row=$q->fetch();
     $assert(($row['legal_hold']??false)===true||($row['legal_hold']??null)==='t','legal hold migration is writable under tenant RLS');
     $db->prepare("INSERT INTO document_purge_events(id,tenant_id,document_id,checksum_sha256,reason) VALUES(:id,:t,:d,:h,'test')")->execute(['id'=>'66666666-6666-4666-8666-666666666666','t'=>$tenantA,'d'=>$id,'h'=>hash('sha256','x')]);
