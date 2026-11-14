@@ -47,7 +47,7 @@ async function loadAll() {
 
 async function run(label: string, action: () => Promise<unknown>) {
   busy.value = label; clearMessages();
-  try { await action(); notice.value = 'Command completed successfully.'; await loadAll(); }
+  try { await action(); await loadAll(); notice.value = 'Command completed successfully.'; }
   catch (e) { error.value = errorMessage(e); }
   finally { busy.value = ''; }
 }
@@ -217,7 +217,7 @@ onMounted(loadAll);
               <td><div class="d-flex flex-wrap ga-1">
                 <v-btn v-if="row.status === 'ready_for_preparation'" size="small" variant="tonal" @click="fulfillmentAction(row,'preparation/start')">Start prep</v-btn>
                 <v-btn v-if="row.status === 'preparing'" size="small" variant="tonal" @click="fulfillmentAction(row,'preparation/complete')">Complete prep</v-btn>
-                <v-btn v-if="['ready_for_dispatch','delivery_failed'].includes(row.status)" size="small" variant="tonal" @click="schedule(row)">Schedule</v-btn>
+                <v-btn v-if="['ready_for_dispatch','delivery_failed'].includes(row.status)" size="small" variant="tonal" :disabled="!scheduleForm.scheduledFor || !scheduleForm.carrier" @click="schedule(row)">Schedule</v-btn>
                 <v-btn v-if="row.status === 'scheduled'" size="small" variant="tonal" @click="fulfillmentAction(row,'dispatch')">Dispatch</v-btn>
                 <v-btn v-if="row.status === 'in_transit'" size="small" color="success" variant="tonal" @click="fulfillmentAction(row,'delivery/confirm',{recipientName:recipientName || 'Customer'})">Confirm delivery</v-btn>
                 <v-btn v-if="row.status === 'in_transit'" size="small" color="error" variant="text" @click="fulfillmentAction(row,'delivery/fail',{reason:deliveryFailureReason || 'Delivery failed'})">Failed</v-btn>
