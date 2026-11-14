@@ -1,44 +1,25 @@
-# Integration Service — Feature backlog
+# Integration Service — Remaining backlog
 
-**Not implemented. This is planned scope, not a feature-completion claim.**
+**Implemented baseline:** signed inbound webhooks, tenant mapping, replay/idempotency protection, outbound webhook queue, exact-host HTTPS allowlist, HMAC signing, DNS public-IP validation/pinning, TLS verification, no redirects, bounded retries and delivery tracking.
 
-## Functional capabilities
+## Remaining provider capabilities
+- [ ] Formal provider adapter interface and provider registry with versioned contracts.
+- [ ] OAuth2 authorization-code and client-credentials flows, refresh and credential rotation.
+- [ ] Provider-specific adapters for Stripe, DocuSign and CRM/ERP systems without taking ownership of their domain aggregates.
+- [ ] Provider-specific rate-limit handling and Retry-After parsing.
+- [ ] Circuit breaker state and half-open recovery per provider.
+- [ ] Reconciliation jobs and operator replay/cancel workflows.
 
-- [ ] Define provider adapter interfaces and a provider registry.
-- [ ] Implement inbound/outbound webhooks with signature verification and replay protection.
-- [ ] Add OAuth2 credential references, token refresh and secret-manager integration.
-- [ ] Add bounded retries, backoff, circuit breakers, rate limits and DLQs.
-- [ ] Normalize provider errors and map external IDs safely.
-- [ ] Add delivery attempts, idempotency, reconciliation and operator replay.
-
-## API contract (future)
-
-- [ ] Identify owned use cases and define exact routes; no business endpoint is implemented today.
-- [ ] Define request/response schemas, pagination, validation and error codes.
-- [ ] Require Keycloak JWT signature, issuer, audience, tenant and scopes on business routes.
-- [ ] Publish OpenAPI 3.1 and realistic examples before exposing routes through Traefik.
-
-## Architecture and reliability
-
-- [ ] Decide whether owned persistence is required; if yes, provision a dedicated schema/database and least-privilege role.
-- [ ] Use transactional outbox for produced events and inbox/idempotency for consumed events.
-- [ ] Version event schemas and document compatibility, DLQ and replay procedures.
-- [ ] Define timeout, retry, backpressure, graceful shutdown and failure recovery.
-- [ ] Add correlation propagation, OpenTelemetry traces, metrics and structured logs.
-- [ ] Define Kubernetes resource limits, probes and horizontal scaling strategy.
-
-## Security and privacy
-
-- [ ] Enforce tenant isolation at application and persistence layers.
-- [ ] Apply rate limits, input validation, output minimization and safe errors.
-- [ ] Redact personal data and secrets from logs, traces and event payloads.
-- [ ] Threat-model service-to-service and external-provider access.
+## Reliability and operations
+- [x] Durable inbound webhook deduplication by tenant/provider/event ID.
+- [x] Outbound delivery queue and bounded exponential retry worker.
+- [x] Restricted worker database role and HTTPS SSRF controls.
+- [ ] Transactional outbox for delivery enqueue and durable broker handoff.
+- [ ] OpenTelemetry traces, delivery latency/failure metrics and alert rules.
+- [ ] Kubernetes manifests, resource limits and autoscaling policy.
 
 ## Quality gates
-
-- [ ] Unit and integration tests.
-- [ ] Contract tests for producers, consumers and OpenAPI.
-- [ ] Security tests for tenant isolation and authorization.
-- [ ] End-to-end tests for real business journeys.
-- [ ] Load tests with documented throughput, latency percentiles and error budgets.
-- [ ] Update README, architecture decisions, runbooks and API docs.
+- [x] HTTP smoke checks for health, authentication and invalid webhook signatures.
+- [ ] Automated PHP unit/integration tests for HMAC, retries, DNS rebinding and tenant isolation.
+- [ ] Provider contract tests using signed fixtures.
+- [ ] Load tests and chaos tests for provider outages.
