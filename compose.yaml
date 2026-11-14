@@ -67,41 +67,7 @@ services:
     depends_on:
       offer-service: {condition: service_healthy}
       pricing-service: {condition: service_healthy}
-      configuration-outbox-publisher:
-    build:
-      context: apps/configuration-service
-      dockerfile: Dockerfile
-    command: ["php", "/app/bin/publish-outbox.php"]
-    environment:
-      APP_ENV: prod
-      DATABASE_URL: postgresql://autoflow_configuration:local-only-configuration-password@postgres:5432/autoflow
-      RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
-      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
-      OUTBOX_POLL_INTERVAL_SECONDS: "2"
-      OUTBOX_BATCH_SIZE: "50"
-    depends_on:
-      postgres: {condition: service_healthy}
-      postgres-bootstrap: {condition: service_completed_successfully}
-      rabbitmq: {condition: service_healthy}
-    init: true
-    restart: unless-stopped
-
-  configuration-integration-test:
-    profiles: ["test"]
-    build:
-      context: apps/configuration-service
-      dockerfile: Dockerfile
-    command: ["php", "/app/tests/integration.php"]
-    environment:
-      DATABASE_URL: postgresql://autoflow_configuration:local-only-configuration-password@postgres:5432/autoflow
-      CONFIGURATION_BASE_URL: http://configuration-service:8080
-    depends_on:
-      configuration-service: {condition: service_healthy}
-      configuration-outbox-publisher: {condition: service_started}
-    restart: "no"
-
-  vehicle-catalog-service: {condition: service_healthy}
+      vehicle-catalog-service: {condition: service_healthy}
       order-service: {condition: service_healthy}
       payment-service: {condition: service_healthy}
       billing-service: {condition: service_healthy}
@@ -1294,6 +1260,40 @@ services:
       redis: {condition: service_healthy}
     init: true
     restart: unless-stopped
+
+  configuration-outbox-publisher:
+    build:
+      context: apps/configuration-service
+      dockerfile: Dockerfile
+    command: ["php", "/app/bin/publish-outbox.php"]
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: postgresql://autoflow_configuration:local-only-configuration-password@postgres:5432/autoflow
+      RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      OUTBOX_POLL_INTERVAL_SECONDS: "2"
+      OUTBOX_BATCH_SIZE: "50"
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  configuration-integration-test:
+    profiles: ["test"]
+    build:
+      context: apps/configuration-service
+      dockerfile: Dockerfile
+    command: ["php", "/app/tests/integration.php"]
+    environment:
+      DATABASE_URL: postgresql://autoflow_configuration:local-only-configuration-password@postgres:5432/autoflow
+      CONFIGURATION_BASE_URL: http://configuration-service:8080
+    depends_on:
+      configuration-service: {condition: service_healthy}
+      configuration-outbox-publisher: {condition: service_started}
+    restart: "no"
 
   vehicle-catalog-service:
     build:
