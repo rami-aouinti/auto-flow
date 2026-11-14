@@ -28,6 +28,29 @@ jobs:
       - name: Lint Analytics and Integration PHP
         run: |
           docker run --rm -v "$PWD:/app" -w /app php:8.4-cli sh -lc "find apps/analytics-service apps/integration-service -name '*.php' -print0 | xargs -0 -n1 php -l"
+      - name: Validate analytics and integration OpenAPI
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          spec = json.loads(Path("docs/api/openapi.json").read_text())
+          required = {
+              "/api/v1/analytics/events": ["post"],
+              "/api/v1/analytics/overview": ["get"],
+              "/api/v1/analytics/series": ["get"],
+              "/api/v1/analytics/export.csv": ["get"],
+              "/webhooks/{provider}": ["post"],
+              "/api/v1/integrations/webhook-events": ["get"],
+              "/api/v1/integrations/deliveries": ["get", "post"],
+              "/api/v1/integrations/providers": ["get"],
+          }
+          for path, methods in required.items():
+              assert path in spec["paths"], f"Missing OpenAPI path: {path}"
+              for method in methods:
+                  assert method in spec["paths"][path], f"Missing {method.upper()} {path}"
+                  assert spec["paths"][path][method].get("responses"), f"Missing responses for {method.upper()} {path}"
+          print("OpenAPI JSON and Analytics/Integration contracts are valid.")
+          PY
       - name: Validate Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Build and start services
