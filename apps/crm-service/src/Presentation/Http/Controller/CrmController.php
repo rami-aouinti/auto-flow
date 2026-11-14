@@ -196,6 +196,9 @@ final readonly class CrmController
             if (($claim['completed'] ?? false) === true) {
                 return new JsonResponse(['applicationId' => $id, 'orderId' => $claim['orderId'], 'status' => 'converted'], 200, ['Cache-Control' => 'no-store']);
             }
+            if (!is_string($claim['offerId'] ?? null) || !is_string($claim['quoteId'] ?? null) || !is_string($claim['vehicleId'] ?? null)) {
+                return $this->problem(409, 'The application must reference an offer, quote and vehicle before it can be converted.');
+            }
 
             $response = $this->httpClient->request('POST', rtrim($this->orderServiceUrl, '/') . '/api/v1/orders', [
                 'headers' => [
@@ -546,7 +549,7 @@ final readonly class CrmController
 
     private function loadApplication(Connection $db, string $tenant, string $id): ?array
     {
-        $item = $db->fetchAssociative('SELECT application_id,customer_id,offer_id,vehicle_id,quote_id,status,applicant_message,assigned_advisor_id,eligibility_status,eligibility_result,submitted_at,reviewed_at,version,created_at,updated_at FROM crm_applications WHERE tenant_id=:tenant AND application_id=:id', ['tenant' => $tenant, 'id' => $id]);
+        $item = $db->fetchAssociative('SELECT a.application_id,a.customer_id,a.offer_id,a.vehicle_id,a.quote_id,a.status,a.applicant_message,a.assigned_advisor_id,a.eligibility_status,a.eligibility_result,a.submitted_at,a.reviewed_at,a.version,a.created_at,a.updated_at,c.order_id AS "orderId" FROM crm_applications a LEFT JOIN crm_order_conversions c ON c.tenant_id=a.tenant_id AND c.application_id=a.application_id AND c.conversion_status=\'completed\' WHERE a.tenant_id=:tenant AND a.application_id=:id', ['tenant' => $tenant, 'id' => $id]);
         if ($item === false) { return null; }
         if (is_string($item['eligibility_result'])) { $item['eligibility_result'] = json_decode($item['eligibility_result'], true, 512, JSON_THROW_ON_ERROR); }
         return $item;
