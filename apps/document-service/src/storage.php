@@ -16,7 +16,7 @@ function documentS3Config():array {
     return compact('endpoint','bucket','access','secret','region','parts');
 }
 function documentValidateObjectKey(string $key):void {
-    if($key===''||str_starts_with($key,'/')||preg_match('/^[A-Za-z0-9._\\/-]{1,900}$/D',$key)!==1||in_array('..',explode('/',$key),true)||in_array('.',explode('/',$key),true))throw new RuntimeException('Stored S3 object key is invalid.');
+    if($key===''||str_starts_with($key,'/')||preg_match('~^[A-Za-z0-9._/-]{1,900}$~D',$key)!==1||in_array('..',explode('/',$key),true)||in_array('.',explode('/',$key),true))throw new RuntimeException('Stored S3 object key is invalid.');
 }
 function documentS3Request(string $method,string $objectKey='',?string $filePath=null):string {
     if($objectKey!=='')documentValidateObjectKey($objectKey);
