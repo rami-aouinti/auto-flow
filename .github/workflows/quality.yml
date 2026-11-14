@@ -163,16 +163,28 @@ jobs:
         run: |
           composer install --working-dir=apps/vehicle-reservation-service --no-interaction --prefer-dist --no-progress
           cd apps/vehicle-reservation-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+          find apps/vehicle-reservation-service/src -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: Run Vehicle Reservation expiry and RabbitMQ end-to-end test
         run: |
           docker compose --env-file .env.example up -d vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer reservation-inventory-event-consumer inventory-service inventory-outbox-publisher inventory-reservation-event-consumer crm-service crm-outbox-publisher
+          ready=0
           for attempt in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8092/health/ready >/dev/null; then
+              ready=1
               break
             fi
             sleep 2
           done
+          if [ "$ready" -ne 1 ]; then
+            echo "Vehicle Reservation readiness failed; dumping service and database bootstrap logs."
+            docker compose --env-file .env.example logs --no-color --tail=200 vehicle-reservation-service postgres-bootstrap postgres
+            echo "Liveness response:"
+            curl -sS -i http://127.0.0.1:8092/health/live || true
+            echo "Readiness response:"
+            curl -sS -i http://127.0.0.1:8092/health/ready || true
+            exit 1
+          fi
           curl -fsS http://127.0.0.1:8092/health/ready
           for attempt in $(seq 1 30); do
             if docker compose --env-file .env.example logs reservation-inventory-event-consumer 2>&1 | grep -q "consumer started"; then
