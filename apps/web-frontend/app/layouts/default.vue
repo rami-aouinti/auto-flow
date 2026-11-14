@@ -35,6 +35,7 @@ const sections = [
   },
 ];
 const pageTitle = computed(() => {
+  if (route.path === '/portal') return 'Mein Kundenkonto';
   if (route.path === '/admin') return 'Kontrollzentrum';
   if (route.path.startsWith('/admin/catalog')) return 'Fahrzeugkatalog';
   if (route.path.startsWith('/admin/customers')) return 'Kunden';
