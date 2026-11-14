@@ -16,7 +16,7 @@ $interval=max(1,(int)envv('INTEGRATION_WORKER_INTERVAL_SECONDS','3'));$batch=max
 fwrite(STDOUT,"Integration delivery worker started.".PHP_EOL);
 while(true){
  try{
-  $db->beginTransaction();$rows=$db->query("SELECT id,tenant_id,provider,target_url,event_type,payload,attempts FROM integration_service.delivery_attempts WHERE status='pending' AND (next_attempt_at IS NULL OR next_attempt_at<=now()) ORDER BY created_at LIMIT ".$batch." FOR UPDATE SKIP LOCKED)->fetchAll();
+  $db->beginTransaction();$rows=$db->query("SELECT id,tenant_id,provider,target_url,event_type,payload,attempts FROM integration_service.delivery_attempts WHERE status='pending' AND (next_attempt_at IS NULL OR next_attempt_at<=now()) ORDER BY created_at LIMIT ".$batch." FOR UPDATE SKIP LOCKED")->fetchAll();
   foreach($rows as $row)$db->prepare("UPDATE integration_service.delivery_attempts SET attempts=attempts+1,updated_at=now() WHERE id=:id")->execute(['id'=>$row['id']]);$db->commit();
   foreach($rows as $row){[$ok,$error]=deliver($row,$allowed,$signing);$attempt=(int)$row['attempts']+1;
    if($ok)$q=$db->prepare("UPDATE integration_service.delivery_attempts SET status='delivered',last_error=NULL,next_attempt_at=NULL,updated_at=now() WHERE id=:id");
