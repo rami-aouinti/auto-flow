@@ -133,7 +133,7 @@ The gateway routes `/api/v1/contracts/**` to Contract Service at `contract-servi
 
 ## Authentication quick start
 
-Customer, Offer, Pricing, Vehicle Catalog, Order Management, Billing, Contract, Fulfillment and Vehicle Reservation validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog`, `autoflow-order`, `autoflow-billing`, `autoflow-customer`, `autoflow-contract`, `autoflow-fulfillment` and `autoflow-vehicle-reservation`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
+Customer, Offer, Pricing, Vehicle Catalog, Order Management, Billing, Contract, Fulfillment and Vehicle Reservation validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog`, `autoflow-search`, `autoflow-order`, `autoflow-billing`, `autoflow-customer`, `autoflow-contract`, `autoflow-fulfillment` and `autoflow-vehicle-reservation`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
 
 The imported `demo` user/password `demo`, `order-operator` user/password `order-operator`, and the local password-grant client below are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
 
@@ -396,13 +396,12 @@ The architecture documentation explains the product domain, service boundaries, 
 
 Start with the [AutoFlow Engineering & Architecture Wiki](docs/wiki/README.md). The chapters distinguish implemented capabilities, technical demonstrations and target architecture so that planned work is not confused with delivered functionality.
 
-## New bounded-context scaffolds (health-only)
+## Additional bounded-context services
 
-Search is now a Symfony/RoadRunner service with an authenticated Elasticsearch vehicle search API. Workflow, Integration, Document, Audit, Analytics, Media and Configuration remain **health-only scaffolds**. Their remaining responsibilities and unchecked implementation features are documented in each service's `README.md` and `docs/FEATURE_BACKLOG.md`.
+Search is a Symfony/RoadRunner service with an authenticated Elasticsearch vehicle search API. Workflow, Integration, Document, Audit, Analytics, Media and Configuration remain **health-only scaffolds**. Their remaining responsibilities and unchecked implementation features are documented in each service's `README.md` and `docs/FEATURE_BACKLOG.md`.
 
 | Service | Local health URL | Planned responsibility |
 |---|---|---|
-| Search | http://localhost:8097/api/v1/search/vehicles | Authenticated Elasticsearch vehicle search, filters, facets and autocomplete |
 | Workflow | http://localhost:8098/health/ready | Temporal orchestration, workflow versions and Saga coordination |
 | Integration | http://localhost:8099/health/ready | External provider adapters, webhooks and delivery reliability |
 | Document | http://localhost:8100/health/ready | Document metadata, versions, access and retention |
