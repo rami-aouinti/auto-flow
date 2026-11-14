@@ -67,7 +67,7 @@ function run():never {
     if($path==='/health/ready'){try{pdo()->query('SELECT 1');$root=getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents';respond(['service'=>'document-service','status'=>'ok','checks'=>['postgres'=>'ok','storage'=>is_writable($root)?'ok':'unavailable']]);}catch(Throwable){respond(['service'=>'document-service','status'=>'not_ready','checks'=>['postgres'=>'unavailable']],503);}}
     if($path==='/api/doc.json')respond(['openapi'=>'3.1.0','info'=>['title'=>'AutoFlow Document API','version'=>'1.0.0'],'paths'=>['/api/v1/documents'=>['get'=>['summary'=>'List documents'],'post'=>['summary'=>'Upload document']]]]);
     if($path==='/api/doc'){header('Location: /api/doc.json',true,302);exit;}
-    $u=auth();$db=pdo();
+    $u=auth();$db=pdo();$tenant=$db->prepare("SELECT set_config('app.tenant_id', :tenant, false)");$tenant->execute(['tenant'=>$u['tenant']]);
     if($path==='/api/v1/documents'&&$method==='GET'){
         permit($u,'documents:read');$page=max(1,(int)($_GET['page']??1));$limit=min(100,max(1,(int)($_GET['limit']??25)));$where=["tenant_id=:t","status<>'deleted'"];$params=['t'=>$u['tenant']];
         foreach(['category','entity_type','entity_id','status'] as $k)if(isset($_GET[$k])&&$_GET[$k]!==''){$where[]="$k=:$k";$params[$k]=$_GET[$k];}
