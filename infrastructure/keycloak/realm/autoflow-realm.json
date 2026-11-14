@@ -472,6 +472,17 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-document",
+      "name": "Document Service resource audience",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
