@@ -27,8 +27,8 @@ final readonly class CustomerIdentityController
             }
             $body = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
             $subject = $body['subject'] ?? null;
-            if (!is_string($subject) || trim($subject) === '' || strlen(trim($subject)) > 255) {
-                return $this->problem(400, 'A valid Keycloak subject is required.');
+            if (!is_string($subject) || !preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/', trim($subject))) {
+                return $this->problem(400, 'A UUID Keycloak subject is required.');
             }
             $subject = trim($subject);
             return $this->db->transactional(function (Connection $db) use ($principal, $id, $subject): JsonResponse {
