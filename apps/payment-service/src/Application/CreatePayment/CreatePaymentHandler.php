@@ -112,10 +112,12 @@ final readonly class CreatePaymentHandler
                 'tenant_id' => $tenant,'payment_id' => $paymentId,'order_id' => $orderId,'created_by' => $actor,
                 'provider' => 'stripe','provider_payment_id' => $providerId,'amount_minor' => $amount,
                 'currency' => $currency,'status' => $status,
+                'billing_snapshot' => json_encode($orderContext['billingSnapshot'], JSON_THROW_ON_ERROR),
             ]);
             $response = [
                 'paymentId' => $paymentId,'orderId' => $orderId,'provider' => 'stripe','providerPaymentId' => $providerId,
                 'amountMinor' => $amount,'currency' => $currency,'status' => $status,
+                'billingSnapshot' => $orderContext['billingSnapshot'],
                 'clientSecret' => $intent['client_secret'] ?? null,
             ];
             $this->db->insert('payment_idempotency', [
