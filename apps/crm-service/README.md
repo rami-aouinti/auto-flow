@@ -22,7 +22,6 @@ All routes require a verified Keycloak bearer token, tenant claim and the permis
 | POST | /api/v1/crm/applications | crm:applications:write + customers:read; optional offer/quote/vehicle references require their read scopes | Submit a leasing application; requires Idempotency-Key |
 | GET | /api/v1/crm/applications | crm:applications:read | Filter and paginate applications |
 | GET | /api/v1/crm/applications/{id} | crm:applications:read | Read an application |
-| POST | /api/v1/crm/applications/{id}/convert | crm:applications:manage + orders:write | Convert an approved, eligible application into an Order |
 | POST | /api/v1/crm/applications/{id}/convert | crm:applications:manage + orders:write | Create an Order from an approved, eligible application |
 | PATCH | /api/v1/crm/applications/{id}/status | crm:applications:manage | Execute a permitted lifecycle transition |
 | PUT | /api/v1/crm/applications/{id}/assignment | crm:applications:assign | Assign a sales advisor |
@@ -70,6 +69,4 @@ The local Keycloak realm includes the `autoflow-crm` audience and CRM permission
 - Customer, offer, quote and vehicle references are validated synchronously through their owning APIs using the caller token; no cross-service database access is used.
 - Implement automated eligibility-provider adapters and policy governance; current API records human/system review results only.
 - Customer/offer lifecycle event consumers and Inbox deduplication remain future work; current submission/conversion paths revalidate references synchronously.
-- Automated credit/eligibility provider adapters and governance remain future work; CRM only records human review outcomes.
-- Full PostgreSQL RLS and RabbitMQ end-to-end tests, including duplicate publication and retry recovery, remain required before production.
 - Add full PostgreSQL RLS and RabbitMQ end-to-end integration tests, including duplicate publication and retry recovery.
