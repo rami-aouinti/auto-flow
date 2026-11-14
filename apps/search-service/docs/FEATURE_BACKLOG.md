@@ -4,7 +4,7 @@
 
 - [ ] Consume versioned catalogue events from RabbitMQ for near-real-time updates and delete propagation.
 - [ ] Add an inbox with event ID deduplication, retry policy and dead-letter routing.
-- [ ] Implement alias-based blue/green reindexing and rollback.
+- [ ] Add automated retention and cleanup policy for old index generations after the rollback window.
 - [ ] Add relevance tuning, synonyms and language-specific analyzers based on measured search behavior.
 - [ ] Add tenant-owned projections only when data ownership, PII minimization and tenant filters are specified per bounded context.
 - [ ] Add contract and integration tests against a real Elasticsearch container, plus scope/security tests.
