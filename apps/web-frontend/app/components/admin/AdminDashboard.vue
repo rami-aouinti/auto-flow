@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { catalog, crm, customers, orders, payments, pricing } from '../../../src/api';
+import { billing, catalog, contracts, crm, customers, fulfillments, inventory, orders, payments, pricing, reservations } from '../../../src/api';
 import PageHeader from '../shared/PageHeader.vue';
 import MetricCard from '../shared/MetricCard.vue';
 
@@ -14,6 +14,11 @@ const metrics = ref<Metric[]>([
   { key: 'orders', label: 'Aufträge', value: '—', caption: 'Auftragsübersicht', icon: 'mdi-clipboard-text-outline', tone: 'info', to: '/operations/orders' },
   { key: 'payments', label: 'Zahlungen', value: '—', caption: 'Payment Lifecycle', icon: 'mdi-credit-card-outline', tone: 'success', to: '/operations/payments' },
   { key: 'quotes', label: 'Pricing Quotes', value: '—', caption: 'Kalkulationen', icon: 'mdi-calculator-variant-outline', tone: 'warning', to: '/operations/pricing' },
+  { key: 'contracts', label: 'Verträge', value: '—', caption: 'Vertragslebenszyklus', icon: 'mdi-file-sign', tone: 'primary', to: '/operations/workflow?tab=contracts' },
+  { key: 'invoices', label: 'Rechnungen', value: '—', caption: 'Fakturierung & Gutschriften', icon: 'mdi-receipt-text-outline', tone: 'success', to: '/operations/workflow?tab=billing' },
+  { key: 'fulfillments', label: 'Auslieferungen', value: '—', caption: 'Vorbereitung & Zustellung', icon: 'mdi-truck-delivery-outline', tone: 'info', to: '/operations/workflow?tab=fulfillment' },
+  { key: 'inventory', label: 'Fahrzeugbestand', value: '—', caption: 'Physische Fahrzeuge', icon: 'mdi-warehouse', tone: 'warning', to: '/operations/workflow?tab=inventory' },
+  { key: 'reservations', label: 'Reservierungen', value: '—', caption: 'Fahrzeugvormerkungen', icon: 'mdi-calendar-check-outline', tone: 'info', to: '/operations/workflow?tab=reservations' },
 ]);
 
 function count(data: any): number {
@@ -23,7 +28,9 @@ function count(data: any): number {
   return 0;
 }
 
-onMounted(async () => {
+async function loadDashboard() {
+  loading.value = true;
+  loadError.value = '';
   const results = await Promise.allSettled([
     catalog.adminList('variants', 1, 0),
     customers.list({ limit: 1, offset: 0 }),
@@ -31,8 +38,13 @@ onMounted(async () => {
     orders.list(1, 0),
     payments.list(1, 0),
     pricing.quotes(1, 0),
+    contracts.list(1, 0),
+    billing.invoices(1, 0),
+    fulfillments.list(1, 0),
+    inventory.units(1, 0),
+    reservations.list(1, 0),
   ]);
-  const keys = ['vehicles', 'customers', 'crm', 'orders', 'payments', 'quotes'];
+  const keys = ['vehicles', 'customers', 'crm', 'orders', 'payments', 'quotes', 'contracts', 'invoices', 'fulfillments', 'inventory', 'reservations'];
   results.forEach((result, index) => {
     const metric = metrics.value.find((item) => item.key === keys[index]);
     if (!metric) return;
@@ -40,15 +52,17 @@ onMounted(async () => {
     else metric.value = '—';
   });
   const failures = results.filter((result) => result.status === 'rejected');
-  if (failures.length) loadError.value = 'Einige Kennzahlen konnten wegen fehlender Berechtigungen oder nicht erreichbarer Services nicht geladen werden.';
+  if (failures.length) loadError.value = 'Einige Kennzahlen konnten wegen fehlender Berechtigungen oder nicht erreichbarer Services nicht geladen werden. Nicht verfügbare Services werden mit — angezeigt.';
   loading.value = false;
-});
+}
+
+onMounted(loadDashboard);
 </script>
 
 <template>
   <div class="admin-dashboard">
     <PageHeader eyebrow="AUTOFLOW · ADMINISTRATION" title="Kontrollzentrum" description="Verwalte Fahrzeugstammdaten und behalte die wichtigsten Geschäftsprozesse im Blick.">
-      <template #actions><v-chip color="success" variant="tonal" prepend-icon="mdi-shield-check-outline">Geschützter Bereich</v-chip></template>
+      <template #actions><div class="d-flex align-center ga-2"><v-chip color="success" variant="tonal" prepend-icon="mdi-shield-check-outline">Geschützter Bereich</v-chip><v-btn icon="mdi-refresh" variant="tonal" :loading="loading" aria-label="Kennzahlen aktualisieren" @click="loadDashboard" /></div></template>
     </PageHeader>
 
     <v-alert v-if="loadError" type="warning" variant="tonal" density="comfortable" class="mb-6">{{ loadError }}</v-alert>
@@ -70,6 +84,7 @@ onMounted(async () => {
             <v-list-item to="/crm/applications" prepend-icon="mdi-account-tie-outline" title="CRM · Anträge" subtitle="Kundenanträge, Eligibility, Aufgaben und Interaktionen" append-icon="mdi-chevron-right" rounded="lg" />
             <v-list-item to="/operations/orders" prepend-icon="mdi-clipboard-list-outline" title="Aufträge & Payments" subtitle="Auftragsstatus, Zahlungsvorgänge und Audit-Verläufe" append-icon="mdi-chevron-right" rounded="lg" />
             <v-list-item to="/operations/pricing" prepend-icon="mdi-calculator-variant-outline" title="Pricing Quotes" subtitle="Kalkulationen und gespeicherte Angebote einsehen" append-icon="mdi-chevron-right" rounded="lg" />
+            <v-list-item to="/operations/workflow" prepend-icon="mdi-workflow" title="Business Workflows" subtitle="Verträge, Bestand, Reservierungen, Lieferung und Billing" append-icon="mdi-chevron-right" rounded="lg" />
           </v-list>
         </v-card>
       </v-col>
