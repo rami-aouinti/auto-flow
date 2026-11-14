@@ -48,16 +48,30 @@ final class CrmTenantIsolationTest extends TestCase
                 'created_by' => 'crm-rls-test',
                 'updated_by' => 'crm-rls-test',
             ]);
+            $conversion = $pdo->prepare(
+                "INSERT INTO crm_order_conversions (tenant_id,application_id,initiated_by) VALUES (:tenant,:application,:actor)",
+            );
+            $conversion->execute([
+                'tenant' => 'tenant-crm-a',
+                'application' => $applicationId,
+                'actor' => 'crm-rls-test',
+            ]);
 
             $setTenant->execute(['tenant' => 'tenant-crm-b']);
             $visibleToOtherTenant = $pdo->prepare('SELECT COUNT(*) FROM crm_applications WHERE application_id=:id');
             $visibleToOtherTenant->execute(['id' => $applicationId]);
             self::assertSame(0, (int) $visibleToOtherTenant->fetchColumn());
+            $hiddenConversion = $pdo->prepare('SELECT COUNT(*) FROM crm_order_conversions WHERE application_id=:id');
+            $hiddenConversion->execute(['id' => $applicationId]);
+            self::assertSame(0, (int) $hiddenConversion->fetchColumn());
 
             $setTenant->execute(['tenant' => 'tenant-crm-a']);
             $visibleToOwnerTenant = $pdo->prepare('SELECT COUNT(*) FROM crm_applications WHERE application_id=:id');
             $visibleToOwnerTenant->execute(['id' => $applicationId]);
             self::assertSame(1, (int) $visibleToOwnerTenant->fetchColumn());
+            $visibleConversion = $pdo->prepare('SELECT COUNT(*) FROM crm_order_conversions WHERE application_id=:id');
+            $visibleConversion->execute(['id' => $applicationId]);
+            self::assertSame(1, (int) $visibleConversion->fetchColumn());
         } finally {
             $pdo->rollBack();
         }
