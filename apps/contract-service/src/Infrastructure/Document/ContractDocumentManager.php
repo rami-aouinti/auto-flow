@@ -15,13 +15,14 @@ final readonly class ContractDocumentManager
     public function __construct(
         private Connection $db,
         private string $storagePath,
+        private DocumentServiceClient $documentService,
     ) {
     }
 
     /**
      * @return array{documentId:string,contractId:string,version:int,checksum:string,byteSize:int,generatedAt:string,path:string}|null
      */
-    public function generate(string $tenant, string $actor, string $contractId): ?array
+    public function generate(string $tenant, string $actor, string $contractId, string $accessToken): ?array
     {
         $finalPath = null;
 
@@ -30,6 +31,7 @@ final readonly class ContractDocumentManager
                 $tenant,
                 $actor,
                 $contractId,
+                $accessToken,
                 &$finalPath,
             ): ?array {
                 $this->setTenant($db, $tenant);
@@ -83,7 +85,8 @@ final readonly class ContractDocumentManager
                     throw new \RuntimeException('Could not atomically publish the generated PDF.');
                 }
 
-                $documentId = Uuid::v7()->toRfc4122();
+                $remoteDocument = $this->documentService->uploadPdf($pdf, 'contract-' . $contractId . '.pdf', 'Contract ' . $contractId, 'contract', $contractId, $accessToken);
+                $documentId = $remoteDocument['id'];
                 $generatedAt = (new \DateTimeImmutable())->format(DATE_ATOM);
                 $db->insert('contract_documents', [
                     'tenant_id' => $tenant,
@@ -173,6 +176,21 @@ final readonly class ContractDocumentManager
      * @param array<string, mixed> $contract
      * @param array<string, mixed> $snapshot
      */
+    /** @return array{document:array<string,mixed>,content:string}|null */
+    public function downloadLatest(string $tenant, string $contractId, string $accessToken): ?array
+    {
+        $document = $this->findLatest($tenant, $contractId);
+        if ($document === null) {
+            return null;
+        }
+        $content = $this->documentService->download($document['documentId'], $accessToken);
+        if (!hash_equals($document['checksum'], hash('sha256', $content))) {
+            throw new RuntimeException('Document Service content failed its SHA-256 integrity check.');
+        }
+
+        return ['document' => $document, 'content' => $content];
+    }
+
     private function render(string $contractId, array $contract, array $snapshot): string
     {
         $escape = static fn (mixed $value): string => htmlspecialchars(
