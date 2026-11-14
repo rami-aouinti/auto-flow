@@ -1,0 +1,10 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+    App\\:
+        resource: '../src/'
+        exclude: ['../src/Kernel.php']
+    App\\Infrastructure\\Audit\\AuditRepository:
+        arguments:
+            $databaseUrl: '%env(default:DATABASE_URL:AUDIT_DATABASE_URL)%'

@@ -1162,25 +1162,6 @@ services:
     init: true
     restart: unless-stopped
 
-  document-outbox-publisher:
-    build:
-      context: ./apps/document-service
-      dockerfile: Dockerfile
-    command: ["php", "/app/bin/publish-outbox.php"]
-    environment:
-      DOCUMENT_DATABASE_URL: ${DOCUMENT_DATABASE_URL:-postgresql://autoflow_document:local-only-document-password@postgres:5432/autoflow}
-      RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
-      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
-      DOCUMENT_EVENTS_EXCHANGE: autoflow.document.events
-      DOCUMENT_OUTBOX_INTERVAL_SECONDS: "2"
-    depends_on:
-      postgres: {condition: service_healthy}
-      postgres-bootstrap: {condition: service_completed_successfully}
-      rabbitmq: {condition: service_healthy}
-    init: true
-    restart: unless-stopped
-
   clamav:
     image: clamav/clamav:1.4
     expose: ["3310"]
@@ -1191,15 +1172,28 @@ services:
   audit-service:
     build:
       context: .
-      dockerfile: docker/php/skeleton-service.Dockerfile
+      dockerfile: docker/php/service.Dockerfile
       args:
         SERVICE_PATH: apps/audit-service
+        COMPOSER_NO_DEV: ""
     ports: ["127.0.0.1:8101:8080"]
     environment:
-      APP_ENV: dev
-      HEALTH_DEPENDENCIES: rabbitmq:5672
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: local-only-audit-service-secret
+      AUDIT_DATABASE_URL: ${AUDIT_DATABASE_URL:-postgresql://autoflow_audit:local-only-audit-password@postgres:5432/autoflow}
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
     depends_on:
-      rabbitmq: {condition: service_healthy}
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      keycloak: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     init: true
     restart: unless-stopped
 
@@ -1243,7 +1237,6 @@ services:
       REDIS_PORT: 6379
     depends_on:
       postgres: {condition: service_healthy}
-      postgres-bootstrap: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
     init: true
     restart: unless-stopped
@@ -1606,12 +1599,10 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/246-inventory-stock-projection.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/260-inventory-reservation-fulfillment.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/270-crm-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/280-audit-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/260-document-role.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/270-document-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/280-document-demo.sql
-        psql -v ON_ERROR_STOP=1 -f /migrations/290-configuration-role.sql
-        psql -v ON_ERROR_STOP=1 -f /migrations/300-configuration-schema.sql
-        psql -v ON_ERROR_STOP=1 -f /migrations/310-configuration-demo.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -1647,12 +1638,10 @@ services:
       - ./apps/inventory-service/migrations/00-inventory-schema.sql:/migrations/250-inventory-schema.sql:ro
       - ./apps/inventory-service/migrations/01-reservation-fulfillment-inbox.sql:/migrations/260-inventory-reservation-fulfillment.sql:ro
       - ./apps/crm-service/migrations/270-crm-schema.sql:/migrations/270-crm-schema.sql:ro
+      - ./apps/audit-service/migrations/001_audit_schema.sql:/migrations/280-audit-schema.sql:ro
       - ./apps/document-service/migrations/00_create_document_database_role.sql:/migrations/260-document-role.sql:ro
       - ./apps/document-service/migrations/230-document-schema.sql:/migrations/270-document-schema.sql:ro
       - ./apps/document-service/fixtures/demo.sql:/migrations/280-document-demo.sql:ro
-      - ./apps/configuration-service/migrations/00_create_configuration_database_role.sql:/migrations/290-configuration-role.sql:ro
-      - ./apps/configuration-service/migrations/240-configuration-schema.sql:/migrations/300-configuration-schema.sql:ro
-      - ./apps/configuration-service/fixtures/demo.sql:/migrations/310-configuration-demo.sql:ro
     depends_on:
       postgres:
         condition: service_healthy

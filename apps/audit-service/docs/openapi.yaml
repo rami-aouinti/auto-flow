@@ -1,0 +1,95 @@
+openapi: 3.1.0
+info:
+  title: AutoFlow Audit API
+  version: 1.0.0
+  description: Tenant-isolated append-only audit journal.
+servers:
+  - url: http://localhost:8101
+security:
+  - bearerAuth: []
+paths:
+  /health/live:
+    get:
+      security: []
+      summary: Liveness
+      responses:
+        '200': { description: Process is alive }
+  /health/ready:
+    get:
+      security: []
+      summary: Readiness
+      responses:
+        '200': { description: PostgreSQL is reachable }
+        '503': { description: PostgreSQL is unavailable }
+  /api/v1/audit/events:
+    post:
+      summary: Append an audit event
+      description: Tenant is taken from the verified JWT. eventId is idempotent within a tenant.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: header
+          name: X-Correlation-ID
+          schema: { type: string, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AuditEventInput' }
+      responses:
+        '201': { description: Event appended }
+        '200': { description: Idempotent replay }
+        '400': { description: Invalid JSON }
+        '401': { description: Missing or invalid token }
+        '403': { description: Missing audit:write scope or tenant }
+        '422': { description: Invalid event }
+        '503': { description: Persistence unavailable }
+    get:
+      summary: Search audit events for the authenticated tenant
+      parameters:
+        - { in: query, name: eventType, schema: { type: string } }
+        - { in: query, name: actorId, schema: { type: string } }
+        - { in: query, name: resourceType, schema: { type: string } }
+        - { in: query, name: resourceId, schema: { type: string } }
+        - { in: query, name: from, schema: { type: string, format: date-time } }
+        - { in: query, name: to, schema: { type: string, format: date-time } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+      responses:
+        '200': { description: Paginated audit events }
+        '401': { description: Missing or invalid token }
+        '403': { description: Missing audit:read scope or tenant }
+        '400': { description: Invalid pagination }
+        '503': { description: Persistence unavailable }
+  /api/v1/audit/events/{eventId}:
+    get:
+      summary: Read an audit event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Audit event }
+        '401': { description: Missing or invalid token }
+        '403': { description: Missing audit:read scope or tenant }
+        '404': { description: Event not found in this tenant }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AuditEventInput:
+      type: object
+      required: [eventId, eventType, actorType, resourceType, resourceId, occurredAt]
+      properties:
+        eventId: { type: string, minLength: 3, maxLength: 128 }
+        eventType: { type: string, maxLength: 120 }
+        actorType: { type: string, enum: [user, service, system] }
+        actorId: { type: string, maxLength: 255 }
+        resourceType: { type: string, maxLength: 80 }
+        resourceId: { type: string, maxLength: 160 }
+        occurredAt: { type: string, format: date-time }
+        correlationId: { type: string, maxLength: 128 }
+        payload: { type: object }

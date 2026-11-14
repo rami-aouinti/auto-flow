@@ -1,44 +1,27 @@
-# Audit and Compliance Service — Feature backlog
+# Audit Service — delivery status
 
-**Not implemented. This is planned scope, not a feature-completion claim.**
+## Implemented in the first production-shaped slice
 
-## Functional capabilities
+- [x] Authenticated, versioned HTTP ingestion and tenant-scoped read API.
+- [x] Keycloak JWT validation via CoreBundle (issuer, audience, signature, expiry).
+- [x] Scope checks: audit:write and audit:read.
+- [x] Tenant context comes from the verified principal; tenant cannot be supplied in the body.
+- [x] PostgreSQL row-level security and forced RLS.
+- [x] Append-only database permissions and mutation-blocking trigger.
+- [x] Idempotent event ingestion using tenant + eventId.
+- [x] Per-tenant SHA-256 hash chain.
+- [x] Payload size limit and recursive redaction of common sensitive fields.
+- [x] Search filters, pagination, event detail and OpenAPI contract.
+- [x] Readiness check against PostgreSQL.
 
-- [ ] Define a versioned audit-event schema and producer allow-list.
-- [ ] Consume audit events with inbox deduplication and payload fingerprints.
-- [ ] Store append-only records with tenant, actor, action, resource, timestamp and correlation ID.
-- [ ] Provide tenant-safe search, retention and compliance exports.
-- [ ] Add tamper evidence, access logging and privileged-read auditing.
-- [ ] Define privacy redaction and retention/deletion policy.
+## Remaining production hardening
 
-## API contract (future)
-
-- [ ] Identify owned use cases and define exact routes; no business endpoint is implemented today.
-- [ ] Define request/response schemas, pagination, validation and error codes.
-- [ ] Require Keycloak JWT signature, issuer, audience, tenant and scopes on business routes.
-- [ ] Publish OpenAPI 3.1 and realistic examples before exposing routes through Traefik.
-
-## Architecture and reliability
-
-- [ ] Decide whether owned persistence is required; if yes, provision a dedicated schema/database and least-privilege role.
-- [ ] Use transactional outbox for produced events and inbox/idempotency for consumed events.
-- [ ] Version event schemas and document compatibility, DLQ and replay procedures.
-- [ ] Define timeout, retry, backpressure, graceful shutdown and failure recovery.
-- [ ] Add correlation propagation, OpenTelemetry traces, metrics and structured logs.
-- [ ] Define Kubernetes resource limits, probes and horizontal scaling strategy.
-
-## Security and privacy
-
-- [ ] Enforce tenant isolation at application and persistence layers.
-- [ ] Apply rate limits, input validation, output minimization and safe errors.
-- [ ] Redact personal data and secrets from logs, traces and event payloads.
-- [ ] Threat-model service-to-service and external-provider access.
-
-## Quality gates
-
-- [ ] Unit and integration tests.
-- [ ] Contract tests for producers, consumers and OpenAPI.
-- [ ] Security tests for tenant isolation and authorization.
-- [ ] End-to-end tests for real business journeys.
-- [ ] Load tests with documented throughput, latency percentiles and error budgets.
-- [ ] Update README, architecture decisions, runbooks and API docs.
+- [ ] Publish a versioned integration-event envelope and onboard each producer through its transactional outbox.
+- [ ] Add RabbitMQ consumer, durable queue, inbox deduplication, retry policy and dead-letter queue.
+- [ ] Add privileged-read audit events and export authorization/audit trail.
+- [ ] Add CSV/NDJSON compliance export with bounded streaming.
+- [ ] Add chain-verification and evidence report command.
+- [ ] Define retention/legal-hold policy with privacy and legal review; do not silently delete immutable evidence.
+- [ ] Add database migration runner and restore/replay runbook.
+- [ ] Add integration, contract, tenant-isolation and tamper-detection tests.
+- [ ] Add metrics, tracing, rate limits and load tests.

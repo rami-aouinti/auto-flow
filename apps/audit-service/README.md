@@ -1,43 +1,92 @@
-# Audit and Compliance Service
+# AutoFlow Audit Service
 
-**Status: scaffold only — health endpoints and local Docker wiring.**
+Tenant-isolated, append-only audit journal for compliance, investigations and operational traceability.
 
-## Responsibility
+## Responsibilities and boundaries
 
-Immutable cross-domain audit projections, actor/tenant/time search, compliance exports, retention and suspicious-activity signals.
+- Stores immutable audit facts; it does not own or mutate orders, offers, payments or contracts.
+- Every event is tenant-scoped and carries actor, action, resource, timestamp and correlation context.
+- Uses PostgreSQL row-level security and a per-tenant SHA-256 hash chain to make tampering detectable.
+- Redacts common credential and personal-data fields before persistence.
+- Uses the shared CoreBundle for Keycloak JWT signature, issuer, audience, expiry, tenant and scope validation.
 
-## Existing-platform boundary
+The first delivery exposes an authenticated ingestion and query API. Producers can send their committed domain facts using the ingestion endpoint. The RabbitMQ consumer is intentionally not claimed as enabled until domain producers publish the agreed versioned envelope.
 
-Domain services must keep their own transactional audit writes. This service consumes events and builds a read model.
+## API
 
-## Implemented endpoints
+Base URL (local direct): http://localhost:8101
 
-| Method | Path | Purpose | Responses |
+| Method | Path | Scope | Description |
 |---|---|---|---|
-| GET | /health | Liveness compatibility | 200 |
-| GET | /health/live | Process liveness | 200 |
-| GET | /health/ready | Readiness plus configured TCP checks | 200, 503 |
-| Any | Other paths | Business API not implemented | 404 Problem Details |
+| GET | /health, /health/live | public | Liveness |
+| GET | /health/ready | public | PostgreSQL readiness |
+| POST | /api/v1/audit/events | audit:write | Append an audit event (idempotent by tenant + eventId) |
+| GET | /api/v1/audit/events | audit:read | Search tenant events |
+| GET | /api/v1/audit/events/{eventId} | audit:read | Read one tenant event |
 
-Health endpoints are unauthenticated and disclose no credentials. No business endpoints, database schema, migrations, fixtures or domain events are claimed as implemented.
+### Ingest example
 
-## Local Docker
+```http
+POST /api/v1/audit/events
+Authorization: Bearer <Keycloak access token>
+Content-Type: application/json
+X-Correlation-ID: order-journey-01
+```
+
+```json
+{
+  "eventId": "order:ord-1001:created:v1",
+  "eventType": "order.created",
+  "actorType": "user",
+  "actorId": "user-123",
+  "resourceType": "order",
+  "resourceId": "ord-1001",
+  "occurredAt": "2026-11-14T06:30:00Z",
+  "correlationId": "order-journey-01",
+  "payload": { "status": "created", "source": "web" }
+}
+```
+
+New event: **201** with `created=true`. A retry with the same eventId in the same tenant returns **200** with `created=false`. Conflicting tenant IDs cannot read or deduplicate another tenant's event.
+
+### Search
+
+```http
+GET /api/v1/audit/events?eventType=order.created&resourceType=order&resourceId=ord-1001&page=1&limit=25
+Authorization: Bearer <Keycloak access token>
+```
+
+Filters: `eventType`, `actorId`, `resourceType`, `resourceId`, `from`, `to`, `page`, `limit` (1–100). Results are ordered newest first.
+
+## Security model
+
+- `audit:write` is for trusted producer service accounts; `audit:read` is for authorized users/services.
+- The tenant comes only from the verified principal. Request payloads cannot choose or override a tenant.
+- RLS is forced on `audit_events`; each repository operation sets the tenant in a transaction-local PostgreSQL setting.
+- The database role has SELECT/INSERT only on audit events. UPDATE/DELETE are denied and a trigger rejects mutations.
+- Payloads are limited to 16 KiB; common secret, credential, financial identifier and contact fields are redacted recursively.
+- Never place access tokens, credentials, payment data or unnecessary customer data in audit payloads.
+
+## Database and local run
+
+The schema is mounted into the PostgreSQL initialization sequence. For an existing local volume, apply it once as the database administrator:
+
+```bash
+docker compose --env-file .env.example exec -T postgres psql -U autoflow -d autoflow < apps/audit-service/migrations/001_audit_schema.sql
+```
+
+Then build and start:
 
 ```bash
 docker compose --env-file .env.example up -d --build audit-service
 docker compose --env-file .env.example ps audit-service
-curl -i http://localhost:8101/health/live
 curl -i http://localhost:8101/health/ready
 ```
 
-Shared bootstrap image: docker/php/skeleton-service.Dockerfile. It uses PHP's built-in HTTP server for local scaffolding only; replace it with the Symfony + RoadRunner runtime before implementing business capabilities.
+Tests:
 
-## Environment
+```bash
+docker compose --env-file .env.example exec audit-service composer test
+```
 
-- APP_ENV=dev for this bootstrap.
-- HEALTH_DEPENDENCIES: optional semicolon-separated host:port values checked by readiness.
-- Configured readiness dependency: rabbitmq:5672.
-
-## Implementation backlog
-
-See docs/FEATURE_BACKLOG.md for planned capabilities, future API design, data ownership, events, reliability, security and acceptance criteria. Do not add generic CRUD without a defined owned use case.
+See [OpenAPI](docs/openapi.yaml) for request/response contracts and error statuses.

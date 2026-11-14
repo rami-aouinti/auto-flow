@@ -195,14 +195,14 @@
           }
         },
         {
-          "name": "document-api-audience",
+          "name": "audit-api-audience",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
           "config": {
-            "included.client.audience": "autoflow-document",
+            "included.client.audience": "autoflow-audit",
             "id.token.claim": "false",
-            "access.token.claim": "true",
-            "introspection.token.claim": "true"
+            "access.token.claim": "true"
           }
         }
       ],
@@ -405,6 +405,18 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-audit",
+      "name": "Audit Service resource audience",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": true
     }
   ],
   "users": [
@@ -461,10 +473,7 @@
         "pricing:quote",
         "reservations:manage",
         "reservations:read",
-        "reservations:write",
-        "documents:read",
-        "documents:write",
-        "documents:manage"
+        "reservations:write"
       ],
       "attributes": {
         "tenant_id": [
@@ -544,10 +553,7 @@
         "reservations:write",
         "reservations:manage",
         "inventory:read",
-        "inventory:write",
-        "documents:read",
-        "documents:write",
-        "documents:manage"
+        "inventory:write"
       ],
       "attributes": {
         "tenant_id": [
@@ -743,16 +749,12 @@
         "description": "Access only the customer profile linked to the authenticated Keycloak subject"
       },
       {
-        "name": "documents:read",
-        "description": "Read tenant document metadata and clean files"
+        "name": "audit:read",
+        "description": "Read audit events within the authenticated tenant"
       },
       {
-        "name": "documents:write",
-        "description": "Upload documents and create new versions"
-      },
-      {
-        "name": "documents:manage",
-        "description": "Archive and delete tenant documents"
+        "name": "audit:write",
+        "description": "Append audit events for trusted producers"
       }
     ]
   }
