@@ -88,6 +88,10 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | Redis | localhost:6379 | Cache and ephemeral data |
 | OTLP gRPC / HTTP | localhost:4317 / 4318 | OpenTelemetry trace ingestion |
 
+## Local demo data
+
+See [Local demo platform fixtures](docs/demo-fixtures.md) for an idempotent, coherent dataset covering the main persisted business domains.
+
 ## Billing Service
 
 Billing consumes PaymentCaptured and refund events, creates tenant-scoped invoices and credit notes, and exposes read APIs. Payment remains the only Stripe integration. The local VAT default is 19%; jurisdiction-aware tax calculation and legally compliant invoice rendering remain production requirements. See [Billing Service documentation](apps/billing-service/README.md).
