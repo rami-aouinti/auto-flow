@@ -80,6 +80,8 @@ services:
       search-service: {condition: service_healthy}
       document-service: {condition: service_healthy}
       audit-service: {condition: service_healthy}
+      analytics-service: {condition: service_healthy}
+      integration-service: {condition: service_healthy}
 
   # Local LLM runtime. Models are persisted in the ollama-data volume.
   ollama:
