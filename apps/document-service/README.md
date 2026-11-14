@@ -30,6 +30,7 @@ See [API Reference](docs/API.md) and [OpenAPI 3.1](docs/openapi.json). The same 
 - `GET|POST /api/v1/documents/{id}/access-grants` — list/create delegated `read` or `manage` grants.
 - `DELETE /api/v1/documents/{id}/access-grants/{grantId}` — revoke a grant.
 - `POST|DELETE /api/v1/documents/{id}/legal-hold` — place/release a legal hold.
+- `PATCH /api/v1/documents/{id}/retention` — set a future purge deadline or clear it for indefinite retention.
 
 Health: `/health/live` and `/health/ready`. Readiness checks PostgreSQL, the configured object-storage bucket and ClamAV.
 
