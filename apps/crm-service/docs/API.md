@@ -1,42 +1,25 @@
 # CRM Service — API Reference
 
-**Base URL:** http://localhost:8094  
-**Authentication:** Bearer JWT; crm:*; conversion also orders:write
+**Base URL:** http://localhost:8094 (gateway: http://localhost:8088/api/v1/crm)  
+**Authentication:** Keycloak bearer token + tenant claim. Every route has the operation-specific permission below.
 
-## Endpoints and arguments
+| Method | Path | Permission | Arguments / body | Responses |
+|---|---|---|---|---|
+| POST | `/api/v1/crm/applications` | crm:applications:write + customers:read | Idempotency-Key required. JSON: customerId required; offerId optional; vehicleId, quoteId and optional message. Optional references require corresponding upstream read scopes. | 201, 400, 401, 403, 409, 422, 503 |
+| GET | `/api/v1/crm/applications` | crm:applications:read | status?, customerId?, pagination implementation-defined. | 200, 400, 401, 403 |
+| GET | `/api/v1/crm/applications/{id}` | crm:applications:read | id path. | 200, 401, 403, 404 |
+| POST | `/api/v1/crm/applications/{id}/convert` | crm:applications:manage + orders:write | id path; approved and eligible application only; no body documented. | 201, 401, 403, 404, 409, 422, 503 |
+| PATCH | `/api/v1/crm/applications/{id}/status` | crm:applications:manage | id; JSON target status and optional reason. | 200, 400, 401, 403, 404, 409, 422 |
+| PUT | `/api/v1/crm/applications/{id}/assignment` | crm:applications:assign | id; JSON advisor identifier. | 200, 400, 401, 403, 404, 422 |
+| PUT | `/api/v1/crm/applications/{id}/eligibility` | crm:eligibility:manage | id; JSON eligibility outcome and bounded result. This records a review, not an automated credit decision. | 200, 400, 401, 403, 404, 422 |
+| POST | `/api/v1/crm/applications/{id}/tasks` | crm:tasks:write | id; task payload (title; optional description, dueAt, assignee). | 201, 400, 401, 403, 404, 422 |
+| GET | `/api/v1/crm/applications/{id}/tasks` | crm:tasks:read | id path. | 200, 401, 403, 404 |
+| PATCH | `/api/v1/crm/applications/{id}/tasks/{taskId}` | crm:tasks:write | id + taskId; task patch payload. | 200, 400, 401, 403, 404, 422 |
+| POST | `/api/v1/crm/applications/{id}/interactions` | crm:interactions:write | id; JSON channel, subject, body, occurredAt. | 201, 400, 401, 403, 404, 422 |
+| GET | `/api/v1/crm/applications/{id}/interactions` | crm:interactions:read | id path. | 200, 401, 403, 404 |
+| GET | `/api/v1/crm/applications/{id}/history` | crm:applications:read | id path; audit history. | 200, 401, 403, 404 |
 
-| Method | Path | Arguments / body | Possible responses |
-|---|---|---|---|
-| POST | `/api/v1/crm/applications` |  Idempotency-Key; body: customerId, optional offerId, vehicleId, quoteId, optional message | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| GET | `/api/v1/crm/applications` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/v1/crm/applications/{id}` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| POST | `/api/v1/crm/applications/{id}/convert` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| PATCH | `/api/v1/crm/applications/{id}/status` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| PUT | `/api/v1/crm/applications/{id}/assignment` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| PUT | `/api/v1/crm/applications/{id}/eligibility` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/crm/applications/{id}/tasks` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| GET | `/api/v1/crm/applications/{id}/tasks` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| PATCH | `/api/v1/crm/applications/{id}/tasks/{taskId}` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/crm/applications/{id}/interactions` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| GET | `/api/v1/crm/applications/{id}/interactions` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/v1/crm/applications/{id}/history` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
+Submission synchronously validates external references with their owning services; no cross-service database joins. Conversion creates an Order and is idempotent by application conversion state.
 
-## Common HTTP responses
-
-- **2xx:** request succeeded; GET returns a resource/collection, POST creates or transitions a resource, DELETE may return 204.
-- **400:** malformed JSON, invalid query parameters or malformed headers.
-- **401:** missing/invalid JWT (except explicitly public provider webhooks).
-- **403:** missing scope/role or tenant access.
-- **404:** resource does not exist or is outside the caller's tenant/ownership boundary.
-- **409:** invalid state transition, duplicate resource or idempotency-key conflict.
-- **412:** stale ETag/If-Match version for optimistic concurrency.
-- **422:** request is syntactically valid but violates domain validation.
-- **500 / 503:** unexpected server failure or unavailable dependency; no internal SQL/stack trace should be exposed.
-
-## Testing
-
-Use the central Swagger UI at http://localhost:8096. Authenticate with the raw Keycloak access token when required. For commands requiring idempotency, send a unique `Idempotency-Key`; for versioned transitions copy the current `ETag` into `If-Match`.
-
-## Contract maintenance
-
-This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+## Health
+- `GET /health/ready` — readiness.
