@@ -42,7 +42,7 @@ $channel->confirm_select();
 $tenantId = 'inventory-smoke-' . bin2hex(random_bytes(6));
 $unitId = Uuid::v7()->toRfc4122();
 $variantId = Uuid::v7()->toRfc4122();
-$vin = '1HGCM82633A004352';
+$vin = 'AF' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 15));
 
 $publish = static function (string $status, int $version) use ($channel, $exchange, $tenantId, $unitId, $variantId, $vin): void {
     $eventId = Uuid::v7()->toRfc4122();
