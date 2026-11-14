@@ -203,6 +203,7 @@ onMounted(loadAll);
             <tbody><tr v-for="row in contractRows" :key="idOf(row,'contract_id')">
               <td class="text-caption">{{ idOf(row,'contract_id') }}</td><td class="text-caption">{{ row.order_id }}</td><td>{{ row.contract_type }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td>
               <td><div class="d-flex flex-wrap ga-1">
+                <v-btn size="small" variant="text" @click="openHistory('contract',row)">History</v-btn>
                 <v-btn v-if="row.status === 'draft'" size="small" variant="tonal" :loading="busy === 'contract-'+idOf(row,'contract_id')" @click="contractAction(row,'prepare')">Prepare</v-btn>
                 <v-btn v-if="row.status === 'prepared'" size="small" variant="tonal" @click="contractAction(row,'generateDocument')">Generate PDF</v-btn>
                 <v-btn v-if="row.status === 'prepared'" size="small" variant="tonal" @click="contractAction(row,'sendForSignature')">Send signature</v-btn>
@@ -286,6 +287,7 @@ onMounted(loadAll);
             <tbody><tr v-for="row in fulfillmentRows" :key="idOf(row,'fulfillment_id')">
               <td class="text-caption">{{ idOf(row,'fulfillment_id') }}<div class="text-caption text-medium-emphasis">v{{ row.version }}</div></td><td class="text-caption">{{ row.order_id || row.orderId }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.scheduled_for || row.scheduledFor || '—' }}</td>
               <td><div class="d-flex flex-wrap ga-1">
+                <v-btn size="small" variant="text" @click="openHistory('fulfillment',row)">History</v-btn>
                 <v-btn v-if="row.status === 'ready_for_preparation'" size="small" variant="tonal" @click="fulfillmentAction(row,'preparation/start')">Start prep</v-btn>
                 <v-btn v-if="row.status === 'preparing'" size="small" variant="tonal" @click="fulfillmentAction(row,'preparation/complete')">Complete prep</v-btn>
                 <v-btn v-if="['ready_for_dispatch','delivery_failed'].includes(row.status)" size="small" variant="tonal" :disabled="!scheduleForm.scheduledFor || !scheduleForm.carrier" @click="schedule(row)">Schedule</v-btn>
