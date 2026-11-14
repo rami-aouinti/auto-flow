@@ -55,7 +55,7 @@ final readonly class BillingController
     public function creditNote(Request $r, string $id): JsonResponse
     {
         return $this->run($r, function (Connection $db, string $t) use ($id): JsonResponse {
-            $x = $db->fetchAssociative('SELECT credit_note_id,credit_note_number,invoice_id,payment_id,order_id,currency,gross_minor,net_minor,tax_minor,tax_rate_basis_points,reason,issued_at,source_event_id FROM billing_credit_notes WHERE tenant_id=:t AND credit_note_id=:id', ['t' => $t,'id' => $id]);
+            $x = $db->fetchAssociative('SELECT credit_note_id,credit_note_number,invoice_id,payment_id,order_id,currency,gross_minor,net_minor,tax_minor,tax_rate_basis_points,reason,issued_at,source_event_id,billing_snapshot FROM billing_credit_notes WHERE tenant_id=:t AND credit_note_id=:id', ['t' => $t,'id' => $id]);
             if ($x === false) { return $this->problem(404, 'Credit note not found.'); }
             $x['billing_snapshot'] = is_string($x['billing_snapshot']) ? json_decode($x['billing_snapshot'], true, 512, JSON_THROW_ON_ERROR) : $x['billing_snapshot'];
             return new JsonResponse($x, 200, ['Cache-Control' => 'no-store']);
