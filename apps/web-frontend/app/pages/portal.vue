@@ -37,7 +37,7 @@ async function save() {
   try {
     profile.value = (await customers.portalUpdate({
       firstName: edit.value.firstName.trim(), lastName: edit.value.lastName.trim(),
-      email: edit.value.email.trim(), phone: edit.value.phone.trim(), locale: edit.value.locale.trim(),
+      email: edit.value.email.trim(), ...(edit.value.phone.trim() ? { phone: edit.value.phone.trim() } : {}), locale: edit.value.locale.trim(),
     })).data;
     notice.value = 'Deine Profildaten wurden gespeichert.';
   } catch (cause) {
