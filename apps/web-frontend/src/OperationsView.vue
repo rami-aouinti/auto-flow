@@ -109,7 +109,12 @@ async function loadOrders() {
   finally { orderLoading.value = false; }
 }
 async function createOrder() {
-  createBusy.value = true; createError.value = ''; actionError.value = '';
+  createError.value = ''; actionError.value = '';
+  if (!createForm.value.customerId) {
+    createError.value = 'Bitte wähle einen aktiven Kunden aus, bevor du den Auftrag anlegst.';
+    return;
+  }
+  createBusy.value = true;
   try {
     const response = await orders.create(createForm.value, idempotencyKey());
     createForm.value = { offerId: '', quoteId: '', vehicleId: '', customerId: '' };
