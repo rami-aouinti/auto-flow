@@ -42,4 +42,4 @@ if ($creditNoteId !== '') {
         throw new RuntimeException('Credit-note PDF is missing from Document Service or its checksum differs.');
     }
 }
-fwrite(STDOUT, "Billing -> Document Service E2E passed (invoice + optional credit note, idempotent retrieval, canonical download, SHA-256).\\n");
+fwrite(STDOUT, "Billing -> Document Service E2E passed (invoice + optional credit note, idempotent retrieval, canonical download, SHA-256).\n");
