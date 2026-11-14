@@ -73,6 +73,22 @@ http:
       service: billing
       middlewares: [api-defaults]
 
+    crm:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/crm`)"
+      service: crm
+      middlewares: [api-defaults]
+
+    crm:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://crm-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
     customers:
       entryPoints: [web]
       rule: "PathPrefix(`/api/v1/customers`)"
