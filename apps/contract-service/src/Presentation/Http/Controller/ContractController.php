@@ -755,12 +755,24 @@ final readonly class ContractController
     /** @param array<string, mixed> $payload */
     private function outbox(Connection $db, string $tenant, string $id, string $type, array $payload): void
     {
+        $eventId = Uuid::v7()->toRfc4122();
+        $occurredAt = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(DATE_ATOM);
+        $envelope = [
+            'eventId' => $eventId,
+            'eventType' => $type,
+            'schemaVersion' => 1,
+            'producer' => 'contract-service',
+            'aggregate' => ['type' => 'Contract', 'id' => $id],
+            'tenantId' => $tenant,
+            'occurredAt' => $occurredAt,
+            'data' => $payload,
+        ];
         $db->insert('contract_outbox', [
             'tenant_id' => $tenant,
-            'event_id' => Uuid::v7()->toRfc4122(),
+            'event_id' => $eventId,
             'contract_id' => $id,
             'event_type' => $type,
-            'payload' => json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
+            'payload' => json_encode($envelope, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
         ]);
     }
 
