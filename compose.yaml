@@ -1187,7 +1187,7 @@ services:
     restart: unless-stopped
 
   document-object-storage-init:
-    image: amazon/aws-cli:2
+    image: public.ecr.aws/aws-cli/aws-cli:latest
     depends_on:
       document-object-storage: {condition: service_started}
     entrypoint: ["/bin/sh", "-c"]
