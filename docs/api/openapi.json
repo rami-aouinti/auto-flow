@@ -8046,6 +8046,63 @@
             "description": "Missing integrations:read"
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Integration Service"
+        ],
+        "summary": "Queue an outbound webhook delivery",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "provider",
+                  "targetUrl",
+                  "eventType",
+                  "payload"
+                ],
+                "properties": {
+                  "provider": {
+                    "type": "string"
+                  },
+                  "targetUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "HTTPS URL whose hostname is in INTEGRATION_OUTBOUND_ALLOWED_HOSTS"
+                  },
+                  "eventType": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Delivery queued"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Missing integrations:write"
+          },
+          "422": {
+            "description": "Invalid request or non-allowlisted target"
+          }
+        }
       }
     },
     "/api/v1/integrations/providers": {
