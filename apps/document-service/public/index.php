@@ -46,12 +46,19 @@ function auth():array {
     return ['sub'=>$sub,'tenant'=>$tenant,'scopes'=>array_unique($sc)];
 }
 function permit(array $u,string $s):void{if(!in_array($s,$u['scopes'],true))fail(403,'Forbidden','Missing permission '.$s.'.');}
+function socketWriteAll($socket,string $data):void {
+    while($data!==''){
+        $written=fwrite($socket,$data);
+        if($written===false||$written===0)throw new RuntimeException('Could not write complete malware-scan frame.');
+        $data=substr($data,$written);
+    }
+}
 function upload(array $u,string $id,int $v):array {
     if(!isset($_FILES['file'])||($_FILES['file']['error']??1)!==UPLOAD_ERR_OK||!is_uploaded_file($_FILES['file']['tmp_name']??''))fail(400,'Bad Request','Multipart field file is required.');
     $f=$_FILES['file'];$size=(int)$f['size'];if($size<1||$size>MAX_UPLOAD)fail(413,'Payload Too Large','Maximum upload size is 25 MiB.');
     $mime=(new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);if(!is_string($mime)||!in_array($mime,MIME_TYPES,true))fail(415,'Unsupported Media Type','Allowed formats: PDF, JPEG, PNG, TXT and DOCX.');
     $sock=@fsockopen(getenv('CLAMAV_HOST')?:'clamav',(int)(getenv('CLAMAV_PORT')?:3310),$errno,$err,4);if(!$sock)fail(503,'Scanner unavailable','Upload rejected because malware scanning is unavailable.');
-    stream_set_timeout($sock,30);fwrite($sock,"zINSTREAM\0");$in=fopen($f['tmp_name'],'rb');while(!feof($in)){$chunk=fread($in,65536);if($chunk===false)break;if($chunk!=='')fwrite($sock,pack('N',strlen($chunk)).$chunk);}fwrite($sock,pack('N',0));$scan=stream_get_contents($sock);fclose($in);fclose($sock);
+    stream_set_timeout($sock,30);socketWriteAll($sock,"zINSTREAM\0");$in=fopen($f['tmp_name'],'rb');if(!is_resource($in)){fclose($sock);throw new RuntimeException('Could not open upload for malware scan.');}while(!feof($in)){$chunk=fread($in,65536);if($chunk===false){fclose($in);fclose($sock);throw new RuntimeException('Could not read complete upload for malware scan.');}if($chunk!=='')socketWriteAll($sock,pack('N',strlen($chunk)).$chunk);}socketWriteAll($sock,pack('N',0));$scan=stream_get_contents($sock);fclose($in);fclose($sock);
     if(!is_string($scan)||!str_ends_with(trim($scan),'OK'))fail(422,'Unprocessable Content',str_contains((string)$scan,'FOUND')?'Malware detected.':'Malware scan did not complete cleanly.');
     $root=rtrim(getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents','/');$dir=$root.'/'.hash('sha256',$u['tenant']);if(!is_dir($dir)&&!mkdir($dir,0700,true)&&!is_dir($dir))throw new RuntimeException('Storage directory unavailable.');
     $key=$dir.'/'.$id.'-'.$v.'-'.bin2hex(random_bytes(8));if(!move_uploaded_file($f['tmp_name'],$key))throw new RuntimeException('Cannot store file.');chmod($key,0600);
