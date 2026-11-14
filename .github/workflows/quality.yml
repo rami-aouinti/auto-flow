@@ -106,6 +106,8 @@ jobs:
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.order_transition_idempotency') IS NOT NULL AS transition_idempotency_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.order_payment_event_inbox') IS NOT NULL AS order_payment_inbox_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'order_payment_event_inbox' AND column_name = 'payload_hash') AS order_payment_inbox_fingerprint_ready"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'payments' AND column_name = 'billing_snapshot') AS payment_billing_snapshot_ready"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'billing_credit_notes' AND column_name = 'billing_snapshot') AS credit_note_billing_snapshot_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'payment_status') AS order_payment_status_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'customer_snapshot') AS order_customer_snapshot_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.contract_records') IS NOT NULL AS contract_records_ready"
