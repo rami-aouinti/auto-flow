@@ -49,6 +49,7 @@ const pageTitle = computed(() => {
 });
 const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'AutoFlow User');
 const environmentLabel = import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'LOCAL';
+const canUseCustomerPortal = computed(() => $keycloak.hasRealmRole('customers:portal'));
 
 function isActive(to: string) {
   if (to === '/admin') return route.path === to;
@@ -127,6 +128,7 @@ function logout() {
         <v-list density="comfortable" min-width="210">
           <v-list-item prepend-icon="mdi-account-outline" :title="username" subtitle="Angemeldetes Konto" />
           <v-divider class="my-1" />
+          <v-list-item v-if="canUseCustomerPortal" prepend-icon="mdi-account-circle-outline" title="Mein Kundenkonto" to="/portal" />
           <v-list-item prepend-icon="mdi-storefront-outline" title="Marketplace öffnen" to="/" />
           <v-list-item prepend-icon="mdi-logout" title="Abmelden" @click="logout" />
         </v-list>
