@@ -158,4 +158,5 @@ function run():never {
     }
     fail(404,'Not Found','Endpoint not found.');
 }
-try{run();}catch(Throwable $e){error_log(json_encode(['timestamp'=>gmdate(DateTimeInterface::ATOM),'level'=>'error','service'=>'document-service','requestId'=>$_SERVER['AUTOFLOW_REQUEST_ID']??null,'exception'=>$e::class,'message'=>$e->getMessage()],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));fail(500,'Internal Server Error','Request could not be completed.');}
+function logFailure(Throwable $e):void{error_log(json_encode(['timestamp'=>gmdate(DateTimeInterface::ATOM),'level'=>'error','service'=>'document-service','requestId'=>$_SERVER['AUTOFLOW_REQUEST_ID']??null,'exception'=>$e::class,'message'=>$e->getMessage()],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));}
+try{run();}catch(DocumentStorageUnavailable $e){logFailure($e);fail(503,'Storage Unavailable','Object storage is temporarily unavailable.');}catch(Throwable $e){logFailure($e);fail(500,'Internal Server Error','Request could not be completed.');}
