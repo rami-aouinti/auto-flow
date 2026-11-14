@@ -68,3 +68,6 @@ Workflow and Media remain bootstrap containers. Analytics and Integration now ex
 For the shared health paths `/health/live` and `/health/ready`, choose direct port **8102** (Analytics) or **8099** (Integration) in Swagger's server selector. Business API paths use the gateway at port **8088**.
 
 Inbound Integration webhooks use HMAC-SHA256 over the exact raw request body rather than a user JWT. All other Analytics and Integration business operations require the service-specific Keycloak audience, tenant claim and scopes. See the per-service API references for exact configuration and examples.
+
+
+For the Contract/Billing PDF hand-off to Document Service, see [the integration and production-readiness guide](../operations/contract-billing-document-production-readiness.md).
