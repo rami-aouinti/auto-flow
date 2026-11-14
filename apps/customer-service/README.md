@@ -28,7 +28,8 @@ Every route requires a Keycloak token with audience autoflow-customer, tenant cl
 | PUT | /api/v1/customers/{id}/identity | customers:manage | Link a Keycloak subject after administrator identity verification (audited, unique per tenant) |
 | GET/PATCH | /api/v1/customers/me | customers:portal | Read/update only the profile mapped to the JWT subject |
 | GET/POST | /api/v1/customers/me/addresses | customers:portal | List and add addresses owned by the linked customer |
-| PUT/DELETE | /api/v1/customers/me/addresses/{addressId} | customers:portal | Update or soft-delete only an address owned by the linked customer |\n| GET/PUT | /api/v1/customers/me/consents | customers:portal | Read/update own consent decisions |
+| PUT/DELETE | /api/v1/customers/me/addresses/{addressId} | customers:portal | Update or soft-delete only an address owned by the linked customer |
+| GET/PUT | /api/v1/customers/me/consents | customers:portal | Read/update own consent decisions |
 | GET | /api/v1/realtime/access | customers:read | Issue a five-minute tenant-specific Mercure subscriber cookie |
 
 Individuals require firstName and lastName; companies require legalName. Email is normalized and unique among active customers in a tenant. Address countryCode is ISO alpha-2. Replaying a create key with the same request returns the original resource; a different request with the same key returns 409.
