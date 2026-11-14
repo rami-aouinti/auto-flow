@@ -6,12 +6,13 @@ The AutoFlow frontend is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is deliver
 
 - `/` — customer-facing vehicle marketplace with responsive navigation, discovery hero, advanced catalogue filters, vehicle details, quote calculation and offer lifecycle. The marketplace uses its own light Vuetify theme; operations and administration remain in the dark workspace shell.
 - `/operations/orders` — order management, payment operations, Stripe Payment Element and pricing quotes.
-- `/admin` — administration control center with live counts from Catalog, Customer, Order, Payment and Pricing APIs.
+- `/admin` — administration control center with live counts from Catalog, Customer, CRM, Order, Payment, Pricing, Contract, Billing, Fulfillment, Inventory and Reservation APIs, plus refreshable operational shortcuts.
 - `/admin/customers` — tenant-scoped customer management with profile CRUD, search, addresses, consent decisions and audit history.
 - `/crm/applications` — CRM application pipeline with assignment, eligibility decisions, tasks, interactions, audit history and order conversion.
 - `/admin/catalog/manufacturers`, `/admin/catalog/models`, `/admin/catalog/generations`, `/admin/catalog/variants` — resource-specific catalog administration routes with shared CRUD workspace.
 - `/operations/orders`, `/operations/payments`, `/operations/pricing` — deep links into order, payment and pricing operations.
 - `/operations/services` — cross-service read-only overview for Customers, CRM, Contracts, Billing, Fulfillment, Inventory and Reservations.
+- `/operations/workflow` — operational workspace for contract creation/preparation/signature documents, inventory registration/status changes, vehicle reservations, fulfillment and delivery transitions, invoice/credit-note details, and audit timelines. Tabs can be deep-linked with `?tab=contracts`, `?tab=inventory`, `?tab=reservations`, `?tab=fulfillment` or `?tab=billing`.
 
 Nuxt owns the route lifecycle and provides separate layouts for the customer-facing marketplace and the authenticated operations workspace. The marketplace uses reusable vehicle cards, search and filter controls, responsive navigation and a light visual theme. The operations and catalogue administration screens use the authenticated workspace shell. Shared PageHeader and MetricCard components keep administration screens consistent; the catalog editor uses resource-specific routes, Vuetify form controls, searchable data tables, explicit loading/error states and soft-archive actions. Catalogue filtering is delegated to the Vehicle Catalog API (manufacturer, fuel, body style, transmission, power and seats); sorting is applied to the current result page. Vehicle prices and inventory are not fabricated because those concerns do not belong to the Vehicle Catalog Service. The old independent HTML entry points and bootstrap scripts are not used.
 
@@ -32,8 +33,13 @@ Nuxt server routes proxy the same-origin prefixes to the internal Compose servic
 | `/pricing/**` | Pricing |
 | `/orders/**` | Order |
 | `/payments/**` | Payment |
+| `/billing/**` | Billing |
+| `/contracts/**` | Contract |
+| `/fulfillments/**` | Fulfillment |
+| `/inventory/**` | Inventory |
+| `/reservations/**` | Vehicle Reservation |
 
-The proxy forwards the original HTTP method, query string, request body and Authorization header. Customer personal-data responses remain `no-store`; the browser never receives internal service addresses. The Customer Service requires the `autoflow-customer` audience plus `customers:read`, `customers:write` or `customers:manage` as appropriate. CRM actions require the corresponding `crm:applications:*`, `crm:eligibility:manage`, `crm:tasks:*` and `crm:interactions:*` scopes.
+The proxy forwards the original HTTP method, query string, request body and Authorization header for every service prefix. Customer personal-data responses remain `no-store`; the browser never receives internal service addresses. The Customer Service requires the `autoflow-customer` audience plus `customers:read`, `customers:write` or `customers:manage` as appropriate. CRM actions require the corresponding `crm:applications:*`, `crm:eligibility:manage`, `crm:tasks:*` and `crm:interactions:*` scopes.
 
 ## Local development
 
