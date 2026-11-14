@@ -16,12 +16,12 @@ $interval=max(1,(int)envv('INTEGRATION_WORKER_INTERVAL_SECONDS','3'));$batch=max
 fwrite(STDOUT,"Integration delivery worker started.".PHP_EOL);
 while(true){
  try{
-  $db->beginTransaction();$rows=$db->query("SELECT id,tenant_id,provider,target_url,event_type,payload,attempts FROM integration_service.delivery_attempts WHERE status='pending' AND (next_attempt_at IS NULL OR next_attempt_at<=now()) ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT ".$batch)->fetchAll();
+  $db->beginTransaction();$rows=$db->query("SELECT id,tenant_id,provider,target_url,event_type,payload,attempts FROM integration_service.delivery_attempts WHERE status='pending' AND (next_attempt_at IS NULL OR next_attempt_at<=now()) ORDER BY created_at LIMIT ".$batch." FOR UPDATE SKIP LOCKED)->fetchAll();
   foreach($rows as $row)$db->prepare("UPDATE integration_service.delivery_attempts SET attempts=attempts+1,updated_at=now() WHERE id=:id")->execute(['id'=>$row['id']]);$db->commit();
   foreach($rows as $row){[$ok,$error]=deliver($row,$allowed,$signing);$attempt=(int)$row['attempts']+1;
    if($ok)$q=$db->prepare("UPDATE integration_service.delivery_attempts SET status='delivered',last_error=NULL,next_attempt_at=NULL,updated_at=now() WHERE id=:id");
    elseif($attempt>=5)$q=$db->prepare("UPDATE integration_service.delivery_attempts SET status='failed',last_error=:error,next_attempt_at=NULL,updated_at=now() WHERE id=:id");
-   else{$delay=min(300,5*(2**($attempt-1));$q=$db->prepare("UPDATE integration_service.delivery_attempts SET status='pending',last_error=:error,next_attempt_at=now()+(:delay||' seconds')::interval,updated_at=now() WHERE id=:id");$q->bindValue(':delay',$delay,PDO::PARAM_INT);}
+   else{$delay=min(300,5*(2**($attempt-1)));$q=$db->prepare("UPDATE integration_service.delivery_attempts SET status='pending',last_error=:error,next_attempt_at=now()+(:delay||' seconds')::interval,updated_at=now() WHERE id=:id");$q->bindValue(':delay',$delay,PDO::PARAM_INT);}
    $q->bindValue(':id',$row['id']);if(!$ok)$q->bindValue(':error',substr((string)$error,0,500));$q->execute();
   }
  }catch(Throwable $e){if($db->inTransaction())$db->rollBack();fwrite(STDERR,'Delivery worker error: '.$e->getMessage().PHP_EOL);}
