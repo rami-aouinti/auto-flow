@@ -1,7 +1,7 @@
 services:
     _defaults: { autowire: true, autoconfigure: true }
-    App\\:
+    App\:
         resource: '../src/'
         exclude: ['../src/Kernel.php']
-    App\\Infrastructure\\Health\\InventoryDatabaseHealthCheck:
+    App\Infrastructure\Health\InventoryDatabaseHealthCheck:
         tags: ['autoflow_core.health_check']
