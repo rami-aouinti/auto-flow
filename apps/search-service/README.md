@@ -34,7 +34,7 @@ Query parameters: `q`, `manufacturer`, `fuelType`, `powertrain`, `bodyStyle`, `t
 
 ## Initial index build / reindex
 
-The catalogue database role is read-only from this service. Reindexing is safe to repeat and uses stable variant IDs.
+The catalogue database role is read-only from this service. Reindexing is safe to repeat, builds a fresh versioned index, and atomically switches the stable alias only after all batches succeed. The previous index is retained for rollback.
 
 ```bash
 docker compose --env-file .env.example exec search-service php bin/reindex-vehicles.php
@@ -43,7 +43,7 @@ docker compose --env-file .env.example exec search-service php bin/reindex-vehic
 Check indexed documents:
 
 ```bash
-curl -fsS 'http://localhost:9200/autoflow-vehicles-v1/_count'
+curl -fsS 'http://localhost:9200/autoflow-vehicles/_count'
 ```
 
 ## Tests
