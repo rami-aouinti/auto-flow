@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { orders, payments, pricing, errorMessage } from './api';
+import { customers, orders, payments, pricing, errorMessage } from './api';
 import PageHeader from '../app/components/shared/PageHeader.vue';
 
+type CustomerOption = { customer_id: string; customer_type: string; first_name?: string | null; last_name?: string | null; legal_name?: string | null; email?: string | null; status: string }; 
 type Order = {
   orderId: string; offerId?: string; quoteId?: string; vehicleId?: string;
   status: string; createdAt?: string; updatedAt?: string;
@@ -44,6 +45,9 @@ const orderHistory = ref<any[]>([]);
 const historyError = ref('');
 const historyLoading = ref(false);
 const createForm = ref({ offerId: '', quoteId: '', vehicleId: '', customerId: '' });
+const customerOptions = ref<CustomerOption[]>([]);
+const customerLoading = ref(false);
+const customerLoadError = ref('');
 const createBusy = ref(false);
 const createError = ref('');
 const actionBusy = ref('');
@@ -78,6 +82,21 @@ const refundAmount = ref('');
 
 const paymentPages = computed(() => Math.max(1, Math.ceil(paymentTotal.value / paymentLimit)));
 const orderPages = computed(() => Math.max(1, Math.ceil(orderTotal.value / orderLimit)));
+
+async function loadCustomers() {
+  customerLoading.value = true; customerLoadError.value = '';
+  try {
+    const response = await customers.list({ limit: 100, offset: 0, status: 'active' });
+    customerOptions.value = response.data.items ?? [];
+  } catch (error) { customerLoadError.value = errorMessage(error); }
+  finally { customerLoading.value = false; }
+}
+function customerTitle(customer: CustomerOption) {
+  const name = customer.customer_type === 'company'
+    ? customer.legal_name
+    : [customer.first_name, customer.last_name].filter(Boolean).join(' ');
+  return [name || 'Kunde', customer.email].filter(Boolean).join(' · ');
+}
 
 async function loadOrders() {
   orderLoading.value = true; orderError.value = '';
@@ -260,6 +279,7 @@ onMounted(() => {
     void loadPayment();
   }
   void loadOrders();
+  void loadCustomers();
   void loadQuotes();
   void loadPayments();
 });
@@ -283,7 +303,10 @@ onMounted(() => {
             <label>Offer ID<input v-model.trim="createForm.offerId" required placeholder="offer-…"/></label>
             <label>Quote ID<input v-model.trim="createForm.quoteId" required placeholder="quote-…"/></label>
             <label>Vehicle Variant ID<input v-model.trim="createForm.vehicleId" required placeholder="vehicle variant UUID"/></label>
-            <label>Customer ID<input v-model.trim="createForm.customerId" required placeholder="customer UUID"/></label>
+            <label class="ops-customer-field">Kunde
+              <v-autocomplete v-model="createForm.customerId" :items="customerOptions" item-value="customer_id" :item-title="customerTitle" :loading="customerLoading" :disabled="customerLoading" placeholder="Aktiven Kunden suchen und auswählen" variant="outlined" density="comfortable" hide-details="auto" clearable />
+            </label>
+            <p v-if="customerLoadError" class="ops-error">{{customerLoadError}} <a href="/admin/customers">Kundenverwaltung öffnen</a></p>
             <button class="ops-primary" :disabled="createBusy">{{createBusy?'Auftrag wird angelegt …':'Draft Order erstellen ↗'}}</button>
           </form>
           <p v-if="createError" class="ops-error">{{createError}}</p>
