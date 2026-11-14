@@ -22,7 +22,6 @@ const sections = [
       { title: 'CRM · Anträge', subtitle: 'Kundenanträge & Beratung', icon: 'mdi-account-tie-outline', to: '/crm/applications' },
       { title: 'Service Operations', subtitle: 'Contracts, Billing, Stock & Fulfillment', icon: 'mdi-application-cog-outline', to: '/operations/services' },
       { title: 'Business Workflows', subtitle: 'Contracts, stock & delivery actions', icon: 'mdi-workflow-outline', to: '/operations/workflow' },
-      { title: 'Alle Services', subtitle: 'CRM, Contracts, Billing & Logistics', icon: 'mdi-apps', to: '/operations/services' },
     ],
   },
   {
@@ -40,7 +39,6 @@ const pageTitle = computed(() => {
   if (route.path.startsWith('/crm')) return 'CRM · Anträge';
   if (route.path.startsWith('/operations/workflow')) return 'Business Workflows';
   if (route.path.startsWith('/operations/services')) return 'Service Operations';
-  if (route.path === '/operations/services') return 'Service Operations';
   if (route.path.startsWith('/operations/orders')) return route.query.tab === 'payments' ? 'Payments' : route.query.tab === 'quotes' ? 'Pricing Quotes' : 'Aufträge';
   return 'Workspace';
 });
