@@ -29,7 +29,7 @@ final class ReservationPersistenceTest extends TestCase
         $this->publisher = $this->connect($publisherUrl);
     }
 
-    public function testTenantRlsAndGlobalActiveStockUniqueness(): void
+    public function testTenantRlsAndReservationRequiresAvailablePhysicalStock(): void
     {
         $tenantA = 'reservation-test-a-' . bin2hex(random_bytes(4));
         $tenantB = 'reservation-test-b-' . bin2hex(random_bytes(4));
@@ -37,7 +37,9 @@ final class ReservationPersistenceTest extends TestCase
         $reservationId = $this->uuid();
 
         $this->setTenant($this->runtime, $tenantA);
-        $this->insertHeld($this->runtime, $tenantA, $reservationId, $unitId, $this->uuid(), $this->uuid());
+        $variantId = $this->uuid();
+        $this->insertStock($this->runtime, $tenantA, $unitId, $variantId);
+        $this->insertHeld($this->runtime, $tenantA, $reservationId, $unitId, $variantId, $this->uuid());
 
         self::assertSame(1, (int) $this->runtime->query('SELECT COUNT(*) FROM vehicle_reservations')->fetchColumn());
 
@@ -54,6 +56,9 @@ final class ReservationPersistenceTest extends TestCase
         $reservationId = $this->uuid();
 
         $this->setTenant($this->runtime, $tenant);
+        $unitId = $this->uuid();
+        $variantId = $this->uuid();
+        $this->insertStock($this->runtime, $tenant, $unitId, $variantId);
         $statement = $this->runtime->prepare(
             "INSERT INTO vehicle_reservations
                 (tenant_id, reservation_id, vehicle_unit_id, vehicle_variant_id, order_id, status, expires_at)
@@ -62,8 +67,8 @@ final class ReservationPersistenceTest extends TestCase
         $statement->execute([
             'tenant' => $tenant,
             'id' => $reservationId,
-            'unit' => $this->uuid(),
-            'variant' => $this->uuid(),
+            'unit' => $unitId,
+            'variant' => $variantId,
             'order' => $this->uuid(),
         ]);
 
@@ -73,6 +78,10 @@ final class ReservationPersistenceTest extends TestCase
         $status = $this->runtime->prepare('SELECT status FROM vehicle_reservations WHERE reservation_id = :id');
         $status->execute(['id' => $reservationId]);
         self::assertSame('expired', $status->fetchColumn());
+
+        $stock = $this->runtime->prepare('SELECT status, reservation_id FROM vehicle_stock_units WHERE vehicle_unit_id = :unit');
+        $stock->execute(['unit' => $unitId]);
+        self::assertSame(['status' => 'available', 'reservation_id' => null], $stock->fetch());
 
         $audit = $this->runtime->prepare('SELECT COUNT(*) FROM vehicle_reservation_audit_events WHERE reservation_id = :id');
         $audit->execute(['id' => $reservationId]);
@@ -115,6 +124,15 @@ final class ReservationPersistenceTest extends TestCase
     {
         $statement = $connection->prepare("SELECT set_config('app.tenant_id', :tenant, false)");
         $statement->execute(['tenant' => $tenant]);
+    }
+
+    private function insertStock(PDO $connection, string $tenant, string $unit, string $variant): void
+    {
+        $statement = $connection->prepare(
+            "INSERT INTO vehicle_stock_units (tenant_id, vehicle_unit_id, vehicle_variant_id, status)
+             VALUES (:tenant, :unit, :variant, 'available')"
+        );
+        $statement->execute(['tenant' => $tenant, 'unit' => $unit, 'variant' => $variant]);
     }
 
     private function insertHeld(PDO $connection, string $tenant, string $id, string $unit, string $variant, string $order): void
