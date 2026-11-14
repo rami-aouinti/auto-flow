@@ -36,6 +36,22 @@ final class HttpOrderReferenceValidatorTest extends TestCase
                 'status' => 'published',
                 'manufacturer' => ['name' => 'Example Motors'],
             ], JSON_THROW_ON_ERROR)),
+            new MockResponse(json_encode([
+                'customer_id' => 'customer-1',
+                'customer_type' => 'individual',
+                'first_name' => 'Rami',
+                'last_name' => 'Example',
+                'email' => 'rami@example.test',
+                'status' => 'active',
+                'archived_at' => null,
+                'version' => 3,
+                'addresses' => [
+                    ['address_type' => 'billing', 'city' => 'Cologne', 'country_code' => 'DE'],
+                    ['address_type' => 'shipping', 'city' => 'Bonn', 'country_code' => 'DE'],
+                    ['address_type' => 'other', 'city' => 'Berlin', 'country_code' => 'DE'],
+                ],
+                'consents' => [['type' => 'marketing', 'granted' => true]],
+            ], JSON_THROW_ON_ERROR)),
         ]);
 
         $validator = new HttpOrderReferenceValidator(
@@ -43,13 +59,18 @@ final class HttpOrderReferenceValidatorTest extends TestCase
             'http://offer-service',
             'http://pricing-service',
             'http://vehicle-catalog-service',
+            'http://customer-service',
         );
 
-        $result = $validator->validate('offer-1', 'quote-1', 'vehicle-1', 'tenant-a', 'header.payload.signature');
+        $result = $validator->validate('offer-1', 'quote-1', 'vehicle-1', 'customer-1', 'tenant-a', 'header.payload.signature');
 
         self::assertSame('accepted', $result['offerSnapshot']['status']);
         self::assertSame('329.00', $result['quoteSnapshot']['monthlyAmount']);
         self::assertSame('published', $result['vehicleSnapshot']['status']);
+        self::assertSame(3, $result['customerVersion']);
+        self::assertSame('customer-1', $result['customerSnapshot']['customerId']);
+        self::assertCount(2, $result['customerSnapshot']['addresses']);
+        self::assertArrayNotHasKey('consents', $result['customerSnapshot']);
     }
 
     public function testItRejectsAResponseForAnotherVehicleVariant(): void
@@ -73,10 +94,11 @@ final class HttpOrderReferenceValidatorTest extends TestCase
             'http://offer-service',
             'http://pricing-service',
             'http://vehicle-catalog-service',
+            'http://customer-service',
         );
 
         $this->expectException(OrderReferenceValidationException::class);
-        $validator->validate('offer-1', 'quote-1', 'vehicle-1', 'tenant-a', 'header.payload.signature');
+        $validator->validate('offer-1', 'quote-1', 'vehicle-1', 'customer-1', 'tenant-a', 'header.payload.signature');
     }
 
     public function testItRejectsAnOfferThatReferencesAnotherQuote(): void
@@ -97,9 +119,10 @@ final class HttpOrderReferenceValidatorTest extends TestCase
             'http://offer-service',
             'http://pricing-service',
             'http://vehicle-catalog-service',
+            'http://customer-service',
         );
 
         $this->expectException(OrderReferenceValidationException::class);
-        $validator->validate('offer-1', 'quote-1', 'vehicle-1', 'tenant-a', 'header.payload.signature');
+        $validator->validate('offer-1', 'quote-1', 'vehicle-1', 'customer-1', 'tenant-a', 'header.payload.signature');
     }
 }
