@@ -44,15 +44,34 @@ final readonly class CrmController
                     }
                 }
             }
-            $this->referenceValidator->validate(
-                $data['customerId'], $data['offerId'], $data['quoteId'], $data['vehicleId'],
-                $this->tenant($principal), $this->bearerToken($request),
-            );
             $key = trim((string) $request->headers->get('Idempotency-Key', ''));
             if ($key === '' || strlen($key) > 128) {
                 return $this->problem(400, 'A valid Idempotency-Key header is required.');
             }
             $hash = hash('sha256', json_encode($data, JSON_THROW_ON_ERROR));
+            $tenant = $this->tenant($principal);
+            $existing = $this->db->transactional(function (Connection $db) use ($principal, $tenant, $key, $hash): ?JsonResponse {
+                $this->tenantContext($db, $tenant);
+                $old = $db->fetchAssociative(
+                    'SELECT request_hash,response_body FROM crm_idempotency_keys WHERE tenant_id=:tenant AND actor_id=:actor AND idempotency_key=:key',
+                    ['tenant' => $tenant, 'actor' => $principal->subject, 'key' => $key],
+                );
+                if ($old === false) {
+                    return null;
+                }
+                if (!hash_equals((string) $old['request_hash'], $hash)) {
+                    return $this->problem(409, 'Idempotency-Key was already used for a different command.');
+                }
+                $body = is_string($old['response_body']) ? json_decode($old['response_body'], true, 512, JSON_THROW_ON_ERROR) : $old['response_body'];
+                return new JsonResponse($body, 200, ['Cache-Control' => 'no-store']);
+            });
+            if ($existing instanceof JsonResponse) {
+                return $existing;
+            }
+            $this->referenceValidator->validate(
+                $data['customerId'], $data['offerId'], $data['quoteId'], $data['vehicleId'],
+                $tenant, $this->bearerToken($request),
+            );
             return $this->db->transactional(function (Connection $db) use ($principal, $data, $key, $hash): JsonResponse {
                 $tenant = $this->tenant($principal);
                 $this->tenantContext($db, $tenant);
