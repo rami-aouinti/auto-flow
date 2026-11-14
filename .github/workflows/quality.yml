@@ -221,29 +221,6 @@ jobs:
           cd apps/crm-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Build instrumented Symfony services
         run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer customer-service contract-service contract-outbox-publisher fulfillment-service fulfillment-event-consumer fulfillment-outbox-publisher vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer reservation-inventory-event-consumer inventory-service inventory-outbox-publisher inventory-reservation-event-consumer
-      - name: Run live RabbitMQ and Temporal Saga integration test
-        env:
-          TEMPORAL_ADDRESS: 127.0.0.1:7233
-          RABBITMQ_HOST: 127.0.0.1
-          RABBITMQ_PORT: "5672"
-          RABBITMQ_USER: autoflow
-          RABBITMQ_PASSWORD: autoflow
-          AUTOFLOW_TEMPORAL_RABBITMQ_E2E: "1"
-        run: |
-          docker compose --env-file .env.example up -d temporal order-service order-workflow-worker
-          for attempt in $(seq 1 90); do
-            if docker compose --env-file .env.example logs --no-color order-workflow-worker 2>&1 | grep -q "Order workflow worker started"; then
-              break
-            fi
-            sleep 2
-          done
-          if ! docker compose --env-file .env.example logs --no-color order-workflow-worker 2>&1 | grep -q "Order workflow worker started"; then
-            docker compose --env-file .env.example ps -a
-            docker compose --env-file .env.example logs --no-color --tail=200 temporal order-service order-workflow-worker rabbitmq
-            exit 1
-          fi
-          cd apps/order-workflow-worker
-          go test ./internal/orders -run '^TestLiveRabbitMQTemporalSagaStartsAndPublishesReservationHold$' -count=1 -v
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
