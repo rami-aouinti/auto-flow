@@ -530,8 +530,10 @@ services:
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:-!ChangeThisMercureSubscriberKeyForLocalDevelopmentOnly!}
-      AUTOFLOW_MERCURE_TOPIC_BASE: https://autoflow.local/tenants
+      AUTOFLOW_MERCURE_TOPIC_BASE: ${AUTOFLOW_MERCURE_TOPIC_BASE:-https://autoflow.local/tenants}
       MERCURE_COOKIE_SECURE: ${MERCURE_COOKIE_SECURE:-false}
+      MERCURE_COOKIE_DOMAIN: ${MERCURE_COOKIE_DOMAIN:-}
+      MERCURE_COOKIE_SAMESITE: ${MERCURE_COOKIE_SAMESITE:-Lax}
       OTEL_SERVICE_NAME: autoflow-customer-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
       OTEL_PHP_AUTOLOAD_ENABLED: "true"
@@ -1478,7 +1480,7 @@ services:
       SERVER_NAME: ":80"
       MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:-!ChangeThisMercurePublisherKeyForLocalDevelopmentOnly!}
       MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:-!ChangeThisMercureSubscriberKeyForLocalDevelopmentOnly!}
-      MERCURE_EXTRA_DIRECTIVES: "cors_origins http://localhost:3000 http://localhost:8000"
+      MERCURE_EXTRA_DIRECTIVES: "cors_origins ${MERCURE_CORS_ORIGINS:-http://localhost:3000 http://localhost:8000}"
     ports: ["3001:80"]
     volumes:
       - mercure-data:/data
