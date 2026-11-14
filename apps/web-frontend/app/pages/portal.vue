@@ -22,6 +22,7 @@ const saving = ref(false);
 const addressSaving = ref(false);
 const error = ref('');
 const notice = ref('');
+const unlinked = ref(false);
 const addressDialog = ref(false);
 const deleteDialog = ref(false);
 const editingAddressId = ref('');
@@ -41,6 +42,7 @@ function addressPayload() {
 async function load() {
   loading.value = true;
   error.value = '';
+  unlinked.value = false;
   try {
     const [p, a, c] = await Promise.all([customers.portalMe(), customers.portalAddresses(), customers.portalConsents()]);
     profile.value = p.data;
@@ -48,7 +50,15 @@ async function load() {
     consents.value = list(c.data);
     edit.value = { firstName: p.data.first_name ?? '', lastName: p.data.last_name ?? '', email: p.data.email ?? '', phone: p.data.phone ?? '', locale: p.data.locale ?? 'de-DE' };
   } catch (cause) {
-    error.value = errorMessage(cause);
+    const status = (cause as { response?: { status?: number } })?.response?.status;
+    if (status === 404) {
+      profile.value = null;
+      addresses.value = [];
+      consents.value = [];
+      unlinked.value = true;
+    } else {
+      error.value = errorMessage(cause);
+    }
   } finally {
     loading.value = false;
   }
@@ -193,7 +203,7 @@ onMounted(() => { void load(); });
         </v-col>
       </v-row>
     </template>
-    <v-card v-else-if="!loading && !error" rounded="xl" border elevation="0"><v-card-text class="py-8 text-center">Dein Kundenkonto ist noch nicht mit deinem Login verbunden. Bitte wende dich an deinen AutoFlow-Berater.</v-card-text></v-card>
+    <v-card v-else-if="!loading && !error && unlinked" rounded="xl" border elevation="0"><v-card-text class="py-8 text-center">Dein Kundenkonto ist noch nicht mit deinem Login verbunden. Bitte wende dich an deinen AutoFlow-Berater.</v-card-text></v-card>
 
     <v-dialog v-model="addressDialog" max-width="720">
       <v-card rounded="xl">
