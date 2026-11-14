@@ -15,5 +15,10 @@ services:
             $apiKey: '%app.ai.openai_api_key%'
             $baseUri: '%app.ai.openai_base_uri%'
             $model: '%app.ai.openai_model%'
+    App\Infrastructure\Health\OpenAiConfigurationHealthCheck:
+        arguments:
+            $apiKey: '%app.ai.openai_api_key%'
+            $baseUri: '%app.ai.openai_base_uri%'
+            $model: '%app.ai.openai_model%'
     App\Application\Port\Out\ChatProviderInterface:
         alias: App\Infrastructure\AI\OpenAiChatProvider
