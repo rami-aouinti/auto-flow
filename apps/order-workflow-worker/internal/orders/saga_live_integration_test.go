@@ -113,10 +113,10 @@ func TestLiveRabbitMQTemporalSagaStartsAndPublishesReservationHold(t *testing.T)
 		if err := json.Unmarshal(delivery.Body, &envelope); err != nil {
 			t.Fatalf("decode Reservation command: %v", err)
 		}
-		if envelope.EventType != "reservation.hold.requested.v1"
-			|| envelope.TenantID != tenantID
-			|| eventString(envelope.Data, "orderId") != orderID
-			|| eventString(envelope.Data, "vehicleVariantId") != variantID {
+		if envelope.EventType != "reservation.hold.requested.v1" ||
+			envelope.TenantID != tenantID ||
+			eventString(envelope.Data, "orderId") != orderID ||
+			eventString(envelope.Data, "vehicleVariantId") != variantID {
 			t.Fatalf("unexpected Reservation command: %+v", envelope)
 		}
 	case <-ctx.Done():
