@@ -1,8 +1,10 @@
 FROM php:8.4-cli-bookworm
-RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev && docker-php-ext-install -j"$(nproc)" pdo_pgsql && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev unzip && docker-php-ext-install -j"$(nproc)" pdo_pgsql sockets && rm -rf /var/lib/apt/lists/*
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 ARG SERVICE_PATH
 COPY ${SERVICE_PATH}/ /app/
+RUN if [ -f composer.json ]; then composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts; fi
 RUN mkdir -p /app/var && chown -R www-data:www-data /app
 USER www-data
 EXPOSE 8080
