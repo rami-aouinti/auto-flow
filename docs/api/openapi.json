@@ -2170,7 +2170,7 @@
           "Billing Service"
         ],
         "summary": "Download invoice PDF",
-        "description": "billing:read. Only legally complete issued invoices are downloadable; draft returns 409.\n\nDetailed service reference: apps/billing-service/docs/API.md.",
+        "description": "billing:read + documents:write on first generation and documents:read for retrieval. Billing renders the immutable issued-invoice snapshot, stores the canonical PDF in Document Service and verifies SHA-256 on every download.",
         "responses": {
           "200": {
             "description": "Successful operation",
@@ -3501,7 +3501,7 @@
           "Contract Service"
         ],
         "summary": "Generate immutable PDF draft",
-        "description": "contracts:write.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:write + documents:write. Contract renders the immutable legal snapshot and uploads the canonical PDF to Document Service; the returned Document UUID/checksum is persisted.",
         "responses": {
           "201": {
             "description": "Resource created"
@@ -3540,7 +3540,7 @@
           "Contract Service"
         ],
         "summary": "Download PDF after SHA-256 verification",
-        "description": "contracts:read.\n\nDetailed service reference: apps/contract-service/docs/API.md.",
+        "description": "contracts:read + documents:read. Downloads are proxied from Document Service and SHA-256 verified.",
         "responses": {
           "200": {
             "description": "Successful operation",
