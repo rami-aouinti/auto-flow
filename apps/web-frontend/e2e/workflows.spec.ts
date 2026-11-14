@@ -95,7 +95,28 @@ test('customer self-service portal reads and updates only the linked profile', a
     }
     await route.fulfill({ json: profile });
   });
-  await page.route('**/customers/api/v1/customers/me/addresses', route => route.fulfill({ json: { items: [{ address_id: 'portal-address', address_type: 'billing', line1: 'Demo Street 1', postal_code: '50667', city: 'Köln', country_code: 'DE', is_default: true }] } }));
+  let portalAddresses = [{ address_id: 'portal-address', address_type: 'billing', line1: 'Demo Street 1', postal_code: '50667', city: 'Köln', country_code: 'DE', is_default: true }];
+  await page.route('**/customers/api/v1/customers/me/addresses', async route => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON();
+      portalAddresses.push({ ...body, address_id: 'portal-address-new' });
+      return route.fulfill({ status: 201, json: portalAddresses[1] });
+    }
+    return route.fulfill({ json: { items: portalAddresses } });
+  });
+  await page.route('**/customers/api/v1/customers/me/addresses/*', async route => {
+    const id = route.request().url().split('/').pop();
+    if (route.request().method() === 'PUT') {
+      const body = route.request().postDataJSON();
+      portalAddresses = portalAddresses.map(address => address.address_id === id ? { ...address, ...body } : address);
+      return route.fulfill({ json: portalAddresses.find(address => address.address_id === id) });
+    }
+    if (route.request().method() === 'DELETE') {
+      portalAddresses = portalAddresses.filter(address => address.address_id !== id);
+      return route.fulfill({ status: 204, body: '' });
+    }
+    return route.fulfill({ status: 404 });
+  });
   await page.route('**/customers/api/v1/customers/me/consents', async route => {
     if (route.request().method() === 'PUT') return route.fulfill({ json: route.request().postDataJSON() });
     return route.fulfill({ json: { items: [{ purpose: 'marketing.email', granted: false }, { purpose: 'marketing.sms', granted: false }] } });
@@ -108,4 +129,12 @@ test('customer self-service portal reads and updates only the linked profile', a
   await page.getByRole('button', { name: 'Änderungen speichern' }).click();
   await expect(page.getByText('Deine Profildaten wurden gespeichert.')).toBeVisible();
   await expect(page.getByLabel('Vorname')).toHaveValue('Alex');
+
+  await page.getByRole('button', { name: 'Hinzufügen' }).click();
+  await page.getByLabel('Straße und Hausnummer').fill('Demo Street 2');
+  await page.getByLabel('Postleitzahl').fill('50667');
+  await page.getByLabel('Stadt').fill('Köln');
+  await page.getByLabel('Land (ISO)').fill('DE');
+  await page.getByRole('button', { name: 'Speichern' }).last().click();
+  await expect(page.getByText(/Demo Street 2/)).toBeVisible();
 });
