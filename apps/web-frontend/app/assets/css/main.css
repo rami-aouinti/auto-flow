@@ -305,3 +305,42 @@ body { color: var(--af-ink); }
 .market-discovery .brand-list button:hover{transform:translateY(-2px);background:#edf4ee;border-color:#d4e4d2;color:#315d3c}
 .market-footer a{transition:color .18s ease}
 @media(max-width:600px){.market-hero .hero-metrics>div+div:before{left:-13px}.admin-dashboard .v-list-item{min-height:62px}}
+
+
+/* Contracts, billing and document workspaces */
+.workflow-workspace,.platform-workspace{max-width:1560px;margin:0 auto;color:#14283b}
+.workflow-workspace> :first-child,.platform-workspace> :first-child{margin-bottom:24px}
+.workflow-workspace .v-tabs,.platform-workspace .v-tabs{background:#fff;border:1px solid #e5ecf0;border-radius:15px;padding:4px;box-shadow:0 4px 16px rgba(19,42,61,.035)}
+.workflow-workspace .v-tab,.platform-workspace .v-tab{min-height:46px;border-radius:10px;font-size:11px;font-weight:750;letter-spacing:0;text-transform:none}
+.workflow-workspace .v-tab--selected,.platform-workspace .v-tab--selected{background:#edf3f5;color:#173b56}
+.workflow-workspace .v-window,.platform-workspace .v-window{overflow:visible}
+.workflow-workspace .v-card,.platform-workspace .v-card{border:1px solid #e5ecf0!important;border-radius:17px!important;box-shadow:0 5px 20px rgba(19,42,61,.045)!important;overflow:hidden}
+.workflow-workspace .v-card-title,.platform-workspace .v-card-title{min-height:58px;padding:17px 21px;font:800 13px Manrope,sans-serif;color:#1b3549;background:linear-gradient(180deg,#fff,#fbfcfd)}
+.workflow-workspace .v-card-subtitle,.platform-workspace .v-card-subtitle{color:#7c8d99;font-size:10px}
+.workflow-workspace .v-card-text,.platform-workspace .v-card-text{color:#344b5d}
+.workflow-workspace .v-divider,.platform-workspace .v-divider{border-color:#edf1f3;opacity:1}
+.workflow-workspace .v-field,.platform-workspace .v-field{border-radius:11px!important}
+.workflow-workspace .v-field__outline,.platform-workspace .v-field__outline{--v-field-border-opacity:.22}
+.workflow-workspace .v-table,.platform-workspace .v-table{background:#fff}
+.workflow-workspace .v-table table,.platform-workspace .v-table table{border-collapse:separate;border-spacing:0}
+.workflow-workspace .v-table thead th,.platform-workspace .v-table thead th{height:45px!important;background:#f7f9fa!important;color:#718195!important;font-size:9px!important;font-weight:800!important;letter-spacing:.08em;text-transform:uppercase}
+.workflow-workspace .v-table tbody tr,.platform-workspace .v-table tbody tr{transition:background .18s ease}
+.workflow-workspace .v-table tbody tr:hover,.platform-workspace .v-table tbody tr:hover{background:#f7faf8!important}
+.workflow-workspace .v-table tbody td,.platform-workspace .v-table tbody td{height:58px;border-bottom:1px solid #eef2f4!important;color:#344b5d;font-size:10px}
+.workflow-workspace .v-chip,.platform-workspace .v-chip{font-size:9px;font-weight:750;letter-spacing:.01em}
+.workflow-workspace .v-btn,.platform-workspace .v-btn{font-size:10px;font-weight:750;letter-spacing:0;text-transform:none}
+.workflow-workspace .v-alert,.platform-workspace .v-alert{border-radius:12px}
+.workflow-workspace .v-dialog .v-card,.platform-workspace .v-dialog .v-card{border-radius:18px!important}
+.workflow-workspace .v-timeline-item__body{padding-bottom:8px}
+.workflow-workspace pre,.platform-workspace pre{max-width:100%;padding:14px;background:#f5f8f9;border:1px solid #e5ecf0;border-radius:11px;color:#385064;font-size:10px;line-height:1.65}
+.platform-workspace .analytics-events-card .v-card-title{border-bottom:1px solid #edf1f3}
+.platform-workspace .analytics-bars{display:flex;flex-direction:column;gap:15px;padding:8px 2px}
+.platform-workspace .analytics-bar-row{display:grid;grid-template-columns:minmax(115px,1fr) minmax(120px,2.5fr) 56px;align-items:center;gap:14px}
+.platform-workspace .analytics-bar-label{overflow:hidden;color:#536b7b;font-size:10px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+.platform-workspace .analytics-bar-track{height:10px;overflow:hidden;border-radius:20px;background:#edf2f3}
+.platform-workspace .analytics-bar-fill{height:100%;min-width:2px;border-radius:20px;background:linear-gradient(90deg,#173b56,#8da95c);transform-origin:left;animation:af-bar-grow .65s cubic-bezier(.2,.7,.2,1) both}
+.platform-workspace .analytics-bar-value{color:#173b56;text-align:right;font:800 11px Manrope,sans-serif;font-variant-numeric:tabular-nums}
+.platform-workspace .v-empty-state{padding:26px 12px}
+@keyframes af-bar-grow{from{transform:scaleX(.05);opacity:.5}to{transform:scaleX(1);opacity:1}}
+@media(max-width:700px){.workflow-workspace .v-card-title,.platform-workspace .v-card-title{padding:14px}.workflow-workspace .v-table,.platform-workspace .v-table{overflow-x:auto}.workflow-workspace .v-table table,.platform-workspace .v-table table{min-width:760px}.platform-workspace .analytics-bar-row{grid-template-columns:minmax(90px,1fr) minmax(80px,1.5fr) 44px;gap:8px}}
+@media(prefers-reduced-motion:reduce){.platform-workspace .analytics-bar-fill{animation:none}}

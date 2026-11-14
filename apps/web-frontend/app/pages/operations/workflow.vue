@@ -178,7 +178,7 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div>
+  <div class="workflow-workspace">
     <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-5">
       <div>
         <div class="text-overline text-medium-emphasis">AUTOFLOW · BUSINESS OPERATIONS</div>

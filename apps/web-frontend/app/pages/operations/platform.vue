@@ -24,6 +24,11 @@ const deliveries = ref<Row[]>([]);
 const webhookEvents = ref<Row[]>([]);
 const searchRows = ref<Row[]>([]);
 const workflowHealth = ref<Row | null>(null);
+const eventTypeBars = computed(() => Object.entries(analytics.value?.eventsByType ?? {})
+  .map(([label, raw]) => ({ label, value: Math.max(0, Number(raw) || 0) }))
+  .sort((a, b) => b.value - a.value));
+const maxEventCount = computed(() => Math.max(1, ...eventTypeBars.value.map((item) => item.value)));
+
 const query = ref('');
 const days = ref(30);
 const auditFilter = ref({ eventType: '', resourceType: '', resourceId: '' });
@@ -196,7 +201,7 @@ async function downloadAnalyticsCsv() {
 </script>
 
 <template>
-  <section>
+  <section class="platform-workspace">
     <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-6">
       <div>
         <div class="text-overline text-medium-emphasis">AUTOFLOW · PLATFORM CONTROL</div>
@@ -240,7 +245,19 @@ async function downloadAnalyticsCsv() {
           <v-card rounded="xl" border elevation="0"><v-card-text><div class="text-caption text-medium-emphasis">{{ metric.label }}</div><div class="text-h4 font-weight-bold mt-2">{{ metric.value ?? '—' }}</div></v-card-text></v-card>
         </v-col>
       </v-row>
-      <v-card rounded="xl" border elevation="0" class="mt-4"><v-card-title>Events by type</v-card-title><v-card-text><v-table density="comfortable"><tbody><tr v-for="(count, name) in analytics?.eventsByType ?? {}" :key="String(name)"><td>{{ name }}</td><td class="text-right font-weight-bold">{{ count }}</td></tr></tbody></v-table><div v-if="!analytics || !Object.keys(analytics.eventsByType ?? {}).length" class="text-medium-emphasis text-body-2">No analytics events for this period.</div></v-card-text></v-card>
+      <v-card rounded="xl" border elevation="0" class="mt-4 analytics-events-card">
+        <v-card-title class="d-flex align-center flex-wrap ga-2"><span>Events by type</span><v-spacer /><v-chip size="small" color="success" variant="tonal">Live service data</v-chip></v-card-title>
+        <v-card-text>
+          <div v-if="eventTypeBars.length" class="analytics-bars">
+            <div v-for="item in eventTypeBars" :key="item.label" class="analytics-bar-row">
+              <div class="analytics-bar-label" :title="item.label">{{ item.label }}</div>
+              <div class="analytics-bar-track"><div class="analytics-bar-fill" :style="{ width: (item.value / maxEventCount * 100) + '%' }" /></div>
+              <div class="analytics-bar-value">{{ item.value.toLocaleString('de-DE') }}</div>
+            </div>
+          </div>
+          <v-empty-state v-else icon="mdi-chart-box-outline" title="No analytics events" text="No events were returned for this period." />
+        </v-card-text>
+      </v-card>
     </div>
 
     <div v-else-if="tab === 'audit'">
