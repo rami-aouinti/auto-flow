@@ -23,12 +23,13 @@ function principal(): array {
  $roles=$claims['realm_access']['roles']??[];$scopes=preg_split('/\s+/',(string)($claims['scope']??''),-1,PREG_SPLIT_NO_EMPTY);return ['tenant'=>$tenant,'scopes'=>array_unique(array_merge($scopes,is_array($roles)?$roles:[]))];
 }
 function permit(array $u,string $scope): void { if(!in_array($scope,$u['scopes'],true))problem(403,'Forbidden','Missing permission: '.$scope); }
+function tenantScope(array $u): void { $q=db()->prepare("SELECT set_config('app.tenant_id',:tenant,false)"); $q->execute(['tenant'=>$u['tenant']]); }
 function body(): array { $v=json_decode(file_get_contents('php://input')?:'{}',true);if(!is_array($v))problem(400,'Bad Request','Expected a JSON object.');return $v; }
 try {
  $path=parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/';$method=$_SERVER['REQUEST_METHOD']??'GET';
  if($path==='/health'||$path==='/health/live')jsonOut(['service'=>'analytics-service','status'=>'ok']);
  if($path==='/health/ready'){db()->query('SELECT 1');jsonOut(['service'=>'analytics-service','status'=>'ok','checks'=>['postgres'=>'ok']]);}
- $u=principal();
+ $u=principal(); tenantScope($u);
  if($path==='/api/v1/analytics/events'&&$method==='POST'){
   permit($u,'analytics:events:write');$b=body();$id=trim((string)($b['eventId']??''));$type=trim((string)($b['eventType']??''));$date=(string)($b['occurredAt']??gmdate(DATE_ATOM));$payload=$b['payload']??[];
   if($id===''||strlen($id)>200||!preg_match('/^[a-zA-Z0-9._:-]+$/',$type)||!is_array($payload)||strlen(json_encode($payload))>16384)problem(422,'Validation Failed','eventId, eventType and payload are invalid.');
