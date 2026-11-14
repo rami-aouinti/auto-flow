@@ -39,13 +39,22 @@ final readonly class MercureAccessController
         $token = $header . '.' . $payload . '.' . $signature;
 
         $response = new JsonResponse(['topic' => $topic, 'expiresAt' => $now + 300], 200, ['Cache-Control' => 'no-store']);
-        $response->headers->setCookie(Cookie::create('mercureAuthorization')
+        $sameSite = strtolower(getenv('MERCURE_COOKIE_SAMESITE') ?: Cookie::SAMESITE_LAX);
+        if (!in_array($sameSite, [Cookie::SAMESITE_LAX, Cookie::SAMESITE_STRICT, Cookie::SAMESITE_NONE], true)) {
+            $sameSite = Cookie::SAMESITE_LAX;
+        }
+        $cookie = Cookie::create('mercureAuthorization')
             ->withValue($token)
             ->withExpires(new \DateTimeImmutable('+5 minutes'))
             ->withPath('/')
             ->withSecure($request->isSecure() || filter_var(getenv('MERCURE_COOKIE_SECURE') ?: 'false', FILTER_VALIDATE_BOOL))
             ->withHttpOnly(true)
-            ->withSameSite(Cookie::SAMESITE_LAX));
+            ->withSameSite($sameSite);
+        $cookieDomain = trim(getenv('MERCURE_COOKIE_DOMAIN') ?: '');
+        if ($cookieDomain !== '') {
+            $cookie = $cookie->withDomain($cookieDomain);
+        }
+        $response->headers->setCookie($cookie);
 
         return $response;
     }
