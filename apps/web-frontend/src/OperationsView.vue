@@ -304,7 +304,7 @@ onMounted(() => {
             <label>Quote ID<input v-model.trim="createForm.quoteId" required placeholder="quote-…"/></label>
             <label>Vehicle Variant ID<input v-model.trim="createForm.vehicleId" required placeholder="vehicle variant UUID"/></label>
             <label class="ops-customer-field">Kunde
-              <v-autocomplete v-model="createForm.customerId" :items="customerOptions" item-value="customer_id" :item-title="customerTitle" :loading="customerLoading" :disabled="customerLoading" placeholder="Aktiven Kunden suchen und auswählen" variant="outlined" density="comfortable" hide-details="auto" clearable />
+              <v-autocomplete v-model="createForm.customerId" :items="customerOptions" item-value="customer_id" :item-title="customerTitle"  :loading="customerLoading" :disabled="customerLoading" :rules="[value => !!value || 'Bitte einen Kunden auswählen']" placeholder="Aktiven Kunden suchen und auswählen" variant="outlined" density="comfortable" hide-details="auto" clearable />
             </label>
             <p v-if="customerLoadError" class="ops-error">{{customerLoadError}} <a href="/admin/customers">Kundenverwaltung öffnen</a></p>
             <button class="ops-primary" :disabled="createBusy">{{createBusy?'Auftrag wird angelegt …':'Draft Order erstellen ↗'}}</button>
