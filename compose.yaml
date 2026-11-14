@@ -77,6 +77,7 @@ services:
       vehicle-reservation-service: {condition: service_healthy}
       inventory-service: {condition: service_healthy}
       crm-service: {condition: service_healthy}
+      search-service: {condition: service_healthy}
 
   # Local LLM runtime. Models are persisted in the ollama-data volume.
   ollama:
@@ -1042,19 +1043,35 @@ services:
     init: true
     restart: unless-stopped
 
-  # Health-only bounded-context scaffolds. No business APIs are implemented yet.
+  # Elasticsearch-backed shared vehicle catalogue search projection.
   search-service:
     build:
       context: .
-      dockerfile: docker/php/skeleton-service.Dockerfile
+      dockerfile: docker/php/service.Dockerfile
       args:
         SERVICE_PATH: apps/search-service
+        COMPOSER_NO_DEV: "--no-dev"
     ports: ["127.0.0.1:8097:8080"]
     environment:
-      APP_ENV: dev
-      HEALTH_DEPENDENCIES: elasticsearch:9200
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: local-only-search-service-secret
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      SEARCH_VEHICLE_INDEX: autoflow-vehicles-v1
+      CATALOG_DATABASE_URL: ${CATALOG_DATABASE_URL:-postgresql://autoflow_catalog:local-only-catalog-password@postgres:5432/autoflow}
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
     depends_on:
       elasticsearch: {condition: service_healthy}
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      keycloak: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     init: true
     restart: unless-stopped
 
