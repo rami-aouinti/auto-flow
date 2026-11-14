@@ -80,7 +80,7 @@ services:
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
       OPENAI_BASE_URI: ${OPENAI_BASE_URI:-https://api.openai.com/v1/}
     healthcheck:
-      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -123,7 +123,7 @@ services:
       tempo: {condition: service_started}
       alloy: {condition: service_started}
     healthcheck:
-      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$$context); $$$status = $$$http_response_header[0] ?? ''; exit($$$body !== false && str_contains($$$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -166,7 +166,7 @@ services:
       tempo: {condition: service_started}
       alloy: {condition: service_started}
     healthcheck:
-      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$$context); $$$status = $$$http_response_header[0] ?? ''; exit($$$body !== false && str_contains($$$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -375,7 +375,7 @@ services:
       alloy: {condition: service_started}
       keycloak: {condition: service_started}
     healthcheck:
-      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -417,7 +417,7 @@ services:
       tempo: {condition: service_started}
       alloy: {condition: service_started}
     healthcheck:
-      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -508,7 +508,7 @@ services:
       alloy: {condition: service_started}
       keycloak: {condition: service_started}
     healthcheck:
-      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -554,7 +554,7 @@ services:
       tempo: {condition: service_started}
       alloy: {condition: service_started}
     healthcheck:
-      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -633,7 +633,7 @@ services:
       alloy: {condition: service_started}
       keycloak: {condition: service_started}
     healthcheck:
-      test: ["CMD", "php", "-r", "$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $context); $status = $http_response_header[0] ?? ''; exit($body !== false && str_contains($status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -746,7 +746,7 @@ services:
       keycloak:
         condition: service_started
     healthcheck:
-      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$$context); $$$status = $$$http_response_header[0] ?? ''; exit($$$body !== false && str_contains($$$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -795,7 +795,7 @@ services:
       alloy: {condition: service_started}
       keycloak: {condition: service_started}
     healthcheck:
-      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$$context); $$$status = $$$http_response_header[0] ?? ''; exit($$$body !== false && str_contains($$$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -881,7 +881,7 @@ services:
       alloy: {condition: service_started}
       keycloak: {condition: service_started}
     healthcheck:
-      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$$context); $$$status = $$$http_response_header[0] ?? ''; exit($$$body !== false && str_contains($$$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
@@ -1021,7 +1021,7 @@ services:
       keycloak:
         condition: service_started
     healthcheck:
-      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "$$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$$context); $$$status = $$$http_response_header[0] ?? ''; exit($$$body !== false && str_contains($$$status, ' 200 ') ? 0 : 1);"]
       interval: 15s
       timeout: 10s
       retries: 5
