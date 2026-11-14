@@ -1851,4 +1851,6 @@ volumes:
   tempo-data:
   temporal-data:
   contract-documents:
+  document-data:
+  clamav-data:
   web-frontend-node-modules:
