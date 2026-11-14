@@ -48,6 +48,7 @@ const pageTitle = computed(() => {
   return 'Workspace';
 });
 const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'AutoFlow User');
+const environmentLabel = import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'LOCAL';
 
 function isActive(to: string) {
   if (to === '/admin') return route.path === to;
@@ -78,7 +79,7 @@ function logout() {
         <div><div class="brand-name">AUTOFLOW</div><div class="brand-caption">MOBILITY OPERATIONS</div></div>
       </div>
 
-      <div class="workspace-label"><span>WORKSPACE</span><v-chip size="x-small" color="success" variant="tonal">LOCAL</v-chip></div>
+      <div class="workspace-label"><span>WORKSPACE</span><v-chip size="x-small" variant="tonal">{{ environmentLabel }}</v-chip></div>
       <template v-for="section in sections" :key="section.title">
         <div class="nav-section-label">{{ section.title }}</div>
         <v-list nav density="comfortable" bg-color="transparent" class="px-3 pt-1 pb-2">
@@ -115,7 +116,7 @@ function logout() {
       </v-toolbar-title>
       <RealtimeNotifications />
       <v-spacer />
-      <div class="environment-indicator d-none d-sm-flex"><span class="environment-dot" /> Services verbunden</div>
+      <div class="environment-indicator d-none d-sm-flex"><v-icon size="small" icon="mdi-monitor-dashboard" /> API-Status im Kontrollzentrum</div>
       <v-divider vertical inset class="mx-4 d-none d-sm-flex" />
       <v-menu>
         <template #activator="{ props }">
@@ -160,7 +161,7 @@ function logout() {
 .topbar-overline{font-size:8px;letter-spacing:1.7px;color:#82939b}
 .topbar-heading{font:700 15px Manrope;color:#eef3f4}
 .environment-indicator{align-items:center;gap:8px;color:#a9bac0;font-size:10px}
-.environment-dot{width:7px;height:7px;border-radius:50%;background:#75c89a;box-shadow:0 0 0 4px rgba(117,200,154,.12)}
+
 .account-button{font-size:11px;text-transform:none;letter-spacing:0}
 .workspace-content{max-width:1600px;padding:clamp(22px,3vw,42px) clamp(18px,3vw,48px) 76px}
 .workspace-footer{padding:13px 26px;color:#71838c;font-size:8px;letter-spacing:1.2px}
