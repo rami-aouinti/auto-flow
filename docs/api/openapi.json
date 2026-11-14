@@ -59,6 +59,12 @@
     },
     {
       "name": "Document Service"
+    },
+    {
+      "name": "Analytics Service"
+    },
+    {
+      "name": "Integration Service"
     }
   ],
   "components": {
@@ -7754,6 +7760,314 @@
           },
           "404": {
             "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/events": {
+      "post": {
+        "tags": [
+          "Analytics Service"
+        ],
+        "summary": "Ingest an analytics event",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "eventId",
+                  "eventType"
+                ],
+                "properties": {
+                  "eventId": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "eventType": {
+                    "type": "string"
+                  },
+                  "occurredAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "payload": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Duplicate event ignored"
+          },
+          "201": {
+            "description": "Event stored"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Missing analytics:events:write"
+          },
+          "422": {
+            "description": "Invalid event"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/overview": {
+      "get": {
+        "tags": [
+          "Analytics Service"
+        ],
+        "summary": "Get tenant analytics KPIs",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "KPI overview"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Missing analytics:read"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/series": {
+      "get": {
+        "tags": [
+          "Analytics Service"
+        ],
+        "summary": "Get daily event series",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "name": "eventType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "offer.created"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily series"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Missing analytics:read"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/export.csv": {
+      "get": {
+        "tags": [
+          "Analytics Service"
+        ],
+        "summary": "Export analytics events as CSV",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV export",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Missing analytics:read"
+          }
+        }
+      }
+    },
+    "/webhooks/{provider}": {
+      "post": {
+        "tags": [
+          "Integration Service"
+        ],
+        "summary": "Receive a signed provider webhook",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Webhook-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "sha256=..."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Duplicate webhook"
+          },
+          "202": {
+            "description": "Webhook accepted"
+          },
+          "401": {
+            "description": "Invalid signature"
+          },
+          "404": {
+            "description": "Provider not configured"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/webhook-events": {
+      "get": {
+        "tags": [
+          "Integration Service"
+        ],
+        "summary": "List inbound webhook events",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant webhook events"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Missing integrations:read"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/deliveries": {
+      "get": {
+        "tags": [
+          "Integration Service"
+        ],
+        "summary": "List outbound delivery attempts",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery attempts"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Missing integrations:read"
+          }
+        }
+      }
+    },
+    "/api/v1/integrations/providers": {
+      "get": {
+        "tags": [
+          "Integration Service"
+        ],
+        "summary": "List configured provider names",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider names only; secrets are never returned"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Missing integrations:read"
           }
         }
       }
