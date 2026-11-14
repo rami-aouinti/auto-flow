@@ -3,7 +3,7 @@
   "info": {
     "title": "AutoFlow Microservices API",
     "version": "1.0.0",
-    "description": "Central development API catalog for all HTTP microservices. Each service has a detailed API.md under apps/<service>/docs. Notification Service is a background worker and has no public REST endpoints."
+    "description": "Central local-development API catalog. Paths are routed through Traefik at localhost:8088. Detailed per-service API.md files document each service's current route contract. Request schemas are strict only where the service documentation supplies the exact contract; unknown payload fields are deliberately not invented. Notification Service is a background worker without public REST routes."
   },
   "servers": [
     {
@@ -63,6 +63,266 @@
         "bearerFormat": "JWT",
         "description": "Paste the raw Keycloak access token; Swagger adds the Bearer prefix."
       }
+    },
+    "schemas": {
+      "MoneyDecimal": {
+        "type": "string",
+        "pattern": "^\\d+\\.\\d{2}$",
+        "example": "42000.00",
+        "description": "Money as a decimal string with exactly two fractional digits."
+      },
+      "LeaseQuoteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicleId",
+          "vehiclePrice",
+          "downPayment",
+          "residualValue",
+          "currency",
+          "durationMonths",
+          "annualInterestRateBasisPoints"
+        ],
+        "properties": {
+          "vehicleId": {
+            "type": "string",
+            "example": "40000000000000000000000000000004"
+          },
+          "vehiclePrice": {
+            "$ref": "#/components/schemas/MoneyDecimal"
+          },
+          "downPayment": {
+            "$ref": "#/components/schemas/MoneyDecimal"
+          },
+          "residualValue": {
+            "$ref": "#/components/schemas/MoneyDecimal"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "example": "EUR"
+          },
+          "durationMonths": {
+            "type": "integer",
+            "minimum": 12,
+            "maximum": 72,
+            "example": 48
+          },
+          "annualInterestRateBasisPoints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000,
+            "example": 425
+          }
+        }
+      },
+      "OfferCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehiclePrice",
+          "downPayment",
+          "residualValue",
+          "currency",
+          "durationMonths",
+          "annualInterestRateBasisPoints"
+        ],
+        "properties": {
+          "vehiclePrice": {
+            "$ref": "#/components/schemas/MoneyDecimal"
+          },
+          "downPayment": {
+            "$ref": "#/components/schemas/MoneyDecimal"
+          },
+          "residualValue": {
+            "$ref": "#/components/schemas/MoneyDecimal"
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "example": "EUR"
+          },
+          "durationMonths": {
+            "type": "integer",
+            "example": 48
+          },
+          "annualInterestRateBasisPoints": {
+            "type": "integer",
+            "example": 425
+          }
+        }
+      },
+      "OrderCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "offerId",
+          "quoteId",
+          "vehicleId",
+          "customerId"
+        ],
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "example": "offer-123"
+          },
+          "quoteId": {
+            "type": "string",
+            "example": "quote-456"
+          },
+          "vehicleId": {
+            "type": "string",
+            "example": "variant-789"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "c4f0f45a-9f7a-4c87-9db0-9c5db6b7b001"
+          }
+        }
+      },
+      "OrderRejectRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      },
+      "PaymentCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "orderId"
+        ],
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The order ID. Amount and currency are resolved from the immutable order quote snapshot."
+          }
+        }
+      },
+      "ReservationCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "vehicleUnitId",
+          "vehicleVariantId",
+          "orderId",
+          "expiresAt"
+        ],
+        "properties": {
+          "vehicleUnitId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "vehicleVariantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CrmApplicationCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "customerId",
+          "vehicleId",
+          "quoteId"
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "Customer Service identifier"
+          },
+          "offerId": {
+            "type": "string"
+          },
+          "vehicleId": {
+            "type": "string"
+          },
+          "quoteId": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "AiChatRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "messages"
+        ],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role",
+                "content"
+              ],
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "system",
+                    "user",
+                    "assistant"
+                  ]
+                },
+                "content": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "description": "RFC 7807-style problem response when emitted by the service.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri-reference"
+          }
+        },
+        "additionalProperties": true
+      }
     }
   },
   "paths": {
@@ -72,7 +332,7 @@
           "Offer Service"
         ],
         "summary": "Create offer",
-        "description": "Offer Service. Create offer; body: vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "description": "Offer Service. Create offer; body: vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details. Offer lifecycle transitions are restricted to the authenticated offer creator in the current tenant. Current write scope is offers:quote.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -125,8 +385,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "additionalProperties": true
+                "$ref": "#/components/schemas/OfferCreateRequest"
               }
             }
           }
@@ -139,7 +398,7 @@
           "Offer Service"
         ],
         "summary": "List",
-        "description": "Offer Service. List; query: status, search, limit (1..100), offset. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "description": "Offer Service. List; query: status, search, limit (1..100), offset. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details. Offer lifecycle transitions are restricted to the authenticated offer creator in the current tenant. Current write scope is offers:quote.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -176,6 +435,29 @@
           {
             "BearerAuth": []
           }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
         ]
       }
     },
@@ -185,7 +467,7 @@
           "Offer Service"
         ],
         "summary": "Read offer",
-        "description": "Offer Service. Read offer. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "description": "Offer Service. Read offer. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details. Offer lifecycle transitions are restricted to the authenticated offer creator in the current tenant. Current write scope is offers:quote.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -241,7 +523,7 @@
           "Offer Service"
         ],
         "summary": "Audit history",
-        "description": "Offer Service. Audit history. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "description": "Offer Service. Audit history. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details. Offer lifecycle transitions are restricted to the authenticated offer creator in the current tenant. Current write scope is offers:quote.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -297,7 +579,7 @@
           "Offer Service"
         ],
         "summary": "Publish",
-        "description": "Offer Service. Publish. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "description": "Offer Service. Publish. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details. Offer lifecycle transitions are restricted to the authenticated offer creator in the current tenant. Current write scope is offers:quote.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -353,7 +635,7 @@
           "Offer Service"
         ],
         "summary": "Accept",
-        "description": "Offer Service. Accept. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "description": "Offer Service. Accept. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details. Offer lifecycle transitions are restricted to the authenticated offer creator in the current tenant. Current write scope is offers:quote.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -409,7 +691,7 @@
           "Offer Service"
         ],
         "summary": "Reject",
-        "description": "Offer Service. Reject. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "description": "Offer Service. Reject. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details. Offer lifecycle transitions are restricted to the authenticated offer creator in the current tenant. Current write scope is offers:quote.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -465,7 +747,7 @@
           "Offer Service"
         ],
         "summary": "Legacy quote-only",
-        "description": "Offer Service. Legacy quote-only; same lease-term body. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "description": "Offer Service. Legacy quote-only; same lease-term body. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details. Offer lifecycle transitions are restricted to the authenticated offer creator in the current tenant. Current write scope is offers:quote.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -512,7 +794,17 @@
               "type": "string"
             }
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferCreateRequest"
+              }
+            }
+          }
+        }
       }
     },
     "/api/pricing/quotes": {
@@ -564,8 +856,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "additionalProperties": true
+                "$ref": "#/components/schemas/LeaseQuoteRequest"
               }
             }
           }
@@ -612,6 +903,29 @@
         "security": [
           {
             "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
           }
         ]
       }
@@ -788,7 +1102,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Published manufacturers",
-        "description": "Vehicle Catalog Service. Published manufacturers. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "description": "Vehicle Catalog Service. Published manufacturers. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details. Global catalogue: no tenant ownership. JWT audience autoflow-catalog; read requires catalog:read and writes require catalog:manage.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -832,7 +1146,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Create manufacturer",
-        "description": "Vehicle Catalog Service. Create manufacturer. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "description": "Vehicle Catalog Service. Create manufacturer. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details. Global catalogue: no tenant ownership. JWT audience autoflow-catalog; read requires catalog:read and writes require catalog:manage.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -878,7 +1192,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Search/list",
-        "description": "Vehicle Catalog Service. Search/list; query: q, manufacturerId, modelId, generationId, fuelType, powertrain, bodyStyle, transmission, minPowerKw, maxPowerKw, minSeats, maxSeats, limit, offset. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "description": "Vehicle Catalog Service. Search/list; query: q, manufacturerId, modelId, generationId, fuelType, powertrain, bodyStyle, transmission, minPowerKw, maxPowerKw, minSeats, maxSeats, limit, offset. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details. Global catalogue: no tenant ownership. JWT audience autoflow-catalog; read requires catalog:read and writes require catalog:manage.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -922,7 +1236,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Create variant",
-        "description": "Vehicle Catalog Service. Create variant. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "description": "Vehicle Catalog Service. Create variant. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details. Global catalogue: no tenant ownership. JWT audience autoflow-catalog; read requires catalog:read and writes require catalog:manage.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -968,7 +1282,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Variant detail",
-        "description": "Vehicle Catalog Service. Variant detail. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "description": "Vehicle Catalog Service. Variant detail. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details. Global catalogue: no tenant ownership. JWT audience autoflow-catalog; read requires catalog:read and writes require catalog:manage.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -1024,7 +1338,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Create model",
-        "description": "Vehicle Catalog Service. Create model. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "description": "Vehicle Catalog Service. Create model. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details. Global catalogue: no tenant ownership. JWT audience autoflow-catalog; read requires catalog:read and writes require catalog:manage.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -1070,7 +1384,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Create generation",
-        "description": "Vehicle Catalog Service. Create generation. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "description": "Vehicle Catalog Service. Create generation. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details. Global catalogue: no tenant ownership. JWT audience autoflow-catalog; read requires catalog:read and writes require catalog:manage.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -1116,7 +1430,7 @@
           "Vehicle Catalog Service"
         ],
         "summary": "Publish variant",
-        "description": "Vehicle Catalog Service. Publish variant. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "description": "Vehicle Catalog Service. Publish variant. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details. Global catalogue: no tenant ownership. JWT audience autoflow-catalog; read requires catalog:read and writes require catalog:manage.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -1216,8 +1530,10 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
           }
         ],
         "requestBody": {
@@ -1225,8 +1541,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "additionalProperties": true
+                "$ref": "#/components/schemas/OrderCreateRequest"
               }
             }
           }
@@ -1274,519 +1589,27 @@
           {
             "BearerAuth": []
           }
-        ]
-      }
-    },
-    "/api/v1/orders/{id}": {
-      "get": {
-        "tags": [
-          "Order Management Service"
-        ],
-        "summary": "Read order and snapshots",
-        "description": "Order Management Service. Read order and snapshots. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Malformed request or invalid query/body"
-          },
-          "401": {
-            "description": "Missing or invalid access token"
-          },
-          "403": {
-            "description": "Insufficient permission or tenant access"
-          },
-          "404": {
-            "description": "Resource not found or not visible"
-          },
-          "409": {
-            "description": "Business or idempotency conflict"
-          },
-          "412": {
-            "description": "Stale If-Match version"
-          },
-          "422": {
-            "description": "Domain validation error"
-          },
-          "500": {
-            "description": "Unexpected server error"
-          },
-          "503": {
-            "description": "Dependency unavailable"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
         ],
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
+            "name": "limit",
+            "in": "query",
+            "required": false,
             "schema": {
-              "type": "string"
-            }
-          }
-        ]
-      }
-    },
-    "/api/v1/orders/{id}/submit": {
-      "post": {
-        "tags": [
-          "Order Management Service"
-        ],
-        "summary": "Submit",
-        "description": "Order Management Service. Submit; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Malformed request or invalid query/body"
-          },
-          "401": {
-            "description": "Missing or invalid access token"
-          },
-          "403": {
-            "description": "Insufficient permission or tenant access"
-          },
-          "404": {
-            "description": "Resource not found or not visible"
-          },
-          "409": {
-            "description": "Business or idempotency conflict"
-          },
-          "412": {
-            "description": "Stale If-Match version"
-          },
-          "422": {
-            "description": "Domain validation error"
-          },
-          "500": {
-            "description": "Unexpected server error"
-          },
-          "503": {
-            "description": "Dependency unavailable"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
             }
           },
           {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
+            "name": "offset",
+            "in": "query",
+            "required": false,
             "schema": {
-              "type": "string"
-            }
-          }
-        ]
-      }
-    },
-    "/api/v1/orders/{id}/review": {
-      "post": {
-        "tags": [
-          "Order Management Service"
-        ],
-        "summary": "Review",
-        "description": "Order Management Service. Review; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Malformed request or invalid query/body"
-          },
-          "401": {
-            "description": "Missing or invalid access token"
-          },
-          "403": {
-            "description": "Insufficient permission or tenant access"
-          },
-          "404": {
-            "description": "Resource not found or not visible"
-          },
-          "409": {
-            "description": "Business or idempotency conflict"
-          },
-          "412": {
-            "description": "Stale If-Match version"
-          },
-          "422": {
-            "description": "Domain validation error"
-          },
-          "500": {
-            "description": "Unexpected server error"
-          },
-          "503": {
-            "description": "Dependency unavailable"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
-      }
-    },
-    "/api/v1/orders/{id}/accept": {
-      "post": {
-        "tags": [
-          "Order Management Service"
-        ],
-        "summary": "Accept",
-        "description": "Order Management Service. Accept; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Malformed request or invalid query/body"
-          },
-          "401": {
-            "description": "Missing or invalid access token"
-          },
-          "403": {
-            "description": "Insufficient permission or tenant access"
-          },
-          "404": {
-            "description": "Resource not found or not visible"
-          },
-          "409": {
-            "description": "Business or idempotency conflict"
-          },
-          "412": {
-            "description": "Stale If-Match version"
-          },
-          "422": {
-            "description": "Domain validation error"
-          },
-          "500": {
-            "description": "Unexpected server error"
-          },
-          "503": {
-            "description": "Dependency unavailable"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
-      }
-    },
-    "/api/v1/orders/{id}/reject": {
-      "post": {
-        "tags": [
-          "Order Management Service"
-        ],
-        "summary": "Reject",
-        "description": "Order Management Service. Reject; Idempotency-Key; body: reason. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Malformed request or invalid query/body"
-          },
-          "401": {
-            "description": "Missing or invalid access token"
-          },
-          "403": {
-            "description": "Insufficient permission or tenant access"
-          },
-          "404": {
-            "description": "Resource not found or not visible"
-          },
-          "409": {
-            "description": "Business or idempotency conflict"
-          },
-          "412": {
-            "description": "Stale If-Match version"
-          },
-          "422": {
-            "description": "Domain validation error"
-          },
-          "500": {
-            "description": "Unexpected server error"
-          },
-          "503": {
-            "description": "Dependency unavailable"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "additionalProperties": true
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/orders/{id}/cancel": {
-      "post": {
-        "tags": [
-          "Order Management Service"
-        ],
-        "summary": "Cancel",
-        "description": "Order Management Service. Cancel; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Malformed request or invalid query/body"
-          },
-          "401": {
-            "description": "Missing or invalid access token"
-          },
-          "403": {
-            "description": "Insufficient permission or tenant access"
-          },
-          "404": {
-            "description": "Resource not found or not visible"
-          },
-          "409": {
-            "description": "Business or idempotency conflict"
-          },
-          "412": {
-            "description": "Stale If-Match version"
-          },
-          "422": {
-            "description": "Domain validation error"
-          },
-          "500": {
-            "description": "Unexpected server error"
-          },
-          "503": {
-            "description": "Dependency unavailable"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
-      }
-    },
-    "/api/v1/orders/{id}/contract-pending": {
-      "post": {
-        "tags": [
-          "Order Management Service"
-        ],
-        "summary": "Contract pending",
-        "description": "Order Management Service. Contract pending; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Malformed request or invalid query/body"
-          },
-          "401": {
-            "description": "Missing or invalid access token"
-          },
-          "403": {
-            "description": "Insufficient permission or tenant access"
-          },
-          "404": {
-            "description": "Resource not found or not visible"
-          },
-          "409": {
-            "description": "Business or idempotency conflict"
-          },
-          "412": {
-            "description": "Stale If-Match version"
-          },
-          "422": {
-            "description": "Domain validation error"
-          },
-          "500": {
-            "description": "Unexpected server error"
-          },
-          "503": {
-            "description": "Dependency unavailable"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ]
-      }
-    },
-    "/api/v1/orders/{id}/complete": {
-      "post": {
-        "tags": [
-          "Order Management Service"
-        ],
-        "summary": "Complete",
-        "description": "Order Management Service. Complete; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          },
-          "400": {
-            "description": "Malformed request or invalid query/body"
-          },
-          "401": {
-            "description": "Missing or invalid access token"
-          },
-          "403": {
-            "description": "Insufficient permission or tenant access"
-          },
-          "404": {
-            "description": "Resource not found or not visible"
-          },
-          "409": {
-            "description": "Business or idempotency conflict"
-          },
-          "412": {
-            "description": "Stale If-Match version"
-          },
-          "422": {
-            "description": "Domain validation error"
-          },
-          "500": {
-            "description": "Unexpected server error"
-          },
-          "503": {
-            "description": "Dependency unavailable"
-          }
-        },
-        "security": [
-          {
-            "BearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
             }
           }
         ]
@@ -1842,8 +1665,10 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
           }
         ],
         "requestBody": {
@@ -1851,8 +1676,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "additionalProperties": true
+                "$ref": "#/components/schemas/PaymentCreateRequest"
               }
             }
           }
@@ -2113,7 +1937,7 @@
           "Payment Service"
         ],
         "summary": "Stripe webhook",
-        "description": "Payment Service. Stripe webhook; Stripe-Signature. Authorization: Bearer JWT; payments:read, payments:write, payments:capture, payments:refund. See apps/payment-service/docs/API.md for arguments, examples and response details.",
+        "description": "Payment Service. Stripe webhook; Stripe-Signature. Authorization: Bearer JWT; payments:read, payments:write, payments:capture, payments:refund. See apps/payment-service/docs/API.md for arguments, examples and response details. Stripe signature verification is mandatory; this route is excluded from JWT authentication.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -2145,7 +1969,17 @@
           "503": {
             "description": "Dependency unavailable"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "Stripe-Signature",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/api/v1/billing/invoices": {
@@ -2190,6 +2024,29 @@
         "security": [
           {
             "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
           }
         ]
       }
@@ -2561,6 +2418,29 @@
         "security": [
           {
             "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
           }
         ]
       }
@@ -3721,6 +3601,29 @@
           {
             "BearerAuth": []
           }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
         ]
       }
     },
@@ -4172,6 +4075,29 @@
         "security": [
           {
             "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
           }
         ]
       }
@@ -4723,6 +4649,29 @@
           {
             "BearerAuth": []
           }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
         ]
       },
       "post": {
@@ -4774,8 +4723,10 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
           }
         ],
         "requestBody": {
@@ -4783,8 +4734,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "additionalProperties": true
+                "$ref": "#/components/schemas/ReservationCreateRequest"
               }
             }
           }
@@ -4955,6 +4905,26 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"1\""
+            },
+            "description": "Current ETag/version returned by the preceding read or command."
           }
         ]
       }
@@ -5011,6 +4981,26 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"1\""
+            },
+            "description": "Current ETag/version returned by the preceding read or command."
           }
         ]
       }
@@ -5067,6 +5057,26 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "\"1\""
+            },
+            "description": "Current ETag/version returned by the preceding read or command."
           }
         ]
       }
@@ -5178,6 +5188,29 @@
         "security": [
           {
             "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
           }
         ]
       }
@@ -5483,8 +5516,10 @@
             "in": "header",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
           }
         ],
         "requestBody": {
@@ -5492,8 +5527,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "additionalProperties": true
+                "$ref": "#/components/schemas/CrmApplicationCreateRequest"
               }
             }
           }
@@ -5540,6 +5574,29 @@
         "security": [
           {
             "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
           }
         ]
       }
@@ -6170,7 +6227,7 @@
           "AI Service"
         ],
         "summary": "Chat",
-        "description": "AI Service. Chat; body: messages[] with role and content. Authorization: Local-only service; add JWT/tenant authorization before shared exposure. See apps/ai-service/docs/API.md for arguments, examples and response details.",
+        "description": "AI Service. Chat; body: messages[] with role and content. Authorization: Local-only service; add JWT/tenant authorization before shared exposure. See apps/ai-service/docs/API.md for arguments, examples and response details. Local-only Ollama-backed API. No JWT/tenant authorization is currently enforced; do not expose outside local development.",
         "responses": {
           "200": {
             "description": "Successful response"
@@ -6208,10 +6265,650 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "additionalProperties": true
+                "$ref": "#/components/schemas/AiChatRequest"
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{orderId}": {
+      "get": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Read order and snapshots",
+        "description": "Order Management Service. Read order and snapshots. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/submit": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Submit",
+        "description": "Order Management Service. Submit; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/review": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Review",
+        "description": "Order Management Service. Review; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/accept": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Accept",
+        "description": "Order Management Service. Accept; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/reject": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Reject",
+        "description": "Order Management Service. Reject; Idempotency-Key; body: reason. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderRejectRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{orderId}/cancel": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Cancel",
+        "description": "Order Management Service. Cancel; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/contract-pending": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Contract pending",
+        "description": "Order Management Service. Contract pending; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/complete": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Complete",
+        "description": "Order Management Service. Complete; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Stable key scoped to tenant and authenticated actor. Same key and same command replays the original result; a different command returns 409."
+          },
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{orderId}/history": {
+      "get": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Retrieve append-only lifecycle audit history",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order history events"
+          },
+          "401": {
+            "description": "Missing or invalid token"
+          },
+          "403": {
+            "description": "Missing orders:read permission or tenant access"
+          },
+          "404": {
+            "description": "Order not found or outside tenant"
+          },
+          "500": {
+            "description": "Unexpected server error; internal stack traces and SQL details must not be exposed."
           }
         }
       }
