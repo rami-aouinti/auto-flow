@@ -38,33 +38,18 @@ $number = static function (Connection $db, string $table, string $tenant, int $y
     return sprintf('%s-%d-%06d', $prefix, $year, $n);
 };
 $process = static function (AMQPMessage $m) use ($db, $rate, $tax, $number): void {
-    $body = $m->getBody();
-    $e = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
-    if (!is_array($e) || array_is_list($e)) {
-        throw new UnexpectedValueException('Payment event must be a JSON object.');
-    }
-    $eid = $e['eventId'] ?? null;
-    $type = $e['eventType'] ?? null;
-    $tenant = $e['tenantId'] ?? null;
-    $d = $e['data'] ?? null;
-    if (!is_string($eid) || !Uuid::isValid($eid)
-        || !is_string($type) || !in_array($type, ['PaymentCaptured', 'PaymentRefunded', 'PaymentPartiallyRefunded'], true)
-        || ($e['schemaVersion'] ?? null) !== 1
-        || ($e['producer'] ?? null) !== 'payment-service'
-        || !is_string($tenant) || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenant)
-        || !is_array($d) || array_is_list($d)
-    ) {
-        throw new UnexpectedValueException('Payment event envelope is invalid or unsupported.');
-    }
-    if (($m->get('message_id') ?? null) !== $eid || ($m->get('type') ?? null) !== $type) {
-        throw new UnexpectedValueException('RabbitMQ metadata does not match the payment event envelope.');
-    }
-    $pid = $d['paymentId'] ?? null;
-    $oid = $d['orderId'] ?? null;
-    if (!is_string($pid) || !Uuid::isValid($pid) || !is_string($oid) || !Uuid::isValid($oid)) {
-        throw new UnexpectedValueException('Missing payment/order identifiers.');
-    }
-    $payloadHash = hash('sha256', $body);
+    $event = PaymentEventEnvelope::fromMessage(
+        $m->getBody(),
+        (string) ($m->get('message_id') ?? ''),
+        (string) ($m->get('type') ?? ''),
+    );
+    $eid = $event->eventId;
+    $type = $event->eventType;
+    $tenant = $event->tenantId;
+    $d = $event->data;
+    $pid = $event->paymentId;
+    $oid = $event->orderId;
+    $payloadHash = $event->payloadHash;
     $db->transactional(static function (Connection $db) use ($eid, $type, $tenant, $d, $pid, $oid, $payloadHash, $rate, $tax, $number): void {
         $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
         $insert = $db->fetchOne(
