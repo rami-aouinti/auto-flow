@@ -192,6 +192,8 @@ jobs:
           composer install --working-dir=apps/customer-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/customer-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Install CRM Service dependencies and run tests
+        env:
+          CRM_TEST_DATABASE_URL: postgresql://autoflow_crm:local-only-crm-password@127.0.0.1:5432/autoflow
         run: |
           composer install --working-dir=apps/crm-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           php -l apps/crm-service/src/Presentation/Http/Controller/CrmController.php
