@@ -1524,6 +1524,7 @@ services:
       VITE_KEYCLOAK_CLIENT_ID: autoflow-local-client
       VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
       # Nitro forwards browser service prefixes through the gateway; the gateway preserves upstream /api paths.
+      CUSTOMER_PROXY_TARGET: http://api-gateway
       CATALOG_PROXY_TARGET: http://api-gateway
       OFFER_PROXY_TARGET: http://api-gateway
       PRICING_PROXY_TARGET: http://api-gateway
