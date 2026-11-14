@@ -19,7 +19,7 @@ The central OpenAPI 3.0 catalog contains the HTTP endpoints for all API-bearing 
 - [Inventory Service](../../apps/inventory-service/docs/API.md) — http://localhost:8093
 - [CRM Service](../../apps/crm-service/docs/API.md) — http://localhost:8094
 - [AI Service](../../apps/ai-service/docs/API.md) — http://localhost:8095
-- [Search Service](../../apps/search-service/README.md) — http://localhost:8097
+- [Search Service](../../apps/search-service/docs/API.md) — http://localhost:8097
 - [Notification Service](../../apps/notification-service/docs/API.md) — RabbitMQ worker; no public REST API
 
 ## Start
