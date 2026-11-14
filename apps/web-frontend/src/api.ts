@@ -87,6 +87,42 @@ export const billing = {
   creditNote: (id: string) => api.get(`${billingBase}/api/v1/billing/credit-notes/${encodeURIComponent(id)}`),
 };
 
+const crmBase = import.meta.env.VITE_CRM_API_BASE || '/crm';
+const contractBase = import.meta.env.VITE_CONTRACT_API_BASE || '/contracts';
+const fulfillmentBase = import.meta.env.VITE_FULFILLMENT_API_BASE || '/fulfillments';
+const inventoryBase = import.meta.env.VITE_INVENTORY_API_BASE || '/inventory';
+const reservationBase = import.meta.env.VITE_RESERVATION_API_BASE || '/reservations';
+
+export const crm = {
+  applications: (limit = 20, offset = 0) => api.get(`${crmBase}/api/v1/crm/applications`, { params: { limit, offset } }),
+  application: (id: string) => api.get(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}`),
+  history: (id: string) => api.get(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/history`),
+};
+
+export const contracts = {
+  list: (limit = 20, offset = 0) => api.get(`${contractBase}/api/v1/contracts`, { params: { limit, offset } }),
+  get: (id: string) => api.get(`${contractBase}/api/v1/contracts/${encodeURIComponent(id)}`),
+  history: (id: string) => api.get(`${contractBase}/api/v1/contracts/${encodeURIComponent(id)}/history`),
+};
+
+export const fulfillments = {
+  list: (limit = 20, offset = 0) => api.get(`${fulfillmentBase}/api/v1/fulfillments`, { params: { limit, offset } }),
+  get: (id: string) => api.get(`${fulfillmentBase}/api/v1/fulfillments/${encodeURIComponent(id)}`),
+  history: (id: string) => api.get(`${fulfillmentBase}/api/v1/fulfillments/${encodeURIComponent(id)}/history`),
+};
+
+export const inventory = {
+  units: (limit = 20, offset = 0) => api.get(`${inventoryBase}/api/v1/inventory/units`, { params: { limit, offset } }),
+  unit: (id: string) => api.get(`${inventoryBase}/api/v1/inventory/units/${encodeURIComponent(id)}`),
+  availability: (vehicleVariantId: string) => api.get(`${inventoryBase}/api/v1/inventory/availability`, { params: { vehicleVariantId } }),
+};
+
+export const reservations = {
+  list: (limit = 20, offset = 0) => api.get(`${reservationBase}/api/v1/reservations`, { params: { limit, offset } }),
+  get: (id: string) => api.get(`${reservationBase}/api/v1/reservations/${encodeURIComponent(id)}`),
+  history: (id: string) => api.get(`${reservationBase}/api/v1/reservations/${encodeURIComponent(id)}/history`),
+};
+
 
 export function errorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {
