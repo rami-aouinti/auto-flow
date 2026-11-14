@@ -6622,12 +6622,17 @@
       },
       "servers": [
         {
-          "url": "http://localhost:8103",
-          "description": "Media Service direct local URL"
-        },
-        {
-          "url": "http://localhost:8098",
-          "description": "Workflow Service direct local URL"
+          "url": "http://localhost:{port}",
+          "description": "Direct local service port: analytics 8102 or integration 8099.",
+          "variables": {
+            "port": {
+              "default": "8102",
+              "enum": [
+                "8102",
+                "8099"
+              ]
+            }
+          }
         }
       ]
     },
@@ -8334,6 +8339,9 @@
           },
           "403": {
             "description": "Missing analytics:read"
+          },
+          "503": {
+            "description": "Service dependency unavailable"
           }
         }
       }
@@ -8385,6 +8393,9 @@
           },
           "403": {
             "description": "Missing analytics:read"
+          },
+          "503": {
+            "description": "Service dependency unavailable"
           }
         }
       }
@@ -8416,6 +8427,9 @@
           },
           "403": {
             "description": "Missing analytics:read"
+          },
+          "503": {
+            "description": "Service dependency unavailable"
           }
         }
       }
@@ -8439,11 +8453,12 @@
           {
             "name": "X-Webhook-Signature",
             "in": "header",
-            "required": true,
+            "required": false,
             "schema": {
               "type": "string",
               "example": "sha256=..."
-            }
+            },
+            "description": "HMAC-SHA256 signature. Alternatively use X-Signature; one of the two headers is required."
           },
           {
             "name": "X-Signature",
@@ -8461,11 +8476,43 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "id"
-                ],
-                "description": "Raw body used to calculate HMAC-SHA256; maximum 64 KiB. Accepts id or eventId and type or eventType.",
-                "additionalProperties": true
+                "description": "Raw request body is signed byte-for-byte; maximum 64 KiB.",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "type": {
+                        "type": "string",
+                        "maxLength": 160
+                      }
+                    },
+                    "additionalProperties": true
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "eventId"
+                    ],
+                    "properties": {
+                      "eventId": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "eventType": {
+                        "type": "string",
+                        "maxLength": 160
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                ]
               }
             }
           }
@@ -8545,6 +8592,9 @@
           },
           "403": {
             "description": "Missing integrations:read"
+          },
+          "503": {
+            "description": "Service dependency unavailable"
           }
         }
       }
@@ -8584,6 +8634,9 @@
           },
           "403": {
             "description": "Missing integrations:read"
+          },
+          "503": {
+            "description": "Service dependency unavailable"
           }
         }
       },
@@ -8664,6 +8717,9 @@
           },
           "403": {
             "description": "Missing integrations:read"
+          },
+          "503": {
+            "description": "Service dependency unavailable"
           }
         }
       }
@@ -8702,12 +8758,17 @@
       },
       "servers": [
         {
-          "url": "http://localhost:8103",
-          "description": "Media Service direct local URL"
-        },
-        {
-          "url": "http://localhost:8098",
-          "description": "Workflow Service direct local URL"
+          "url": "http://localhost:{port}",
+          "description": "Direct local service port: analytics 8102 or integration 8099.",
+          "variables": {
+            "port": {
+              "default": "8102",
+              "enum": [
+                "8102",
+                "8099"
+              ]
+            }
+          }
         }
       ]
     },
