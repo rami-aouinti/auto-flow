@@ -179,3 +179,57 @@ test('company customer portal keeps legal identity read-only and saves contact d
   expect(savedPayload).not.toHaveProperty('firstName');
   expect(savedPayload).not.toHaveProperty('lastName');
 });
+
+test('customer portal persists marketing consent choices', async ({ page }) => {
+  let emailConsent = false;
+  let smsConsent = false;
+  const profile = {
+    customer_id: 'customer-consent-demo', customer_type: 'individual',
+    first_name: 'Consent', last_name: 'Demo', email: 'consent@example.test',
+    phone: '', locale: 'de-DE', status: 'active', version: 1,
+  };
+  await page.route('**/customers/api/v1/customers/me', route => route.fulfill({ json: profile }));
+  await page.route('**/customers/api/v1/customers/me/addresses', route => route.fulfill({ json: { items: [] } }));
+  await page.route('**/customers/api/v1/customers/me/consents', async route => {
+    if (route.request().method() === 'PUT') {
+      const payload = route.request().postDataJSON();
+      if (payload.purpose === 'marketing.email') emailConsent = payload.granted;
+      if (payload.purpose === 'marketing.sms') smsConsent = payload.granted;
+      return route.fulfill({ json: payload });
+    }
+    return route.fulfill({ json: { items: [
+      { purpose: 'marketing.email', granted: emailConsent },
+      { purpose: 'marketing.sms', granted: smsConsent },
+    ] } });
+  });
+
+  await page.goto('/portal');
+  const emailSwitch = page.getByRole('switch', { name: 'Marketing per E-Mail' });
+  const smsSwitch = page.getByRole('switch', { name: 'Marketing per SMS' });
+  await expect(emailSwitch).not.toBeChecked();
+  await emailSwitch.click();
+  await expect(emailSwitch).toBeChecked();
+  await expect(page.getByText('Deine Einwilligung wurde aktualisiert.')).toBeVisible();
+  await smsSwitch.click();
+  await expect(smsSwitch).toBeChecked();
+  expect(emailConsent).toBe(true);
+  expect(smsConsent).toBe(true);
+  await page.getByRole('button', { name: 'Aktualisieren' }).click();
+  await expect(emailSwitch).toBeChecked();
+  await expect(smsSwitch).toBeChecked();
+});
+
+test('customer portal explains when no customer identity is linked', async ({ page }) => {
+  await page.route('**/customers/api/v1/customers/me', route => route.fulfill({
+    status: 404,
+    contentType: 'application/problem+json',
+    body: JSON.stringify({ title: 'Not Found', status: 404, detail: 'No customer profile is linked to this account.' }),
+  }));
+  await page.route('**/customers/api/v1/customers/me/addresses', route => route.fulfill({ json: { items: [] } }));
+  await page.route('**/customers/api/v1/customers/me/consents', route => route.fulfill({ json: { items: [] } }));
+
+  await page.goto('/portal');
+  await expect(page.getByRole('heading', { name: 'Mein Kundenkonto' })).toBeVisible();
+  await expect(page.getByText(/noch nicht mit deinem Login verbunden/i)).toBeVisible();
+  await expect(page.getByLabel('E-Mail')).toHaveCount(0);
+});
