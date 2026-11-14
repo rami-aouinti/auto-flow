@@ -1,40 +1,40 @@
 # Payment Service — API Reference
 
-**Base URL:** http://localhost:8086  
-**Authentication:** Bearer JWT; payments:read, payments:write, payments:capture, payments:refund
+**Direct local URL:** http://localhost:8086  
+**Authentication:** Keycloak bearer JWT and tenant context; operation scopes: `payments:read`, `payments:write`, `payments:capture`, `payments:refund`. Stripe webhook is public at JWT layer but requires Stripe signature verification.
 
-## Endpoints and arguments
+## HTTP endpoints
 
-| Method | Path | Arguments / body | Possible responses |
-|---|---|---|---|
-| POST | `/api/v1/payments` |  Idempotency-Key; body: orderId only | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| GET | `/api/v1/payments/{paymentId}` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| POST | `/api/v1/payments/{paymentId}/capture` |  Idempotency-Key | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/payments/{paymentId}/cancel` |  Idempotency-Key | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/payments/{paymentId}/refund` |  Idempotency-Key | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/payments/webhooks/stripe` |  Stripe-Signature | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
+| Method | Path | Permission / access | Purpose | Arguments and request body | Documented / expected responses |
+|---|---|---|---|---|---|
+| POST | /api/v1/payments | payments:write | Create payment intent for an order; amount and currency are resolved from Order's quote snapshot. | Idempotency-Key required. JSON: orderId only. | 201, 400, 401, 403, 409, 422, 503 |
+| GET | /api/v1/payments/{paymentId} | payments:read | Read payment. | paymentId (path). | 200, 401, 403, 404 |
+| POST | /api/v1/payments/{paymentId}/capture | payments:capture | Capture authorized payment. | paymentId; Idempotency-Key required; no body documented. | 200, 401, 403, 404, 409, 422 |
+| POST | /api/v1/payments/{paymentId}/cancel | payments:write | Cancel payment. | paymentId; Idempotency-Key required; no body documented. | 200, 401, 403, 404, 409, 422 |
+| POST | /api/v1/payments/{paymentId}/refund | payments:refund | Refund payment. | paymentId; Idempotency-Key required. Amounts are integer minor units; exact optional refund body not specified in README. | 200, 400, 401, 403, 404, 409, 422 |
+| POST | /api/v1/payments/webhooks/stripe | Stripe-Signature | Receive Stripe webhook event; validate signature using configured webhook secret. | Stripe-Signature header required; raw Stripe event payload. | 200, 400, 409 |
 
-## Common HTTP responses
+## Health and operations
 
-- **2xx:** request succeeded; GET returns a resource/collection, POST creates or transitions a resource, DELETE may return 204.
-- **400:** malformed JSON, invalid query parameters or malformed headers.
-- **401:** missing/invalid JWT (except explicitly public provider webhooks).
-- **403:** missing scope/role or tenant access.
-- **404:** resource does not exist or is outside the caller's tenant/ownership boundary.
-- **409:** invalid state transition, duplicate resource or idempotency-key conflict.
-- **412:** stale ETag/If-Match version for optimistic concurrency.
-- **422:** request is syntactically valid but violates domain validation.
-- **500 / 503:** unexpected server failure or unavailable dependency; no internal SQL/stack trace should be exposed.
+- GET /health/ready — readiness; no JWT.
 
-## Testing
+## Common response semantics
 
-Use the central Swagger UI at http://localhost:8096. Authenticate with the raw Keycloak access token when required. For commands requiring idempotency, send a unique `Idempotency-Key`; for versioned transitions copy the current `ETag` into `If-Match`.
+- `400`: malformed JSON, query string, or required header (when applicable).
+- `401`: missing/invalid bearer token on protected routes.
+- `403`: authenticated caller lacks the endpoint permission or tenant access.
+- `404`: resource is unknown or intentionally hidden by tenant/ownership isolation.
+- `409`: business lifecycle conflict or idempotency key reused for a different command.
+- `412`: stale `If-Match` version for optimistic concurrency.
+- `422`: syntactically valid request that fails domain validation.
+- `503`: required upstream service/dependency unavailable.
 
-## Contract maintenance
+Only status codes explicitly described in the service README or API contract are asserted in the endpoint table. Other statuses in the common section are general meanings and may not be emitted by every endpoint.
 
-This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+## Testing through Swagger UI
 
+Open [http://localhost:8096](http://localhost:8096). The gateway base URL is `http://localhost:8088`; service routes are forwarded without stripping their API path. Use the raw Keycloak access token in **Authorize** for protected services. For idempotent commands, provide a unique `Idempotency-Key`. For versioned commands, read the current response `ETag` and send it unchanged as `If-Match`.
 
-## Health and operational endpoints
+## Contract accuracy
 
-- `GET /health/ready` — readiness probe; no JWT.
+Request fields are marked as DTO-defined where the service README does not publish the full DTO. The central OpenAPI contract provides strict schemas only for request bodies whose complete fields are confirmed by service documentation. Keep this file and `docs/api/openapi.json` synchronized when changing controllers, validators or response DTOs.
