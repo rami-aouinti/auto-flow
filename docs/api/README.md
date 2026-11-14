@@ -2,7 +2,7 @@
 
 Open Swagger UI at **http://localhost:8096** after starting Docker Compose.
 
-The central OpenAPI 3.0 catalog contains the HTTP endpoints for all API-bearing services. Each service also has a detailed endpoint reference at `apps/<service>/docs/API.md`, including arguments, headers, request-body fields known from the implementation documentation, authorization requirements and possible HTTP responses.
+The central OpenAPI 3.0.3 catalog contains the HTTP endpoints for all API-bearing services, including Document upload, versions, access grants and legal holds. Each service also has a detailed endpoint reference at `apps/<service>/docs/API.md`, including arguments, headers, request-body fields known from the implementation documentation, authorization requirements and possible HTTP responses.
 
 ## Services
 
@@ -35,7 +35,7 @@ The central OpenAPI 3.0 catalog contains the HTTP endpoints for all API-bearing 
 docker compose --env-file .env.example up -d --build api-docs api-gateway
 ```
 
-Swagger UI itself starts independently, but **Try it out** requires the API Gateway and the target microservice to be running. Start the relevant backend service(s) as well. For Document Service, start PostgreSQL, the bootstrap job, RabbitMQ, ClamAV, `document-service` and `document-outbox-publisher`. The AI endpoint is intentionally local-only and currently has no JWT/tenant authorization; do not expose it outside the development machine.
+Swagger UI itself starts independently, but **Try it out** requires the API Gateway and the target microservice to be running. Start the relevant backend service(s) as well. For Document Service, start PostgreSQL, the bootstrap job, RabbitMQ, ClamAV, MinIO and its bucket initializer, `document-service`, `document-outbox-publisher` and `document-retention-worker`. The AI endpoint is intentionally local-only and currently has no JWT/tenant authorization; do not expose it outside the development machine.
 
 ## Validate locally
 
@@ -63,7 +63,7 @@ Workflow and Media remain bootstrap containers. Analytics and Integration now ex
 
 - [Analytics API](../../apps/analytics-service/docs/API.md): event ingestion, tenant KPI overview, daily event series and CSV export.
 - [Integration API](../../apps/integration-service/docs/API.md): signed inbound webhooks, inbound event history, outbound delivery queue/status and configured provider names.
-- [Central OpenAPI document](./openapi.json): OpenAPI 3.0 request/response schemas, parameters, JWT security and error responses for both services.
+- [Central OpenAPI document](./openapi.json): OpenAPI request/response schemas, parameters, JWT security and error responses for the documented services. Document Service also serves its dedicated OpenAPI 3.1 contract at `/api/doc.json`.
 
 For the shared health paths `/health/live` and `/health/ready`, choose direct port **8102** (Analytics) or **8099** (Integration) in Swagger's server selector. Business API paths use the gateway at port **8088**.
 
