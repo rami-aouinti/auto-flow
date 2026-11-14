@@ -30,6 +30,17 @@ jobs:
           coverage: xdebug
           extensions: pdo_pgsql, mbstring, sockets, dom
           tools: composer:v2
+      - name: Lint Document Service PHP and validate OpenAPI
+        run: |
+          php -l apps/document-service/public/index.php
+          php -l apps/document-service/bin/healthcheck.php
+          php -l apps/document-service/bin/publish-outbox.php
+          php -r '
+          $api = json_decode(file_get_contents("docs/api/openapi.json"), true, flags: JSON_THROW_ON_ERROR);
+          foreach (["/api/v1/documents", "/api/v1/documents/{id}", "/api/v1/documents/{id}/content", "/api/v1/documents/{id}/versions", "/api/v1/documents/{id}/audit"] as $path) {
+              if (!isset($api["paths"][$path])) { fwrite(STDERR, "Missing Document API path: ".$path."\\n"); exit(1); }
+          }
+          '
       - name: Setup Go for Temporal Order worker
         uses: actions/setup-go@v7
         with:
@@ -112,6 +123,8 @@ jobs:
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'customer_snapshot') AS order_customer_snapshot_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.contract_records') IS NOT NULL AS contract_records_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.contract_outbox') IS NOT NULL AS contract_outbox_ready"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('document_service.documents') IS NOT NULL AS document_schema_ready"
+          docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT relrowsecurity AND relforcerowsecurity AS document_tenant_rls_ready FROM pg_class WHERE oid = 'document_service.documents'::regclass"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.payments') IS NOT NULL AS payments_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.fulfillment_records') IS NOT NULL AS fulfillment_records_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('public.fulfillment_event_inbox') IS NOT NULL AS fulfillment_inbox_ready"
