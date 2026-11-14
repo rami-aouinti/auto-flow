@@ -169,6 +169,8 @@ final readonly class CustomerPortalController
             });
         } catch (AccessDeniedHttpException $error) {
             return $this->problem(403, $error->getMessage());
+        } catch (UniqueConstraintViolationException) {
+            return $this->problem(409, 'This email address is already used by another customer in this tenant.');
         } catch (Throwable) {
             return $this->problem(503, 'Customer self-service is temporarily unavailable.');
         }
