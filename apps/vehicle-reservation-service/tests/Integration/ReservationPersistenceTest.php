@@ -112,6 +112,16 @@ final class ReservationPersistenceTest extends TestCase
             'inventory_version' => 2,
         ], $stock->fetch());
 
+        $confirm = $this->runtime->prepare(
+            "UPDATE vehicle_reservations SET status = 'confirmed', confirmed_at = CURRENT_TIMESTAMP WHERE reservation_id = :id"
+        );
+        try {
+            $confirm->execute(['id' => $reservationId]);
+            self::fail('A reservation backed by blocked Inventory stock must not be confirmed.');
+        } catch (PDOException $exception) {
+            self::assertStringContainsString('Inventory no longer reports', $exception->getMessage());
+        }
+
         $release = $this->runtime->prepare(
             "UPDATE vehicle_reservations SET status = 'released', released_at = CURRENT_TIMESTAMP WHERE reservation_id = :id"
         );
