@@ -1,95 +1,283 @@
 openapi: 3.1.0
 info:
   title: AutoFlow Audit API
-  version: 1.0.0
-  description: Tenant-isolated append-only audit journal.
+  version: 1.1.0
+  summary: Tenant-isolated append-only audit journal
+  description: |
+    Authenticated, tenant-isolated audit ingestion and query API.
+    Tenant identity is derived only from the verified Keycloak principal.
+    Events are append-only, redacted before storage and linked by a per-tenant SHA-256 hash chain.
 servers:
   - url: http://localhost:8101
+    description: Direct local Audit Service
+  - url: http://localhost:8088
+    description: Local API Gateway; use /api/v1/audit prefix for proxied API routes
+tags:
+  - name: Health
+  - name: Audit Events
 security:
   - bearerAuth: []
 paths:
+  /health:
+    get:
+      tags: [Health]
+      security: []
+      operationId: health
+      summary: Liveness alias
+      responses:
+        '200':
+          description: HTTP process is alive
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
   /health/live:
     get:
+      tags: [Health]
       security: []
+      operationId: healthLive
       summary: Liveness
       responses:
-        '200': { description: Process is alive }
+        '200':
+          description: HTTP process is alive; database availability is not implied
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
   /health/ready:
     get:
+      tags: [Health]
       security: []
+      operationId: healthReady
       summary: Readiness
+      description: Checks PostgreSQL connectivity.
       responses:
-        '200': { description: PostgreSQL is reachable }
-        '503': { description: PostgreSQL is unavailable }
+        '200':
+          description: Database is reachable
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
+        '503':
+          description: Database is unavailable
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
   /api/v1/audit/events:
     post:
+      tags: [Audit Events]
+      operationId: appendAuditEvent
       summary: Append an audit event
-      description: Tenant is taken from the verified JWT. eventId is idempotent within a tenant.
+      description: Requires audit:write. Tenant is taken from the verified JWT principal. eventId is idempotent within a tenant. Payload limit is 16 KiB.
       security: [{ bearerAuth: [] }]
       parameters:
-        - in: header
-          name: X-Correlation-ID
-          schema: { type: string, maxLength: 128 }
+        - $ref: '#/components/parameters/CorrelationId'
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/AuditEventInput' }
+            examples:
+              orderCreated:
+                value:
+                  eventId: order:ord-1001:created:v1
+                  eventType: order.created
+                  actorType: user
+                  actorId: user-123
+                  resourceType: order
+                  resourceId: ord-1001
+                  occurredAt: '2026-11-14T06:30:00Z'
+                  correlationId: checkout-journey-42
+                  payload: {status: created, source: web}
       responses:
-        '201': { description: Event appended }
-        '200': { description: Idempotent replay }
-        '400': { description: Invalid JSON }
-        '401': { description: Missing or invalid token }
-        '403': { description: Missing audit:write scope or tenant }
-        '422': { description: Invalid event }
-        '503': { description: Persistence unavailable }
+        '201':
+          description: Event appended
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppendAuditEventResponse' }
+        '200':
+          description: Idempotent replay; event already exists in this tenant
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AppendAuditEventResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413':
+          description: Payload exceeds 16 KiB
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
     get:
-      summary: Search audit events for the authenticated tenant
+      tags: [Audit Events]
+      operationId: searchAuditEvents
+      summary: Search audit events
+      description: Requires audit:read. Results are tenant-isolated and sorted newest first.
+      security: [{ bearerAuth: [] }]
       parameters:
         - { in: query, name: eventType, schema: { type: string } }
         - { in: query, name: actorId, schema: { type: string } }
         - { in: query, name: resourceType, schema: { type: string } }
         - { in: query, name: resourceId, schema: { type: string } }
-        - { in: query, name: from, schema: { type: string, format: date-time } }
-        - { in: query, name: to, schema: { type: string, format: date-time } }
+        - { in: query, name: from, description: Inclusive lower bound, schema: { type: string, format: date-time } }
+        - { in: query, name: to, description: Inclusive upper bound, schema: { type: string, format: date-time } }
         - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
         - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
       responses:
-        '200': { description: Paginated audit events }
-        '401': { description: Missing or invalid token }
-        '403': { description: Missing audit:read scope or tenant }
-        '400': { description: Invalid pagination }
-        '503': { description: Persistence unavailable }
+        '200':
+          description: Paginated tenant audit events
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditEventPage' }
+        '400':
+          description: Invalid pagination
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /api/v1/audit/events/{eventId}:
     get:
-      summary: Read an audit event
+      tags: [Audit Events]
+      operationId: getAuditEvent
+      summary: Read one audit event
+      description: Requires audit:read. Events in other tenants are not disclosed.
+      security: [{ bearerAuth: [] }]
       parameters:
         - in: path
           name: eventId
           required: true
-          schema: { type: string }
+          schema: { type: string, minLength: 3, maxLength: 128 }
       responses:
-        '200': { description: Audit event }
-        '401': { description: Missing or invalid token }
-        '403': { description: Missing audit:read scope or tenant }
-        '404': { description: Event not found in this tenant }
+        '200':
+          description: Audit event
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuditEventDetailResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: Event not found in authenticated tenant
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: Keycloak access token with tenant_id and required audit scope.
+  parameters:
+    CorrelationId:
+      in: header
+      name: X-Correlation-ID
+      required: false
+      description: Fallback when body correlationId is omitted.
+      schema: { type: string, maxLength: 128 }
+  responses:
+    BadRequest:
+      description: Invalid JSON
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: Missing required scope or tenant_id claim
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ValidationError:
+      description: Required field, format, enum or length validation failed
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ServiceUnavailable:
+      description: Audit storage unavailable
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
   schemas:
     AuditEventInput:
       type: object
+      additionalProperties: false
       required: [eventId, eventType, actorType, resourceType, resourceId, occurredAt]
       properties:
-        eventId: { type: string, minLength: 3, maxLength: 128 }
-        eventType: { type: string, maxLength: 120 }
+        eventId:
+          type: string
+          minLength: 3
+          maxLength: 128
+          pattern: '^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$'
+          example: order:ord-1001:created:v1
+        eventType: { type: string, minLength: 1, maxLength: 120, example: order.created }
         actorType: { type: string, enum: [user, service, system] }
-        actorId: { type: string, maxLength: 255 }
-        resourceType: { type: string, maxLength: 80 }
-        resourceId: { type: string, maxLength: 160 }
+        actorId: { type: string, maxLength: 255, description: Defaults to authenticated JWT subject. }
+        resourceType: { type: string, minLength: 1, maxLength: 80, example: order }
+        resourceId: { type: string, minLength: 1, maxLength: 160, example: ord-1001 }
         occurredAt: { type: string, format: date-time }
         correlationId: { type: string, maxLength: 128 }
-        payload: { type: object }
+        payload:
+          type: object
+          description: Optional JSON object; serialized size at most 16 KiB. Sensitive fields are recursively redacted.
+          additionalProperties: true
+    AppendAuditEventResponse:
+      type: object
+      required: [created, eventId, eventHash]
+      properties:
+        created: { type: boolean, description: True for insert; false for idempotent replay. }
+        eventId: { type: string }
+        eventHash: { type: string, pattern: '^[a-f0-9]{64}$' }
+    AuditEvent:
+      type: object
+      properties:
+        event_id: { type: string }
+        event_type: { type: string }
+        actor_type: { type: string, enum: [user, service, system] }
+        actor_id: { type: string, nullable: true }
+        resource_type: { type: string }
+        resource_id: { type: string }
+        occurred_at: { type: string, format: date-time }
+        correlation_id: { type: string, nullable: true }
+        payload: { type: object, additionalProperties: true }
+        previous_hash: { type: string, pattern: '^[a-f0-9]{64}$' }
+        event_hash: { type: string, pattern: '^[a-f0-9]{64}$' }
+        created_at: { type: string, format: date-time }
+    AuditEventPage:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/AuditEvent' }
+        meta:
+          type: object
+          required: [page, limit, total, pages]
+          properties:
+            page: { type: integer }
+            limit: { type: integer }
+            total: { type: integer }
+            pages: { type: integer }
+    AuditEventDetailResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: '#/components/schemas/AuditEvent' }
+    HealthResponse:
+      type: object
+      properties:
+        service: { type: string, example: audit-service }
+        status: { type: string, example: ok }
+        checks: { type: object, additionalProperties: { type: string } }
+    Problem:
+      type: object
+      required: [title, status, detail]
+      properties:
+        type: { type: string, example: about:blank }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
