@@ -25,11 +25,19 @@ Every route requires a Keycloak token with audience autoflow-customer, tenant cl
 | PUT/DELETE | /api/v1/customers/{id}/addresses/{addressId} | customers:write | Replace or soft-delete address |
 | GET/PUT | /api/v1/customers/{id}/consents | read/write | Read or record consent decision |
 | GET | /api/v1/customers/{id}/history | customers:read | Audit history |
+| PUT | /api/v1/customers/{id}/identity | customers:manage | Link a verified Keycloak subject to a customer (audited, unique per tenant) |
+| GET/PATCH | /api/v1/customers/me | customers:portal | Read/update only the profile mapped to the JWT subject |
+| GET | /api/v1/customers/me/addresses | customers:portal | Read own addresses |
+| GET/PUT | /api/v1/customers/me/consents | customers:portal | Read/update own consent decisions |
+| GET | /api/v1/realtime/access | customers:read or customers:portal | Issue a five-minute tenant-specific Mercure subscriber cookie |
 
 Individuals require firstName and lastName; companies require legalName. Email is normalized and unique among active customers in a tenant. Address countryCode is ISO alpha-2. Replaying a create key with the same request returns the original resource; a different request with the same key returns 409.
 
 ## Security and privacy
-- Tenant comes only from the verified JWT principal. Each operation sets transaction-local app.tenant_id; PostgreSQL RLS isolates every customer-owned table.
+- Tenant and Keycloak subject come only from the verified JWT principal. Self-service queries match both tenant_id and keycloak_subject; clients cannot submit a customer ID to select another profile.
+- Each operation sets transaction-local app.tenant_id; PostgreSQL RLS isolates every customer-owned table.
+- Keycloak subject linking requires customers:manage, is unique per tenant and creates an audit event.
+- Mercure subscriber JWTs are signed server-side, short-lived, private-topic scoped and stored in an HttpOnly cookie; publisher keys never reach the browser.
 - Runtime DB role is non-superuser and NOBYPASSRLS.
 - PII responses use Cache-Control: no-store.
 - Archive is not GDPR erasure. A production deployment still needs a controller-approved erasure/export process, retention policy, legal basis, encryption/key management and appropriate access logging.
@@ -40,7 +48,13 @@ Direct API: http://localhost:8089. Gateway: http://localhost:8088/api/v1/custome
 Run: docker compose --env-file .env.example up -d --build customer-service
 Health: http://localhost:8089/health/ready
 
-The PostgreSQL bootstrap applies the idempotent migration to fresh and existing volumes without deleting data. Keycloak imports the new audience and roles only when the realm is first created; existing realms require the mapper and roles to be added manually.
+The PostgreSQL bootstrap applies the idempotent schema and identity migrations to fresh and existing volumes without deleting data. It also seeds a local-only customer account. The realm export provisions `customer-demo` / `customer-demo` with `customers:portal` and the matching fixed subject; use only for local development. Existing Keycloak realms must import/add the role and user manually or be recreated only after backing up development data.
+
+## Customer self-service and realtime
+
+The local portal is available at `/portal`. Sign in as `customer-demo` / `customer-demo` after importing the realm. Its verified Keycloak `sub` is mapped to the local seeded customer record. In production, create/link identities only through the administrator identity-link endpoint after independently verifying the account owner; never accept a customer ID or subject from the self-service form.
+
+Customer Service issues a five-minute HttpOnly `mercureAuthorization` cookie scoped to the caller's tenant topic. The RabbitMQ → Mercure bridge publishes only a small event summary (no raw payload or PII) to private tenant topics. Events without a valid tenant identifier are dead-lettered rather than broadcast.
 
 ## Downstream order integration
 
