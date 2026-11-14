@@ -50,6 +50,15 @@ BEGIN
         RAISE EXCEPTION 'invalid Inventory event data' USING ERRCODE = '22023';
     END IF;
 
+    IF EXISTS (
+        SELECT 1 FROM public.vehicle_stock_units
+        WHERE tenant_id = p_tenant_id AND vehicle_unit_id = p_inventory_unit_id
+          AND (vehicle_variant_id <> p_vehicle_variant_id OR (vin IS NOT NULL AND vin <> p_vin))
+    ) THEN
+        RAISE EXCEPTION 'Inventory event attempts to change immutable physical unit identity'
+            USING ERRCODE = '23514';
+    END IF;
+
     INSERT INTO public.vehicle_stock_inventory_inbox (tenant_id,event_id,inventory_unit_id,inventory_version)
     VALUES (p_tenant_id,p_event_id,p_inventory_unit_id,p_inventory_version)
     ON CONFLICT (tenant_id,event_id) DO NOTHING;
