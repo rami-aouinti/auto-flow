@@ -28,6 +28,7 @@ Document Service owns binary storage and metadata only. Contract and Billing rem
 | DELETE | `/api/v1/documents/{id}/access-grants/{grantId}` | owner or documents:manage | UUIDs in path | 204 | 401, 403, 404 |
 | POST | `/api/v1/documents/{id}/legal-hold` | owner or documents:manage | JSON: `reason` (1–2000 chars) | 200 `{data}` | 401, 403, 404, 422 |
 | DELETE | `/api/v1/documents/{id}/legal-hold` | owner or documents:manage | UUID path | 200 `{data}` | 401, 403, 404 |
+| PATCH | `/api/v1/documents/{id}/retention` | owner or documents:manage | JSON: `retention_until` future ISO-8601 timestamp or `null` | 200 `{data}` | 401, 403, 404, 422 |
 
 ### Upload rules
 
@@ -40,7 +41,7 @@ Document Service owns binary storage and metadata only. Contract and Billing rem
 
 ### Retention and legal hold
 
-`retention_until` is an absolute ISO-8601 timestamp. The retention worker checks expired records hourly (configurable), permanently removes current and historical object versions, and emits `DocumentPurged`. A legal hold blocks archive, soft-delete and automatic purge until explicitly released. If `retention_until` is omitted, the document is retained indefinitely until an explicit retention date is set; no legal retention period is guessed by the service. Purge audit metadata is retained separately from the deleted document record.
+`retention_until` is an absolute ISO-8601 timestamp. The retention deadline can be changed with `PATCH /api/v1/documents/{id}/retention`; send `null` to clear it and retain indefinitely. The retention worker checks expired records hourly (configurable), permanently removes current and historical object versions, and emits `DocumentPurged`. A legal hold blocks archive, soft-delete and automatic purge until explicitly released. If `retention_until` is omitted, the document is retained indefinitely until an explicit retention date is set; no legal retention period is guessed by the service. Purge audit metadata is retained separately from the deleted document record.
 
 ### Error format
 
@@ -69,7 +70,7 @@ curl -OJ "http://localhost:8088/api/v1/documents/$DOCUMENT_ID/content" \
 
 ## Data model and events
 
-PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`, `document_purge_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived`, `DocumentDeleted`, `DocumentAccessGranted`, `DocumentAccessRevoked`, `DocumentLegalHoldPlaced` and `DocumentLegalHoldReleased` atomically with metadata changes. The retention worker emits `DocumentPurged` after binary deletion. The separate publisher declares the durable topic exchange and queue `autoflow.document.events`, publishes the event envelope and retries unpublished rows until broker acknowledgement. The retention worker emits `DocumentPurged` after expiry and skips legal holds. Delivery is at-least-once: downstream consumers must deduplicate by `eventId`.
+PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`, `document_purge_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived`, `DocumentDeleted`, `DocumentAccessGranted`, `DocumentAccessRevoked`, `DocumentLegalHoldPlaced` and `DocumentLegalHoldReleased` and `DocumentRetentionUpdated` atomically with metadata changes. The retention worker emits `DocumentPurged` after binary deletion. The separate publisher declares the durable topic exchange and queue `autoflow.document.events`, publishes the event envelope and retries unpublished rows until broker acknowledgement. The retention worker emits `DocumentPurged` after expiry and skips legal holds. Delivery is at-least-once: downstream consumers must deduplicate by `eventId`.
 
 ## Local startup
 
