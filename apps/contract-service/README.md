@@ -76,14 +76,13 @@ DocuSign remains disabled until `DOCUSIGN_INTEGRATION_KEY`, `DOCUSIGN_USER_ID`, 
 
 Keycloak imports the realm JSON only when the `autoflow` realm does not already exist. Existing local realms must be updated with the `autoflow-contract` audience mapper and `contracts:read/write/manage` roles; re-importing the realm file does not merge changes.
 
-## Explicit remaining work
+## Remaining production gates
 
-This is the first operational slice of the bounded context, not a production-ready legal-document platform yet:
+This service has a working local slice for draft creation, preparation, PDF generation/storage, signature-provider requests, verified webhooks, audit history and transactional Outbox publication. It is not yet a production-ready legal-document platform:
 
-1. Implement and operate the Contract Outbox publisher (the API writes durable events, but they are not yet published to RabbitMQ).
-2. Add a document-rendering/storage adapter with immutable PDF artifacts and checksum verification.
-3. Configure a production DocuSign account, grant JWT impersonation consent, mount its RSA key and HMAC key, then add provider reconciliation and expired-envelope recovery.
-4. Add legal template/version governance, jurisdiction-specific clauses, retention and legal review.
-5. Add end-to-end tests against Order Service, PostgreSQL RLS and Keycloak; run the complete CI workflow.
+1. Configure a production DocuSign account, grant JWT impersonation consent, mount its RSA key and HMAC key, then implement provider reconciliation and expired-envelope recovery.
+2. Add legal template/version governance, jurisdiction-specific clauses, retention and legal review.
+3. Add end-to-end tests against Order Service, PostgreSQL RLS, RabbitMQ publisher confirms, Keycloak and the DocuSign webhook lifecycle.
+4. Add operational alerting for terminal Outbox retries, failed provider callbacks and missing signature completion.
 
 Do not use this service as legal advice or treat a prepared draft as an executed contract.
