@@ -1025,8 +1025,6 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-      order-service:
-        condition: service_healthy
     restart: unless-stopped
 
   vehicle-catalog-service:
