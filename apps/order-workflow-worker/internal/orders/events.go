@@ -33,7 +33,7 @@ func DecodeEvent(body []byte) (Event, error) {
 		return Event{}, fmt.Errorf("unsupported aggregate type %q", event.Aggregate.Type)
 	}
 	switch event.EventType {
-	case "OrderSubmitted", "OrderUnderReview", "OrderAccepted", "OrderRejected",
+	case "OrderCreated", "OrderSubmitted", "OrderUnderReview", "OrderAccepted", "OrderRejected",
 		"OrderCancelled", "OrderContractPending", "OrderCompleted",
 		"OrderPaymentAuthorized", "OrderPaymentCaptured", "OrderPaymentFailed",
 		"OrderPaymentRefunded", "OrderPaymentPartiallyRefunded", "OrderPaymentCancelled":
