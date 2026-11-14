@@ -159,6 +159,17 @@
             "access.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "crm-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-crm",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
         }
       ],
       "defaultClientScopes": [
@@ -330,6 +341,16 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-crm",
+      "name": "CRM Service resource audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -370,7 +391,16 @@
         "reservations:write",
         "reservations:manage",
         "inventory:read",
-        "inventory:write"
+        "inventory:write",
+        "crm:applications:read",
+        "crm:applications:write",
+        "crm:applications:manage",
+        "crm:applications:assign",
+        "crm:eligibility:manage",
+        "crm:tasks:read",
+        "crm:tasks:write",
+        "crm:interactions:read",
+        "crm:interactions:write"
       ],
       "attributes": {
         "tenant_id": [
@@ -580,6 +610,42 @@
       {
         "name": "inventory:write",
         "description": "Register physical vehicles and change inventory stock states"
+      },
+      {
+        "name": "crm:applications:read",
+        "description": "Read CRM applications within the authenticated tenant"
+      },
+      {
+        "name": "crm:applications:write",
+        "description": "Submit leasing applications within the authenticated tenant"
+      },
+      {
+        "name": "crm:applications:manage",
+        "description": "Manage application lifecycle and decisions"
+      },
+      {
+        "name": "crm:applications:assign",
+        "description": "Assign CRM applications to sales advisors"
+      },
+      {
+        "name": "crm:eligibility:manage",
+        "description": "Record eligibility review results"
+      },
+      {
+        "name": "crm:tasks:read",
+        "description": "Read CRM advisor tasks"
+      },
+      {
+        "name": "crm:tasks:write",
+        "description": "Create and update CRM advisor tasks"
+      },
+      {
+        "name": "crm:interactions:read",
+        "description": "Read CRM customer interactions"
+      },
+      {
+        "name": "crm:interactions:write",
+        "description": "Record CRM customer interactions"
       }
     ]
   }
