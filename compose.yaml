@@ -1162,6 +1162,25 @@ services:
     init: true
     restart: unless-stopped
 
+  document-outbox-publisher:
+    build:
+      context: ./apps/document-service
+      dockerfile: Dockerfile
+    command: ["php", "/app/bin/publish-outbox.php"]
+    environment:
+      DOCUMENT_DATABASE_URL: ${DOCUMENT_DATABASE_URL:-postgresql://autoflow_document:local-only-document-password@postgres:5432/autoflow}
+      RABBITMQ_MANAGEMENT_URL: http://rabbitmq:15672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      DOCUMENT_EVENTS_EXCHANGE: autoflow.document.events
+      DOCUMENT_OUTBOX_INTERVAL_SECONDS: "2"
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
   clamav:
     image: clamav/clamav:1.4
     expose: ["3310"]
