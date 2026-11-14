@@ -99,7 +99,6 @@ $exchanges = [
     'autoflow.reservation.events',
     'autoflow.crm.events',
     'autoflow.billing.events',
-    'autoflow.catalog.events',
 ];
 
 $connect = static function () use ($exchanges): array {
