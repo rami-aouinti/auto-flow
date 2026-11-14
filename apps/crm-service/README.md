@@ -22,6 +22,7 @@ All routes require a verified Keycloak bearer token, tenant claim and the permis
 | POST | /api/v1/crm/applications | crm:applications:write | Submit a leasing application; requires Idempotency-Key |
 | GET | /api/v1/crm/applications | crm:applications:read | Filter and paginate applications |
 | GET | /api/v1/crm/applications/{id} | crm:applications:read | Read an application |
+| POST | /api/v1/crm/applications/{id}/convert | crm:applications:manage + orders:write | Create an Order from an approved, eligible application |
 | PATCH | /api/v1/crm/applications/{id}/status | crm:applications:manage | Execute a permitted lifecycle transition |
 | PUT | /api/v1/crm/applications/{id}/assignment | crm:applications:assign | Assign a sales advisor |
 | PUT | /api/v1/crm/applications/{id}/eligibility | crm:eligibility:manage | Record eligibility review outcome |
@@ -64,8 +65,7 @@ The local Keycloak realm includes the `autoflow-crm` audience and CRM permission
 
 ## Explicit integration work still required
 
-- Validate customer existence and lifecycle through Customer Service's authenticated API before accepting a submitted application.
-- Validate offer and quote ownership/state through Offer and Pricing APIs.
+- Customer, offer, quote and vehicle references are validated synchronously through their owning APIs using the caller token; no cross-service database access is used.
 - Implement automated eligibility-provider adapters and policy governance; current API records human/system review results only.
-- Add CRM consumer workflows for order conversion and customer/offer lifecycle events, with Inbox deduplication.
+- Customer/offer lifecycle event consumers and Inbox deduplication remain future work; current submission/conversion paths revalidate references synchronously.
 - Add full PostgreSQL RLS and RabbitMQ end-to-end integration tests, including duplicate publication and retry recovery.
