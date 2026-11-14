@@ -1201,20 +1201,20 @@ services:
         set -e
         endpoint=http://document-object-storage:9000
         bucket=autoflow-documents
-        echo "Waiting for RustFS and ensuring bucket $bucket exists..."
+        echo "Waiting for RustFS and ensuring bucket $$bucket exists..."
         for attempt in $(seq 1 30); do
-          if aws --endpoint-url "$endpoint" s3api head-bucket --bucket "$bucket" >/dev/null 2>&1; then
-            echo "Bucket $bucket already exists."
+          if aws --endpoint-url "$$endpoint" s3api head-bucket --bucket "$$bucket" >/dev/null 2>&1; then
+            echo "Bucket $$bucket already exists."
             exit 0
           fi
-          if aws --endpoint-url "$endpoint" s3api create-bucket --bucket "$bucket" >/dev/null 2>&1; then
-            echo "Bucket $bucket created."
+          if aws --endpoint-url "$$endpoint" s3api create-bucket --bucket "$$bucket" >/dev/null 2>&1; then
+            echo "Bucket $$bucket created."
             exit 0
           fi
-          echo "RustFS is not ready yet ($attempt/30)..."
+          echo "RustFS is not ready yet ($$attempt/30)..."
           sleep 2
         done
-        echo "Unable to create or access bucket $bucket."
+        echo "Unable to create or access bucket $$bucket."
         exit 1
     restart: "no"
   document-service:
