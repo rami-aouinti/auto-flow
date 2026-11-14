@@ -27,6 +27,8 @@ jobs:
           docker compose --env-file .env.example ps -a
           docker compose --env-file .env.example logs --no-color --tail=200 billing-service billing-payment-event-consumer rabbitmq postgres postgres-bootstrap
           exit 1
+      - name: Run Billing legal snapshot and PDF unit tests
+        run: docker compose --env-file .env.example exec -T billing-service vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Verify invoice, credit note, replay and dead-letter behavior
         run: docker compose --env-file .env.example exec -T billing-service php bin/smoke-test-payment-events.php
       - name: Collect integration diagnostics
