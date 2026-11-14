@@ -49,7 +49,7 @@ try {
   jsonOut(['data'=>['periodDays'=>$days,'eventsByType'=>$counts,'offersCreated'=>$created,'offersAccepted'=>$accepted,'offerConversionRate'=>$created?round($accepted/$created*100,2):0,'successfulPayments'=>$payments,'lastEventAt'=>array_reduce($rows,fn($c,$r)=>max($c,strtotime($r['last_occurred_at'])),0)?gmdate(DATE_ATOM,array_reduce($rows,fn($c,$r)=>max($c,strtotime($r['last_occurred_at'])),0)):null]]);
  }
  if($path==='/api/v1/analytics/series'&&$method==='GET'){
-  permit($u,'analytics:read');$days=max(1,min(90,(int)($_GET['days']??30)));$type=trim((string)($_GET['eventType']??'offer.created'));
+  permit($u,'analytics:read');$days=max(1,min(90,(int)($_GET['days']??30)));$type=canonicalType(trim((string)($_GET['eventType']??'offer.created')));
   $q=db()->prepare("SELECT to_char(date_trunc('day',occurred_at),'YYYY-MM-DD') AS day,COUNT(*)::int AS value FROM analytics_service.events WHERE tenant_id=:t AND event_type=:e AND occurred_at>=now()-(:days||' days')::interval GROUP BY 1 ORDER BY 1");$q->execute(['t'=>$u['tenant'],'e'=>$type,'days'=>$days]);jsonOut(['data'=>$q->fetchAll()]);
  }
  if($path==='/api/v1/analytics/export.csv'&&$method==='GET'){
