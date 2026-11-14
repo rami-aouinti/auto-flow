@@ -90,6 +90,23 @@
             "type": "string"
           }
         }
+      },
+      "DocumentRetentionInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "retention_until"
+        ],
+        "properties": {
+          "retention_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Future ISO-8601 timestamp, or null for indefinite retention"
+          }
+        }
       }
     }
   },
@@ -797,6 +814,58 @@
           },
           "404": {
             "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/retention": {
+      "patch": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Set or clear document retention deadline",
+        "description": "Requires owner or documents:manage. Set a future ISO-8601 timestamp or null for indefinite retention.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentRetentionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Retention policy updated"
+          },
+          "401": {
+            "description": "Unauthenticated"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "422": {
+            "description": "Invalid retention deadline"
           }
         }
       }
