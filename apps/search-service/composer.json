@@ -1,6 +1,6 @@
 {
   "name": "autoflow/search-service",
-  "description": "AutoFlow vehicle search backed by Elasticsearch.",
+  "description": "AutoFlow vehicle search backed by Elasticsearch and RabbitMQ catalogue events.",
   "type": "project",
   "license": "proprietary",
   "require": {
@@ -10,6 +10,7 @@
     "ext-pdo": "*",
     "ext-pdo_pgsql": "*",
     "nyholm/psr7": "^1.8",
+    "php-amqplib/php-amqplib": "^3.7",
     "roadrunner/http": "^4.0",
     "symfony/framework-bundle": "7.4.*",
     "symfony/http-client": "7.4.*",
