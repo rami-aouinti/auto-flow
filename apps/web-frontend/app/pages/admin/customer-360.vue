@@ -17,6 +17,8 @@ const reservationRows = ref<Row[]>([]);
 const invoiceRows = ref<Row[]>([]);
 const loading = ref(false);
 const saving = ref(false);
+const identityBusy = ref(false);
+const identitySubject = ref('');
 const error = ref('');
 const notice = ref('');
 const search = ref('');
@@ -50,6 +52,7 @@ async function saveProfile(){
   profile.value=(await customers.update(selectedId.value,payload)).data;notice.value='Kundenprofil gespeichert.';
  }catch(e){error.value=errorMessage(e);}finally{saving.value=false;}
 }
+async function linkIdentity(){if(!selectedId.value||!identitySubject.value.trim())return;identityBusy.value=true;error.value='';notice.value='';try{await customers.linkIdentity(selectedId.value,identitySubject.value.trim());identitySubject.value='';notice.value='Keycloak-Konto wurde sicher mit diesem Kundenprofil verknüpft.';}catch(e){error.value=errorMessage(e);}finally{identityBusy.value=false;}}
 async function consent(purpose:string,granted:boolean){try{await customers.setConsent(selectedId.value,{purpose,granted,source:'autoflow-customer-workspace'});await loadCustomer();notice.value='Einwilligung aktualisiert.';}catch(e){error.value=errorMessage(e);}}
 watch(selectedId,()=>{void loadCustomer();});
 onMounted(loadCustomers);
@@ -75,6 +78,7 @@ onMounted(loadCustomers);
       <v-text-field v-model="edit.email" label="E-Mail" type="email"/><v-text-field v-model="edit.phone" label="Telefon"/><v-text-field v-model="edit.locale" label="Sprache / Locale"/>
       <v-btn type="submit" color="primary" :loading="saving">Profil speichern</v-btn>
      </v-form></v-card-text></v-card>
+     <v-card rounded="xl" border elevation="0" class="mb-4"><v-card-title>Keycloak-Konto verknüpfen</v-card-title><v-card-text><p class="text-body-2 text-medium-emphasis mb-3">Nur ein Administrator mit customers:manage kann den verifizierten Keycloak-Subject einem Kunden zuordnen.</p><v-text-field v-model="identitySubject" label="Keycloak Subject (sub)" hint="UUID aus dem Keycloak-Benutzerkonto" persistent-hint /><v-btn color="primary" variant="tonal" :loading="identityBusy" :disabled="!identitySubject.trim()" @click="linkIdentity">Konto verknüpfen</v-btn></v-card-text></v-card>
      <v-card rounded="xl" border elevation="0" class="mb-4"><v-card-title>Adressen</v-card-title><v-list><v-list-item v-for="address in addresses" :key="field(address,'address_id')" :title="address.label || address.address_type" :subtitle="`${address.line1}, ${address.postal_code} ${address.city}, ${address.country_code}`"><template #append><v-chip v-if="address.is_default" size="small" color="success">Standard</v-chip></template></v-list-item><v-list-item v-if="!addresses.length" title="Keine Adressen hinterlegt"/></v-list></v-card>
      <v-card rounded="xl" border elevation="0"><v-card-title>Einwilligungen</v-card-title><v-list><v-list-item v-for="purpose in ['marketing.email','marketing.sms']" :key="purpose" :title="purpose"><template #append><v-switch :model-value="consents.find(c=>c.purpose===purpose)?.granted ?? false" color="success" hide-details density="compact" @update:model-value="consent(purpose,Boolean($event))"/></template></v-list-item></v-list></v-card>
     </v-col>
