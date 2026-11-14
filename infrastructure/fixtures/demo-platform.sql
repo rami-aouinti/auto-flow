@@ -254,4 +254,53 @@ INSERT INTO crm_interactions(tenant_id,interaction_id,application_id,actor_id,ch
 ('tenant-demo','15000000-0000-4000-8000-000000000003','13000000-0000-4000-8000-000000000003','advisor.muenchen','note','Manuelle Prüfung','Einkommensnachweis wird noch benötigt.',CURRENT_TIMESTAMP - INTERVAL '1 day')
 ON CONFLICT (tenant_id,interaction_id) DO NOTHING;
 
+
+-- Audit/history rows make detail pages useful without dispatching fake events.
+INSERT INTO customer_audit_events(tenant_id,event_id,customer_id,actor_id,event_type,payload,occurred_at) VALUES
+('tenant-demo','16000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000001','demo-fixtures','CustomerCreated','{"source":"demo_seed"}',CURRENT_TIMESTAMP - INTERVAL '30 days'),
+('tenant-demo','16000000-0000-4000-8000-000000000002','a0000000-0000-4000-8000-000000000002','demo-fixtures','CustomerCreated','{"source":"demo_seed"}',CURRENT_TIMESTAMP - INTERVAL '12 days')
+ON CONFLICT (tenant_id,event_id) DO NOTHING;
+
+INSERT INTO order_history(tenant_id,order_id,from_status,to_status,actor,reason,occurred_at)
+SELECT v.tenant_id,v.order_id,v.from_status,v.to_status,'demo-fixtures',v.reason,v.occurred_at
+FROM (VALUES
+ ('tenant-demo'::varchar,'c0000000-0000-4000-8000-000000000001'::uuid,NULL::varchar,'submitted'::varchar,'Demo order created',CURRENT_TIMESTAMP - INTERVAL '30 days'),
+ ('tenant-demo'::varchar,'c0000000-0000-4000-8000-000000000001'::uuid,'submitted'::varchar,'accepted'::varchar,'Demo offer accepted',CURRENT_TIMESTAMP - INTERVAL '28 days'),
+ ('tenant-demo'::varchar,'c0000000-0000-4000-8000-000000000001'::uuid,'accepted'::varchar,'completed'::varchar,'Vehicle delivered',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+ ('tenant-demo'::varchar,'c0000000-0000-4000-8000-000000000002'::uuid,NULL::varchar,'submitted'::varchar,'Demo order created',CURRENT_TIMESTAMP - INTERVAL '12 days'),
+ ('tenant-demo'::varchar,'c0000000-0000-4000-8000-000000000002'::uuid,'submitted'::varchar,'accepted'::varchar,'Offer accepted',CURRENT_TIMESTAMP - INTERVAL '10 days')
+) AS v(tenant_id,order_id,from_status,to_status,reason,occurred_at)
+WHERE NOT EXISTS (
+ SELECT 1 FROM order_history h
+ WHERE h.tenant_id=v.tenant_id AND h.order_id=v.order_id AND h.to_status=v.to_status
+);
+
+INSERT INTO contract_audit_events(tenant_id,event_id,contract_id,actor_id,event_type,payload,occurred_at) VALUES
+('tenant-demo','17000000-0000-4000-8000-000000000001','f0000000-0000-4000-8000-000000000001','demo-fixtures','ContractPrepared','{"demo":true}',CURRENT_TIMESTAMP - INTERVAL '21 days'),
+('tenant-demo','17000000-0000-4000-8000-000000000002','f0000000-0000-4000-8000-000000000001','demo-fixtures','ContractSigned','{"provider":"demo","demo":true}',CURRENT_TIMESTAMP - INTERVAL '20 days'),
+('tenant-demo','17000000-0000-4000-8000-000000000003','f0000000-0000-4000-8000-000000000002','demo-fixtures','SignatureRequested','{"provider":"demo","demo":true}',CURRENT_TIMESTAMP - INTERVAL '1 day')
+ON CONFLICT (tenant_id,event_id) DO NOTHING;
+
+INSERT INTO inventory_movements(
+ tenant_id,movement_id,inventory_unit_id,from_status,to_status,from_location_code,to_location_code,reason,actor_id,occurred_at
+) VALUES
+('tenant-demo','18000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','available','delivered','BER-01','BER-CUSTOMER','Demo delivery completed','demo-fixtures',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','18000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','available','blocked','CGN-01','CGN-01','Reserved for demo order','demo-fixtures',CURRENT_TIMESTAMP - INTERVAL '1 day')
+ON CONFLICT (tenant_id,movement_id) DO NOTHING;
+
+INSERT INTO inventory_audit_events(tenant_id,event_id,inventory_unit_id,actor_id,event_type,payload,occurred_at) VALUES
+('tenant-demo','19000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','demo-fixtures','VehicleDelivered','{"orderId":"c0000000-0000-4000-8000-000000000001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','19000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','demo-fixtures','VehicleReserved','{"orderId":"c0000000-0000-4000-8000-000000000002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
+ON CONFLICT (tenant_id,event_id) DO NOTHING;
+
+INSERT INTO vehicle_reservation_audit_events(tenant_id,event_id,reservation_id,actor_id,event_type,payload,occurred_at) VALUES
+('tenant-demo','1a000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000001','demo-fixtures','ReservationFulfilled','{"orderId":"c0000000-0000-4000-8000-000000000001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','1a000000-0000-4000-8000-000000000002','11000000-0000-4000-8000-000000000002','demo-fixtures','ReservationConfirmed','{"orderId":"c0000000-0000-4000-8000-000000000002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
+ON CONFLICT (tenant_id,event_id) DO NOTHING;
+
+INSERT INTO fulfillment_audit_events(tenant_id,event_id,fulfillment_id,actor_id,event_type,payload,occurred_at) VALUES
+('tenant-demo','1b000000-0000-4000-8000-000000000001','12000000-0000-4000-8000-000000000001','demo-fixtures','DeliveryCompleted','{"trackingReference":"DEMO-TRACK-0001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','1b000000-0000-4000-8000-000000000002','12000000-0000-4000-8000-000000000002','demo-fixtures','DeliveryScheduled','{"trackingReference":"DEMO-TRACK-0002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
+ON CONFLICT (tenant_id,event_id) DO NOTHING;
+
 COMMIT;
