@@ -45,11 +45,11 @@ Workflow, Integration, Document, Audit, Analytics, Media and Configuration expos
 
 ```bash
 docker compose --env-file .env.example config --quiet
-docker compose --env-file .env.example up -d --build search-service workflow-service integration-service document-service audit-service analytics-service media-service configuration-service
+docker compose --env-file .env.example up -d --build workflow-service integration-service document-service audit-service analytics-service media-service configuration-service
 sh scripts/check-skeleton-health.sh
 ```
 
-Loopback ports: Search 8097, Workflow 8098, Integration 8099, Document 8100, Audit 8101, Analytics 8102, Media 8103, Configuration 8104.
+Loopback ports: Workflow 8098, Integration 8099, Document 8100, Audit 8101, Analytics 8102, Media 8103, Configuration 8104. Search runs on 8097 as a Symfony/RoadRunner API.
 
 ## Implementation sequence
 
