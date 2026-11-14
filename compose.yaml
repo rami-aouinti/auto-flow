@@ -217,6 +217,30 @@ services:
     init: true
     restart: unless-stopped
 
+  reservation-inventory-event-consumer:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/vehicle-reservation-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/consume-inventory-events.php"]
+    environment:
+      APP_ENV: prod
+      RESERVATION_WORKER_DATABASE_URL: ${RESERVATION_WORKER_DATABASE_URL:-postgresql://autoflow_reservation_worker:local-only-reservation-worker-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
   fulfillment-event-consumer:
     build:
       context: .
@@ -1159,6 +1183,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/230-vehicle-stock-registry-and-allocation.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/240-vehicle-reservation-confirm.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/245-enforce-physical-stock-reservation.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/246-inventory-stock-projection.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/250-inventory-schema.sql
     environment:
       PGHOST: postgres
@@ -1184,6 +1209,7 @@ services:
       - ./apps/vehicle-reservation-service/migrations/230-vehicle-stock-registry-and-allocation.sql:/migrations/230-vehicle-stock-registry-and-allocation.sql:ro
       - ./apps/vehicle-reservation-service/migrations/231-confirm-reservation-for-saga.sql:/migrations/240-vehicle-reservation-confirm.sql:ro
       - ./apps/vehicle-reservation-service/migrations/232-enforce-physical-stock-reservation.sql:/migrations/245-enforce-physical-stock-reservation.sql:ro
+      - ./apps/vehicle-reservation-service/migrations/233-inventory-stock-projection.sql:/migrations/246-inventory-stock-projection.sql:ro
       - ./apps/inventory-service/migrations/00-inventory-schema.sql:/migrations/250-inventory-schema.sql:ro
     depends_on:
       postgres:
