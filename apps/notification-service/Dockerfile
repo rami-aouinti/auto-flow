@@ -3,7 +3,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev libcu
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY apps/notification-service/composer.json ./composer.json
-RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts
+RUN set -eu; \
+    attempt=1; \
+    until COMPOSER_MAX_PARALLEL_HTTP=2 COMPOSER_PROCESS_TIMEOUT=900 composer install --no-dev --no-interaction --prefer-dist --no-progress --no-scripts; do \
+      if [ "$attempt" -ge 5 ]; then echo "Composer install failed after 5 attempts"; exit 1; fi; \
+      echo "Composer network/install failed; retrying ($attempt/4) in 10 seconds..."; \
+      sleep 10; \
+      attempt=$((attempt + 1)); \
+    done
 COPY apps/notification-service/ ./
 RUN composer dump-autoload --classmap-authoritative --no-dev
 USER www-data
