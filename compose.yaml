@@ -1189,7 +1189,12 @@ services:
     command:
       - |
         set -e
-        until mc alias set autoflow http://document-object-storage:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; do sleep 2; done
+        attempt=0
+        until mc alias set autoflow http://document-object-storage:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; do
+          attempt=$((attempt + 1))
+          if [ "$attempt" -ge 60 ]; then echo "MinIO did not become ready within 120 seconds." >&2; exit 1; fi
+          sleep 2
+        done
         mc mb --ignore-existing autoflow/autoflow-documents
         cat > /tmp/document-policy.json <<'POLICY'
         {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket"],"Resource":["arn:aws:s3:::autoflow-documents"]},{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject"],"Resource":["arn:aws:s3:::autoflow-documents/*"]}]}
