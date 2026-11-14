@@ -1528,6 +1528,8 @@ services:
       VITE_KEYCLOAK_REALM: autoflow
       VITE_KEYCLOAK_CLIENT_ID: autoflow-local-client
       VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
+      VITE_MERCURE_HUB_URL: ${MERCURE_PUBLIC_URL:-http://localhost:3001/.well-known/mercure}
+      VITE_MERCURE_TOPICS: ${VITE_MERCURE_TOPICS:-}
       # Nitro forwards browser service prefixes through the gateway; the gateway preserves upstream /api paths.
       CUSTOMER_PROXY_TARGET: http://api-gateway
       CATALOG_PROXY_TARGET: http://api-gateway
@@ -1544,6 +1546,7 @@ services:
     depends_on:
       api-gateway: {condition: service_healthy}
       keycloak: {condition: service_started}
+      mercure: {condition: service_started}
     init: true
     restart: unless-stopped
 
