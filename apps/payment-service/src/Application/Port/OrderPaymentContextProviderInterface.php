@@ -6,6 +6,6 @@ namespace App\Application\Port;
 
 interface OrderPaymentContextProviderInterface
 {
-    /** @return array{orderId:string,tenantId:string,status:string,amountMinor:int,currency:string} */
+    /** @return array{orderId:string,tenantId:string,status:string,amountMinor:int,currency:string,billingSnapshot:array<string,mixed>} */
     public function getPayableContext(string $tenantId, string $orderId): array;
 }
