@@ -1,0 +1,4 @@
+doctrine:
+    dbal:
+        url: '%env(resolve:CRM_DATABASE_URL)%'
+        server_version: '16'
