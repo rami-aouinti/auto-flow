@@ -62,7 +62,7 @@ final class ReservationPersistenceTest extends TestCase
         $blockedEvent = $this->uuid();
 
         $apply = $this->worker->prepare(
-            'SELECT public.vehicle_stock_apply_inventory_event(CAST(:tenant AS VARCHAR(128)),CAST(:event AS UUID),CAST(:unit AS UUID),CAST(:variant AS UUID),CAST(:vin AS VARCHAR(17)),CAST(:status AS VARCHAR(24)),CAST(:version AS INTEGER))::int'
+            'SELECT CASE WHEN public.vehicle_stock_apply_inventory_event(CAST(:tenant AS VARCHAR(128)),CAST(:event AS UUID),CAST(:unit AS UUID),CAST(:variant AS UUID),CAST(:vin AS VARCHAR(17)),CAST(:status AS VARCHAR(24)),CAST(:version AS INTEGER)) THEN 1 ELSE 0 END'
         );
         $apply->execute([
             'tenant' => $tenant,
