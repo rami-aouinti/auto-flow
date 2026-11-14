@@ -206,7 +206,7 @@ onMounted(loadAll);
                 <v-btn size="small" variant="text" @click="openHistory('contract',row)">History</v-btn>
                 <v-btn v-if="row.status === 'draft'" size="small" variant="tonal" :loading="busy === 'contract-'+idOf(row,'contract_id')" @click="contractAction(row,'prepare')">Prepare</v-btn>
                 <v-btn v-if="row.status === 'prepared'" size="small" variant="tonal" @click="contractAction(row,'generateDocument')">Generate PDF</v-btn>
-                <v-btn v-if="row.status === 'prepared'" size="small" variant="tonal" @click="contractAction(row,'sendForSignature')">Send signature</v-btn>
+                <v-btn v-if="row.status === 'prepared' && row.document_checksum" size="small" variant="tonal" @click="contractAction(row,'sendForSignature')">Send signature</v-btn>
                 <v-btn v-if="row.document_checksum" size="small" variant="text" @click="contractAction(row,'downloadDocument')">Download</v-btn>
                 <v-btn v-if="['draft','prepared'].includes(row.status)" size="small" color="error" variant="text" @click="contractAction(row,'cancel')">Cancel</v-btn>
               </div></td>
