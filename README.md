@@ -12,7 +12,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - Supervisor-managed Offer background processes in Docker Compose
 - Temporal CLI development server with persistent local SQLite state
 - RoadRunner 3.0.1 HTTP and gRPC workers for the Offer and Pricing services
-- Symfony 7.4 microservices with independent Composer projects (Customer, Inventory, Offer, Pricing, Vehicle Catalog, Search, Order, Payment, Billing and Contract)
+- Symfony 7.4 microservices with independent Composer projects (Customer, Inventory, Offer, Pricing, Vehicle Catalog, Search, Order, Payment, Billing and Contract), plus focused standalone PHP bounded contexts for Document, Workflow, Integration, Audit, Analytics and Media
 - OpenTelemetry PHP extension, SDK and Symfony auto-instrumentation
 - PostgreSQL 16, RabbitMQ 4, Redis 7, Elasticsearch 8 and Kibana
 - Mercure Hub for real-time Server-Sent Events
@@ -23,6 +23,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - Mailpit for local email testing
 - Adminer 5 for local PostgreSQL inspection
 - Keycloak OIDC with RS256 JWT access tokens for local authentication
+- Document Service with tenant-scoped metadata, versioned file storage, SHA-256 checksums, ClamAV scanning, audit trail and transactional outbox
 - NelmioApiDocBundle + Swagger UI / OpenAPI 3 for interactive REST API testing in development only
 - PHP-CS-Fixer, PHP_CodeSniffer, PHPStan, PHPMD, Rector and PHPUnit
 - GitHub Actions quality workflow
@@ -42,7 +43,7 @@ docker compose --env-file .env.example exec php php -v
 docker compose --env-file .env.example up -d --build inventory-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher payment-service payment-outbox-publisher order-payment-event-consumer order-workflow-worker customer-service contract-service
 ~~~
 
-The first local build installs each service's independent Composer dependencies. The central Swagger UI is available at http://localhost:8096; see [API Documentation Center](docs/api/README.md) and the per-service references in apps/*/docs/API.md. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
+The first local build installs each service's independent Composer dependencies. The central Swagger UI is available at http://localhost:8096; see [API Documentation Center](docs/api/README.md) and the per-service references in apps/*/docs/API.md. Document Service publishes its API contract at http://localhost:8100/api/doc.json. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
 Subsequent starts reuse the built images unless their source or Dockerfile changes.
 
 ## Local interfaces and endpoints
@@ -64,6 +65,7 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | Pricing Service | http://localhost:8082 | Tenant-scoped quote calculation API |
 | Vehicle Catalog Service | http://localhost:8084 | Authoritative manufacturers, models, generations and vehicle variants |
 | Search Service | http://localhost:8097 | Authenticated Elasticsearch vehicle search, filters, facets and suggestions |
+| Document Service | http://localhost:8100 | Tenant-scoped document upload/download, versions, audit and malware scanning (gateway: /api/v1/documents) |
 | Order Management Service | http://localhost:8085 | Tenant-scoped order lifecycle, audit history, immutable commercial snapshots and payment state |
 | Payment Service | http://localhost:8086 | Stripe PaymentIntents, capture/refund lifecycle and payment events |
 | Pricing Swagger UI | http://localhost:8082/api/doc | Interactive Pricing REST API documentation (dev only) |
