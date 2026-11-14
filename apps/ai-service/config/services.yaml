@@ -1,0 +1,19 @@
+parameters:
+    app.ai.openai_api_key: '%env(OPENAI_API_KEY)%'
+    app.ai.openai_base_uri: '%env(default:openai_default_base_uri:OPENAI_BASE_URI)%'
+    app.ai.openai_model: '%env(OPENAI_MODEL)%'
+    openai_default_base_uri: 'https://api.openai.com/v1/'
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+    App\:
+        resource: '../src/'
+        exclude: ['../src/Kernel.php']
+    App\Infrastructure\AI\OpenAiChatProvider:
+        arguments:
+            $apiKey: '%app.ai.openai_api_key%'
+            $baseUri: '%app.ai.openai_base_uri%'
+            $model: '%app.ai.openai_model%'
+    App\Application\Port\Out\ChatProviderInterface:
+        alias: App\Infrastructure\AI\OpenAiChatProvider
