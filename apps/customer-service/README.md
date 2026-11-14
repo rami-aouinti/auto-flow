@@ -48,7 +48,7 @@ Direct API: http://localhost:8089. Gateway: http://localhost:8088/api/v1/custome
 Run: docker compose --env-file .env.example up -d --build customer-service
 Health: http://localhost:8089/health/ready
 
-The PostgreSQL bootstrap applies the idempotent schema and identity migrations to fresh and existing volumes without deleting data. It also seeds a local-only customer account. The realm export provisions `customer-demo` / `customer-demo` with `customers:portal` and the matching fixed subject; use only for local development. Existing Keycloak realms must import/add the role and user manually or be recreated only after backing up development data.
+The PostgreSQL bootstrap applies the idempotent schema and identity migrations to fresh and existing volumes without deleting data. It also seeds a local-only customer account. The realm export provisions `customer-demo` / `customer-demo` with `customers:portal` and the matching fixed subject; use only for local development. If the `autoflow` realm already exists, Keycloak does not merge the import automatically: create the `customers:portal` realm role, create/enable a customer user with the `tenant_id=tenant-demo` user attribute, assign the role, then copy that user's `sub` and link it to the seeded Demo Customer from Customer 360. Do not delete an existing realm just to apply this demo user.
 
 ## Customer self-service and realtime
 
