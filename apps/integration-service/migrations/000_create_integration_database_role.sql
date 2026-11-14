@@ -4,6 +4,7 @@ BEGIN
     CREATE ROLE autoflow_integration LOGIN PASSWORD 'local-only-integration-password';
   END IF;
 END $$;
+CREATE SCHEMA IF NOT EXISTS integration_service;
 GRANT CONNECT ON DATABASE autoflow TO autoflow_integration;
 GRANT USAGE,CREATE ON SCHEMA integration_service TO autoflow_integration;
 GRANT SELECT,INSERT,UPDATE ON ALL TABLES IN SCHEMA integration_service TO autoflow_integration;
