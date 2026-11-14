@@ -142,6 +142,13 @@ const reservationBase = import.meta.env.VITE_RESERVATION_API_BASE || '/reservati
 export const contracts = {
   list: (limit = 20, offset = 0) => api.get(`${contractBase}/api/v1/contracts`, { params: { limit, offset } }),
   get: (id: string) => api.get(`${contractBase}/api/v1/contracts/${encodeURIComponent(id)}`),
+  create: (payload: { orderId: string; contractType: string; contractVersion: number }, key: string) =>
+    api.post(`${contractBase}/api/v1/contracts`, payload, { headers: { 'Idempotency-Key': key } }),
+  prepare: (id: string, key: string) => api.post(`${contractBase}/api/v1/contracts/${encodeURIComponent(id)}/prepare`, {}, { headers: { 'Idempotency-Key': key } }),
+  cancel: (id: string, key: string) => api.post(`${contractBase}/api/v1/contracts/${encodeURIComponent(id)}/cancel`, {}, { headers: { 'Idempotency-Key': key } }),
+  sendForSignature: (id: string, key: string) => api.post(`${contractBase}/api/v1/contracts/${encodeURIComponent(id)}/send-for-signature`, {}, { headers: { 'Idempotency-Key': key } }),
+  generateDocument: (id: string) => api.post(`${contractBase}/api/v1/contracts/${encodeURIComponent(id)}/document`, {}),
+  downloadDocument: (id: string) => api.get(`${contractBase}/api/v1/contracts/${encodeURIComponent(id)}/document`, { responseType: 'blob' }),
   history: (id: string) => api.get(`${contractBase}/api/v1/contracts/${encodeURIComponent(id)}/history`),
 };
 
@@ -149,17 +156,28 @@ export const fulfillments = {
   list: (limit = 20, offset = 0) => api.get(`${fulfillmentBase}/api/v1/fulfillments`, { params: { limit, offset } }),
   get: (id: string) => api.get(`${fulfillmentBase}/api/v1/fulfillments/${encodeURIComponent(id)}`),
   history: (id: string) => api.get(`${fulfillmentBase}/api/v1/fulfillments/${encodeURIComponent(id)}/history`),
+  command: (id: string, command: string, version: number, key: string, payload: Record<string, unknown> = {}) =>
+    api.post(`${fulfillmentBase}/api/v1/fulfillments/${encodeURIComponent(id)}/${command}`, payload, { headers: { 'If-Match': `"${version}"`, 'Idempotency-Key': key } }),
 };
 
 export const inventory = {
   units: (limit = 20, offset = 0) => api.get(`${inventoryBase}/api/v1/inventory/units`, { params: { limit, offset } }),
   unit: (id: string) => api.get(`${inventoryBase}/api/v1/inventory/units/${encodeURIComponent(id)}`),
+  create: (payload: Record<string, unknown>, key: string) =>
+    api.post(`${inventoryBase}/api/v1/inventory/units`, payload, { headers: { 'Idempotency-Key': key } }),
+  changeStatus: (id: string, status: string, version: number, key: string, reason?: string) =>
+    api.post(`${inventoryBase}/api/v1/inventory/units/${encodeURIComponent(id)}/status`, { status, reason }, { headers: { 'If-Match': `"${version}"`, 'Idempotency-Key': key } }),
+  history: (id: string) => api.get(`${inventoryBase}/api/v1/inventory/units/${encodeURIComponent(id)}/history`),
   availability: (vehicleVariantId: string) => api.get(`${inventoryBase}/api/v1/inventory/availability`, { params: { vehicleVariantId } }),
 };
 
 export const reservations = {
   list: (limit = 20, offset = 0) => api.get(`${reservationBase}/api/v1/reservations`, { params: { limit, offset } }),
   get: (id: string) => api.get(`${reservationBase}/api/v1/reservations/${encodeURIComponent(id)}`),
+  create: (payload: { vehicleUnitId: string; vehicleVariantId: string; orderId: string; expiresAt: string }, key: string) =>
+    api.post(`${reservationBase}/api/v1/reservations`, payload, { headers: { 'Idempotency-Key': key } }),
+  transition: (id: string, action: 'confirm' | 'release' | 'fulfill', version: number, key: string) =>
+    api.post(`${reservationBase}/api/v1/reservations/${encodeURIComponent(id)}/${action}`, {}, { headers: { 'If-Match': `"${version}"`, 'Idempotency-Key': key } }),
   history: (id: string) => api.get(`${reservationBase}/api/v1/reservations/${encodeURIComponent(id)}/history`),
 };
 
