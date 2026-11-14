@@ -8,7 +8,7 @@ Document Service owns business-document binaries and metadata lifecycle only. Co
 
 ## Runtime and dependencies
 
-- PHP 8.4 CLI, PDO PostgreSQL, Fileinfo, mbstring and cURL.
+- PHP 8.4 CLI, PDO PostgreSQL, Fileinfo, mbstring, ZIP and cURL.
 - PostgreSQL schema `document_service`; application role `autoflow_document` with forced tenant RLS.
 - Separate `autoflow_document_maintenance` role with narrowly granted document-table access and `BYPASSRLS` for cross-tenant retention processing.
 - ClamAV malware scanner; uploads fail closed if scanning is unavailable or not clean.
