@@ -20,6 +20,7 @@ The central OpenAPI 3.0 catalog contains the HTTP endpoints for all API-bearing 
 - [CRM Service](../../apps/crm-service/docs/API.md) — http://localhost:8094
 - [AI Service](../../apps/ai-service/docs/API.md) — http://localhost:8095
 - [Search Service](../../apps/search-service/docs/API.md) — http://localhost:8097
+- [Document Service](../../apps/document-service/docs/API.md) — http://localhost:8100
 - [Notification Service](../../apps/notification-service/docs/API.md) — RabbitMQ worker; no public REST API
 
 ## Start
@@ -28,7 +29,7 @@ The central OpenAPI 3.0 catalog contains the HTTP endpoints for all API-bearing 
 docker compose --env-file .env.example up -d --build api-docs api-gateway
 ```
 
-Swagger UI itself starts independently, but **Try it out** requires the API Gateway and the target microservice to be running. Start the relevant backend service(s) as well. The AI endpoint is intentionally local-only and currently has no JWT/tenant authorization; do not expose it outside the development machine.
+Swagger UI itself starts independently, but **Try it out** requires the API Gateway and the target microservice to be running. Start the relevant backend service(s) as well. For Document Service, start PostgreSQL, the bootstrap job, RabbitMQ, ClamAV, `document-service` and `document-outbox-publisher`. The AI endpoint is intentionally local-only and currently has no JWT/tenant authorization; do not expose it outside the development machine.
 
 ## Validate locally
 
@@ -50,4 +51,4 @@ The service docs intentionally do not fabricate response properties or request f
 
 ## Health-only service scaffolds
 
-Workflow, Integration, Document, Audit, Analytics, Media and Configuration remain bootstrap containers with health endpoints on loopback ports 8098–8104. Search is now a Symfony/RoadRunner API routed through Traefik and documented in the central OpenAPI catalog. See [the implementation roadmap](../architecture/missing-services-roadmap.md) and each remaining service's `docs/FEATURE_BACKLOG.md`.
+Workflow, Integration, Audit, Analytics, Media and Configuration remain bootstrap containers with health endpoints on loopback ports 8098–8104. Search is now a Symfony/RoadRunner API routed through Traefik and documented in the central OpenAPI catalog. See [the implementation roadmap](../architecture/missing-services-roadmap.md) and each remaining service's `docs/FEATURE_BACKLOG.md`.
