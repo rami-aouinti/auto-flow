@@ -13,6 +13,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
 use App\Infrastructure\Document\InvoicePdfRenderer;
+use App\Infrastructure\Document\DocumentServiceClient;
 use DomainException;
 
 #[Route('/api/v1/billing')]
