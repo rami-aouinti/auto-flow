@@ -1183,8 +1183,8 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/230-vehicle-stock-registry-and-allocation.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/240-vehicle-reservation-confirm.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/245-enforce-physical-stock-reservation.sql
-        psql -v ON_ERROR_STOP=1 -f /migrations/246-inventory-stock-projection.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/250-inventory-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/246-inventory-stock-projection.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
