@@ -43,6 +43,8 @@ curl -i http://localhost:8102/health/ready
 curl -i http://localhost:8088/api/v1/analytics/overview
 ```
 
+Run smoke checks with `sh apps/analytics-service/tests/smoke.sh`.
+
 Swagger UI: http://localhost:8096. Direct service port 8102 is bound to loopback only.
 
 ## Configuration
