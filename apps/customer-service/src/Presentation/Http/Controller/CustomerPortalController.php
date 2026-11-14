@@ -29,7 +29,10 @@ final readonly class CustomerPortalController
                 $customer = $this->customer($db, $principal, $tenant);
 
                 return $customer === null
-                    ? $this->problem(404, 'No customer profile is linked to this account. Contact your AutoFlow advisor.')
+                    ? $this->problem(
+                        404,
+                        'No customer profile is linked to this account. Contact your AutoFlow advisor.',
+                    )
                     : new JsonResponse($customer, 200, ['Cache-Control' => 'no-store']);
             },
         );
@@ -88,7 +91,11 @@ final readonly class CustomerPortalController
 
         return $this->run(
             $request,
-            function (Connection $db, AuthenticatedPrincipal $principal, string $tenant) use ($body, $allowed): JsonResponse {
+            function (
+                Connection $db,
+                AuthenticatedPrincipal $principal,
+                string $tenant,
+            ) use ($body, $allowed): JsonResponse {
                 $customer = $this->customer($db, $principal, $tenant);
                 if ($customer === null) {
                     return $this->problem(404, 'No customer profile is linked to this account.');
@@ -261,7 +268,11 @@ final readonly class CustomerPortalController
 
         return $this->run(
             $request,
-            function (Connection $db, AuthenticatedPrincipal $principal, string $tenant) use ($addressId, $address): JsonResponse {
+            function (
+                Connection $db,
+                AuthenticatedPrincipal $principal,
+                string $tenant,
+            ) use ($addressId, $address): JsonResponse {
                 $customer = $this->customer($db, $principal, $tenant);
                 if ($customer === null) {
                     return $this->problem(404, 'No customer profile is linked to this account.');
@@ -332,7 +343,11 @@ final readonly class CustomerPortalController
     {
         return $this->run(
             $request,
-            function (Connection $db, AuthenticatedPrincipal $principal, string $tenant) use ($addressId): JsonResponse {
+            function (
+                Connection $db,
+                AuthenticatedPrincipal $principal,
+                string $tenant,
+            ) use ($addressId): JsonResponse {
                 $customer = $this->customer($db, $principal, $tenant);
                 if ($customer === null) {
                     return $this->problem(404, 'No customer profile is linked to this account.');
@@ -404,7 +419,11 @@ final readonly class CustomerPortalController
 
         return $this->run(
             $request,
-            function (Connection $db, AuthenticatedPrincipal $principal, string $tenant) use ($purpose, $granted): JsonResponse {
+            function (
+                Connection $db,
+                AuthenticatedPrincipal $principal,
+                string $tenant,
+            ) use ($purpose, $granted): JsonResponse {
                 $customer = $this->customer($db, $principal, $tenant);
                 if ($customer === null) {
                     return $this->problem(404, 'No customer profile is linked to this account.');
@@ -551,7 +570,10 @@ final readonly class CustomerPortalController
         } catch (AccessDeniedHttpException $error) {
             return $this->problem(403, $error->getMessage());
         } catch (UniqueConstraintViolationException) {
-            return $this->problem(409, 'A conflicting customer data value is already used in this tenant. Reload and retry.');
+            return $this->problem(
+                409,
+                'A conflicting customer data value is already used in this tenant. Reload and retry.',
+            );
         } catch (Throwable) {
             return $this->problem(503, 'Customer self-service is temporarily unavailable.');
         }
