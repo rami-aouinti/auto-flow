@@ -19,10 +19,14 @@ The central OpenAPI 3.0 catalog contains the HTTP endpoints for all API-bearing 
 - [Inventory Service](../../apps/inventory-service/docs/API.md) — http://localhost:8093
 - [CRM Service](../../apps/crm-service/docs/API.md) — http://localhost:8094
 - [AI Service](../../apps/ai-service/docs/API.md) — http://localhost:8095
+- [Audit Service](../../apps/audit-service/docs/API.md) — http://localhost:8101
+- [Configuration Service](../../apps/configuration-service/docs/API.md) — http://localhost:8104
 - [Search Service](../../apps/search-service/docs/API.md) — http://localhost:8097
 - [Document Service](../../apps/document-service/docs/API.md) — http://localhost:8100
 - [Analytics Service](../../apps/analytics-service/docs/API.md) — http://localhost:8102 (gateway: `/api/v1/analytics`)
 - [Integration Service](../../apps/integration-service/docs/API.md) — http://localhost:8099 (gateway: `/api/v1/integrations` and `/webhooks/{provider}`)
+- [Media Service](../../apps/media-service/docs/API.md) — http://localhost:8103 (health-only scaffold)
+- [Workflow Service](../../apps/workflow-service/docs/API.md) — http://localhost:8098 (health-only scaffold)
 - [Notification Service](../../apps/notification-service/docs/API.md) — RabbitMQ worker; no public REST API
 
 ## Start
