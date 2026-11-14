@@ -19,6 +19,16 @@ try{$path=parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/';$method=$_SE
   $q=db()->prepare('INSERT INTO integration_service.webhook_events(tenant_id,provider,external_event_id,event_type,payload) VALUES(:t,:p,:i,:e,:b) ON CONFLICT(tenant_id,provider,external_event_id) DO NOTHING');$q->execute(['t'=>$tenant,'p'=>$provider,'i'=>$id,'e'=>$type,'b'=>$raw]);out(['accepted'=>true,'duplicate'=>$q->rowCount()===0],$q->rowCount()?202:200);
  }
  $u=principal();tenantScope($u['tenant']);
+ if($path==='/api/v1/integrations/deliveries'&&$method==='POST'){
+  allow($u,'integrations:write');$b=json_decode(file_get_contents('php://input')?:'{}',true);if(!is_array($b))fail(400,'Bad Request','Expected a JSON object.');
+  $provider=strtolower(trim((string)($b['provider']??'')));$target=trim((string)($b['targetUrl']??''));$type=trim((string)($b['eventType']??''));$payload=$b['payload']??[];
+  $url=parse_url($target);$allowed=array_filter(array_map('trim',explode(',',getenv('INTEGRATION_OUTBOUND_ALLOWED_HOSTS')?:'')));
+  if(!preg_match('/^[a-z0-9_-]{2,40}$/',$provider)||!preg_match('/^[a-zA-Z0-9._:-]{1,160}$/',$type)||!is_array($payload)||strlen(json_encode($payload))>16384||!is_array($url)||($url['scheme']??'')!=='https'||empty($url['host'])||isset($url['user'])||isset($url['pass'])||isset($url['fragment'])||!in_array(strtolower($url['host']),$allowed,true))fail(422,'Validation Failed','provider, eventType, payload or targetUrl is invalid; outbound HTTPS host must be allowlisted.');
+  $id=sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',random_int(0,65535),random_int(0,65535),random_int(0,65535),(random_int(0,4095)|0x4000),(random_int(0,16383)|0x8000),random_int(0,65535),random_int(0,65535),random_int(0,65535));
+  $q=db()->prepare("INSERT INTO integration_service.delivery_attempts(id,tenant_id,provider,target_url,event_type,payload,status,next_attempt_at) VALUES(:id,:t,:p,:url,:e,:payload,'pending',now())");
+  $q->execute(['id'=>$id,'t'=>$u['tenant'],'p'=>$provider,'url'=>$target,'e'=>$type,'payload'=>json_encode($payload,JSON_THROW_ON_ERROR)]);
+  out(['data'=>['id'=>$id,'status'=>'pending']],202);
+ }
  if($path==='/api/v1/integrations/webhook-events'&&$method==='GET'){allow($u,'integrations:read');$limit=max(1,min(100,(int)($_GET['limit']??25)));$q=db()->prepare('SELECT provider,external_event_id AS "eventId",event_type AS "eventType",received_at AS "receivedAt" FROM integration_service.webhook_events WHERE tenant_id=:t ORDER BY received_at DESC LIMIT '.$limit);$q->execute(['t'=>$u['tenant']]);out(['data'=>$q->fetchAll()]);}
  if($path==='/api/v1/integrations/deliveries'&&$method==='GET'){allow($u,'integrations:read');$q=db()->prepare('SELECT id,provider,event_type AS "eventType",status,attempts,next_attempt_at AS "nextAttemptAt",last_error AS "lastError",created_at AS "createdAt" FROM integration_service.delivery_attempts WHERE tenant_id=:t ORDER BY created_at DESC LIMIT 100');$q->execute(['t'=>$u['tenant']]);out(['data'=>$q->fetchAll()]);}
  if($path==='/api/v1/integrations/providers'&&$method==='GET'){allow($u,'integrations:read');$providers=[];foreach(getenv() as $k=>$v)if(str_starts_with($k,'INTEGRATION_WEBHOOK_SECRET_')&&$v!=='')$providers[]=strtolower(substr($k,27));out(['data'=>array_values(array_unique($providers))]);}
