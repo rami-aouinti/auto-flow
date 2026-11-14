@@ -49,3 +49,8 @@ Use the central Swagger UI at http://localhost:8096. Authenticate with the raw K
 ## Contract maintenance
 
 This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+
+
+## Health and operational endpoints
+
+- `GET /health/ready` — readiness probe; no JWT.
