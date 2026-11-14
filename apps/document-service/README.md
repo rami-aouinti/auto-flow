@@ -52,6 +52,10 @@ curl -i http://localhost:8100/api/doc.json
 
 The gateway exposes the same API under `http://localhost:8088/api/v1/documents`. Direct port 8100 is bound to localhost only.
 
+## Keycloak realm update
+
+The realm export now includes the `autoflow-document` audience mapper and the `documents:read`, `documents:write` and `documents:manage` realm roles. The seeded `demo` and `order-operator` users receive these roles. If Keycloak already imported the realm before this change, the import process will not overwrite an existing realm: add the audience mapper and roles in the Keycloak Admin Console (or recreate the local development realm), then obtain a fresh access token.
+
 ## Security notes and boundaries
 
 - JWT signature, issuer, audience, expiry and tenant claim are checked before business routes.
