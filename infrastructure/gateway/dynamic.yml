@@ -118,6 +118,12 @@ http:
       middlewares:
         - api-defaults
 
+    documents:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/documents`)"
+      service: documents
+      middlewares: [api-defaults]
+
     search:
       entryPoints: [web]
       rule: "PathPrefix(`/api/v1/search`)"
@@ -230,6 +236,16 @@ http:
         passHostHeader: true
         servers:
           - url: "http://pricing-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    documents:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://document-service:8080"
         healthCheck:
           path: /health/ready
           interval: 10s
