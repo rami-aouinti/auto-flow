@@ -1,4 +1,5 @@
 parameters:
+    app.document_service_url: '%env(resolve:DOCUMENT_SERVICE_URL)%'
     app.contract_order_service_url: '%env(resolve:CONTRACT_ORDER_SERVICE_URL)%'
     app.contract_document_storage_path: '%env(resolve:CONTRACT_DOCUMENT_STORAGE_PATH)%'
     app.docusign_integration_key: '%env(DOCUSIGN_INTEGRATION_KEY)%'
@@ -28,6 +29,11 @@ services:
     App\Infrastructure\Document\ContractDocumentManager:
         arguments:
             $storagePath: '%app.contract_document_storage_path%'
+            $documentService: '@App\Infrastructure\Document\DocumentServiceClient'
+
+    App\Infrastructure\Document\DocumentServiceClient:
+        arguments:
+            $baseUrl: '%app.document_service_url%'
 
     App\Application\Port\SignatureProviderInterface:
         alias: App\Infrastructure\Signature\DocuSignSignatureProvider
