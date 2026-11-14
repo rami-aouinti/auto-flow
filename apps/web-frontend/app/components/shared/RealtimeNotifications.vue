@@ -11,7 +11,19 @@ const notices = ref<Notice[]>([]);
 const menu = ref(false);
 let source: EventSource | null = null;
 let renewalTimer: ReturnType<typeof setTimeout> | undefined;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+let retryDelay = 5_000;
 let disposed = false;
+
+function scheduleRetry() {
+  if (disposed || retryTimer) return;
+  connection.value = 'reconnecting';
+  retryTimer = setTimeout(() => {
+    retryTimer = undefined;
+    void connect();
+  }, retryDelay);
+  retryDelay = Math.min(retryDelay * 2, 60_000);
+}
 
 async function connect() {
   if (!$keycloak.hasRealmRole('customers:read') || !hubUrl || typeof window === 'undefined') {
@@ -35,7 +47,12 @@ async function connect() {
     const url = new URL(hubUrl, window.location.origin);
     url.searchParams.append('topic', topic);
     source = new EventSource(url.toString(), { withCredentials: true });
-    source.onopen = () => { connection.value = 'connected'; };
+    source.onopen = () => {
+      connection.value = 'connected';
+      retryDelay = 5_000;
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = undefined;
+    };
     source.onmessage = (message) => {
       let data: Record<string, unknown> = {};
       try {
@@ -56,7 +73,7 @@ async function connect() {
     };
     source.onerror = () => { connection.value = 'reconnecting'; };
   } catch {
-    connection.value = 'disabled';
+    if (!disposed) scheduleRetry();
   }
 }
 function clear() {
@@ -66,6 +83,7 @@ onMounted(() => { void connect(); });
 onBeforeUnmount(() => {
   disposed = true;
   if (renewalTimer) clearTimeout(renewalTimer);
+  if (retryTimer) clearTimeout(retryTimer);
   source?.close();
   source = null;
 });
