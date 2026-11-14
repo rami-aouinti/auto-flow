@@ -41,18 +41,22 @@ const currentStep = computed(() => {
 async function load() {
   loading.value = true; error.value = '';
   try {
-    const [detail, audit, contractRows, paymentRows, fulfillmentRows, reservationRows, invoiceRows] = await Promise.all([
-      orders.get(orderId), orders.history(orderId), contracts.list(100, 0), payments.list(100, 0),
+    const detail = await orders.get(orderId);
+    order.value = detail.data;
+
+    // The order dossier remains usable when an optional downstream service is
+    // temporarily unavailable; only the order itself is a hard dependency.
+    const [audit, contractRows, paymentRows, fulfillmentRows, reservationRows, invoiceRows] = await Promise.allSettled([
+      orders.history(orderId), contracts.list(100, 0), payments.list(100, 0),
       fulfillments.list(100, 0), reservations.list(100, 0), billing.invoices(100, 0),
     ]);
-    order.value = detail.data;
-    history.value = list(audit.data);
+    history.value = audit.status === 'fulfilled' ? list(audit.value.data) : [];
     related.value = {
-      contracts: list(contractRows.data).filter(row => val(row, 'order_id') === orderId),
-      payments: list(paymentRows.data).filter(row => val(row, 'order_id') === orderId),
-      fulfillments: list(fulfillmentRows.data).filter(row => val(row, 'order_id') === orderId),
-      reservations: list(reservationRows.data).filter(row => val(row, 'order_id') === orderId),
-      invoices: list(invoiceRows.data).filter(row => val(row, 'order_id') === orderId),
+      contracts: contractRows.status === 'fulfilled' ? list(contractRows.value.data).filter(row => val(row, 'order_id') === orderId) : [],
+      payments: paymentRows.status === 'fulfilled' ? list(paymentRows.value.data).filter(row => val(row, 'order_id') === orderId) : [],
+      fulfillments: fulfillmentRows.status === 'fulfilled' ? list(fulfillmentRows.value.data).filter(row => val(row, 'order_id') === orderId) : [],
+      reservations: reservationRows.status === 'fulfilled' ? list(reservationRows.value.data).filter(row => val(row, 'order_id') === orderId) : [],
+      invoices: invoiceRows.status === 'fulfilled' ? list(invoiceRows.value.data).filter(row => val(row, 'order_id') === orderId) : [],
     };
   } catch (e) { error.value = errorMessage(e); }
   finally { loading.value = false; }
