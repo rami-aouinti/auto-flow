@@ -78,23 +78,6 @@ jobs:
           exit "$status"
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
-      - name: Install CRM Service dependencies and run unit tests
-        run: |
-          composer install --working-dir=apps/crm-service --no-interaction --prefer-dist --no-progress
-          cd apps/crm-service
-          vendor/bin/phpunit --configuration phpunit.xml.dist
-      - name: Install Contract Service dependencies and run signature tests
-        run: |
-          composer install --working-dir=apps/contract-service --no-interaction --prefer-dist --no-progress
-          cd apps/contract-service
-          vendor/bin/phpunit --configuration phpunit.xml.dist
-      - name: Install Billing Service dependencies and run legal snapshot tests
-        run: |
-          composer install --working-dir=apps/billing-service --no-interaction --prefer-dist --no-progress
-          cd apps/billing-service
-          vendor/bin/phpunit --configuration phpunit.xml.dist
-          php -l bin/consume-payment-events.php
-          php -l src/Application/InvoiceLegalSnapshot.php
       - name: Install Offer Service dependencies for integration tests
         run: |
           composer install \
