@@ -5,7 +5,7 @@
 - [x] Tenant-scoped document metadata, categories, lifecycle states, search and pagination.
 - [x] Multipart upload with MIME sniffing, 25 MiB limit, SHA-256 and fail-closed ClamAV scanning.
 - [x] Private S3-compatible object storage (MinIO in local Compose) with AWS Signature V4 and SSE-C AES-256 encryption.
-- [x] Separate MinIO service account with bucket-scoped list/get/put/delete permissions.
+- [x] Production object-store identity with bucket-scoped list/get/put/delete permissions; local RustFS uses its development S3 credentials directly.
 - [x] Immutable binary object keys per version, version history and secure download.
 - [x] JWT RS256 verification, Keycloak audience, tenant isolation and forced PostgreSQL RLS.
 - [x] Owner-based access and delegated read/manage grants with expiry and revocation.
@@ -16,7 +16,7 @@
 
 ## Remaining work before production sign-off
 
-- [x] Add local storage round-trip/path-safety tests, MinIO SSE-C upload/download/delete smoke test, PostgreSQL tenant-RLS/access-grant/legal-hold/maintenance-role tests, PHP lint and OpenAPI checks in CI.
+- [x] Add local storage round-trip/path-safety tests, S3-compatible SSE-C upload/download/delete smoke test, PostgreSQL tenant-RLS/access-grant/legal-hold/maintenance-role tests, PHP lint and OpenAPI checks in CI.
 - [ ] Add full HTTP API tests for JWT signature/expiry/audience, owner/delegated authorization, legal-hold race conditions, concurrent version uploads, retention purge execution, S3 outage handling and object cleanup after DB rollback.
 - [ ] Add event-consumer inbox/idempotency and dead-letter/replay only when a downstream Document event consumer is introduced; current Document Service is a publisher.
 - [ ] Add OpenTelemetry spans/metrics for upload, scan, S3 operations, grant decisions, outbox lag and purge batches; wire dashboards and alerts.
@@ -28,7 +28,7 @@
 ## Operational constraints
 
 - Demo fixture records are metadata-only; their binary objects are intentionally absent.
-- The local MinIO credentials and SSE-C key in .env.example are development-only. Use a managed S3-compatible endpoint, dedicated IAM credentials and a managed KMS/key rotation process outside local development.
+- The local RustFS credentials and SSE-C key in .env.example are development-only. Use a managed S3-compatible endpoint, dedicated IAM credentials and a managed KMS/key rotation process outside local development.
 - Back up DOCUMENT_S3_SSE_C_KEY_BASE64 securely. Losing the key makes SSE-C objects unreadable; never rotate it without a migration/re-encryption plan.
 - The retention worker uses a privileged maintenance DB connection in local Compose to cross tenant RLS. Production must replace it with a narrowly scoped maintenance role and audited privileges.
 - Purge is irreversible after object deletion. Legal hold must be applied before the retention deadline when preservation is required.
