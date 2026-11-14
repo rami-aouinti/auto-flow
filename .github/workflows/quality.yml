@@ -160,7 +160,7 @@ jobs:
 
       - name: Run Vehicle Reservation expiry and RabbitMQ end-to-end test
         run: |
-          docker compose --env-file .env.example up -d vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer reservation-inventory-event-consumer
+          docker compose --env-file .env.example up -d vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer reservation-inventory-event-consumer inventory-service inventory-outbox-publisher inventory-reservation-event-consumer inventory-service inventory-outbox-publisher inventory-reservation-event-consumer
           for attempt in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8092/health/ready >/dev/null; then
               break
@@ -176,6 +176,14 @@ jobs:
           done
           docker compose --env-file .env.example logs reservation-inventory-event-consumer 2>&1 | grep -q "consumer started"
           docker compose --env-file .env.example exec -T vehicle-reservation-service php bin/smoke-test-inventory-events.php
+          for attempt in $(seq 1 30); do
+            if docker compose --env-file .env.example logs inventory-reservation-event-consumer 2>&1 | grep -q "consumer started"; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --env-file .env.example logs inventory-reservation-event-consumer 2>&1 | grep -q "consumer started"
+          docker compose --env-file .env.example exec -T inventory-service php bin/smoke-test-reservation-fulfillment.php
           docker compose --env-file .env.example exec -T vehicle-reservation-service php bin/smoke-test-rabbitmq.php
 
       - name: Install Customer Service dependencies and run unit tests
