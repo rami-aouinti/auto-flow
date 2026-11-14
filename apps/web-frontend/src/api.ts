@@ -61,7 +61,7 @@ export const orders = {
   list: (limit = 20, offset = 0) => api.get(`${orderBase}/api/v1/orders`, { params: { limit, offset } }),
   get: (id: string) => api.get(`${orderBase}/api/v1/orders/${encodeURIComponent(id)}`),
   history: (id: string) => api.get(`${orderBase}/api/v1/orders/${encodeURIComponent(id)}/history`),
-  create: (payload: { offerId: string; quoteId: string; vehicleId: string }, key: string) =>
+  create: (payload: { offerId: string; quoteId: string; vehicleId: string; customerId: string }, key: string) =>
     api.post(`${orderBase}/api/v1/orders`, payload, { headers: { 'Idempotency-Key': key } }),
   transition: (id: string, action: string, key: string, payload?: Record<string, unknown>) =>
     api.post(`${orderBase}/api/v1/orders/${encodeURIComponent(id)}/${action}`, payload ?? {}, { headers: { 'Idempotency-Key': key } }),
