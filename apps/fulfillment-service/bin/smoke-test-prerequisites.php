@@ -96,7 +96,10 @@ try {
     $partial = $waitFor(
         static fn (): array|false => $db->fetchAssociative(
             'SELECT status,version,payment_captured_at,contract_signed_at,reservation_confirmed_at
-             FROM fulfillment_records WHERE tenant_id=:tenant AND order_id=:order',
+             FROM fulfillment_records
+             WHERE tenant_id=:tenant AND order_id=:order
+               AND payment_captured_at IS NOT NULL AND contract_signed_at IS NOT NULL
+               AND reservation_confirmed_at IS NULL',
             ['tenant' => $tenant, 'order' => $orderId],
         ),
         'the first two Fulfillment prerequisites',
