@@ -14,10 +14,16 @@ ALTER TABLE document_access_grants
     ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ;
 ALTER TABLE document_access_grants
     DROP CONSTRAINT IF EXISTS document_access_grants_document_id_fkey;
-ALTER TABLE document_access_grants
-    ADD CONSTRAINT document_access_grants_tenant_document_fk
-    FOREIGN KEY (tenant_id, document_id)
-    REFERENCES documents (tenant_id, id) ON DELETE CASCADE;
+DO $
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'document_access_grants_tenant_document_fk') THEN
+        ALTER TABLE document_access_grants
+            ADD CONSTRAINT document_access_grants_tenant_document_fk
+            FOREIGN KEY (tenant_id, document_id)
+            REFERENCES documents (tenant_id, id) ON DELETE CASCADE;
+    END IF;
+END
+$;
 
 CREATE INDEX IF NOT EXISTS idx_document_access_grants_subject
     ON document_access_grants (tenant_id, subject_id, document_id)
