@@ -86,7 +86,7 @@ $channel->basic_consume($queue, 'reservation-inventory-projection', false, false
                 throw new InvalidArgumentException('Inventory event data is missing unit, variant, VIN, status or version.');
             }
             $db->fetchOne(
-                'SELECT public.vehicle_stock_apply_inventory_event(:tenant,:event,:unit,:variant,:vin,:status,:version)',
+                'SELECT public.vehicle_stock_apply_inventory_event(CAST(:tenant AS VARCHAR(128)),CAST(:event AS UUID),CAST(:unit AS UUID),CAST(:variant AS UUID),CAST(:vin AS VARCHAR(17)),CAST(:status AS VARCHAR(24)),CAST(:version AS INTEGER))',
                 [
                     'tenant' => $tenantId,
                     'event' => $eventId,
