@@ -1,30 +1,25 @@
 # AI Service — API Reference
 
-**Base URL:** http://localhost:8095  
-**Authentication:** Local-only service; add JWT/tenant authorization before shared exposure
+**Base URL:** http://localhost:8095 (gateway: http://localhost:8088/api/v1/ai)  
+**Provider:** Local Ollama. No API key or paid cloud account required.  
+**Authentication:** Currently local-only; JWT/tenant authorization is not enforced. Do not expose this service to shared or public networks.
 
-## Endpoints and arguments
+| Method | Path | Access | Arguments / body | Responses |
+|---|---|---|---|---|
+| POST | `/api/v1/ai/chat` | Local-only | JSON required: messages[]; each item has role (system, user, assistant) and content (string). | 200, 400, 422, 429, 502, 503 |
 
-| Method | Path | Arguments / body | Possible responses |
-|---|---|---|---|
-| POST | `/api/v1/ai/chat` |  body: messages[] with role and content | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
+## Confirmed request example
+```json
+{
+  "messages": [
+    {"role": "system", "content": "You are the AutoFlow vehicle assistant."},
+    {"role": "user", "content": "Explain the difference between leasing and financing."}
+  ]
+}
+```
 
-## Common HTTP responses
+Successful response includes generated content, provider/model metadata and token counts when reported by the local runtime. Exact response property names are defined by the response DTO.
 
-- **2xx:** request succeeded; GET returns a resource/collection, POST creates or transitions a resource, DELETE may return 204.
-- **400:** malformed JSON, invalid query parameters or malformed headers.
-- **401:** missing/invalid JWT (except explicitly public provider webhooks).
-- **403:** missing scope/role or tenant access.
-- **404:** resource does not exist or is outside the caller's tenant/ownership boundary.
-- **409:** invalid state transition, duplicate resource or idempotency-key conflict.
-- **412:** stale ETag/If-Match version for optimistic concurrency.
-- **422:** request is syntactically valid but violates domain validation.
-- **500 / 503:** unexpected server failure or unavailable dependency; no internal SQL/stack trace should be exposed.
-
-## Testing
-
-Use the central Swagger UI at http://localhost:8096. Authenticate with the raw Keycloak access token when required. For commands requiring idempotency, send a unique `Idempotency-Key`; for versioned transitions copy the current `ETag` into `If-Match`.
-
-## Contract maintenance
-
-This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+## Health
+- `GET /health/ready` — verifies Ollama responds and configured model is installed.
+- Ollama API is local at http://localhost:11434. Keep it private.
