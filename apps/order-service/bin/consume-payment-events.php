@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Doctrine\\DBAL\\DriverManager;
-use PhpAmqpLib\\Connection\\AMQPStreamConnection;
-use PhpAmqpLib\\Message\\AMQPMessage;
-use PhpAmqpLib\\Wire\\AMQPTable;
-use Symfony\\Component\\Uid\\Uuid;
+use Doctrine\DBAL\DriverManager;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
+use Symfony\Component\Uid\Uuid;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
