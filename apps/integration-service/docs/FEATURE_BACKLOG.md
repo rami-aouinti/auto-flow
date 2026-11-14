@@ -20,6 +20,9 @@
 
 ## Quality gates
 - [x] HTTP smoke checks for health, authentication and invalid webhook signatures.
+- [x] Per-service endpoint reference and central OpenAPI 3.0/Swagger contracts.
+- [x] PHP syntax lint and OpenAPI route-coverage validation in GitHub Actions.
+- [x] Inbound webhook body-size limit and event-type validation.
 - [ ] Automated PHP unit/integration tests for HMAC, retries, DNS rebinding and tenant isolation.
 - [ ] Provider contract tests using signed fixtures.
 - [ ] Load tests and chaos tests for provider outages.
