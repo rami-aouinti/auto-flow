@@ -27,6 +27,17 @@ unlink($outside);
 unlink($tmp);
 @rmdir($root.'/'.hash('sha256','tenant-fixture'));
 @rmdir($root);
+if(getenv('DOCUMENT_STORAGE_INTEGRATION_TEST')==='1'){
+    putenv('DOCUMENT_STORAGE_DRIVER=s3');
+    $s3Tmp=tempnam(sys_get_temp_dir(),'autoflow-s3-doc-');
+    if($s3Tmp===false)throw new RuntimeException('Cannot create S3 integration fixture.');
+    file_put_contents($s3Tmp,"encrypted S3 round-trip fixture");
+    $s3Key=documentStoragePut($s3Tmp,'tenant-s3-fixture','22222222-2222-4222-8222-222222222222',1);
+    check(str_starts_with($s3Key,'s3://'),'S3 adapter stores an opaque bucket key');
+    check(documentStorageGet($s3Key)==="encrypted S3 round-trip fixture",'SSE-C encrypted S3 object round-trips');
+    documentStorageDelete($s3Key);
+    unlink($s3Tmp);
+}
 putenv('DOCUMENT_STORAGE_DRIVER=s3');
 putenv('DOCUMENT_S3_ENDPOINT=');
 putenv('DOCUMENT_S3_BUCKET=');
