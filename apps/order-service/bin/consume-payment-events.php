@@ -6,7 +6,6 @@ use App\Application\PaymentEventEnvelope;
 use Doctrine\DBAL\DriverManager;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Wire\AMQPTable;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -53,10 +52,8 @@ $channel->exchange_declare($exchange, 'topic', false, true, false);
 $channel->exchange_declare($deadExchange, 'direct', false, true, false);
 $channel->queue_declare($deadQueue, false, true, false, false);
 $channel->queue_bind($deadQueue, $deadExchange, 'invalid');
-$channel->queue_declare($queue, false, true, false, false, false, new AMQPTable([
-    'x-dead-letter-exchange' => $deadExchange,
-    'x-dead-letter-routing-key' => 'invalid',
-]));
+$channel->queue_declare($queue, false, true, false, false);
+$channel->confirm_select();
 foreach (['PaymentAuthorized', 'PaymentCaptured', 'PaymentFailed', 'PaymentRefunded', 'PaymentPartiallyRefunded', 'PaymentCancelled'] as $eventType) {
     $channel->queue_bind($queue, $exchange, $eventType);
 }
@@ -181,7 +178,20 @@ $channel->basic_consume($queue, '', false, false, false, false, static function 
         $channel->basic_ack($message->getDeliveryTag());
     } catch (JsonException|InvalidArgumentException|UnexpectedValueException $exception) {
         fwrite(STDERR, 'Dead-lettering invalid Payment event: ' . $exception->getMessage() . PHP_EOL);
-        $channel->basic_nack($message->getDeliveryTag(), false, false);
+        try {
+            $deadLetter = new AMQPMessage($message->getBody(), [
+                'content_type' => 'application/json',
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                'message_id' => $message->get('message_id'),
+                'type' => $message->get('type'),
+            ]);
+            $channel->basic_publish($deadLetter, $deadExchange, 'invalid', true);
+            $channel->wait_for_pending_acks_returns(5);
+            $channel->basic_ack($message->getDeliveryTag());
+        } catch (Throwable $publishError) {
+            fwrite(STDERR, 'Could not confirm Payment event DLQ publication; requeueing: ' . $publishError->getMessage() . PHP_EOL);
+            $channel->basic_nack($message->getDeliveryTag(), false, true);
+        }
     } catch (Throwable $exception) {
         fwrite(STDERR, 'Payment event processing failed; requeueing: ' . $exception->getMessage() . PHP_EOL);
         $channel->basic_nack($message->getDeliveryTag(), false, true);
