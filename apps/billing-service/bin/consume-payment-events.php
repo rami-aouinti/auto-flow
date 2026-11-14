@@ -38,24 +38,48 @@ $number = static function (Connection $db, string $table, string $tenant, int $y
     return sprintf('%s-%d-%06d', $prefix, $year, $n);
 };
 $process = static function (AMQPMessage $m) use ($db, $rate, $tax, $number): void {
-    $e = json_decode($m->getBody(), true, 512, JSON_THROW_ON_ERROR);
-    if (!is_array($e)) {
-        throw new UnexpectedValueException('Invalid event.');
-    }$eid = $e['eventId'] ?? $m->get('message_id');
-    $type = $e['eventType'] ?? $m->get('type');
+    $body = $m->getBody();
+    $e = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+    if (!is_array($e) || array_is_list($e)) {
+        throw new UnexpectedValueException('Payment event must be a JSON object.');
+    }
+    $eid = $e['eventId'] ?? null;
+    $type = $e['eventType'] ?? null;
     $tenant = $e['tenantId'] ?? null;
     $d = $e['data'] ?? null;
-    if (!is_string($eid) || !Uuid::isValid($eid) || !is_string($type) || !is_string($tenant) || !is_array($d)) {
-        throw new UnexpectedValueException('Invalid event envelope.');
-    }$pid = $d['paymentId'] ?? null;
+    if (!is_string($eid) || !Uuid::isValid($eid)
+        || !is_string($type) || !in_array($type, ['PaymentCaptured', 'PaymentRefunded', 'PaymentPartiallyRefunded'], true)
+        || ($e['schemaVersion'] ?? null) !== 1
+        || ($e['producer'] ?? null) !== 'payment-service'
+        || !is_string($tenant) || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenant)
+        || !is_array($d) || array_is_list($d)
+    ) {
+        throw new UnexpectedValueException('Payment event envelope is invalid or unsupported.');
+    }
+    if (($m->get('message_id') ?? null) !== $eid || ($m->get('type') ?? null) !== $type) {
+        throw new UnexpectedValueException('RabbitMQ metadata does not match the payment event envelope.');
+    }
+    $pid = $d['paymentId'] ?? null;
     $oid = $d['orderId'] ?? null;
     if (!is_string($pid) || !Uuid::isValid($pid) || !is_string($oid) || !Uuid::isValid($oid)) {
         throw new UnexpectedValueException('Missing payment/order identifiers.');
     }
-    $db->transactional(static function (Connection $db) use ($eid, $type, $tenant, $d, $pid, $oid, $rate, $tax, $number): void {
+    $payloadHash = hash('sha256', $body);
+    $db->transactional(static function (Connection $db) use ($eid, $type, $tenant, $d, $pid, $oid, $payloadHash, $rate, $tax, $number): void {
         $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
-        $insert = $db->fetchOne('INSERT INTO billing_event_inbox(tenant_id,event_id,event_type) VALUES(:t,:e,:y) ON CONFLICT DO NOTHING RETURNING event_id', ['t' => $tenant,'e' => $eid,'y' => $type]);
+        $insert = $db->fetchOne(
+            'INSERT INTO billing_event_inbox(tenant_id,event_id,event_type,payload_hash) VALUES(:t,:e,:y,:hash) ON CONFLICT DO NOTHING RETURNING event_id',
+            ['t' => $tenant, 'e' => $eid, 'y' => $type, 'hash' => $payloadHash],
+        );
         if ($insert === false) {
+            $existingHash = $db->fetchOne(
+                'SELECT payload_hash FROM billing_event_inbox WHERE tenant_id=:t AND event_id=:e',
+                ['t' => $tenant, 'e' => $eid],
+            );
+            if (!is_string($existingHash) || !hash_equals(trim($existingHash), $payloadHash)) {
+                throw new UnexpectedValueException('A payment eventId was reused with a different payload.');
+            }
+
             return;
         }
         if ($type === 'PaymentCaptured') {
@@ -92,12 +116,38 @@ $process = static function (AMQPMessage $m) use ($db, $rate, $tax, $number): voi
         }
     });
 };
-$ch->basic_consume($q, '', false, false, false, false, static function (AMQPMessage $m) use ($process): void {
+$deadExchange = 'autoflow.billing.payment-events.dlx';
+$deadQueue = 'autoflow.billing.payment-events.dead';
+$ch->exchange_declare($deadExchange, 'direct', false, true, false);
+$ch->queue_declare($deadQueue, false, true, false, false);
+$ch->queue_bind($deadQueue, $deadExchange, 'invalid');
+$ch->confirm_select();
+
+$ch->basic_consume($q, '', false, false, false, false, static function (AMQPMessage $m) use ($process, $ch, $deadExchange): void {
     try {
         $process($m);
         $m->ack();
+    } catch (UnexpectedValueException|JsonException|InvalidArgumentException $e) {
+        try {
+            $dead = new AMQPMessage($m->getBody(), [
+                'content_type' => 'application/json',
+                'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+                'message_id' => (string) ($m->get('message_id') ?? ''),
+                'type' => (string) ($m->get('type') ?? 'invalid'),
+                'application_headers' => new \\PhpAmqpLib\\Wire\\AMQPTable([
+                    'rejectionReason' => mb_substr($e->getMessage(), 0, 240),
+                    'originalQueue' => 'autoflow.billing.payment-events',
+                ]),
+            ]);
+            $ch->basic_publish($dead, $deadExchange, 'invalid', true);
+            $ch->wait_for_pending_acks_returns(5);
+            $m->ack();
+        } catch (Throwable $publishError) {
+            fwrite(STDERR, 'Billing DLQ publish failed; requeueing: '.$publishError->getMessage().PHP_EOL);
+            $m->nack(false, true);
+        }
     } catch (Throwable $e) {
-        fwrite(STDERR, 'Billing event failed: '.$e->getMessage().PHP_EOL);
+        fwrite(STDERR, 'Billing event failed; requeueing: '.$e->getMessage().PHP_EOL);
         $m->nack(false, true);
     }
 });
