@@ -25,6 +25,7 @@ function principal(): array {
 function permit(array $u,string $scope): void { if(!in_array($scope,$u['scopes'],true))problem(403,'Forbidden','Missing permission: '.$scope); }
 function tenantScope(array $u): void { $q=db()->prepare("SELECT set_config('app.tenant_id',:tenant,false)"); $q->execute(['tenant'=>$u['tenant']]); }
 function body(): array { $v=json_decode(file_get_contents('php://input')?:'{}',true);if(!is_array($v))problem(400,'Bad Request','Expected a JSON object.');return $v; }
+function safePayload(array $v): array { $out=[]; foreach($v as $k=>$value){ if(preg_match('/password|secret|token|authorization|email|phone|address|iban|card|ssn|birth|first.?name|last.?name/i',(string)$k))continue; $out[$k]=is_array($value)?safePayload($value):(is_scalar($value)||$value===null?$value:null); } return $out; }
 try {
  $path=parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/';$method=$_SERVER['REQUEST_METHOD']??'GET';
  if($path==='/health'||$path==='/health/live')jsonOut(['service'=>'analytics-service','status'=>'ok']);
@@ -33,7 +34,7 @@ try {
  if($path==='/api/v1/analytics/events'&&$method==='POST'){
   permit($u,'analytics:events:write');$b=body();$id=trim((string)($b['eventId']??''));$type=trim((string)($b['eventType']??''));$date=(string)($b['occurredAt']??gmdate(DATE_ATOM));$payload=$b['payload']??[];
   if($id===''||strlen($id)>200||!preg_match('/^[a-zA-Z0-9._:-]+$/',$type)||!is_array($payload)||strlen(json_encode($payload))>16384)problem(422,'Validation Failed','eventId, eventType and payload are invalid.');
-  try{$q=db()->prepare('INSERT INTO analytics_service.events(tenant_id,event_id,event_type,occurred_at,payload) VALUES(:t,:i,:e,:d,:p) ON CONFLICT(tenant_id,event_id) DO NOTHING');$q->execute(['t'=>$u['tenant'],'i'=>$id,'e'=>$type,'d'=>$date,'p'=>json_encode($payload,JSON_THROW_ON_ERROR)]);jsonOut(['accepted'=>true,'created'=>$q->rowCount()===1],$q->rowCount()===1?201:200);}catch(Throwable $e){problem(422,'Invalid event','The event could not be persisted.');}
+  try{$q=db()->prepare('INSERT INTO analytics_service.events(tenant_id,event_id,event_type,occurred_at,payload) VALUES(:t,:i,:e,:d,:p) ON CONFLICT(tenant_id,event_id) DO NOTHING');$q->execute(['t'=>$u['tenant'],'i'=>$id,'e'=>$type,'d'=>$date,'p'=>json_encode(safePayload($payload),JSON_THROW_ON_ERROR)]);jsonOut(['accepted'=>true,'created'=>$q->rowCount()===1],$q->rowCount()===1?201:200);}catch(Throwable $e){problem(422,'Invalid event','The event could not be persisted.');}
  }
  if($path==='/api/v1/analytics/overview'&&$method==='GET'){
   permit($u,'analytics:read');$days=max(1,min(365,(int)($_GET['days']??30)));
