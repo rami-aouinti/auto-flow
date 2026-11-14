@@ -14,7 +14,7 @@ withDefaults(defineProps<{
     <v-card-text class="pa-5">
       <div class="d-flex align-center justify-space-between ga-3">
         <span class="text-body-2 text-medium-emphasis font-weight-medium">{{ label }}</span>
-        <v-avatar :color="tone" variant="tonal" rounded="lg" size="42"><v-icon :icon="icon" /></v-avatar>
+        <v-avatar :color="tone" variant="tonal" rounded="xl" size="44" class="metric-icon"><v-icon :icon="icon" size="22" /></v-avatar>
       </div>
       <div class="d-flex align-end ga-2 mt-5">
         <span class="text-h3 font-weight-bold metric-value">{{ value }}</span>
@@ -26,7 +26,11 @@ withDefaults(defineProps<{
 </template>
 
 <style scoped>
-.metric-card{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
-.metric-card:hover{transform:translateY(-3px);border-color:rgba(var(--v-theme-primary),.55)!important;box-shadow:0 12px 28px rgba(0,0,0,.12)!important}
-.metric-value{letter-spacing:-1.5px}
+.metric-card{position:relative;overflow:hidden;min-height:158px;transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+.metric-card::before{position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(180deg,#c8f169,#78a84c);content:"";opacity:0;transition:opacity .2s ease}
+.metric-card:hover{transform:translateY(-4px);border-color:#d1dfd9!important;box-shadow:0 14px 30px rgba(19,42,61,.09)!important}
+.metric-card:hover::before{opacity:1}
+.metric-icon{box-shadow:inset 0 0 0 1px rgba(23,59,86,.04)}
+.metric-value{letter-spacing:-1.8px;font-family:Manrope,sans-serif;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.metric-card{min-height:140px}.metric-value{font-size:2rem!important}}
 </style>
