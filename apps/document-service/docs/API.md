@@ -66,7 +66,7 @@ PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`,
 
 ```bash
 docker compose --env-file .env.example up -d --build postgres postgres-bootstrap clamav document-service
-docker compose --env-file .env.example ps document-service clamav
+docker compose --env-file .env.example ps document-service document-outbox-publisher clamav
 curl -i http://localhost:8100/health/ready
 curl -i http://localhost:8100/api/doc.json
 ```
