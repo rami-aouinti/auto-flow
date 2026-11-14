@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Document;
 
-use Symfony\Billings\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use RuntimeException;
 
 final readonly class DocumentServiceClient
