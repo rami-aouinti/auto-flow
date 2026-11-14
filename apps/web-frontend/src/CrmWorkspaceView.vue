@@ -95,7 +95,12 @@ function openCreate() {
   createError.value = ''; createDialog.value = true;
 }
 async function createApplication() {
-  createBusy.value = true; createError.value = '';
+  createError.value = '';
+  if (!createForm.value.customerId) {
+    createError.value = 'Bitte wähle einen aktiven Kunden aus.';
+    return;
+  }
+  createBusy.value = true;
   try {
     await crm.createApplication({
       customerId: createForm.value.customerId,
@@ -134,12 +139,13 @@ async function openDetail(application: Application) {
   finally { detailLoading.value = false; }
 }
 async function changeStatus(status: string) {
-  if (!selected.value) return;
+  const current = selected.value;
+  if (!current) return;
   statusBusy.value = true; detailError.value = '';
   try {
-    await crm.transition(selected.value.application_id, status);
+    await crm.transition(current.application_id, status);
     await loadApplications();
-    const fresh = applications.value.find(x => x.application_id === selected.value?.application_id) ?? selected.value;
+    const fresh = applications.value.find(x => x.application_id === current.application_id) ?? current;
     await openDetail(fresh);
     notice.value = `Antragsstatus auf „${label(status)}“ gesetzt.`;
   } catch (e) { detailError.value = errorMessage(e); }
@@ -154,60 +160,65 @@ async function assignAdvisor() {
   } catch (e) { detailError.value = errorMessage(e); }
 }
 async function saveEligibility() {
-  if (!selected.value) return;
+  const current = selected.value;
+  if (!current) return;
   eligibilityBusy.value = true; detailError.value = '';
   try {
     const result = JSON.parse(eligibilityJson.value || '{}');
     if (!result || Array.isArray(result) || typeof result !== 'object') throw new Error('Das Prüfergebnis muss ein JSON-Objekt sein.');
-    const response = await crm.setEligibility(selected.value.application_id, eligibilityStatus.value, result);
+    const response = await crm.setEligibility(current.application_id, eligibilityStatus.value, result);
     selected.value = response.data; notice.value = 'Bonitäts-/Eligibility-Prüfung aktualisiert.';
     await loadApplications();
   } catch (e) { detailError.value = errorMessage(e); }
   finally { eligibilityBusy.value = false; }
 }
 async function convertApplication() {
-  if (!selected.value) return;
+  const current = selected.value;
+  if (!current) return;
   convertBusy.value = true; detailError.value = '';
   try {
-    const response = await crm.convert(selected.value.application_id);
+    const response = await crm.convert(current.application_id);
     notice.value = response.data.orderId ? `In Auftrag ${response.data.orderId} umgewandelt.` : 'Antrag wurde umgewandelt.';
     await loadApplications();
-    await openDetail(selected.value);
+    await openDetail(current);
   } catch (e) { detailError.value = errorMessage(e); }
   finally { convertBusy.value = false; }
 }
 async function addTask() {
-  if (!selected.value) return;
+  const current = selected.value;
+  if (!current) return;
   taskBusy.value = true; detailError.value = '';
   try {
-    await crm.createTask(selected.value.application_id, {
+    await crm.createTask(current.application_id, {
       title: taskForm.value.title.trim(), assignedTo: taskForm.value.assignedTo.trim(),
       description: taskForm.value.description.trim() || null,
       dueAt: taskForm.value.dueAt ? new Date(taskForm.value.dueAt).toISOString() : null,
     });
     taskForm.value = { title: '', assignedTo: advisorId.value, description: '', dueAt: '' };
-    tasks.value = (await crm.listTasks(selected.value.application_id)).data.items ?? [];
+    tasks.value = (await crm.listTasks(current.application_id)).data.items ?? [];
   } catch (e) { detailError.value = errorMessage(e); }
   finally { taskBusy.value = false; }
 }
 async function updateTask(task: Task, status: string) {
-  if (!selected.value) return;
+  const current = selected.value;
+  if (!current) return;
   try {
-    await crm.updateTask(selected.value.application_id, task.task_id, status);
-    tasks.value = (await crm.listTasks(selected.value.application_id)).data.items ?? [];
+    await crm.updateTask(current.application_id, task.task_id, status);
+    tasks.value = (await crm.listTasks(current.application_id)).data.items ?? [];
   } catch (e) { detailError.value = errorMessage(e); }
 }
 async function addInteraction() {
-  if (!selected.value) return;
+  const current = selected.value;
+  if (!current) return;
   interactionBusy.value = true; detailError.value = '';
   try {
-    await crm.addInteraction(selected.value.application_id, {
+    await crm.addInteraction(current.application_id, {
       channel: interactionForm.value.channel,
       subject: interactionForm.value.subject.trim(),
       body: interactionForm.value.body.trim() || null,
     });
     interactionForm.value = { channel: 'note', subject: '', body: '' };
-    interactions.value = (await crm.listInteractions(selected.value.application_id)).data.items ?? [];
+    interactions.value = (await crm.listInteractions(current.application_id)).data.items ?? [];
   } catch (e) { detailError.value = errorMessage(e); }
   finally { interactionBusy.value = false; }
 }
@@ -289,7 +300,7 @@ onMounted(() => { void loadApplications(); void loadCustomers(); });
       </v-card-text></v-card>
     </v-dialog>
 
-    <v-dialog v-model="selected" :model-value="!!selected" max-width="1180" scrollable @update:model-value="value => { if (!value) selected = null; }">
+    <v-dialog :model-value="!!selected" max-width="1180" scrollable @update:model-value="value => { if (!value) selected = null; }">
       <v-card v-if="selected" rounded="xl">
         <v-card-title class="d-flex align-center pa-5"><div><div class="text-h6">Antrag verwalten</div><div class="text-caption text-medium-emphasis">{{ selected.application_id }} · Kunde {{ selected.customer_id }}</div></div><v-spacer /><v-chip :color="statusColor(selected.status)" variant="tonal">{{ label(selected.status) }}</v-chip><v-btn icon="mdi-close" variant="text" aria-label="Schließen" @click="selected=null" /></v-card-title>
         <v-divider />
