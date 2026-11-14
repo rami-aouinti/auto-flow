@@ -1,6 +1,6 @@
 # Vehicle Reservation Service
 
-Vehicle Reservation owns the allocation lifecycle of physical stock units. It is a separate bounded context from Vehicle Catalog:
+Vehicle Reservation owns the allocation lifecycle of physical stock units. Inventory is the source of truth for physical VIN-bearing units and their operational status; Reservation maintains a versioned projection for allocation. It is a separate bounded context from Vehicle Catalog:
 
 - **Vehicle Catalog** owns manufacturer, model, generation and vehicle variant information.
 - **Vehicle Reservation** owns whether one physical unit is temporarily held, confirmed, released, expired or fulfilled.
@@ -19,7 +19,7 @@ A `vehicleUnitId` identifies one physical stock unit (for example a VIN-backed f
 
 ## Physical stock registry and Saga commands
 
-The additive migration `230-vehicle-stock-registry-and-allocation.sql` creates `vehicle_stock_units`. Each row is one real physical vehicle unit, not a catalogue variant. A unit belongs to one tenant and variant and has a globally unique unit ID and optional VIN. The stock lifecycle is `available -> reserved -> available` (release/expiry) or `available -> reserved -> sold` (fulfilment).
+The additive migration `230-vehicle-stock-registry-and-allocation.sql` creates the Reservation-side physical-unit projection `vehicle_stock_units`. Each row represents one real physical vehicle unit, not a catalogue variant. Inventory owns its identity and operational status; Reservation tracks the latest Inventory status alongside allocation state. A unit can move from `available -> reserved -> available` only if Inventory still reports it available, or to `unavailable`/`sold` when Inventory or fulfilment makes it non-reservable.
 
 The allocation function `vehicle_reservation_hold_available(tenantId, vehicleVariantId, orderId, expiresAt)` selects one available unit using `FOR UPDATE SKIP LOCKED`, creates the reservation, updates stock, and writes audit + Outbox records in one database transaction. The follow-up migration `232-enforce-physical-stock-reservation.sql` also hardens direct API writes: a reservation insert now fails unless the exact tenant, variant and unit match an available registry row; release, expiry and fulfilment fail atomically if the reservation no longer owns its stock row. Repeating the same order/variant returns the existing active reservation. It never allocates the same physical unit twice. The companion `vehicle_reservation_release_for_order` is the Saga compensation; it releases only held/confirmed reservations and emits a durable Outbox event. A confirmed reservation cannot be compensated after fulfilment.
 
@@ -40,7 +40,7 @@ docker compose --env-file .env.example run --rm vehicle-reservation-service \
   php bin/seed-demo-stock.php tenant-demo YOUR_VEHICLE_VARIANT_UUID
 ```
 
-The seeder is deterministic and safe to run repeatedly. It creates three units for the supplied tenant and variant. Replace the placeholder with a UUID that exists in your Vehicle Catalog data.
+The seeder is deterministic and safe to run repeatedly, but it creates Reservation-local demo projection rows only. Use it only for isolated Reservation development/tests. In the integrated application, register physical VIN-bearing units through the Inventory API and let the Inventory event consumer populate this projection; do not seed duplicate units.
 
 ## Inventory-backed physical stock projection
 
