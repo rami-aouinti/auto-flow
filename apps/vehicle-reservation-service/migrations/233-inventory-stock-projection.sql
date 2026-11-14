@@ -1,4 +1,7 @@
 -- Inventory is authoritative for physical unit identity and operational status.
+-- The expiry SECURITY DEFINER owner must append its transactional Outbox events.
+GRANT INSERT ON public.vehicle_reservation_outbox TO autoflow_reservation_worker_owner;
+
 -- Reservation keeps only an allocation projection and never re-opens blocked/sold stock.
 ALTER TABLE public.vehicle_stock_units
     ADD COLUMN IF NOT EXISTS inventory_status VARCHAR(24) NOT NULL DEFAULT 'available',
