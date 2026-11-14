@@ -27,7 +27,8 @@ test('order dossier shows lifecycle, documents and performs a guarded transition
   await page.route('**/billing/api/v1/billing/invoices**', route => route.fulfill({ json: { items: [] } }));
 
   await page.goto('/operations/order/order-demo');
-  await expect(page.getByRole('heading', { name: 'Auftrag order-demo' })).toBeVisible();
+  await expect(page.locator('h1')).toContainText('Auftrag');
+  await expect(page.locator('h1')).toContainText('order-demo');
   await expect(page.getByText('Vertrag · contract-demo')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Einreichen' })).toBeVisible();
   await page.getByRole('button', { name: 'Einreichen' }).click();
