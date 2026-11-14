@@ -98,14 +98,14 @@ if (str_starts_with($path, '/api/')) {
             $args = [$tenant];
             if ($namespace !== null) { $sql .= ' AND namespace=?'; $args[] = $namespace; }
             $sql .= ' ORDER BY namespace,config_key LIMIT 500';
-            $s=$pdo->prepare($sql); $s->execute($args); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['value']=json_decode($row['value'],true); } unset($row); respond(200,['data'=>$rows]);
+            $s=$pdo->prepare($sql); $s->execute($args); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['value']=json_decode($row['value']); } unset($row); respond(200,['data'=>$rows]);
         }
         // /api/configurations/{namespace}/{key}[/{versions|rollback}]
         if (preg_match('#^/api/configurations/([^/]+)/([^/]+)(?:/(versions|rollback))?$#', $path, $m)) {
             $namespace=validName(rawurldecode($m[1]),'namespace'); $key=validName(rawurldecode($m[2]),'key');
             if (($m[3] ?? '') === 'versions' && $method === 'GET') {
                 $s=$pdo->prepare('SELECT version,value,value_type,description,changed_by,change_reason,created_at FROM configuration_versions WHERE tenant_id=? AND namespace=? AND config_key=? ORDER BY version DESC LIMIT 100');
-                $s->execute([$tenant,$namespace,$key]); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['value']=json_decode($row['value'],true); } unset($row); respond(200,['data'=>$rows]);
+                $s->execute([$tenant,$namespace,$key]); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['value']=json_decode($row['value']); } unset($row); respond(200,['data'=>$rows]);
             }
             if (($m[3] ?? '') === 'rollback' && $method === 'POST') {
                 $input=body(); $target=(int)($input['version'] ?? 0);
@@ -128,7 +128,7 @@ if (str_starts_with($path, '/api/')) {
             if ($method === 'GET' && !isset($m[3])) {
                 $s=$pdo->prepare('SELECT namespace,config_key,value,value_type,description,version,updated_by,updated_at FROM configurations WHERE tenant_id=? AND namespace=? AND config_key=?');
                 $s->execute([$tenant,$namespace,$key]); $row=$s->fetch(); if (!$row) problem(404,'Not Found','Configuration was not found.');
-                $row['value']=json_decode($row['value'],true); header('ETag: "'.$row['version'].'"'); respond(200,$row);
+                $row['value']=json_decode($row['value']); header('ETag: "'.$row['version'].'"'); respond(200,$row);
             }
             if ($method === 'PUT' && !isset($m[3])) {
                 $input=body(); if (!array_key_exists('value',$input)) problem(422,'Unprocessable Content','The value field is required.');
@@ -193,7 +193,7 @@ if (str_starts_with($path, '/api/')) {
         if ($path === '/api/audit-events' && $method === 'GET') {
             $limit=max(1,min(100,(int)($_GET['limit']??50)));
             $s=$pdo->prepare('SELECT actor_id,action,resource_type,resource_key,version,details,occurred_at FROM configuration_audit_events WHERE tenant_id=? ORDER BY occurred_at DESC,id DESC LIMIT ?');
-            $s->bindValue(1,$tenant); $s->bindValue(2,$limit,PDO::PARAM_INT); $s->execute(); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['details']=json_decode($row['details'],true) ?: []; } unset($row); respond(200,['data'=>$rows]);
+            $s->bindValue(1,$tenant); $s->bindValue(2,$limit,PDO::PARAM_INT); $s->execute(); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['details']=json_decode($row['details']) ?? new stdClass(); } unset($row); respond(200,['data'=>$rows]);
         }
         problem(404,'Not Found','The requested endpoint does not exist.');
     } catch (PDOException $e) {
