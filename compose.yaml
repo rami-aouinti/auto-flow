@@ -1523,14 +1523,19 @@ services:
       VITE_KEYCLOAK_REALM: autoflow
       VITE_KEYCLOAK_CLIENT_ID: autoflow-local-client
       VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
-      # Nitro forwards the existing /catalog, /offers, /pricing, /orders, /payments and /billing
-      # browser routes through the gateway; the gateway preserves the upstream /api path.
+      # Nitro forwards browser service prefixes through the gateway; the gateway preserves upstream /api paths.
       CATALOG_PROXY_TARGET: http://api-gateway
       OFFER_PROXY_TARGET: http://api-gateway
       PRICING_PROXY_TARGET: http://api-gateway
       ORDER_PROXY_TARGET: http://api-gateway
       PAYMENT_PROXY_TARGET: http://api-gateway
       BILLING_PROXY_TARGET: http://api-gateway
+      CRM_PROXY_TARGET: http://api-gateway
+      CONTRACT_PROXY_TARGET: http://api-gateway
+      CUSTOMER_PROXY_TARGET: http://api-gateway
+      FULFILLMENT_PROXY_TARGET: http://api-gateway
+      INVENTORY_PROXY_TARGET: http://api-gateway
+      RESERVATION_PROXY_TARGET: http://api-gateway
     depends_on:
       api-gateway: {condition: service_healthy}
       keycloak: {condition: service_started}
