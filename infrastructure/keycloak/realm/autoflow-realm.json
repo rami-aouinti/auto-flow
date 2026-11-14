@@ -461,7 +461,10 @@
         "pricing:quote",
         "reservations:manage",
         "reservations:read",
-        "reservations:write"
+        "reservations:write",
+        "documents:read",
+        "documents:write",
+        "documents:manage"
       ],
       "attributes": {
         "tenant_id": [
@@ -541,7 +544,10 @@
         "reservations:write",
         "reservations:manage",
         "inventory:read",
-        "inventory:write"
+        "inventory:write",
+        "documents:read",
+        "documents:write",
+        "documents:manage"
       ],
       "attributes": {
         "tenant_id": [
