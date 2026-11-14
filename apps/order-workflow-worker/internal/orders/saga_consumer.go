@@ -140,7 +140,11 @@ func forwardSagaEventToTemporal(ctx context.Context, temporal client.Client, eve
 	err := temporal.SignalWorkflow(ctx, id, "", SagaSignal, event)
 	if err != nil {
 		var notFound *serviceerror.NotFound
-		if errors.As(err, &notFound) { return nil }
+		if errors.As(err, &notFound) {
+			// Do not ACK an event that arrived before its OrderCreated start event.
+			// RabbitMQ redelivery lets the consumer signal it after the workflow exists.
+			return fmt.Errorf("Saga workflow %s is not started yet; retry event %s: %w", id, event.EventID, err)
+		}
 	}
 	return err
 }
