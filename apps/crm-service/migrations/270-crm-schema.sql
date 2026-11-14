@@ -103,10 +103,22 @@ CREATE TABLE IF NOT EXISTS crm_idempotency_keys (
  PRIMARY KEY(tenant_id,actor_id,idempotency_key)
 );
 
+CREATE TABLE IF NOT EXISTS crm_order_conversions (
+ tenant_id VARCHAR(128) NOT NULL,
+ application_id UUID NOT NULL,
+ order_id UUID,
+ initiated_by VARCHAR(255) NOT NULL,
+ conversion_status VARCHAR(16) NOT NULL DEFAULT 'processing' CHECK(conversion_status IN ('processing','completed')),
+ created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(tenant_id,application_id),
+ FOREIGN KEY(tenant_id,application_id) REFERENCES crm_applications(tenant_id,application_id)
+);
+
 DO $$
 DECLARE t TEXT;
 BEGIN
- FOREACH t IN ARRAY ARRAY['crm_applications','crm_tasks','crm_interactions','crm_audit_events','crm_outbox_events','crm_idempotency_keys'] LOOP
+ FOREACH t IN ARRAY ARRAY['crm_applications','crm_tasks','crm_interactions','crm_audit_events','crm_outbox_events','crm_idempotency_keys','crm_order_conversions'] LOOP
   EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY',t);
   EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I',t);
