@@ -30,7 +30,7 @@ final class CrmTenantIsolationTest extends TestCase
         $pdo->beginTransaction();
         try {
             $bypass = $pdo->query('SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user')->fetchColumn();
-            self::assertFalse((bool) $bypass, 'The CRM runtime database role must not bypass row-level security.');
+            self::assertContains($bypass, [false, 'f', 0, '0'], 'The CRM runtime database role must not bypass row-level security.');
 
             $applicationId = 'b7e9f3d4-1f6c-4a5a-8f31-9d4e2c6a7b10';
             $customerId = 'c4f0f45a-9f7a-4c87-9db0-9c5db6b7b001';
@@ -39,13 +39,14 @@ final class CrmTenantIsolationTest extends TestCase
 
             $insert = $pdo->prepare(
                 'INSERT INTO crm_applications (tenant_id,application_id,customer_id,created_by,updated_by)
-                 VALUES (:tenant,:application,:customer,:actor,:actor)',
+                 VALUES (:tenant,:application,:customer,:created_by,:updated_by)',
             );
             $insert->execute([
                 'tenant' => 'tenant-crm-a',
                 'application' => $applicationId,
                 'customer' => $customerId,
-                'actor' => 'crm-rls-test',
+                'created_by' => 'crm-rls-test',
+                'updated_by' => 'crm-rls-test',
             ]);
 
             $setTenant->execute(['tenant' => 'tenant-crm-b']);
