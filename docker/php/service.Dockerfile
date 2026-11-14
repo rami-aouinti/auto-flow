@@ -6,8 +6,8 @@ COPY --from=roadrunner /usr/bin/rr /usr/local/bin/rr
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        unzip zip supervisor protobuf-compiler libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev libpq-dev \
-    && docker-php-ext-install -j"$(nproc)" intl curl mbstring opcache pdo_pgsql sockets zip \
+        unzip zip supervisor protobuf-compiler libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev libpq-dev libxml2-dev \
+    && docker-php-ext-install -j"$(nproc)" dom intl curl mbstring opcache pdo_pgsql sockets zip \
     && pecl install opentelemetry \
     && docker-php-ext-enable opentelemetry \
     && apt-get clean \
