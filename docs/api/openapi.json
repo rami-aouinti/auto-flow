@@ -73,10 +73,6 @@
     {
       "name": "Audit Service",
       "description": "Tenant-isolated append-only compliance journal."
-    },
-    {
-      "name": "Audit Service",
-      "description": "Tenant-isolated append-only audit journal; requires audit:write or audit:read scopes."
     }
   ],
   "components": {
@@ -6398,16 +6394,15 @@
     "/health/ready": {
       "get": {
         "tags": [
-          "Audit Service"
+          "Document Service"
         ],
-        "summary": "Audit readiness",
-        "security": [],
+        "summary": "Document Service readiness",
         "responses": {
           "200": {
-            "description": "PostgreSQL is reachable"
+            "description": "Database and storage are ready"
           },
           "503": {
-            "description": "PostgreSQL unavailable"
+            "description": "Service is not ready"
           }
         }
       }
@@ -8393,40 +8388,6 @@
           },
           "403": {
             "description": "Missing integrations:read"
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "tags": [
-          "Audit Service"
-        ],
-        "summary": "Audit liveness",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Process is alive"
-          },
-          "503": {
-            "description": "PostgreSQL unavailable"
-          }
-        }
-      }
-    },
-    "/health/live": {
-      "get": {
-        "tags": [
-          "Audit Service"
-        ],
-        "summary": "Audit liveness",
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Process is alive"
-          },
-          "503": {
-            "description": "PostgreSQL unavailable"
           }
         }
       }
