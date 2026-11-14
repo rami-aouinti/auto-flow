@@ -59,7 +59,7 @@ http:
   routers:
     ai:
       entryPoints: [web]
-      rule: "PathPrefix(`/api/v1/ai`) "
+      rule: "PathPrefix(`/api/v1/ai`)"
       service: ai
       middlewares: [api-defaults]
 
