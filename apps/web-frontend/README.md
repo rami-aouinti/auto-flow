@@ -14,7 +14,7 @@ The AutoFlow frontend is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is deliver
 - `/operations/services` — cross-service read-only overview for Customers, CRM, Contracts, Billing, Fulfillment, Inventory and Reservations.
 - `/operations/order/:id` — dedicated order dossier with lifecycle timeline, audit history, linked payments/reservations/fulfillment/invoices and downloadable offer/contract PDFs.
 - `/admin/customer-360` — customer 360 workspace with profile editing, addresses, consents, orders, contracts and audit history.
-- `/operations/events` — cross-service business activity feed with API read errors and 30-second refresh.
+- `/operations/events` — searchable cross-service activity explorer with source filters, JSON payload inspection, API read errors, Mercure live messages and 30-second refresh.
 - `/operations/workflow` — operational workspace for contract creation/preparation/signature documents, inventory registration/status changes, vehicle reservations, fulfillment and delivery transitions, invoice/credit-note details, and audit timelines. Accepted marketplace offers can now be handed over to Order Service with the selected vehicle, quote and active customer. Tabs can be deep-linked with `?tab=contracts`, `?tab=inventory`, `?tab=reservations`, `?tab=fulfillment` or `?tab=billing`.
 
 Nuxt owns the route lifecycle and provides separate layouts for the customer-facing marketplace and the authenticated operations workspace. The marketplace uses reusable vehicle cards, search and filter controls, responsive navigation and a light visual theme. The operations and catalogue administration screens use the authenticated workspace shell. Shared PageHeader and MetricCard components keep administration screens consistent; the catalog editor uses resource-specific routes, Vuetify form controls, searchable data tables, explicit loading/error states and soft-archive actions. Catalogue filtering is delegated to the Vehicle Catalog API (manufacturer, fuel, body style, transmission, power and seats); sorting is applied to the current result page. Vehicle prices and inventory are not fabricated because those concerns do not belong to the Vehicle Catalog Service. The old independent HTML entry points and bootstrap scripts are not used.
@@ -25,7 +25,7 @@ The global notification menu subscribes to a configured Mercure hub using `VITE_
 
 ## End-to-end tests
 
-Run `npm install`, then `npx playwright install chromium`, then `npm run test:e2e`. The suite starts a dedicated Nuxt test server and mocks service APIs to exercise the order dossier, Customer 360 and event monitor. The `VITE_E2E_TEST_MODE` authentication bypass is enabled only by the Playwright web server configuration and must never be enabled in a deployed environment.
+Run `npm install`, then `npx playwright install chromium`, then `npm run test:e2e`. The suite starts a dedicated Nuxt test server and mocks service APIs to exercise the order dossier and guarded transition, Customer 360 related data, and event monitor filtering and payload inspection. The `VITE_E2E_TEST_MODE` authentication bypass is enabled only by the Playwright web server configuration and must never be enabled in a deployed environment.
 
 ## Authentication
 
@@ -50,7 +50,7 @@ Nuxt server routes proxy the same-origin prefixes to the internal Compose servic
 | `/inventory/**` | Inventory |
 | `/reservations/**` | Vehicle Reservation |
 
-The proxy forwards the original HTTP method, query string, request body and Authorization header for every service prefix. Customer personal-data responses remain `no-store`; the browser never receives internal service addresses. The Customer Service requires the `autoflow-customer` audience plus `customers:read`, `customers:write` or `customers:manage` as appropriate. CRM actions require the corresponding `crm:applications:*`, `crm:eligibility:manage`, `crm:tasks:*` and `crm:interactions:*` scopes.
+The proxy forwards the original HTTP method, query string, request body and Authorization header for every service prefix. Customer personal-data responses remain `no-store`; the browser never receives internal service addresses. The Customer Service requires the `autoflow-customer` audience plus `customers:read`, `customers:write` or `customers:manage` as appropriate. Customer 360 is an internal tenant-scoped admin workspace, not an end-customer portal. A self-service portal must wait for a server-enforced Keycloak-subject-to-customer association; filtering tenant-wide customer data in the browser is not an acceptable authorization boundary. CRM actions require the corresponding `crm:applications:*`, `crm:eligibility:manage`, `crm:tasks:*` and `crm:interactions:*` scopes.
 
 ## Local development
 
