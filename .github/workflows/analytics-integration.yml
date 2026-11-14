@@ -1,0 +1,55 @@
+name: Analytics and Integration Services
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "apps/analytics-service/**"
+      - "apps/integration-service/**"
+      - "docker/php/business-service.Dockerfile"
+      - "compose.yaml"
+      - "infrastructure/keycloak/realm/autoflow-realm.json"
+      - ".github/workflows/analytics-integration.yml"
+  pull_request:
+    paths:
+      - "apps/analytics-service/**"
+      - "apps/integration-service/**"
+      - "docker/php/business-service.Dockerfile"
+      - "compose.yaml"
+      - "infrastructure/keycloak/realm/autoflow-realm.json"
+      - ".github/workflows/analytics-integration.yml"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate Compose configuration
+        run: docker compose --env-file .env.example config --quiet
+      - name: Build and start services
+        run: |
+          docker compose --env-file .env.example up -d --build \
+            postgres postgres-bootstrap rabbitmq keycloak \
+            analytics-service analytics-event-consumer \
+            integration-service integration-delivery-worker
+      - name: Wait for health endpoints
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:8102/health/ready >/dev/null \
+              && curl -fsS http://localhost:8099/health/ready >/dev/null; then exit 0; fi
+            sleep 5
+          done
+          docker compose --env-file .env.example ps
+          docker compose --env-file .env.example logs --no-color postgres-bootstrap analytics-service integration-service
+          exit 1
+      - name: Run smoke tests
+        run: |
+          sh apps/analytics-service/tests/smoke.sh
+          sh apps/integration-service/tests/smoke.sh
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose --env-file .env.example logs --no-color analytics-service analytics-event-consumer integration-service integration-delivery-worker
+      - name: Stop services
+        if: always()
+        run: docker compose --env-file .env.example down -v
