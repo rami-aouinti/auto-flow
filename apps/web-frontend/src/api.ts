@@ -101,6 +101,30 @@ export const payments = {
       { headers: { 'Idempotency-Key': key } }),
 };
 
+const crmBase = import.meta.env.VITE_CRM_API_BASE || '/crm';
+export const crm = {
+  listApplications: (params: Record<string, unknown> = {}) => api.get(`${crmBase}/api/v1/crm/applications`, { params }),
+  createApplication: (payload: Record<string, unknown>, key: string) =>
+    api.post(`${crmBase}/api/v1/crm/applications`, payload, { headers: { 'Idempotency-Key': key } }),
+  getApplication: (id: string) => api.get(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}`),
+  transition: (id: string, status: string, reason?: string) =>
+    api.patch(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/status`, { status, reason }),
+  assignAdvisor: (id: string, advisorId: string) =>
+    api.put(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/assignment`, { advisorId }),
+  setEligibility: (id: string, status: string, result: Record<string, unknown>) =>
+    api.put(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/eligibility`, { status, result }),
+  createTask: (id: string, payload: Record<string, unknown>) =>
+    api.post(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/tasks`, payload),
+  listTasks: (id: string) => api.get(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/tasks`),
+  updateTask: (id: string, taskId: string, status: string) =>
+    api.patch(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/tasks/${encodeURIComponent(taskId)}`, { status }),
+  addInteraction: (id: string, payload: Record<string, unknown>) =>
+    api.post(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/interactions`, payload),
+  listInteractions: (id: string) => api.get(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/interactions`),
+  history: (id: string) => api.get(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/history`),
+  convert: (id: string) => api.post(`${crmBase}/api/v1/crm/applications/${encodeURIComponent(id)}/convert`, {}),
+};
+
 const billingBase = import.meta.env.VITE_BILLING_API_BASE || '/billing';
 export const billing = {
   summary: () => api.get(`${billingBase}/api/v1/billing/summary`),
