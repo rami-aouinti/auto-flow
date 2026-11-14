@@ -6,9 +6,18 @@ services:
     environment:
       APP_ENV: prod
       APP_DEBUG: "0"
+      APP_SECRET: ${CONTRACT_APP_SECRET:?Set CONTRACT_APP_SECRET}
+      CONTRACT_DATABASE_URL: ${CONTRACT_DATABASE_URL:?Set CONTRACT_DATABASE_URL}
       DOCUSIGN_PRIVATE_KEY_PATH: /run/secrets/docusign_rsa_private_key
     secrets:
       - docusign_rsa_private_key
+
+  billing-service:
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: ${BILLING_APP_SECRET:?Set BILLING_APP_SECRET}
+      BILLING_DATABASE_URL: ${BILLING_DATABASE_URL:?Set BILLING_DATABASE_URL}
 
 secrets:
   docusign_rsa_private_key:
