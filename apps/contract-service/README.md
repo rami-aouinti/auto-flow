@@ -10,7 +10,7 @@ Dedicated Contract bounded context. Contract owns the lifecycle of legal contrac
 - Keep contract type and version unique per tenant and order.
 - Prepare and cancel drafts with an explicit state machine.
 - Store audit history and versioned integration event envelopes in a transactional Outbox, published to RabbitMQ with publisher confirms.
-- Render immutable PDF drafts to private persistent storage and verify SHA-256 on download.
+- Render immutable PDF drafts, upload them to Document Service (malware scan + encrypted object storage), retain the canonical Document ID and verify SHA-256 on download. A local working copy is retained only for the DocuSign adapter.
 - Enforce tenant isolation with PostgreSQL RLS and a dedicated non-superuser database role.
 - Require an idempotency key for contract creation and lifecycle transitions.
 
@@ -26,8 +26,8 @@ Every route requires a Keycloak access token with the `autoflow-contract` audien
 | GET | /api/v1/contracts/{contractId}/history | contracts:read | Audit history |
 | POST | /api/v1/contracts/{contractId}/prepare | contracts:write | draft → prepared; Idempotency-Key required |
 | POST | /api/v1/contracts/{contractId}/cancel | contracts:manage | draft/prepared → cancelled; Idempotency-Key required |
-| POST | /api/v1/contracts/{contractId}/document | contracts:write | Generate an immutable PDF draft; repeated calls return the existing version |
-| GET | /api/v1/contracts/{contractId}/document | contracts:read | Download PDF after SHA-256 verification |
+| POST | /api/v1/contracts/{contractId}/document | contracts:write + documents:write | Generate and upload an immutable PDF to Document Service; repeated calls return the existing version |
+| GET | /api/v1/contracts/{contractId}/document | contracts:read + documents:read | Download canonical PDF bytes from Document Service and verify SHA-256 |
 | POST | /api/v1/contracts/{contractId}/send-for-signature | contracts:manage | Create a real DocuSign envelope; requires provider configuration |
 
 Supported contract types: `vehicle_purchase`, `vehicle_lease`, `vehicle_subscription`. A unique constraint prevents more than one contract for the same tenant/order/type/version.
@@ -43,6 +43,8 @@ awaiting_signature ──verified DocuSign Connect webhook──> signed
 
 The lifecycle supports `draft` → `prepared` → `awaiting_signature` → `signed`, with cancellation for draft/prepared/declined/voided contracts. PDF generation is server-side and stored on a private persistent volume. The DocuSign adapter uses the JWT OAuth grant, RSA private key, API account ID and a provider idempotency key. It returns 503 without changing state when credentials are missing or the provider does not confirm envelope creation. Only a verified DocuSign Connect HMAC webhook can move an awaiting contract to signed or cancelled; browser requests cannot mark a contract signed. Contract Outbox rows use the same versioned envelope contract consumed by Temporal.
 
+Contract PDF operations require the same caller token to include the `autoflow-document` audience and `documents:write` for generation / `documents:read` for download. The Document Service owner is the authenticated user, so no caller-supplied owner identity is accepted. Run the integration smoke test with a prepared contract UUID using `DOCUMENT_E2E_TOKEN=... CONTRACT_E2E_CONTRACT_ID=... docker compose exec -T contract-service php bin/smoke-test-document-integration.php`.
+
 The legal snapshot contains the order ID/status at capture, customer ID/version and the customer, offer, quote and vehicle snapshots held by Order. It is immutable through this API. Snapshot size is capped at 128 KiB. No consent records are copied.
 
 ## Reliability and security
@@ -51,7 +53,7 @@ The legal snapshot contains the order ID/status at capture, customer ID/version 
 - Runtime DB login `autoflow_contract` is `NOBYPASSRLS`; there is no cross-service foreign key.
 - Contract creation, lifecycle changes, PDF generation and verified signature callbacks write audit and Outbox records in the same database transaction.
 - The DocuSign webhook is outside bearer-token routes at `POST /webhooks/docusign`; it requires the configured Connect HMAC key and deduplicates events in a tenant-scoped inbox.
-- PDF bytes are stored outside the web root; the API verifies SHA-256 before each download.
+- Document Service owns the canonical PDF bytes, malware scan, encrypted S3 storage, versions and retention. Contract stores the Document UUID and checksum; API downloads are proxied through Document Service and SHA-256 verified. A private local working copy remains for the synchronous DocuSign adapter.
 - Idempotency is scoped to tenant + actor + key and rejects a key reused for a different command.
 - Order lookups have a three-second timeout, do not follow redirects and forward only the caller's bearer token and correlation ID.
 - Responses containing legal snapshots use `Cache-Control: no-store`.
