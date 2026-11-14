@@ -88,3 +88,32 @@ func TestOrderFulfillmentSagaCompensatesWhenPaymentFails(t *testing.T) {
 		t.Fatalf("expected one reservation compensation, got %d", releases)
 	}
 }
+
+func TestOrderFulfillmentSagaCompensatesWhenPaymentIsCancelled(t *testing.T) {
+	var suite testsuite.WorkflowTestSuite
+	env := suite.NewTestWorkflowEnvironment()
+	var releases int
+	env.RegisterActivityWithOptions(func(_ context.Context, _ ReservationSagaCommand) error { return nil }, activity.RegisterOptions{Name: "RequestReservationHold"})
+	env.RegisterActivityWithOptions(func(_ context.Context, _ ReservationSagaCommand) error {
+		releases++
+		return nil
+	}, activity.RegisterOptions{Name: "RequestReservationRelease"})
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(SagaSignal, Event{EventID: "evt-accepted", EventType: "OrderAccepted"})
+	}, time.Second)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(SagaSignal, Event{EventID: "evt-held", EventType: "reservation.held.v1", Data: map[string]any{"id": "reservation-3"}})
+	}, 2*time.Second)
+	env.RegisterDelayedCallback(func() {
+		env.SignalWorkflow(SagaSignal, Event{EventID: "evt-cancelled", EventType: "OrderPaymentCancelled"})
+	}, 3*time.Second)
+	env.ExecuteWorkflow(OrderFulfillmentSagaWorkflow, SagaWorkflowInput{
+		TenantID: "tenant-demo", OrderID: "order-3", VehicleVariantID: "variant-1",
+	})
+	if err := env.GetWorkflowError(); err != nil {
+		t.Fatalf("Saga workflow returned an error: %v", err)
+	}
+	if releases != 1 {
+		t.Fatalf("expected one reservation release after payment cancellation, got %d", releases)
+	}
+}
