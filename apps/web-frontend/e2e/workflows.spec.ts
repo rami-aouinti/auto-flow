@@ -75,3 +75,37 @@ test('business event monitor renders service activity', async ({ page }) => {
   await page.getByLabel('Aktivitäten durchsuchen').fill('not-a-real-order');
   await expect(page.getByText('Keine Aktivitäten passen zu diesem Filter.')).toBeVisible();
 });
+
+
+test('customer self-service portal reads and updates only the linked profile', async ({ page }) => {
+  let profile = {
+    customer_id: '00000000-0000-4000-8000-000000000101',
+    customer_type: 'individual',
+    first_name: 'Demo',
+    last_name: 'Customer',
+    email: 'customer-demo@autoflow.local',
+    phone: '',
+    locale: 'de-DE',
+    status: 'active',
+    version: 1,
+  };
+  await page.route('**/customers/api/v1/customers/me', async route => {
+    if (route.request().method() === 'PATCH') {
+      profile = { ...profile, ...route.request().postDataJSON(), version: profile.version + 1 };
+    }
+    await route.fulfill({ json: profile });
+  });
+  await page.route('**/customers/api/v1/customers/me/addresses', route => route.fulfill({ json: { items: [{ address_id: 'portal-address', address_type: 'billing', line1: 'Demo Street 1', postal_code: '50667', city: 'Köln', country_code: 'DE', is_default: true }] } }));
+  await page.route('**/customers/api/v1/customers/me/consents', async route => {
+    if (route.request().method() === 'PUT') return route.fulfill({ json: route.request().postDataJSON() });
+    return route.fulfill({ json: { items: [{ purpose: 'marketing.email', granted: false }, { purpose: 'marketing.sms', granted: false }] } });
+  });
+
+  await page.goto('/portal');
+  await expect(page.getByRole('heading', { name: 'Mein Kundenkonto' })).toBeVisible();
+  await expect(page.getByText('Demo Street 1')).toBeVisible();
+  await page.getByLabel('Vorname').fill('Alex');
+  await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+  await expect(page.getByText('Deine Profildaten wurden gespeichert.')).toBeVisible();
+  await expect(page.getByLabel('Vorname')).toHaveValue('Alex');
+});
