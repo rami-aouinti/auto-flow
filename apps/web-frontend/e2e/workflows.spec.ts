@@ -137,6 +137,15 @@ test('customer self-service portal reads and updates only the linked profile', a
   await page.getByLabel('Land (ISO)').fill('DE');
   await page.getByRole('button', { name: 'Speichern' }).last().click();
   await expect(page.getByText(/Demo Street 2/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Adresse bearbeiten portal-address-new' }).click();
+  await page.getByLabel('Straße und Hausnummer').fill('Demo Street 3');
+  await page.getByRole('button', { name: 'Speichern' }).last().click();
+  await expect(page.getByText(/Demo Street 3/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Adresse entfernen portal-address-new' }).click();
+  await page.getByRole('button', { name: 'Entfernen' }).click();
+  await expect(page.getByText(/Demo Street 3/)).toHaveCount(0);
 });
 
 
