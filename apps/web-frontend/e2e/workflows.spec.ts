@@ -72,7 +72,7 @@ test('business event monitor renders service activity', async ({ page }) => {
   await expect(page.getByText('Ereignisdetails')).toBeVisible();
   await expect(page.locator('pre.event-payload')).toContainText('order-demo');
   await page.getByRole('button', { name: 'Schließen' }).last().click();
-  await page.getByLabel('Aktivitäten durchsuchen').fill('not-a-real-order');
+  await page.getByRole('textbox', { name: 'Aktivitäten durchsuchen' }).fill('not-a-real-order');
   await expect(page.getByText('Keine Aktivitäten passen zu diesem Filter.')).toBeVisible();
 });
 
