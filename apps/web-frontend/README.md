@@ -46,4 +46,4 @@ Set `VITE_STRIPE_PUBLISHABLE_KEY` in the root Compose environment. The browser r
 
 ## Production
 
-Build with `npm run build` and deploy the generated Nuxt/Nitro output behind TLS. Configure the five proxy target environment variables for the internal service network. Keep Keycloak issuer, client origins, allowed redirect URIs and web origins aligned with the public frontend origin.
+Build with `npm run build` and deploy the generated Nuxt/Nitro output behind TLS. Configure the service proxy target environment variables for the internal service network. Keep Keycloak issuer, client origins, allowed redirect URIs and web origins aligned with the public frontend origin.
