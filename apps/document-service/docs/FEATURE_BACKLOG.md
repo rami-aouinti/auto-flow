@@ -16,11 +16,12 @@
 
 ## Remaining work before production sign-off
 
-- [ ] Add automated API and PostgreSQL integration tests covering JWT signature/expiry, tenant RLS, access grant expiry/revocation, legal hold, concurrent version creation and retention purge.
-- [ ] Add S3/MinIO contract tests for SigV4, SSE-C round-trip, denied cross-tenant keys, storage outage and object cleanup after DB rollback.
+- [x] Add local storage round-trip/path-safety tests, MinIO SSE-C upload/download/delete smoke test, PostgreSQL tenant-RLS/access-grant/legal-hold/maintenance-role tests, PHP lint and OpenAPI checks in CI.
+- [ ] Add full HTTP API tests for JWT signature/expiry/audience, owner/delegated authorization, legal-hold race conditions, concurrent version uploads, retention purge execution, S3 outage handling and object cleanup after DB rollback.
 - [ ] Add event-consumer inbox/idempotency and dead-letter/replay only when a downstream Document event consumer is introduced; current Document Service is a publisher.
 - [ ] Add OpenTelemetry spans/metrics for upload, scan, S3 operations, grant decisions, outbox lag and purge batches; wire dashboards and alerts.
-- [ ] Add Kubernetes manifests with secret references, resource requests/limits, probes, network policy, persistent/managed object storage and worker deployment.
+- [x] Add Kubernetes API/worker Deployments, ClusterIP Service, CPU HPA, resource requests/limits, readiness/liveness probes, non-root runtime and external Secret references.
+- [ ] Add NetworkPolicy, PodDisruptionBudget, rollback runbook and managed object-store lifecycle/backup policy.
 - [ ] Integrate Document IDs with Contract and Billing workflows through explicit consumer/API contracts; keep PDF generation and business lifecycle in those services.
 - [ ] Perform load, malware fixture, disaster-recovery, encryption-key rotation and restore drills.
 
