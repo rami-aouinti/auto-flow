@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-use Doctrine\DBAL\DriverManager;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Message\AMQPMessage;
+use Doctrine\\DBAL\\DriverManager;
+use PhpAmqpLib\\Connection\\AMQPStreamConnection;
+use PhpAmqpLib\\Message\\AMQPMessage;
+use PhpAmqpLib\\Wire\\AMQPTable;
+use Symfony\\Component\\Uid\\Uuid;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -44,29 +46,51 @@ $connection = new AMQPStreamConnection(
 $channel = $connection->channel();
 $exchange = 'autoflow.payment.events';
 $queue = 'autoflow.order.payment-events';
+$deadExchange = 'autoflow.order.payment-events.dlx';
+$deadQueue = 'autoflow.order.payment-events.dead';
+
 $channel->exchange_declare($exchange, 'topic', false, true, false);
-$channel->queue_declare($queue, false, true, false, false);
+$channel->exchange_declare($deadExchange, 'direct', false, true, false);
+$channel->queue_declare($deadQueue, false, true, false, false);
+$channel->queue_bind($deadQueue, $deadExchange, 'invalid');
+$channel->queue_declare($queue, false, true, false, false, false, new AMQPTable([
+    'x-dead-letter-exchange' => $deadExchange,
+    'x-dead-letter-routing-key' => 'invalid',
+]));
 foreach (['PaymentAuthorized', 'PaymentCaptured', 'PaymentFailed', 'PaymentRefunded', 'PaymentPartiallyRefunded', 'PaymentCancelled'] as $eventType) {
     $channel->queue_bind($queue, $exchange, $eventType);
 }
-$channel->basic_qos(null, 20, null);
+$channel->basic_qos(null, 20, false);
 
 $handler = static function (AMQPMessage $message) use ($db): void {
-    $envelope = json_decode($message->getBody(), true, 512, JSON_THROW_ON_ERROR);
-    if (!is_array($envelope)) {
+    $raw = $message->getBody();
+    $envelope = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+    if (!is_array($envelope) || array_is_list($envelope)) {
         throw new UnexpectedValueException('Payment event envelope must be a JSON object.');
     }
-    $eventId = $envelope['eventId'] ?? $message->get('message_id');
-    $eventType = $envelope['eventType'] ?? $message->get('type');
+
+    $eventId = $envelope['eventId'] ?? null;
+    $eventType = $envelope['eventType'] ?? null;
     $tenantId = $envelope['tenantId'] ?? null;
-    $data = $envelope['data'] ?? [];
+    $data = $envelope['data'] ?? null;
     $orderId = is_array($data) ? ($data['orderId'] ?? null) : null;
-    if (!is_string($eventId) || !is_string($eventType) || !is_string($tenantId)
-        || !is_string($orderId) || !Symfony\Component\Uid\Uuid::isValid($eventId)
-        || !Symfony\Component\Uid\Uuid::isValid($orderId)
-        || preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenantId) !== 1) {
-        throw new UnexpectedValueException('Payment event is missing valid event, tenant or order identifiers.');
+    if (!is_string($eventId) || !Uuid::isValid($eventId)
+        || !is_string($eventType)
+        || !is_string($tenantId)
+        || preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenantId) !== 1
+        || !is_array($data) || array_is_list($data)
+        || !is_string($orderId) || !Uuid::isValid($orderId)
+        || ($envelope['schemaVersion'] ?? null) !== 1
+        || ($envelope['producer'] ?? null) !== 'payment-service'
+    ) {
+        throw new UnexpectedValueException('Payment event envelope is invalid or unsupported.');
     }
+    if (($message->get('message_id') ?? null) !== $eventId
+        || ($message->get('type') ?? null) !== $eventType
+    ) {
+        throw new UnexpectedValueException('RabbitMQ metadata does not match the Payment event envelope.');
+    }
+
     $paymentStatus = match ($eventType) {
         'PaymentAuthorized' => 'authorized',
         'PaymentCaptured' => 'captured',
@@ -74,22 +98,39 @@ $handler = static function (AMQPMessage $message) use ($db): void {
         'PaymentRefunded' => 'refunded',
         'PaymentPartiallyRefunded' => 'partially_refunded',
         'PaymentCancelled' => 'cancelled',
-        default => null,
+        default => throw new UnexpectedValueException('Unsupported Payment event type.'),
     };
-    if ($paymentStatus === null) {
-        return;
-    }
-    $db->transactional(static function ($db) use ($eventId, $eventType, $tenantId, $orderId, $paymentStatus): void {
+    $payloadHash = hash('sha256', $raw);
+
+    $db->transactional(static function ($db) use ($eventId, $eventType, $tenantId, $orderId, $paymentStatus, $payloadHash): void {
         $db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant' => $tenantId]);
         $inserted = $db->fetchOne(
-            'INSERT INTO order_payment_event_inbox (tenant_id, event_id, order_id, event_type) VALUES (:tenant, :event, :order, :type) ON CONFLICT DO NOTHING RETURNING event_id',
-            ['tenant' => $tenantId, 'event' => $eventId, 'order' => $orderId, 'type' => $eventType],
+            'INSERT INTO order_payment_event_inbox (tenant_id, event_id, order_id, event_type, payload_hash)
+             VALUES (:tenant, :event, :order, :type, :hash)
+             ON CONFLICT (tenant_id, event_id) DO NOTHING RETURNING event_id',
+            ['tenant' => $tenantId, 'event' => $eventId, 'order' => $orderId, 'type' => $eventType, 'hash' => $payloadHash],
         );
         if ($inserted === false) {
+            $existing = $db->fetchAssociative(
+                'SELECT payload_hash FROM order_payment_event_inbox WHERE tenant_id=:tenant AND event_id=:event',
+                ['tenant' => $tenantId, 'event' => $eventId],
+            );
+            $existingHash = is_array($existing) ? trim((string) $existing['payload_hash']) : '';
+            if ($existingHash === str_repeat('0', 64)) {
+                $db->executeStatement(
+                    'UPDATE order_payment_event_inbox SET payload_hash=:hash WHERE tenant_id=:tenant AND event_id=:event',
+                    ['hash' => $payloadHash, 'tenant' => $tenantId, 'event' => $eventId],
+                );
+                return;
+            }
+            if ($existingHash === '' || !hash_equals($existingHash, $payloadHash)) {
+                throw new UnexpectedValueException('A Payment eventId was reused with a different payload.');
+            }
             return;
         }
+
         $exists = $db->fetchAssociative(
-            'SELECT status, payment_status FROM orders WHERE tenant_id = :tenant AND order_id = :order',
+            'SELECT status, payment_status FROM orders WHERE tenant_id = :tenant AND order_id = :order FOR UPDATE',
             ['tenant' => $tenantId, 'order' => $orderId],
         );
         if (!is_array($exists)) {
@@ -134,7 +175,7 @@ $handler = static function (AMQPMessage $message) use ($db): void {
             'cancelled' => 'PaymentCancelled',
         };
         $payload = [
-            'eventId' => Symfony\Component\Uid\Uuid::v7()->toRfc4122(),
+            'eventId' => Uuid::v7()->toRfc4122(),
             'eventType' => $outboxEvent,
             'schemaVersion' => 1,
             'producer' => 'order-service',
@@ -157,10 +198,13 @@ $handler = static function (AMQPMessage $message) use ($db): void {
 $channel->basic_consume($queue, '', false, false, false, false, static function (AMQPMessage $message) use ($handler, $channel): void {
     try {
         $handler($message);
-        $message->ack();
+        $channel->basic_ack($message->getDeliveryTag());
+    } catch (JsonException|InvalidArgumentException|UnexpectedValueException $exception) {
+        fwrite(STDERR, 'Dead-lettering invalid Payment event: ' . $exception->getMessage() . PHP_EOL);
+        $channel->basic_nack($message->getDeliveryTag(), false, false);
     } catch (Throwable $exception) {
-        fwrite(STDERR, 'Payment event processing failed: ' . $exception->getMessage() . PHP_EOL);
-        $message->nack(false, true);
+        fwrite(STDERR, 'Payment event processing failed; requeueing: ' . $exception->getMessage() . PHP_EOL);
+        $channel->basic_nack($message->getDeliveryTag(), false, true);
     }
 });
 
@@ -169,6 +213,10 @@ try {
         $channel->wait();
     }
 } finally {
-    $channel->close();
-    $connection->close();
+    if ($channel->is_open()) {
+        $channel->close();
+    }
+    if ($connection->isConnected()) {
+        $connection->close();
+    }
 }
