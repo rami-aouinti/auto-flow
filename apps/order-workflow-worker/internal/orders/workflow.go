@@ -67,7 +67,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	// Payment authorization is the gate that advances an accepted order to contract preparation.
 	contractState, err := waitForLifecycleEvent(ctx, map[string]bool{
 		"OrderContractPending": true, "OrderPaymentAuthorized": true,
-		"OrderPaymentFailed": true, "OrderPaymentRefunded": true, "OrderCancelled": true,
+		"OrderPaymentFailed": true, "OrderPaymentRefunded": true, "OrderPaymentCancelled": true, "OrderCancelled": true,
 	}, 24*time.Hour, seenEventIDs)
 	if err != nil {
 		return err
@@ -89,6 +89,20 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 	}
 	if contractState == "OrderCancelled" || contractState == "OrderPaymentRefunded" {
 		return nil
+	}
+	if contractState == "OrderPaymentCancelled" {
+		if err := workflow.ExecuteActivity(activityCtx, "PublishSLAAlert", SLAAlert{
+			TenantID: input.TenantID, OrderID: input.OrderID, CorrelationID: input.CorrelationID,
+			Phase: "payment_cancelled", After: "immediate",
+		}).Get(ctx, nil); err != nil {
+			return err
+		}
+		recovery, err := waitForLifecycleEvent(ctx, map[string]bool{
+			"OrderPaymentAuthorized": true, "OrderPaymentRefunded": true, "OrderCancelled": true,
+		}, 0, seenEventIDs)
+		if err != nil || recovery == "OrderPaymentRefunded" || recovery == "OrderCancelled" {
+			return err
+		}
 	}
 	if contractState == "OrderPaymentFailed" {
 		if err := workflow.ExecuteActivity(activityCtx, "PublishSLAAlert", SLAAlert{
