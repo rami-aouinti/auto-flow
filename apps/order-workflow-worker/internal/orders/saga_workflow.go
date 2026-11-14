@@ -144,6 +144,12 @@ func OrderFulfillmentSagaWorkflow(ctx workflow.Context, input SagaWorkflowInput)
 		"reservation.released.v1": true,
 	}, 10*time.Minute, seen)
 	if err != nil {
+		if releaseErr := workflow.ExecuteActivity(activityCtx, "RequestReservationRelease", ReservationSagaCommand{
+			TenantID: input.TenantID, OrderID: input.OrderID, ReservationID: reservationID,
+			CorrelationID: input.CorrelationID,
+		}).Get(ctx, nil); releaseErr != nil {
+			return temporal.NewApplicationError("reservation confirmation timed out and compensation failed", "SagaCompensationRequired", releaseErr)
+		}
 		return err
 	}
 	if confirmed.EventType != "reservation.confirmed.v1" {
