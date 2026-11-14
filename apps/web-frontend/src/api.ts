@@ -83,6 +83,9 @@ export const customers = {
   portalMe: () => api.get(`${customerBase}/api/v1/customers/me`),
   portalUpdate: (payload: Record<string, unknown>) => api.patch(`${customerBase}/api/v1/customers/me`, payload),
   portalAddresses: () => api.get(`${customerBase}/api/v1/customers/me/addresses`),
+  portalCreateAddress: (payload: Record<string, unknown>) => api.post(`${customerBase}/api/v1/customers/me/addresses`, payload),
+  portalUpdateAddress: (id: string, payload: Record<string, unknown>) => api.put(`${customerBase}/api/v1/customers/me/addresses/${encodeURIComponent(id)}`, payload),
+  portalDeleteAddress: (id: string) => api.delete(`${customerBase}/api/v1/customers/me/addresses/${encodeURIComponent(id)}`),
   portalConsents: () => api.get(`${customerBase}/api/v1/customers/me/consents`),
   portalSetConsent: (purpose: string, granted: boolean) => api.put(`${customerBase}/api/v1/customers/me/consents`, { purpose, granted }),
 };
