@@ -1058,7 +1058,7 @@ services:
       APP_DEBUG: "0"
       APP_SECRET: local-only-search-service-secret
       ELASTICSEARCH_URL: http://elasticsearch:9200
-      SEARCH_VEHICLE_INDEX: autoflow-vehicles-v1
+      SEARCH_VEHICLE_INDEX: autoflow-vehicles
       CATALOG_DATABASE_URL: ${CATALOG_DATABASE_URL:-postgresql://autoflow_catalog:local-only-catalog-password@postgres:5432/autoflow}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
