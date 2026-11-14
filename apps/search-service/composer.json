@@ -1,6 +1,6 @@
 {
   "name": "autoflow/search-service",
-  "description": "Tenant-safe AutoFlow vehicle search backed by Elasticsearch.",
+  "description": "AutoFlow vehicle search backed by Elasticsearch.",
   "type": "project",
   "license": "proprietary",
   "require": {
@@ -16,10 +16,15 @@
     "symfony/yaml": "7.4.*",
     "autoflow/core-bundle": "^2.0"
   },
+  "require-dev": {
+    "phpunit/phpunit": "^11.5"
+  },
   "repositories": [
     {"type": "path", "url": "../../packages/core-bundle", "options": {"symlink": false}}
   ],
   "autoload": {"psr-4": {"App\\": "src/"}},
+  "autoload-dev": {"psr-4": {"App\\Tests\\": "tests/"}},
+  "scripts": {"test": "phpunit"},
   "config": {
     "sort-packages": true,
     "allow-plugins": {"symfony/flex": true},
