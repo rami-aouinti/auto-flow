@@ -12,4 +12,28 @@ final class CustomerRulesTest extends TestCase
  public function testCompanyRequiresLegalName():void{$this->expectException(\DomainException::class);$this->call('customerInput',[['customerType'=>'company']]);}
  public function testEmailIsNormalizedAndLocaleDefaultsToGerman():void{$v=$this->call('customerInput',[['customerType'=>'individual','firstName'=>'Ada','lastName'=>'Lovelace','email'=>'Ada@Example.Test']]);self::assertSame('ada@example.test',$v['email']);self::assertSame('de-DE',$v['locale']);}
  public function testCountryCodeMustBeAlpha2():void{$this->expectException(\InvalidArgumentException::class);$this->call('addressInput',[['line1'=>'Street 1','postalCode'=>'10115','city'=>'Berlin','countryCode'=>'DEU']]);}
+ public function testPortalAddressInputNormalizesCountryCodeAndAllowsOptionalFields():void
+ {
+  $controller=(new ReflectionClass(\\App\\Presentation\\Http\\Controller\\CustomerPortalController::class))->newInstanceWithoutConstructor();
+  $method=new ReflectionMethod(\\App\\Presentation\\Http\\Controller\\CustomerPortalController::class,'addressInput');
+  $value=$method->invoke($controller,['addressType'=>'billing','line1'=>'Main Street 1','postalCode'=>'10115','city'=>'Berlin','countryCode'=>'de','isDefault'=>true]);
+  self::assertSame('DE',$value['countryCode']);
+  self::assertNull($value['line2']);
+  self::assertTrue($value['isDefault']);
+ }
+ public function testPortalAddressInputRejectsInvalidCountryCode():void
+ {
+  $controller=(new ReflectionClass(\\App\\Presentation\\Http\\Controller\\CustomerPortalController::class))->newInstanceWithoutConstructor();
+  $method=new ReflectionMethod(\\App\\Presentation\\Http\\Controller\\CustomerPortalController::class,'addressInput');
+  $this->expectException(\\InvalidArgumentException::class);
+  $method->invoke($controller,['line1'=>'Main Street 1','postalCode'=>'10115','city'=>'Berlin','countryCode'=>'DEU']);
+ }
+ public function testPortalAddressInputRequiresBooleanDefaultFlag():void
+ {
+  $controller=(new ReflectionClass(\\App\\Presentation\\Http\\Controller\\CustomerPortalController::class))->newInstanceWithoutConstructor();
+  $method=new ReflectionMethod(\\App\\Presentation\\Http\\Controller\\CustomerPortalController::class,'addressInput');
+  $this->expectException(\\InvalidArgumentException::class);
+  $method->invoke($controller,['line1'=>'Main Street 1','postalCode'=>'10115','city'=>'Berlin','countryCode'=>'DE','isDefault'=>'true']);
+ }
+
 }
