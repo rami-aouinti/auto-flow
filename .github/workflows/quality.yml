@@ -73,6 +73,8 @@ jobs:
           composer validate --strict --working-dir=apps/crm-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
+      - name: Build Document Service API and outbox worker images
+        run: docker compose --env-file .env.example build document-service document-outbox-publisher
       - name: Validate Grafana Alloy configuration
         run: |
           set +e
