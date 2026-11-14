@@ -50,7 +50,7 @@ final readonly class InventoryController
                     'first_registration_date'=>$d['firstRegistrationDate'],'created_by'=>$p->subject,'updated_by'=>$p->subject
                 ]);
                 $item = $this->load($db, $tenant, $id);
-                $this->record($db, $tenant, $id, $p->subject, 'InventoryUnitCreated', null, 'available', null, $d['locationCode'], ['vin'=>$d['vin'],'vehicleVariantId'=>$d['vehicleVariantId']]);
+                $this->record($db, $tenant, $id, $p->subject, 'InventoryUnitCreated', null, 'available', null, $d['locationCode'], ['vin'=>$d['vin'],'vehicleVariantId'=>$d['vehicleVariantId'],'version'=>1]);
                 $db->insert('inventory_idempotency_keys', [
                     'tenant_id'=>$tenant,'idempotency_key'=>$key,'request_hash'=>$hash,
                     'response_body'=>json_encode($item, JSON_THROW_ON_ERROR)
@@ -137,7 +137,7 @@ final readonly class InventoryController
         } catch (Throwable $e) { return $this->problem(400, $e->getMessage()); }
 
         return $this->run($r, 'inventory:write', function (Connection $db, string $tenant, AuthenticatedPrincipal $p) use ($id, $target, $reason, $key, $expected): JsonResponse {
-            $old = $db->fetchAssociative('SELECT status,location_code,version FROM inventory_units WHERE tenant_id=:tenant AND inventory_unit_id=:id FOR UPDATE', ['tenant'=>$tenant,'id'=>$id]);
+            $old = $db->fetchAssociative('SELECT status,location_code,vehicle_variant_id,vin,version FROM inventory_units WHERE tenant_id=:tenant AND inventory_unit_id=:id FOR UPDATE', ['tenant'=>$tenant,'id'=>$id]);
             if ($old === false) return $this->problem(404, 'Inventory unit not found.');
             $hash = hash('sha256', json_encode([$id,$target,$reason,$expected], JSON_THROW_ON_ERROR));
             $existing = $db->fetchAssociative('SELECT request_hash,response_body FROM inventory_idempotency_keys WHERE tenant_id=:tenant AND idempotency_key=:key', ['tenant'=>$tenant,'key'=>$key]);
@@ -157,7 +157,7 @@ final readonly class InventoryController
             }
             if (!$this->transitionAllowed($old['status'], $target)) return $this->problem(409, 'Inventory status transition is not allowed.');
             $db->executeStatement('UPDATE inventory_units SET status=:status,version=version+1,updated_by=:actor,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=:tenant AND inventory_unit_id=:id', ['status'=>$target,'actor'=>$p->subject,'tenant'=>$tenant,'id'=>$id]);
-            $this->record($db, $tenant, $id, $p->subject, 'InventoryStatusChanged', $old['status'], $target, $old['location_code'], $old['location_code'], ['reason'=>$reason]);
+            $this->record($db, $tenant, $id, $p->subject, 'InventoryStatusChanged', $old['status'], $target, $old['location_code'], $old['location_code'], ['reason'=>$reason,'vehicleVariantId'=>$old['vehicle_variant_id'],'vin'=>$old['vin'],'version'=>(int)$old['version']+1]);
             $item = $this->load($db, $tenant, $id);
             $db->insert('inventory_idempotency_keys', ['tenant_id'=>$tenant,'idempotency_key'=>$key,'request_hash'=>$hash,'response_body'=>json_encode($item, JSON_THROW_ON_ERROR)]);
             return new JsonResponse($item, 200, ['Cache-Control'=>'no-store','ETag'=>'"'.$item['version'].'"']);
