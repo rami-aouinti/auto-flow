@@ -38,7 +38,7 @@ Health: `/health/live` and `/health/ready`. Readiness checks PostgreSQL, the con
 - `src/storage.php` implements path-style S3 requests with AWS Signature Version 4. `DOCUMENT_STORAGE_DRIVER=local` is available for isolated development; Compose uses S3.
 - Each upload is stored under a tenant-hashed object prefix with a random key. Every document version has its own object.
 - MinIO local setup creates an application account limited to bucket list/get/put/delete. SSE-C uses a stable 32-byte base64 key.
-- `document-retention-worker` runs hourly by default. It deletes all object versions after `retention_until`, records a purge audit entry and emits `DocumentPurged`.
+- `document-retention-worker` runs hourly by default. It deletes all object versions after `retention_until`, records a purge audit entry and emits `DocumentPurged`. Documents without `retention_until` are retained indefinitely; the service does not invent a legal retention period.
 - A legal hold records reason, actor and timestamp and blocks archive, soft-delete and retention purge until explicitly released.
 - Owners may grant another Keycloak subject `read` or `manage` access with optional expiry; grants can be revoked.
 - The outbox publisher retries unacknowledged events. Consumers must deduplicate by `eventId`.
