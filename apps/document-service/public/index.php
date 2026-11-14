@@ -60,8 +60,8 @@ function hasGrant(PDO $db,array $u,string $documentId,string $permission):bool {
     return (bool)$q->fetchColumn();
 }
 function permitDocument(PDO $db,array $u,array $doc,string $permission):void {
-    $scope=$permission==='read'?'documents:read':($permission==='write'?'documents:write':'documents:manage');
-    if(in_array($scope,$u['scopes'],true)||($permission!=='read'&&$doc['owner_id']===$u['sub'])||($permission==='read'&&$doc['owner_id']===$u['sub'])||hasGrant($db,$u,$doc['id'],$permission))return;
+    $required=match($permission){'read'=>['documents:read','documents:write','documents:manage'],'write'=>['documents:write','documents:manage'],default=>['documents:manage']};
+    if(array_intersect($required,$u['scopes'])!==[]||$doc['owner_id']===$u['sub']||hasGrant($db,$u,$doc['id'],$permission))return;
     fail(403,'Forbidden','Document access is not granted.');
 }
 function requestJson():array {
