@@ -4,7 +4,7 @@
 
 - [x] Tenant-scoped document metadata, categories, lifecycle states, search and pagination.
 - [x] Multipart upload with MIME sniffing, 25 MiB limit, SHA-256 and fail-closed ClamAV scanning.
-- [x] Private S3-compatible object storage (MinIO in local Compose) with AWS Signature V4 and SSE-C AES-256 encryption.
+- [x] Private S3-compatible object storage (RustFS in local Compose) with AWS Signature V4 and SSE-C AES-256 encryption.
 - [x] Production object-store identity with bucket-scoped list/get/put/delete permissions; local RustFS uses its development S3 credentials directly.
 - [x] Immutable binary object keys per version, version history and secure download.
 - [x] JWT RS256 verification, Keycloak audience, tenant isolation and forced PostgreSQL RLS.
