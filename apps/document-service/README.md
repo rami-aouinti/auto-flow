@@ -14,6 +14,7 @@ Contract and Billing remain owners of their business workflows and PDF generatio
 - PostgreSQL schema `document_service`, role `autoflow_document`.
 - ClamAV daemon for fail-closed malware scanning.
 - Persistent Docker volume `document-data`; binaries are stored outside the web root.
+- RabbitMQ topic exchange and durable queue `autoflow.document.events`; delivery is at-least-once and consumers deduplicate by event ID.
 - Keycloak RS256 JWT; audience `autoflow-document`, `tenant_id` claim and `documents:read|write|manage` permissions.
 
 ## API
@@ -42,7 +43,7 @@ Compose mounts the scripts for fresh PostgreSQL initialization and runs them aga
 ## Start and verify
 
 ```bash
-docker compose --env-file .env.example up -d --build postgres postgres-bootstrap clamav document-service
+docker compose --env-file .env.example up -d --build postgres postgres-bootstrap rabbitmq clamav document-service document-outbox-publisher
 docker compose --env-file .env.example ps document-service clamav
 curl -i http://localhost:8100/health/live
 curl -i http://localhost:8100/health/ready
