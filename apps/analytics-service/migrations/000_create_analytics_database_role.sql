@@ -4,6 +4,7 @@ BEGIN
     CREATE ROLE autoflow_analytics LOGIN PASSWORD 'local-only-analytics-password';
   END IF;
 END $$;
+CREATE SCHEMA IF NOT EXISTS analytics_service;
 GRANT CONNECT ON DATABASE autoflow TO autoflow_analytics;
 GRANT USAGE,CREATE ON SCHEMA analytics_service TO autoflow_analytics;
 GRANT SELECT,INSERT ON ALL TABLES IN SCHEMA analytics_service TO autoflow_analytics;
