@@ -12,7 +12,7 @@ Document Service owns business-document binaries and metadata lifecycle only. Co
 - PostgreSQL schema `document_service`; application role `autoflow_document` with forced tenant RLS.
 - Separate `autoflow_document_maintenance` role with narrowly granted document-table access and `BYPASSRLS` for cross-tenant retention processing.
 - ClamAV malware scanner; uploads fail closed if scanning is unavailable or not clean.
-- S3-compatible object storage. Local Compose starts MinIO, creates a private bucket and a least-privilege service user.
+- S3-compatible object storage. Local Compose starts RustFS and initializes the `autoflow-documents` bucket through AWS CLI. Local development uses the RustFS S3 credentials directly; production must use a dedicated least-privilege IAM identity.
 - Object-level SSE-C AES-256 encryption. Back up `DOCUMENT_S3_SSE_C_KEY_BASE64` securely and keep it stable; losing it makes objects unreadable.
 - RabbitMQ topic exchange and durable queue `autoflow.document.events`; transactional outbox delivery is at-least-once.
 - Keycloak RS256 JWT, audience `autoflow-document`, tenant claim `tenant_id` and `documents:read|write|manage` permissions.
@@ -38,7 +38,7 @@ Health: `/health/live` and `/health/ready`. Readiness checks PostgreSQL, the con
 
 - `src/storage.php` implements path-style S3 requests with AWS Signature Version 4. `DOCUMENT_STORAGE_DRIVER=local` is available for isolated development; Compose uses S3.
 - Each upload is stored under a tenant-hashed object prefix with a random key. Every document version has its own object.
-- MinIO local setup creates an application account limited to bucket list/get/put/delete. SSE-C uses a stable 32-byte base64 key.
+- Local RustFS uses the configured S3 credentials for development. Production should use a dedicated identity limited to bucket list/get/put/delete. SSE-C uses a stable 32-byte base64 key.
 - `document-retention-worker` runs hourly by default. It deletes all object versions after `retention_until`, records a purge audit entry and emits `DocumentPurged`. Documents without `retention_until` are retained indefinitely; the service does not invent a legal retention period.
 - A legal hold records reason, actor and timestamp and blocks archive, soft-delete and retention purge until explicitly released.
 - Owners may grant another Keycloak subject `read` or `manage` access with optional expiry; grants can be revoked.
@@ -69,7 +69,7 @@ curl -fsS http://localhost:8100/health/ready
 curl -fsS http://localhost:8100/api/doc.json
 ```
 
-Direct API: `http://localhost:8100`. Gateway API: `http://localhost:8088/api/v1/documents`. MinIO console: `http://localhost:9001` (development only).
+Direct API: `http://localhost:8100`. Gateway API: `http://localhost:8088/api/v1/documents`. RustFS console: `http://localhost:9001` (development only); S3 endpoint: `http://localhost:9000`.
 
 ## Test locally
 
