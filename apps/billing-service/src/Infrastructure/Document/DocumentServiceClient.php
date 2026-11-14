@@ -61,6 +61,20 @@ final readonly class DocumentServiceClient
         ];
     }
 
+    public function delete(string $documentId, string $token): void
+    {
+        if ($token === '') {
+            throw new RuntimeException('A caller access token is required for Document Service.');
+        }
+        $response = $this->http->request('DELETE', rtrim($this->baseUrl, '/') . '/api/v1/documents/' . rawurlencode($documentId), [
+            'headers' => ['Authorization' => 'Bearer ' . $token],
+            'timeout' => 15,
+        ]);
+        if (!in_array($response->getStatusCode(), [200, 204], true)) {
+            throw new RuntimeException('Document Service cleanup failed (HTTP ' . $response->getStatusCode() . ').');
+        }
+    }
+
     public function download(string $documentId, string $token): string
     {
         if ($token === '') {
