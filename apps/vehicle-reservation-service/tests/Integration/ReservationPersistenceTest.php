@@ -57,7 +57,7 @@ final class ReservationPersistenceTest extends TestCase
         $variantId = $this->uuid();
         $reservationId = $this->uuid();
         $orderId = $this->uuid();
-        $vin = '1HGCM82633A004352';
+        $vin = 'AF' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 15));
         $createdEvent = $this->uuid();
         $blockedEvent = $this->uuid();
 
