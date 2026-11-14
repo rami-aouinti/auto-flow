@@ -26,6 +26,21 @@ All endpoints require a Keycloak access token with audience `autoflow-inventory`
 
 Supported stock states: available, blocked, in_transit, delivered, sold, maintenance, quarantined. VIN is normalized to uppercase and unique per tenant. Mutations write the stock row, movement, audit and Outbox event in one PostgreSQL transaction. Event types are inventory.unit.created.v1 and inventory.status.changed.v1. The publisher uses a dedicated database login that can only execute three narrowly scoped claim/ack/retry functions; the function owner is a separate no-login role. RabbitMQ messages are persistent and confirmed, and failed events use exponential retry with a terminal failure state after 12 attempts. Delivery is at-least-once: consumers must deduplicate using eventId.
 
+## Reservation fulfillment integration
+
+Vehicle Reservation publishes `reservation.fulfilled.v1` only after a confirmed reservation is fulfilled. The Inventory consumer handles that event through a durable queue and a narrowly scoped PostgreSQL SECURITY DEFINER function. The function validates tenant, physical unit, variant and current `available` status, then atomically marks the authoritative Inventory unit `sold`, increments its version, records a movement and audit entry, and appends `inventory.status.changed.v1` to the Inventory Outbox.
+
+The consumer inbox deduplicates by tenant and event ID and also prevents the same reservation from being applied under another event ID. Re-delivery of the same event is safe. A missing unit, variant mismatch, already unavailable unit or reused event ID with a different payload is rejected rather than silently changing stock. The Inventory status event then flows back to Vehicle Reservation, closing the synchronization loop.
+
+The worker uses the dedicated `autoflow_inventory_reservation_consumer` login; it can only execute the fulfillment function. The function owner is a separate no-login role with the minimum table privileges. Compose service: `inventory-reservation-event-consumer`.
+
+End-to-end smoke test (run against a disposable local database):
+
+```bash
+docker compose --env-file .env.example up -d --build inventory-service inventory-outbox-publisher inventory-reservation-event-consumer reservation-outbox-publisher
+docker compose --env-file .env.example exec -T inventory-service php bin/smoke-test-reservation-fulfillment.php
+```
+
 ## Local
 - Direct API: http://localhost:8093
 - Gateway: http://localhost:8088/api/v1/inventory
