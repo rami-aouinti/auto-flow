@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__.'/../src/storage.php';
+
 const MAX_UPLOAD = 26214400;
 const MIME_TYPES = ['application/pdf','image/jpeg','image/png','text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
@@ -77,10 +79,9 @@ function upload(array $u,string $id,int $v):array {
     $sock=@fsockopen(getenv('CLAMAV_HOST')?:'clamav',(int)(getenv('CLAMAV_PORT')?:3310),$errno,$err,4);if(!$sock)fail(503,'Scanner unavailable','Upload rejected because malware scanning is unavailable.');
     stream_set_timeout($sock,30);socketWriteAll($sock,"zINSTREAM\0");$in=fopen($f['tmp_name'],'rb');if(!is_resource($in)){fclose($sock);throw new RuntimeException('Could not open upload for malware scan.');}while(!feof($in)){$chunk=fread($in,65536);if($chunk===false){fclose($in);fclose($sock);throw new RuntimeException('Could not read complete upload for malware scan.');}if($chunk!=='')socketWriteAll($sock,pack('N',strlen($chunk)).$chunk);}socketWriteAll($sock,pack('N',0));$scan=stream_get_contents($sock);fclose($in);fclose($sock);
     if(!is_string($scan)||!str_ends_with(trim($scan),'OK'))fail(422,'Unprocessable Content',str_contains((string)$scan,'FOUND')?'Malware detected.':'Malware scan did not complete cleanly.');
-    $root=rtrim(getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents','/');$dir=$root.'/'.hash('sha256',$u['tenant']);if(!is_dir($dir)&&!mkdir($dir,0700,true)&&!is_dir($dir))throw new RuntimeException('Storage directory unavailable.');
-    $key=$dir.'/'.$id.'-'.$v.'-'.bin2hex(random_bytes(8));if(!move_uploaded_file($f['tmp_name'],$key))throw new RuntimeException('Cannot store file.');chmod($key,0600);
-    $name=basename(str_replace('\\','/',(string)$f['name']));$name=preg_replace('/[^A-Za-z0-9._ -]/u','_',$name)?:'document';
-    return ['key'=>$key,'name'=>mb_substr($name,0,255),'mime'=>$mime,'size'=>$size,'hash'=>hash_file('sha256',$key)];
+    $key=documentStoragePut($f['tmp_name'],$u['tenant'],$id,$v);
+    $name=basename(str_replace('\\\\','/',(string)$f['name']));$name=preg_replace('/[^A-Za-z0-9._ -]/u','_',$name)?:'document';
+    return ['key'=>$key,'name'=>mb_substr($name,0,255),'mime'=>$mime,'size'=>$size,'hash'=>hash_file('sha256',$f['tmp_name'])];
 }
 function audit(PDO $db,array $u,string $id,string $action,array $data=[]):void{$q=$db->prepare('INSERT INTO document_audit_events(tenant_id,document_id,actor_id,action,details) VALUES(:t,:d,:a,:x,:j)');$q->execute(['t'=>$u['tenant'],'d'=>$id,'a'=>$u['sub'],'x'=>$action,'j'=>json_encode($data)]);}
 function emit(PDO $db,array $u,string $id,string $type,array $data):void{$q=$db->prepare('INSERT INTO document_outbox_events(id,tenant_id,aggregate_id,event_type,payload) VALUES(:i,:t,:d,:x,:j)');$q->execute(['i'=>uuid(),'t'=>$u['tenant'],'d'=>$id,'x'=>$type,'j'=>json_encode($data)]);}
@@ -91,7 +92,7 @@ function run():never {
     if($path==='/health/ready'){
         $checks=['postgres'=>'unavailable','storage'=>'unavailable','clamav'=>'unavailable'];
         try{pdo()->query('SELECT 1');$checks['postgres']='ok';}catch(Throwable){}
-        $root=getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents';$checks['storage']=is_writable($root)?'ok':'unavailable';
+        $checks['storage']=documentStorageReady()?'ok':'unavailable';
         $scanner=@fsockopen(getenv('CLAMAV_HOST')?:'clamav',(int)(getenv('CLAMAV_PORT')?:3310),$errno,$error,1.0);
         if(is_resource($scanner)){fwrite($scanner,"zPING\0");$pong=fread($scanner,32);fclose($scanner);if(is_string($pong)&&str_contains($pong,'PONG'))$checks['clamav']='ok';}
         $ready=!in_array('unavailable',$checks,true);respond(['service'=>'document-service','status'=>$ready?'ok':'not_ready','checks'=>$checks],$ready?200:503);
@@ -127,7 +128,7 @@ function run():never {
 
         if($action===''&&$method==='GET'){permitDocument($db,$u,$doc,'read');unset($doc['storage_key']);respond(['data'=>$doc]);}
         if($action===''&&$method==='DELETE'){permitDocument($db,$u,$doc,'manage');if((bool)$doc['legal_hold'])fail(423,'Legal Hold','Document cannot be deleted while a legal hold is active.');$db->beginTransaction();try{$db->prepare("UPDATE documents SET status='deleted',deleted_at=NOW(),updated_at=NOW() WHERE tenant_id=:t AND id=:d")->execute(['t'=>$u['tenant'],'d'=>$id]);audit($db,$u,$id,'document.deleted');emit($db,$u,$id,'DocumentDeleted',['documentId'=>$id]);$db->commit();}catch(Throwable $e){$db->rollBack();throw $e;}http_response_code(204);exit;}
-        if($action==='content'&&$method==='GET'){permitDocument($db,$u,$doc,'read');if($doc['scan_status']!=='clean'||!is_file($doc['storage_key']))fail(423,'Locked','Document is not available for download.');audit($db,$u,$id,'document.downloaded');header('Content-Type: '.$doc['mime_type']);header('Content-Length: '.filesize($doc['storage_key']));header('X-Content-Type-Options: nosniff');header('Content-Disposition: attachment; filename="'.addcslashes($doc['original_filename'],'"\\').'"');readfile($doc['storage_key']);exit;}
+        if($action==='content'&&$method==='GET'){permitDocument($db,$u,$doc,'read');if($doc['scan_status']!=='clean'||(!str_starts_with($doc['storage_key'],'s3://')&&!is_file($doc['storage_key'])))fail(423,'Locked','Document is not available for download.');audit($db,$u,$id,'document.downloaded');header('Content-Type: '.$doc['mime_type']);header('Content-Length: '.(int)$doc['byte_size']);header('X-Content-Type-Options: nosniff');header('Content-Disposition: attachment; filename="'.addcslashes($doc['original_filename'],'"\\\\').'"');echo documentStorageGet($doc['storage_key']);exit;}
         if($action==='versions'&&$method==='GET'){permitDocument($db,$u,$doc,'read');$q=$db->prepare('SELECT id,version,original_filename,mime_type,byte_size,checksum_sha256,scan_status,created_by,created_at FROM document_versions WHERE tenant_id=:t AND document_id=:d ORDER BY version DESC');$q->execute(['t'=>$u['tenant'],'d'=>$id]);respond(['data'=>$q->fetchAll()]);}
         if($action==='versions'&&$method==='POST'){permitDocument($db,$u,$doc,'write');$v=(int)$doc['current_version']+1;$f=upload($u,$id,$v);$db->beginTransaction();try{$q=$db->prepare("INSERT INTO document_versions(id,tenant_id,document_id,version,original_filename,mime_type,byte_size,checksum_sha256,storage_key,scan_status,created_by) VALUES(:v,:t,:d,:n,:name,:mime,:size,:hash,:key,'clean',:a)");$q->execute(['v'=>uuid(),'t'=>$u['tenant'],'d'=>$id,'n'=>$v,'name'=>$f['name'],'mime'=>$f['mime'],'size'=>$f['size'],'hash'=>$f['hash'],'key'=>$f['key'],'a'=>$u['sub']]);$q=$db->prepare("UPDATE documents SET current_version=:v,original_filename=:name,mime_type=:mime,byte_size=:size,checksum_sha256=:hash,storage_key=:key,scan_status='clean',updated_at=NOW() WHERE tenant_id=:t AND id=:d");$q->execute(['v'=>$v,'name'=>$f['name'],'mime'=>$f['mime'],'size'=>$f['size'],'hash'=>$f['hash'],'key'=>$f['key'],'t'=>$u['tenant'],'d'=>$id]);audit($db,$u,$id,'document.version_created',['version'=>$v]);emit($db,$u,$id,'DocumentVersionCreated',['documentId'=>$id,'version'=>$v]);$db->commit();}catch(Throwable $e){$db->rollBack();@unlink($f['key']);throw $e;}respond(['data'=>findDoc($db,$u,$id)],201);}
         if($action==='audit'&&$method==='GET'){permitDocument($db,$u,$doc,'manage');$q=$db->prepare('SELECT actor_id,action,details,occurred_at FROM document_audit_events WHERE tenant_id=:t AND document_id=:d ORDER BY occurred_at DESC LIMIT 100');$q->execute(['t'=>$u['tenant'],'d'=>$id]);respond(['data'=>$q->fetchAll()]);}
