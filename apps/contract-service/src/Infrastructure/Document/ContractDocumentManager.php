@@ -25,6 +25,7 @@ final readonly class ContractDocumentManager
     public function generate(string $tenant, string $actor, string $contractId, string $accessToken): ?array
     {
         $finalPath = null;
+        $remoteDocumentId = null;
 
         try {
             return $this->db->transactional(function (Connection $db) use (
@@ -33,6 +34,7 @@ final readonly class ContractDocumentManager
                 $contractId,
                 $accessToken,
                 &$finalPath,
+                &$remoteDocumentId,
             ): ?array {
                 $this->setTenant($db, $tenant);
                 $contract = $db->fetchAssociative(
@@ -87,6 +89,7 @@ final readonly class ContractDocumentManager
 
                 $remoteDocument = $this->documentService->uploadPdf($pdf, 'contract-' . $contractId . '.pdf', 'Contract ' . $contractId, 'contract', $contractId, $accessToken);
                 $documentId = $remoteDocument['id'];
+                $remoteDocumentId = $documentId;
                 $generatedAt = (new \DateTimeImmutable())->format(DATE_ATOM);
                 $db->insert('contract_documents', [
                     'tenant_id' => $tenant,
@@ -142,6 +145,9 @@ final readonly class ContractDocumentManager
                 ];
             });
         } catch (Throwable $exception) {
+            if (is_string($remoteDocumentId)) {
+                try { $this->documentService->delete($remoteDocumentId, $accessToken); } catch (Throwable) { /* keep the original failure */ }
+            }
             if (is_string($finalPath) && is_file($finalPath)) {
                 @unlink($finalPath);
             }
@@ -185,7 +191,7 @@ final readonly class ContractDocumentManager
         }
         $content = $this->documentService->download($document['documentId'], $accessToken);
         if (!hash_equals($document['checksum'], hash('sha256', $content))) {
-            throw new RuntimeException('Document Service content failed its SHA-256 integrity check.');
+            throw new \RuntimeException('Document Service content failed its SHA-256 integrity check.');
         }
 
         return ['document' => $document, 'content' => $content];
