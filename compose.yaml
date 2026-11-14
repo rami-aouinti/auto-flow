@@ -1135,6 +1135,8 @@ services:
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       INTEGRATION_WEBHOOK_SECRET_DEMO: ${INTEGRATION_WEBHOOK_SECRET_DEMO:-local-only-demo-webhook-secret-change-me}
       INTEGRATION_PROVIDER_TENANT_DEMO: tenant-demo
+      INTEGRATION_OUTBOUND_ALLOWED_HOSTS: ${INTEGRATION_OUTBOUND_ALLOWED_HOSTS:-}
+      INTEGRATION_DELIVERY_SIGNING_SECRET: ${INTEGRATION_DELIVERY_SIGNING_SECRET:-local-only-delivery-signing-secret-change-me}
     depends_on:
       postgres: {condition: service_healthy}
       postgres-bootstrap: {condition: service_completed_successfully}
@@ -1147,6 +1149,25 @@ services:
       start_period: 20s
     init: true
     restart: unless-stopped
+  integration-delivery-worker:
+    build:
+      context: .
+      dockerfile: docker/php/business-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/integration-service
+    command: ["php", "bin/deliver-pending.php"]
+    environment:
+      INTEGRATION_WORKER_DATABASE_URL: postgresql://autoflow_integration_worker:local-only-integration-worker-password@postgres:5432/${POSTGRES_DB:-autoflow}
+      INTEGRATION_OUTBOUND_ALLOWED_HOSTS: ${INTEGRATION_OUTBOUND_ALLOWED_HOSTS:-}
+      INTEGRATION_DELIVERY_SIGNING_SECRET: ${INTEGRATION_DELIVERY_SIGNING_SECRET:-local-only-delivery-signing-secret-change-me}
+      INTEGRATION_WORKER_INTERVAL_SECONDS: "3"
+      INTEGRATION_WORKER_BATCH_SIZE: "10"
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+    init: true
+    restart: unless-stopped
+
   document-object-storage:
     image: minio/minio:latest
     command: ["server", "/data", "--console-address", ":9001"]
