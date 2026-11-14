@@ -1266,7 +1266,7 @@ services:
       dockerfile: Dockerfile
     command: ["php", "/app/bin/expire-retention.php"]
     environment:
-      DOCUMENT_MAINTENANCE_DATABASE_URL: ${DOCUMENT_MAINTENANCE_DATABASE_URL:-postgresql://${POSTGRES_USER:-autoflow}:${POSTGRES_PASSWORD:-autoflow}@postgres:5432/${POSTGRES_DB:-autoflow}}
+      DOCUMENT_MAINTENANCE_DATABASE_URL: ${DOCUMENT_MAINTENANCE_DATABASE_URL:-postgresql://autoflow_document_maintenance:local-only-document-maintenance-password@postgres:5432/autoflow}
       DOCUMENT_STORAGE_PATH: /var/lib/autoflow/documents
       DOCUMENT_STORAGE_DRIVER: s3
       DOCUMENT_S3_ENDPOINT: http://document-object-storage:9000
