@@ -21,7 +21,6 @@ type Row = Record<string, unknown>;
 type PanelKey = 'customers' | 'crm' | 'contracts' | 'billing' | 'fulfillments' | 'inventory' | 'reservations';
 type Panel = {
   key: PanelKey;
-  key: string;
   title: string;
   description: string;
   icon: string;
@@ -41,7 +40,7 @@ const panels = ref<Panel[]>([
   { key: 'reservations', title: 'Reservations', description: 'Vehicle stock allocation lifecycle', icon: 'mdi-calendar-check-outline', rows: [], total: 0, loading: true, error: '' },
 ]);
 
-const requests: Record<string, () => Promise<{ data: unknown }>> = {
+const requests: Record<PanelKey, () => Promise<{ data: unknown }>> = {
   customers: () => customers.list({ limit: 5, offset: 0 }),
   crm: () => crm.listApplications({ limit: 5, offset: 0 }),
   contracts: () => contracts.list(5, 0),
