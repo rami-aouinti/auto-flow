@@ -1,13 +1,13 @@
 # AutoFlow — Missing service bootstrap and implementation roadmap
 
-**Status:** Search has an implemented vehicle-catalogue API and Elasticsearch projection; the other seven services remain health-only scaffolds.
+**Status:** Search and Document have implemented APIs. Workflow, Integration, Audit, Analytics, Media and Configuration remain health-only scaffolds.
 
 | Service | Responsibility | First real milestone |
 |---|---|---|
 | Search | Shared vehicle-catalogue search in Elasticsearch | Incremental event projection, retention, SLOs and cross-domain projections |
 | Workflow | Temporal workflow definitions and orchestration | Versioned leasing/order workflows, signals, retries and compensations |
 | Integration | External-provider adapters and webhooks | Provider registry, secret references, signature verification and retry/DLQ |
-| Document | Document metadata, versions, access, retention | Object storage, authorization, checksums and malware scan |
+| Document | Tenant-scoped document metadata, versions, storage, audit and events | Encrypted object-storage adapter, legal hold/retention enforcement and delegated sharing |
 | Audit | Immutable cross-domain audit projection | Event ingestion, immutable retention, tenant/actor search and export |
 | Analytics | Read-only business metrics and reports | Event-driven reporting model, KPI definitions and exports |
 | Media | Binary media processing and delivery | Object storage, validation, transformations, thumbnails and CDN-ready URLs |
@@ -39,24 +39,26 @@
 
 ## Current scaffold endpoints
 
-Workflow, Integration, Document, Audit, Analytics, Media and Configuration expose health-only endpoints (`/health`, `/health/live`, `/health/ready`). Search is a real Symfony/RoadRunner API with authenticated vehicle search and autocomplete at `/api/v1/search/vehicles` and `/api/v1/search/vehicles/suggest`; it builds its projection from the published Vehicle Catalog read model. RabbitMQ Outbox synchronization and atomic alias-based reindexing are implemented; incremental indexing, old-index retention and cross-domain projections remain open.
+Workflow, Integration, Audit, Analytics, Media and Configuration expose health-only endpoints (`/health`, `/health/live`, `/health/ready`). Document now provides tenant-scoped upload/download, versions, ClamAV scanning, PostgreSQL RLS, audit and RabbitMQ outbox APIs. Search is a real Symfony/RoadRunner API with authenticated vehicle search and autocomplete at `/api/v1/search/vehicles` and `/api/v1/search/vehicles/suggest`; it builds its projection from the published Vehicle Catalog read model. RabbitMQ Outbox synchronization and atomic alias-based reindexing are implemented; incremental indexing, old-index retention and cross-domain projections remain open.
 
 ## Local run
 
 ```bash
 docker compose --env-file .env.example config --quiet
-docker compose --env-file .env.example up -d --build workflow-service integration-service document-service audit-service analytics-service media-service configuration-service
+docker compose --env-file .env.example up -d --build workflow-service integration-service audit-service analytics-service media-service configuration-service
+# Document has its own PostgreSQL, RabbitMQ and ClamAV dependencies:
+docker compose --env-file .env.example up -d --build postgres postgres-bootstrap rabbitmq clamav document-service document-outbox-publisher
 sh scripts/check-skeleton-health.sh
 ```
 
-Loopback ports: Workflow 8098, Integration 8099, Document 8100, Audit 8101, Analytics 8102, Media 8103, Configuration 8104. Search runs on 8097 as a Symfony/RoadRunner API.
+Loopback ports: Workflow 8098, Integration 8099, Audit 8101, Analytics 8102, Media 8103, Configuration 8104. Document API is on 8100 and is also routed through the API Gateway. Search runs on 8097 as a Symfony/RoadRunner API.
 
 ## Implementation sequence
 
 1. Search: incremental catalogue event projection, retention and operational SLOs.
 2. Workflow: end-to-end leasing workflow and activity ownership.
 3. Integration: provider adapters and webhook reliability.
-4. Document + Media: decide ownership, then object storage and scanning.
+4. Document + Media: finish encrypted object storage, legal hold/retention enforcement and cross-service integration.
 5. Audit: immutable projection and compliance queries.
 6. Configuration: typed tenant settings and safe cache invalidation.
 7. Analytics: event-based reporting model and KPI catalogue.
