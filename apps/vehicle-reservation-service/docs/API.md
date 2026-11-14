@@ -1,41 +1,41 @@
 # Vehicle Reservation Service — API Reference
 
-**Base URL:** http://localhost:8092  
-**Authentication:** Bearer JWT; reservations:read/write/manage; writes require Idempotency-Key and If-Match on transitions
+**Direct local URL:** http://localhost:8092  
+**Authentication:** Keycloak JWT; audience `autoflow-vehicle-reservation`, tenant claim and endpoint-specific `reservations:*` permission.
 
-## Endpoints and arguments
+## HTTP endpoints
 
-| Method | Path | Arguments / body | Possible responses |
-|---|---|---|---|
-| GET | `/api/v1/reservations` |  query: status, limit, offset | 200, 400, 401, 403, 404, 500 |
-| POST | `/api/v1/reservations` |  Idempotency-Key; body: vehicleUnitId, vehicleVariantId, orderId, expiresAt | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| GET | `/api/v1/reservations/{id}` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/v1/reservations/{id}/history` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| POST | `/api/v1/reservations/{id}/confirm` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/reservations/{id}/release` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/reservations/{id}/fulfill` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
+| Method | Path | Permission / access | Purpose | Arguments and request body | Documented / expected responses |
+|---|---|---|---|---|---|
+| GET | /api/v1/reservations | reservations:read | List tenant reservations. | status?, limit?, offset?. | 200, 400, 401, 403 |
+| POST | /api/v1/reservations | reservations:write | Hold a physical stock unit. | Idempotency-Key required. JSON required: vehicleUnitId, vehicleVariantId, orderId (UUIDs), expiresAt (date-time). | 201, 400, 401, 403, 409, 412, 422 |
+| GET | /api/v1/reservations/{id} | reservations:read | Read reservation. | id (path). | 200, 401, 403, 404 |
+| GET | /api/v1/reservations/{id}/history | reservations:read | Read audit history. | id (path). | 200, 401, 403, 404 |
+| POST | /api/v1/reservations/{id}/confirm | reservations:write | Confirm hold before expiry. | id; Idempotency-Key and current If-Match ETag required; no body documented. | 200, 401, 403, 404, 409, 412, 422 |
+| POST | /api/v1/reservations/{id}/release | reservations:write | Release held or confirmed unit. | id; Idempotency-Key and current If-Match ETag required; no body documented. | 200, 401, 403, 404, 409, 412, 422 |
+| POST | /api/v1/reservations/{id}/fulfill | reservations:manage | Mark confirmed reservation fulfilled. | id; Idempotency-Key and current If-Match ETag required; no body documented. | 200, 401, 403, 404, 409, 412, 422 |
 
-## Common HTTP responses
+## Health and operations
 
-- **2xx:** request succeeded; GET returns a resource/collection, POST creates or transitions a resource, DELETE may return 204.
-- **400:** malformed JSON, invalid query parameters or malformed headers.
-- **401:** missing/invalid JWT (except explicitly public provider webhooks).
-- **403:** missing scope/role or tenant access.
-- **404:** resource does not exist or is outside the caller's tenant/ownership boundary.
-- **409:** invalid state transition, duplicate resource or idempotency-key conflict.
-- **412:** stale ETag/If-Match version for optimistic concurrency.
-- **422:** request is syntactically valid but violates domain validation.
-- **500 / 503:** unexpected server failure or unavailable dependency; no internal SQL/stack trace should be exposed.
+- GET /health/ready — readiness; no JWT.
 
-## Testing
+## Common response semantics
 
-Use the central Swagger UI at http://localhost:8096. Authenticate with the raw Keycloak access token when required. For commands requiring idempotency, send a unique `Idempotency-Key`; for versioned transitions copy the current `ETag` into `If-Match`.
+- `400`: malformed JSON, query string, or required header (when applicable).
+- `401`: missing/invalid bearer token on protected routes.
+- `403`: authenticated caller lacks the endpoint permission or tenant access.
+- `404`: resource is unknown or intentionally hidden by tenant/ownership isolation.
+- `409`: business lifecycle conflict or idempotency key reused for a different command.
+- `412`: stale `If-Match` version for optimistic concurrency.
+- `422`: syntactically valid request that fails domain validation.
+- `503`: required upstream service/dependency unavailable.
 
-## Contract maintenance
+Only status codes explicitly described in the service README or API contract are asserted in the endpoint table. Other statuses in the common section are general meanings and may not be emitted by every endpoint.
 
-This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+## Testing through Swagger UI
 
+Open [http://localhost:8096](http://localhost:8096). The gateway base URL is `http://localhost:8088`; service routes are forwarded without stripping their API path. Use the raw Keycloak access token in **Authorize** for protected services. For idempotent commands, provide a unique `Idempotency-Key`. For versioned commands, read the current response `ETag` and send it unchanged as `If-Match`.
 
-## Health and operational endpoints
+## Contract accuracy
 
-- `GET /health/ready` — readiness probe; no JWT.
+Request fields are marked as DTO-defined where the service README does not publish the full DTO. The central OpenAPI contract provides strict schemas only for request bodies whose complete fields are confirmed by service documentation. Keep this file and `docs/api/openapi.json` synchronized when changing controllers, validators or response DTOs.
