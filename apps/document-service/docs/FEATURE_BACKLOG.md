@@ -1,34 +1,34 @@
-# Document Management Service — Remaining backlog
-
-**Implemented baseline:** tenant-scoped metadata API, multipart uploads, server-side MIME validation, 25 MiB limit, SHA-256 checksums, private persistent local storage, ClamAV fail-closed scanning, JWT audience/permissions, PostgreSQL Row-Level Security, version history, archive/soft-delete, audit events, transactional outbox, RabbitMQ publisher, fixtures, OpenAPI, Docker Compose and health checks.
+# Document Management Service — Delivery status
 
 ## Implemented
 
-- [x] Define document metadata, tenant ownership, categories and lifecycle states.
-- [x] Upload/download with JWT permission checks and tenant isolation.
-- [x] MIME sniffing, size limits, SHA-256 and ClamAV malware scanning.
-- [x] Private file storage outside the web root.
-- [x] Version history and metadata retention date.
-- [x] Audit trail and transactional outbox.
-- [x] RabbitMQ publisher with durable exchange/queue and retry.
-- [x] PostgreSQL schema, least-privilege role and forced RLS.
-- [x] Demo fixtures, endpoint documentation, central OpenAPI and CI lint/build checks.
+- [x] Tenant-scoped document metadata, categories, lifecycle states, search and pagination.
+- [x] Multipart upload with MIME sniffing, 25 MiB limit, SHA-256 and fail-closed ClamAV scanning.
+- [x] Private S3-compatible object storage (MinIO in local Compose) with AWS Signature V4 and SSE-C AES-256 encryption.
+- [x] Separate MinIO service account with bucket-scoped list/get/put/delete permissions.
+- [x] Immutable binary object keys per version, version history and secure download.
+- [x] JWT RS256 verification, Keycloak audience, tenant isolation and forced PostgreSQL RLS.
+- [x] Owner-based access and delegated read/manage grants with expiry and revocation.
+- [x] Legal hold with reason/actor/timestamp; archive, soft-delete and retention purge are blocked while held.
+- [x] Scheduled retention worker, permanent deletion of all binary versions, purge audit metadata and DocumentPurged event.
+- [x] Transactional outbox publisher to durable RabbitMQ topic exchange/queue; at-least-once delivery documented.
+- [x] Audit history, fixtures, central and service OpenAPI 3.1, Swagger docs, health checks and Compose integration.
 
-## Remaining production-hardening work
+## Remaining work before production sign-off
 
-- [ ] Replace the local Docker volume adapter with encrypted S3-compatible object storage (MinIO for local development, managed object storage in production).
-- [ ] Implement retention enforcement, legal holds, scheduled purge and verifiable deletion.
-- [ ] Implement delegated document sharing/access-grant endpoints and ownership rules.
-- [ ] Add consumer inbox/idempotency, event schema versioning, dead-letter/replay operations and consumer contract tests.
-- [ ] Integrate Document IDs into Contract and Billing workflows without moving PDF generation or domain ownership.
-- [ ] Add OpenTelemetry traces/metrics, structured security audit logging and operational dashboards.
-- [ ] Add automated API, database integration, JWT/RLS isolation, malware, failure/retry and load tests.
-- [ ] Add Kubernetes manifests, resource limits, secret injection, rolling deployment and storage lifecycle policy.
+- [ ] Add automated API and PostgreSQL integration tests covering JWT signature/expiry, tenant RLS, access grant expiry/revocation, legal hold, concurrent version creation and retention purge.
+- [ ] Add S3/MinIO contract tests for SigV4, SSE-C round-trip, denied cross-tenant keys, storage outage and object cleanup after DB rollback.
+- [ ] Add event-consumer inbox/idempotency and dead-letter/replay only when a downstream Document event consumer is introduced; current Document Service is a publisher.
+- [ ] Add OpenTelemetry spans/metrics for upload, scan, S3 operations, grant decisions, outbox lag and purge batches; wire dashboards and alerts.
+- [ ] Add Kubernetes manifests with secret references, resource requests/limits, probes, network policy, persistent/managed object storage and worker deployment.
+- [ ] Integrate Document IDs with Contract and Billing workflows through explicit consumer/API contracts; keep PDF generation and business lifecycle in those services.
+- [ ] Perform load, malware fixture, disaster-recovery, encryption-key rotation and restore drills.
 
-## Operational caveats
+## Operational constraints
 
-- Demo fixture records contain metadata only; their binary files are intentionally absent.
-- The current storage adapter is a persistent local Docker volume, not encrypted object storage.
-- The outbox publisher is at-least-once. Consumers must deduplicate using `eventId`.
-- ClamAV must be healthy before uploads are accepted. The service readiness endpoint checks PostgreSQL, writable storage and the ClamAV TCP ping.
-- The Keycloak realm import adds `autoflow-document` and the `documents:*` roles. Existing realms need the mapper/roles updated and users need a newly issued token.
+- Demo fixture records are metadata-only; their binary objects are intentionally absent.
+- The local MinIO credentials and SSE-C key in .env.example are development-only. Use a managed S3-compatible endpoint, dedicated IAM credentials and a managed KMS/key rotation process outside local development.
+- Back up DOCUMENT_S3_SSE_C_KEY_BASE64 securely. Losing the key makes SSE-C objects unreadable; never rotate it without a migration/re-encryption plan.
+- The retention worker uses a privileged maintenance DB connection in local Compose to cross tenant RLS. Production must replace it with a narrowly scoped maintenance role and audited privileges.
+- Purge is irreversible after object deletion. Legal hold must be applied before the retention deadline when preservation is required.
+- The outbox publisher is at-least-once. Future consumers must deduplicate using eventId.
