@@ -144,6 +144,7 @@ $ch->queue_declare($deadQueue, false, true, false, false);
 $ch->queue_bind($deadQueue, $deadExchange, 'invalid');
 $ch->confirm_select();
 
+fwrite(STDOUT, "Billing Payment event consumer started.\n");
 $ch->basic_consume($q, '', false, false, false, false, static function (AMQPMessage $m) use ($process, $ch, $deadExchange): void {
     try {
         $process($m);
