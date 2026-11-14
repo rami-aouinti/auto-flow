@@ -46,6 +46,12 @@ docker compose --env-file .env.example up -d --build inventory-service vehicle-c
 The first local build installs each service's independent Composer dependencies. The central Swagger UI is available at http://localhost:8096; see [API Documentation Center](docs/api/README.md) and the per-service references in apps/*/docs/API.md. Document Service publishes its API contract at http://localhost:8100/api/doc.json. Offer, Pricing and Vehicle Catalog provide development-only Swagger UI; Order Management publishes a checked-in OpenAPI YAML contract. Production builds keep Composer's default `--no-dev` behavior. Use `make api-docs` for the three generated contracts and see `apps/order-service/docs/openapi.yaml` for Order.
 Subsequent starts reuse the built images unless their source or Dockerfile changes.
 
+## Contract, Billing and Document Service integration
+
+Contract remains the owner of contract lifecycle and DocuSign; Billing remains the owner of invoices, credit notes and tax snapshots. Both send generated PDFs to Document Service, which owns canonical encrypted binary storage, malware scanning, versions and retention. Contract/Billing persist only Document references and checksums for their business records, and proxy downloads through Document Service. Billing supports invoice and credit-note PDFs.
+
+See [Contract/Billing/Document production readiness](docs/operations/contract-billing-document-production-readiness.md) for local end-to-end smoke tests, identity requirements, production configuration and release gates. The smoke tests require a prepared Contract, a legally complete issued invoice, a fresh Keycloak token and (optionally) a credit note.
+
 ## Local interfaces and endpoints
 
 Use **http://localhost:8088** as the single HTTP entry point for application clients. The gateway preserves the service-owned `/api/...` paths and routes them to the corresponding Symfony application. Direct backend ports remain published only for local diagnostics and service-specific Swagger UI.
