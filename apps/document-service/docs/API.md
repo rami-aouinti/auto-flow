@@ -12,7 +12,7 @@ Document Service owns binary storage and metadata only. Contract and Billing rem
 |---|---|---|---|---|---|
 | GET | `/health` | public | none | 200 liveness | — |
 | GET | `/health/live` | public | none | 200 process alive | — |
-| GET | `/health/ready` | public | checks PostgreSQL + storage | 200 | 503 |
+| GET | `/health/ready` | public | checks PostgreSQL, S3 bucket and ClamAV | 200 | 503 |
 | GET | `/api/doc.json` | public | OpenAPI JSON | 200 | — |
 | GET | `/api/v1/documents` | documents:read | `page?`, `limit?` (1–100), `q?`, `category?`, `entity_type?`, `entity_id?`, `status?` | 200 `{data,meta}` | 401, 403, 500 |
 | POST | `/api/v1/documents` | documents:write | multipart: `file` required; `title` required; `category?` (default other); `description?`; `entity_type?`; `entity_id?`; `retention_until?` (ISO-8601) | 201 `{data}` | 400, 401, 403, 413, 415, 422, 503 |
@@ -22,20 +22,25 @@ Document Service owns binary storage and metadata only. Contract and Billing rem
 | GET | `/api/v1/documents/{id}/versions` | documents:read | UUID path | 200 `{data: []}` newest first | 401, 403, 404 |
 | POST | `/api/v1/documents/{id}/versions` | documents:write | multipart `file` required | 201 `{data}` | 400, 401, 403, 413, 415, 422, 503 |
 | GET | `/api/v1/documents/{id}/audit` | documents:read | UUID path; latest 100 audit events | 200 `{data: []}` | 401, 403, 404 |
-| POST | `/api/v1/documents/{id}/archive` | documents:manage | UUID path | 200 `{data}` | 401, 403, 404 |
+| POST | `/api/v1/documents/{id}/archive` | owner or documents:manage | UUID path | 200 `{data}` | 401, 403, 404, 423 |
+| GET | `/api/v1/documents/{id}/access-grants` | owner or documents:manage | UUID path | 200 `{data: []}` | 401, 403, 404 |
+| POST | `/api/v1/documents/{id}/access-grants` | owner or documents:manage | JSON: `subject_id`, `permission` (read/manage), `expires_at?` | 201 `{data}` | 400, 401, 403, 404, 422 |
+| DELETE | `/api/v1/documents/{id}/access-grants/{grantId}` | owner or documents:manage | UUIDs in path | 204 | 401, 403, 404 |
+| POST | `/api/v1/documents/{id}/legal-hold` | owner or documents:manage | JSON: `reason` (1–2000 chars) | 200 `{data}` | 401, 403, 404, 422 |
+| DELETE | `/api/v1/documents/{id}/legal-hold` | owner or documents:manage | UUID path | 200 `{data}` | 401, 403, 404 |
 
 ### Upload rules
 
 - Maximum size: 25 MiB.
 - MIME types are detected from file content (not trusted from the browser): PDF, JPEG, PNG, plain text and DOCX.
 - Every upload is streamed to ClamAV. If the scanner is unavailable or does not return a clean result, the request fails closed and the binary is not stored.
-- Files are written outside the web root under a tenant-hashed directory with random storage names and mode 0600.
+- Files are stored in the private S3-compatible bucket using tenant-hashed object prefixes and random object keys. Server-side encryption uses SSE-C AES-256; the 32-byte key must be backed up securely and kept stable. Local filesystem mode remains available for isolated development.
 - SHA-256, byte size and detected MIME type are persisted. The original filename is metadata only.
-- Downloads require a valid tenant token and a clean malware scan. Responses use attachment disposition and `X-Content-Type-Options: nosniff`.
+- Downloads require a valid tenant token and a clean malware scan. Owners and explicit unexpired access grants can access a document; grant permissions are `read` or `manage`. Responses use attachment disposition and `X-Content-Type-Options: nosniff`.
 
-### Error format
+### Retention and legal hold\n\n`retention_until` is an absolute ISO-8601 timestamp. The retention worker checks expired records hourly (configurable), permanently removes current and historical object versions, and emits `DocumentPurged`. A legal hold blocks archive, soft-delete and automatic purge until explicitly released. Purge audit metadata is retained separately from the deleted document record.\n\n### Error format
 
-Errors use RFC 7807-style `application/problem+json` with `type`, `title`, `status` and `detail`. Common statuses: 400 malformed request; 401 missing/invalid JWT; 403 missing permission; 404 unknown or cross-tenant document; 413 upload too large; 415 unsupported media; 422 invalid metadata or infected file; 423 file is not clean; 503 database, identity provider or malware scanner unavailable; 500 unexpected server error.
+Errors use RFC 7807-style `application/problem+json` with `type`, `title`, `status` and `detail`. Common statuses: 400 malformed request; 401 missing/invalid JWT; 403 missing permission; 404 unknown or cross-tenant document; 413 upload too large; 415 unsupported media; 422 invalid metadata or infected file; 423 file is not clean or a legal hold blocks a lifecycle operation; 503 database, identity provider, object storage or malware scanner unavailable; 500 unexpected server error.
 
 ### Example: upload
 
@@ -60,15 +65,15 @@ curl -OJ "http://localhost:8088/api/v1/documents/$DOCUMENT_ID/content" \
 
 ## Data model and events
 
-PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived` and `DocumentDeleted` atomically with metadata changes. The separate publisher declares the durable topic exchange and queue `autoflow.document.events`, publishes the event envelope and retries unpublished rows until broker acknowledgement. Delivery is at-least-once: downstream consumers must deduplicate by `eventId`.
+PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived` and `DocumentDeleted` atomically with metadata changes. The separate publisher declares the durable topic exchange and queue `autoflow.document.events`, publishes the event envelope and retries unpublished rows until broker acknowledgement. The retention worker emits `DocumentPurged` after expiry and skips legal holds. Delivery is at-least-once: downstream consumers must deduplicate by `eventId`.
 
 ## Local startup
 
 ```bash
-docker compose --env-file .env.example up -d --build postgres postgres-bootstrap rabbitmq clamav document-service document-outbox-publisher
-docker compose --env-file .env.example ps document-service document-outbox-publisher clamav
+docker compose --env-file .env.example up -d --build postgres postgres-bootstrap rabbitmq clamav document-object-storage document-object-storage-init document-service document-outbox-publisher document-retention-worker
+docker compose --env-file .env.example ps document-service document-outbox-publisher document-retention-worker document-object-storage clamav
 curl -i http://localhost:8100/health/ready
 curl -i http://localhost:8100/api/doc.json
 ```
 
-For an existing PostgreSQL volume, `postgres-bootstrap` reapplies the idempotent role/schema/fixture SQL. Fresh database initialization also mounts the same SQL scripts. Demo rows are metadata-only and do not include downloadable binary files.
+For an existing PostgreSQL volume, `postgres-bootstrap` reapplies the idempotent role/schema/fixture SQL. Fresh database initialization also mounts the same SQL scripts. Demo rows are metadata-only and do not include downloadable binary files. Local Compose uses MinIO with a dedicated least-privilege service user and SSE-C encryption; replace all example credentials and the encryption key before any non-local deployment.
