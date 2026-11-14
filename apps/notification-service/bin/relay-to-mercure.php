@@ -154,7 +154,8 @@ while (true) {
                     if ($retryCount >= 12) {
                         fwrite(
                             STDERR,
-                            'Mercure delivery moved to dead-letter queue after retries: ' . $exception->getMessage() . "\n",
+                            'Mercure delivery moved to dead-letter queue after retries: '
+                            . $exception->getMessage() . "\n",
                         );
                         $message->reject(false);
                         return;
