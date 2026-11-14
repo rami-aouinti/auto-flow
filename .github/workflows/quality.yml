@@ -57,6 +57,7 @@ jobs:
           composer validate --strict --working-dir=apps/fulfillment-service
           composer validate --strict --working-dir=apps/vehicle-reservation-service
           composer validate --strict --working-dir=apps/inventory-service
+          composer validate --strict --working-dir=apps/crm-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Validate Grafana Alloy configuration
@@ -160,7 +161,7 @@ jobs:
 
       - name: Run Vehicle Reservation expiry and RabbitMQ end-to-end test
         run: |
-          docker compose --env-file .env.example up -d vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer reservation-inventory-event-consumer inventory-service inventory-outbox-publisher inventory-reservation-event-consumer
+          docker compose --env-file .env.example up -d vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer reservation-inventory-event-consumer inventory-service inventory-outbox-publisher inventory-reservation-event-consumer crm-service crm-outbox-publisher
           for attempt in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8092/health/ready >/dev/null; then
               break
@@ -190,6 +191,12 @@ jobs:
         run: |
           composer install --working-dir=apps/customer-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
           cd apps/customer-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Install CRM Service dependencies and run tests
+        run: |
+          composer install --working-dir=apps/crm-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
+          php -l apps/crm-service/src/Presentation/Http/Controller/CrmController.php
+          php -l apps/crm-service/bin/publish-outbox.php
+          cd apps/crm-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Build instrumented Symfony services
         run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer customer-service contract-service contract-outbox-publisher fulfillment-service fulfillment-event-consumer fulfillment-outbox-publisher vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer reservation-inventory-event-consumer inventory-service inventory-outbox-publisher inventory-reservation-event-consumer
       - name: Validate development OpenAPI generation
