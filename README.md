@@ -410,13 +410,13 @@ Search is a Symfony/RoadRunner service with an authenticated Elasticsearch vehic
 | Media | http://localhost:8103/health/ready | Binary asset processing, transformations and delivery |
 | Configuration | http://localhost:8104/health/ready | Typed tenant configuration and feature flags |
 
-The seven remaining scaffold containers use `docker/php/skeleton-service.Dockerfile` and PHP's built-in server for local bootstrap only. Search uses the standard Symfony/RoadRunner image, CoreBundle JWT validation, Keycloak audience `autoflow-search`, and Elasticsearch. Its current index is rebuilt from published catalogue rows with `php bin/reindex-vehicles.php`; continuous RabbitMQ synchronization remains in its backlog. See [the missing-services roadmap](docs/architecture/missing-services-roadmap.md).
+The seven remaining scaffold containers use `docker/php/skeleton-service.Dockerfile` and PHP's built-in server for local bootstrap only. Search uses the standard Symfony/RoadRunner image, CoreBundle JWT validation, Keycloak audience `autoflow-search`, and Elasticsearch. The `search-sync-worker` consumes Vehicle Catalog Outbox events from RabbitMQ, deduplicates them in an Elasticsearch inbox, retries failures and routes exhausted messages to a DLQ. Its initial index is built from published catalogue rows with `php bin/reindex-vehicles.php`; event processing currently performs a safe full projection rebuild per event. See [the missing-services roadmap](docs/architecture/missing-services-roadmap.md).
 
 Start and check them:
 
 ```bash
 docker compose --env-file .env.example config --quiet
-docker compose --env-file .env.example up -d --build search-service workflow-service integration-service document-service audit-service analytics-service media-service configuration-service
+docker compose --env-file .env.example up -d --build search-service search-sync-worker workflow-service integration-service document-service audit-service analytics-service media-service configuration-service
 docker compose --env-file .env.example exec search-service php bin/reindex-vehicles.php
 sh scripts/check-skeleton-health.sh
 ```
