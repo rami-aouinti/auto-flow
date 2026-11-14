@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { catalog, customers, orders, payments, pricing } from '../../../src/api';
+import { catalog, crm, customers, orders, payments, pricing } from '../../../src/api';
 import PageHeader from '../shared/PageHeader.vue';
 import MetricCard from '../shared/MetricCard.vue';
 
@@ -10,6 +10,7 @@ const loadError = ref('');
 const metrics = ref<Metric[]>([
   { key: 'vehicles', label: 'Katalogvarianten', value: '—', caption: 'Technische Fahrzeugdaten', icon: 'mdi-car-multiple', tone: 'primary', to: '/admin/catalog/manufacturers' },
   { key: 'customers', label: 'Kunden', value: '—', caption: 'Kundenverwaltung', icon: 'mdi-account-group-outline', tone: 'info', to: '/admin/customers' },
+  { key: 'crm', label: 'CRM-Anträge', value: '—', caption: 'Kundenanträge & Beratung', icon: 'mdi-account-tie-outline', tone: 'warning', to: '/crm/applications' },
   { key: 'orders', label: 'Aufträge', value: '—', caption: 'Auftragsübersicht', icon: 'mdi-clipboard-text-outline', tone: 'info', to: '/operations/orders' },
   { key: 'payments', label: 'Zahlungen', value: '—', caption: 'Payment Lifecycle', icon: 'mdi-credit-card-outline', tone: 'success', to: '/operations/payments' },
   { key: 'quotes', label: 'Pricing Quotes', value: '—', caption: 'Kalkulationen', icon: 'mdi-calculator-variant-outline', tone: 'warning', to: '/operations/pricing' },
@@ -26,11 +27,12 @@ onMounted(async () => {
   const results = await Promise.allSettled([
     catalog.adminList('variants', 1, 0),
     customers.list({ limit: 1, offset: 0 }),
+    crm.listApplications({ limit: 1, offset: 0 }),
     orders.list(1, 0),
     payments.list(1, 0),
     pricing.quotes(1, 0),
   ]);
-  const keys = ['vehicles', 'customers', 'orders', 'payments', 'quotes'];
+  const keys = ['vehicles', 'customers', 'crm', 'orders', 'payments', 'quotes'];
   results.forEach((result, index) => {
     const metric = metrics.value.find((item) => item.key === keys[index]);
     if (!metric) return;
@@ -65,6 +67,7 @@ onMounted(async () => {
           <v-list class="pa-3" bg-color="transparent">
             <v-list-item to="/admin/catalog/manufacturers" prepend-icon="mdi-database-cog-outline" title="Fahrzeugkatalog" subtitle="Hersteller, Modelle, Generationen und Varianten verwalten" append-icon="mdi-chevron-right" rounded="lg" />
             <v-list-item to="/admin/customers" prepend-icon="mdi-account-group-outline" title="Kundenverwaltung" subtitle="Profile, Adressen, Einwilligungen und Audit-Verläufe" append-icon="mdi-chevron-right" rounded="lg" />
+            <v-list-item to="/crm/applications" prepend-icon="mdi-account-tie-outline" title="CRM · Anträge" subtitle="Kundenanträge, Eligibility, Aufgaben und Interaktionen" append-icon="mdi-chevron-right" rounded="lg" />
             <v-list-item to="/operations/orders" prepend-icon="mdi-clipboard-list-outline" title="Aufträge & Payments" subtitle="Auftragsstatus, Zahlungsvorgänge und Audit-Verläufe" append-icon="mdi-chevron-right" rounded="lg" />
             <v-list-item to="/operations/pricing" prepend-icon="mdi-calculator-variant-outline" title="Pricing Quotes" subtitle="Kalkulationen und gespeicherte Angebote einsehen" append-icon="mdi-chevron-right" rounded="lg" />
           </v-list>
