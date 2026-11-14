@@ -27,8 +27,8 @@ Every route requires a Keycloak token with audience autoflow-customer, tenant cl
 | GET | /api/v1/customers/{id}/history | customers:read | Audit history |
 | PUT | /api/v1/customers/{id}/identity | customers:manage | Link a Keycloak subject after administrator identity verification (audited, unique per tenant) |
 | GET/PATCH | /api/v1/customers/me | customers:portal | Read/update only the profile mapped to the JWT subject |
-| GET | /api/v1/customers/me/addresses | customers:portal | Read own addresses |
-| GET/PUT | /api/v1/customers/me/consents | customers:portal | Read/update own consent decisions |
+| GET/POST | /api/v1/customers/me/addresses | customers:portal | List and add addresses owned by the linked customer |
+| PUT/DELETE | /api/v1/customers/me/addresses/{addressId} | customers:portal | Update or soft-delete only an address owned by the linked customer |\n| GET/PUT | /api/v1/customers/me/consents | customers:portal | Read/update own consent decisions |
 | GET | /api/v1/realtime/access | customers:read | Issue a five-minute tenant-specific Mercure subscriber cookie |
 
 Individuals require firstName and lastName; companies require legalName. Email is normalized and unique among active customers in a tenant. Address countryCode is ISO alpha-2. Replaying a create key with the same request returns the original resource; a different request with the same key returns 409.
@@ -52,7 +52,7 @@ The PostgreSQL bootstrap applies the idempotent schema and identity migrations t
 
 ## Customer self-service and realtime
 
-The local portal is available at `/portal`. Sign in as `customer-demo` / `customer-demo` after importing the realm. Its Keycloak `sub` is mapped to the local seeded customer record. In production, the tenant administrator must verify account ownership before linking the exact subject. In production, create/link identities only through the administrator identity-link endpoint after independently verifying the account owner; never accept a customer ID or subject from the self-service form.
+The local portal is available at `/portal`. Sign in as `customer-demo` / `customer-demo` after importing the realm. Its Keycloak `sub` is mapped to the local seeded customer record. Customers can update their contact details, add/edit/remove their own addresses and change marketing consent; company legal names and advisor-managed contact names remain protected. In production, the tenant administrator must verify account ownership before linking the exact subject. In production, create/link identities only through the administrator identity-link endpoint after independently verifying the account owner; never accept a customer ID or subject from the self-service form.
 
 Customer Service issues a five-minute HttpOnly `mercureAuthorization` cookie scoped to the caller's tenant topic. Only staff with `customers:read` receive the subscriber cookie; customer-portal accounts cannot subscribe to internal tenant activity. The RabbitMQ → Mercure bridge publishes only a small event summary (no raw payload or PII) to private tenant topics. Events without a valid tenant identifier are dead-lettered rather than broadcast. For production, set a strong shared `MERCURE_SUBSCRIBER_JWT_KEY`, `MERCURE_PUBLISHER_JWT_KEY`, the public `MERCURE_CORS_ORIGINS`, `AUTOFLOW_MERCURE_TOPIC_BASE`, and—when the hub is on a sibling subdomain—`MERCURE_COOKIE_DOMAIN` (for example `.example.com`). Set `MERCURE_COOKIE_SECURE=true`; use `MERCURE_COOKIE_SAMESITE=None` only if the browser and hub are genuinely cross-site, and then require HTTPS.
 
