@@ -20,6 +20,7 @@ const sections = [
       { title: 'Payments', subtitle: 'Zahlungsvorgänge', icon: 'mdi-credit-card-outline', to: '/operations/payments' },
       { title: 'Pricing Quotes', subtitle: 'Kalkulationen', icon: 'mdi-calculator-variant-outline', to: '/operations/pricing' },
       { title: 'CRM · Anträge', subtitle: 'Kundenanträge & Beratung', icon: 'mdi-account-tie-outline', to: '/crm/applications' },
+      { title: 'Service Operations', subtitle: 'Contracts, Billing, Stock & Fulfillment', icon: 'mdi-application-cog-outline', to: '/operations/services' },
       { title: 'Alle Services', subtitle: 'CRM, Contracts, Billing & Logistics', icon: 'mdi-apps', to: '/operations/services' },
     ],
   },
@@ -36,6 +37,7 @@ const pageTitle = computed(() => {
   if (route.path.startsWith('/admin/catalog')) return 'Fahrzeugkatalog';
   if (route.path.startsWith('/admin/customers')) return 'Kunden';
   if (route.path.startsWith('/crm')) return 'CRM · Anträge';
+  if (route.path.startsWith('/operations/services')) return 'Service Operations';
   if (route.path === '/operations/services') return 'Service Operations';
   if (route.path.startsWith('/operations/orders')) return route.query.tab === 'payments' ? 'Payments' : route.query.tab === 'quotes' ? 'Pricing Quotes' : 'Aufträge';
   return 'Workspace';
