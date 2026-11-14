@@ -27,7 +27,8 @@ function documentS3Request(string $method,string $objectKey='',?string $filePath
     $signedHeaders='host;x-amz-content-sha256;x-amz-date';
     $wireHeaders=['Host: '.$host,'x-amz-content-sha256: '.$payloadHash,'x-amz-date: '.$amzDate];
     $customerKey=getenv('DOCUMENT_S3_SSE_C_KEY_BASE64')?:'';
-    if($objectKey!==''&&in_array($method,['PUT','GET','HEAD'],true)&&$customerKey!==''){
+    if($objectKey!==''&&in_array($method,['PUT','GET','HEAD'],true)){
+        if($customerKey==='')throw new RuntimeException('S3 SSE-C encryption key is required.');
         $rawKey=base64_decode($customerKey,true);
         if(!is_string($rawKey)||strlen($rawKey)!==32)throw new RuntimeException('S3 SSE-C key must be a base64-encoded 32-byte key.');
         $encryptionHeaders=[
@@ -87,7 +88,7 @@ function documentStorageDelete(string $key):void {
 }
 function documentStorageReady():bool {
     try{
-        if((getenv('DOCUMENT_STORAGE_DRIVER')?:'local')==='s3'){documentS3Request('HEAD');return true;}
+        if((getenv('DOCUMENT_STORAGE_DRIVER')?:'local')==='s3'){$key=base64_decode(getenv('DOCUMENT_S3_SSE_C_KEY_BASE64')?:'',true);if(!is_string($key)||strlen($key)!==32)return false;documentS3Request('HEAD');return true;}
         $root=getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents';return is_dir($root)?is_writable($root):((@mkdir($root,0700,true))&&is_writable($root));
     }catch(Throwable){return false;}
 }
