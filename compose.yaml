@@ -1035,7 +1035,14 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
       RABBITMQ_VHOST: /
     depends_on:
-      # Health-only bounded-context scaffolds. No business APIs are implemented yet.
+      temporal:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    init: true
+    restart: unless-stopped
+
+  # Health-only bounded-context scaffolds. No business APIs are implemented yet.
   search-service:
     build:
       context: .
@@ -1148,12 +1155,6 @@ services:
     depends_on:
       redis: {condition: service_healthy}
     init: true
-    restart: unless-stopped
-
-  temporal:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
     restart: unless-stopped
 
   vehicle-catalog-service:
