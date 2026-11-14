@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Application\PaymentEventEnvelope;
 use Doctrine\DBAL\DriverManager;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
-use Symfony\Component\Uid\Uuid;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -63,34 +63,16 @@ foreach (['PaymentAuthorized', 'PaymentCaptured', 'PaymentFailed', 'PaymentRefun
 $channel->basic_qos(null, 20, false);
 
 $handler = static function (AMQPMessage $message) use ($db): void {
-    $raw = $message->getBody();
-    $envelope = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
-    if (!is_array($envelope) || array_is_list($envelope)) {
-        throw new UnexpectedValueException('Payment event envelope must be a JSON object.');
-    }
-
-    $eventId = $envelope['eventId'] ?? null;
-    $eventType = $envelope['eventType'] ?? null;
-    $tenantId = $envelope['tenantId'] ?? null;
-    $data = $envelope['data'] ?? null;
-    $orderId = is_array($data) ? ($data['orderId'] ?? null) : null;
-    if (!is_string($eventId) || !Uuid::isValid($eventId)
-        || !is_string($eventType)
-        || !is_string($tenantId)
-        || preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenantId) !== 1
-        || !is_array($data) || array_is_list($data)
-        || !is_string($orderId) || !Uuid::isValid($orderId)
-        || ($envelope['schemaVersion'] ?? null) !== 1
-        || ($envelope['producer'] ?? null) !== 'payment-service'
-    ) {
-        throw new UnexpectedValueException('Payment event envelope is invalid or unsupported.');
-    }
-    if (($message->get('message_id') ?? null) !== $eventId
-        || ($message->get('type') ?? null) !== $eventType
-    ) {
-        throw new UnexpectedValueException('RabbitMQ metadata does not match the Payment event envelope.');
-    }
-
+    $event = PaymentEventEnvelope::fromMessage(
+        $message->getBody(),
+        (string) ($message->get('message_id') ?? ''),
+        (string) ($message->get('type') ?? ''),
+    );
+    $eventId = $event->eventId;
+    $eventType = $event->eventType;
+    $tenantId = $event->tenantId;
+    $orderId = $event->orderId;
+    $payloadHash = $event->payloadHash;
     $paymentStatus = match ($eventType) {
         'PaymentAuthorized' => 'authorized',
         'PaymentCaptured' => 'captured',
@@ -98,9 +80,7 @@ $handler = static function (AMQPMessage $message) use ($db): void {
         'PaymentRefunded' => 'refunded',
         'PaymentPartiallyRefunded' => 'partially_refunded',
         'PaymentCancelled' => 'cancelled',
-        default => throw new UnexpectedValueException('Unsupported Payment event type.'),
     };
-    $payloadHash = hash('sha256', $raw);
 
     $db->transactional(static function ($db) use ($eventId, $eventType, $tenantId, $orderId, $paymentStatus, $payloadHash): void {
         $db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant' => $tenantId]);
