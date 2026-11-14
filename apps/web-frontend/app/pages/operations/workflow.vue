@@ -40,10 +40,13 @@ async function loadAll() {
   ]);
   const targets = [contractRows, fulfillmentRows, inventoryRows, reservationRows, invoiceRows, creditNoteRows];
   jobs.slice(0, 6).forEach((job, index) => {
-    if (job.status === 'fulfilled') targets[index].value = items(job.value.data);
-    else targets[index].value = [];
+    const target = targets[index];
+    if (!target) return;
+    if (job.status === 'fulfilled') target.value = items(job.value.data);
+    else target.value = [];
   });
-  billingSummary.value = jobs[6]?.status === 'fulfilled' ? jobs[6].value.data as Row : null;
+  const summaryJob = jobs[6];
+  billingSummary.value = summaryJob && summaryJob.status === 'fulfilled' ? summaryJob.value.data as Row : null;
   const failed = jobs.filter((job) => job.status === 'rejected');
   if (failed.length) error.value = 'Some services could not be loaded. Check your permissions and service health, then refresh.';
   loading.value = false;
