@@ -27,6 +27,16 @@ The central OpenAPI 3.0 catalog contains the HTTP endpoints for all API-bearing 
 docker compose --env-file .env.example up -d --build api-docs
 ```
 
+## Validate locally
+
+Run the documentation smoke test after starting Swagger UI and the gateway:
+
+```bash
+bash bin/test-api-docs.sh
+```
+
+The script checks the Swagger page, downloads and structurally validates OpenAPI (path parameters, response declarations, service tags and the special AI/Stripe authentication rules), then verifies gateway CORS preflight for the Swagger origin. It does not mutate business data or call write endpoints.
+
 ## Authenticate
 
 Obtain a Keycloak access token from the local realm, open Swagger's **Authorize** dialog and paste the raw token (without the `Bearer ` prefix). Use **Try it out** to execute requests.
