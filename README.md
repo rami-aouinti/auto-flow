@@ -53,7 +53,7 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | Service | URL | Purpose |
 | --- | --- | --- |
 | API Documentation Center (Swagger UI) | http://localhost:8096 | Central interactive OpenAPI catalog for all HTTP microservices (local development only) |
-| API Gateway (Traefik) | http://localhost:8088 | Single HTTP entry point; routes Catalog, Inventory, Offers, Pricing, Orders, Payments and Billing; applies CORS, security headers, in-memory IP rate limiting and in-flight request limits |
+| API Gateway (Traefik) | http://localhost:8088 | Single HTTP entry point; routes Catalog, Search, Inventory, Documents, Offers, Pricing, Orders, Payments, Billing, Customers and Contracts; applies CORS, security headers, in-memory IP rate limiting and in-flight request limits |
 | Billing Service | http://localhost:8087 | Invoices, VAT breakdowns, credit notes and billing summary |
 | Customer Service | http://localhost:8089 | Tenant-scoped individual/company profiles, addresses, consents and audit history |
 | Inventory Service | http://localhost:8093 | Physical vehicle units, VIN registry, stock availability and movement history |
@@ -122,6 +122,7 @@ Contract owns contract drafts and their immutable legal snapshots, referencing a
 | --- | --- | --- |
 | `/api/v1/manufacturers/**`, `/api/v1/vehicles/**`, `/api/v1/admin/catalog/**` | Vehicle Catalog (`vehicle-catalog-service:8080`) | Authoritative catalogue reads and admin catalogue management |
 | `/api/v1/search/**` | Search (`search-service:8080`) | Elasticsearch search projection; requires catalog:read or search:read |
+| `/api/v1/documents/**` | Document (`document-service:8080`) | Tenant-scoped document upload/download, versions, malware scanning and audit |
 | `/api/offers/**` | Offer (`offer-service:8080`) | Offer lifecycle and quote composition |
 | `/api/pricing/**` | Pricing (`pricing-service:8080`) | Tenant-scoped quote calculation and retrieval |
 | `/api/v1/orders/**` | Order (`order-service:8080`) | Versioned order lifecycle API |
@@ -135,7 +136,7 @@ The gateway routes `/api/v1/contracts/**` to Contract Service at `contract-servi
 
 ## Authentication quick start
 
-Customer, Offer, Pricing, Vehicle Catalog, Order Management, Billing, Contract, Fulfillment and Vehicle Reservation validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog`, `autoflow-search`, `autoflow-order`, `autoflow-billing`, `autoflow-customer`, `autoflow-contract`, `autoflow-fulfillment` and `autoflow-vehicle-reservation`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
+Customer, Document, Offer, Pricing, Vehicle Catalog, Order Management, Billing, Contract, Fulfillment and Vehicle Reservation validate RS256 access tokens locally using Keycloak's JWKS endpoint. Browser requests pass through Traefik at `http://localhost:8088`; direct backend ports are retained for local diagnostics. Their expected audiences are distinct (`autoflow-offer`, `autoflow-pricing`, `autoflow-catalog`, `autoflow-search`, `autoflow-order`, `autoflow-billing`, `autoflow-customer`, `autoflow-contract`, `autoflow-fulfillment` and `autoflow-vehicle-reservation`, `autoflow-document`). The `/health` and development-only Swagger endpoints remain public; `/api/*` requires a bearer token.
 
 The imported `demo` user/password `demo`, `order-operator` user/password `order-operator`, and the local password-grant client below are for local testing only. Do not enable the password grant or reuse these credentials in a shared or production environment. Real browser clients should use Authorization Code + PKCE.
 
