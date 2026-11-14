@@ -5,36 +5,54 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "symfony/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: composer
     directory: /apps/offer-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "symfony/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: composer
     directory: /apps/pricing-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "symfony/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: composer
     directory: /apps/vehicle-catalog-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "symfony/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: composer
     directory: /apps/order-service
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "symfony/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: composer
     directory: /packages/core-bundle
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "symfony/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
