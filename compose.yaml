@@ -721,7 +721,6 @@ services:
       postgres: {condition: service_healthy}
       postgres-bootstrap: {condition: service_completed_successfully}
       rabbitmq: {condition: service_healthy}
-      payment-outbox-publisher: {condition: service_started}
     restart: unless-stopped
 
   php:
