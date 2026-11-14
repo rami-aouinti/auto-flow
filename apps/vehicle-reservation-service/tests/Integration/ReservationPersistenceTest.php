@@ -50,6 +50,93 @@ final class ReservationPersistenceTest extends TestCase
         $this->insertHeld($this->runtime, $tenantB, $this->uuid(), $unitId, $this->uuid(), $this->uuid());
     }
 
+    public function testInventoryProjectionIsIdempotentVersionedAndDoesNotReopenBlockedStock(): void
+    {
+        $tenant = 'reservation-inventory-test-' . bin2hex(random_bytes(4));
+        $unitId = $this->uuid();
+        $variantId = $this->uuid();
+        $reservationId = $this->uuid();
+        $orderId = $this->uuid();
+        $vin = '1HGCM82633A004352';
+        $createdEvent = $this->uuid();
+        $blockedEvent = $this->uuid();
+
+        $apply = $this->worker->prepare(
+            'SELECT public.vehicle_stock_apply_inventory_event(:tenant,:event,:unit,:variant,:vin,:status,:version)'
+        );
+        $apply->execute([
+            'tenant' => $tenant,
+            'event' => $createdEvent,
+            'unit' => $unitId,
+            'variant' => $variantId,
+            'vin' => $vin,
+            'status' => 'available',
+            'version' => 1,
+        ]);
+        self::assertTrue((bool) $apply->fetchColumn());
+
+        // Re-delivery of the same event is acknowledged but not applied twice.
+        $apply->execute([
+            'tenant' => $tenant,
+            'event' => $createdEvent,
+            'unit' => $unitId,
+            'variant' => $variantId,
+            'vin' => $vin,
+            'status' => 'available',
+            'version' => 1,
+        ]);
+        self::assertFalse((bool) $apply->fetchColumn());
+
+        $this->setTenant($this->runtime, $tenant);
+        $this->insertHeld($this->runtime, $tenant, $reservationId, $unitId, $variantId, $orderId);
+
+        // Inventory can change operational status while Reservation still owns a hold.
+        $apply->execute([
+            'tenant' => $tenant,
+            'event' => $blockedEvent,
+            'unit' => $unitId,
+            'variant' => $variantId,
+            'vin' => $vin,
+            'status' => 'blocked',
+            'version' => 2,
+        ]);
+        self::assertTrue((bool) $apply->fetchColumn());
+
+        $stock = $this->runtime->prepare(
+            'SELECT status, inventory_status, inventory_version FROM vehicle_stock_units WHERE vehicle_unit_id = :unit'
+        );
+        $stock->execute(['unit' => $unitId]);
+        self::assertSame([
+            'status' => 'reserved',
+            'inventory_status' => 'blocked',
+            'inventory_version' => 2,
+        ], $stock->fetch());
+
+        $release = $this->runtime->prepare(
+            "UPDATE vehicle_reservations SET status = 'released', released_at = CURRENT_TIMESTAMP WHERE reservation_id = :id"
+        );
+        $release->execute(['id' => $reservationId]);
+
+        // A delayed older "available" event cannot undo the newer blocked state.
+        $apply->execute([
+            'tenant' => $tenant,
+            'event' => $this->uuid(),
+            'unit' => $unitId,
+            'variant' => $variantId,
+            'vin' => $vin,
+            'status' => 'available',
+            'version' => 1,
+        ]);
+        self::assertTrue((bool) $apply->fetchColumn());
+
+        $stock->execute(['unit' => $unitId]);
+        self::assertSame([
+            'status' => 'unavailable',
+            'inventory_status' => 'blocked',
+            'inventory_version' => 2,
+        ], $stock->fetch());
+    }
+
     public function testExpiryWorkerWritesAuditAndOutboxAndPublisherCanClaim(): void
     {
         $tenant = 'reservation-expiry-test-' . bin2hex(random_bytes(4));
