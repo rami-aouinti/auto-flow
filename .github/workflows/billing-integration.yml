@@ -13,11 +13,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Build Billing API and Payment consumer
-        run: docker compose --env-file .env.example build billing-service billing-payment-event-consumer
-      - name: Start Billing API and Payment event consumer
+      - name: Setup PHP for Billing unit tests
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo_pgsql, mbstring, dom
+          coverage: none
+      - name: Install Billing dependencies and run legal snapshot/PDF tests
         run: |
-          docker compose --env-file .env.example up -d billing-service billing-payment-event-consumer
+          composer install --working-dir=apps/billing-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
+          cd apps/billing-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Build Billing Payment consumer
+        run: docker compose --env-file .env.example build billing-payment-event-consumer
+      - name: Start Billing Payment event consumer
+        run: |
+          docker compose --env-file .env.example up -d billing-payment-event-consumer
           for attempt in $(seq 1 90); do
             if docker compose --env-file .env.example logs --no-color billing-payment-event-consumer 2>&1 | grep -q "Billing Payment event consumer started"; then
               exit 0
@@ -25,17 +35,15 @@ jobs:
             sleep 2
           done
           docker compose --env-file .env.example ps -a
-          docker compose --env-file .env.example logs --no-color --tail=200 billing-service billing-payment-event-consumer rabbitmq postgres postgres-bootstrap
+          docker compose --env-file .env.example logs --no-color --tail=200 billing-payment-event-consumer rabbitmq postgres postgres-bootstrap
           exit 1
-      - name: Run Billing legal snapshot and PDF unit tests
-        run: docker compose --env-file .env.example exec -T billing-service vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Verify invoice, credit note, replay and dead-letter behavior
-        run: docker compose --env-file .env.example exec -T billing-service php bin/smoke-test-payment-events.php
+        run: docker compose --env-file .env.example exec -T billing-payment-event-consumer php bin/smoke-test-payment-events.php
       - name: Collect integration diagnostics
         if: failure()
         run: |
           docker compose --env-file .env.example ps -a
-          docker compose --env-file .env.example logs --no-color --tail=250 billing-service billing-payment-event-consumer rabbitmq postgres postgres-bootstrap
+          docker compose --env-file .env.example logs --no-color --tail=250 billing-payment-event-consumer rabbitmq postgres postgres-bootstrap
       - name: Stop test infrastructure
         if: always()
         run: docker compose --env-file .env.example down -v
