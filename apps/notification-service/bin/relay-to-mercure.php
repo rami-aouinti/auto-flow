@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AutoFlow\Notification\Infrastructure\Messaging\MercureEvent;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
-use AutoFlow\Notification\Infrastructure\Messaging\MercureEvent;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -66,7 +66,8 @@ function publishMercure(string $hubUrl, string $key, string $topic, array $data)
     $error = curl_error($curl);
     curl_close($curl);
     if ($body === false || $status < 200 || $status >= 300) {
-        throw new RuntimeException('Mercure publish failed (' . $status . '): ' . ($error ?: mb_substr((string) $body, 0, 300)));
+        $detail = $error ?: mb_substr((string) $body, 0, 300);
+        throw new RuntimeException('Mercure publish failed (' . $status . '): ' . $detail);
     }
 }
 
@@ -151,7 +152,10 @@ while (true) {
                 } catch (Throwable $exception) {
                     $retryCount = (int) ($headerValues['mercureRetryCount'] ?? 0);
                     if ($retryCount >= 12) {
-                        fwrite(STDERR, 'Mercure delivery moved to dead-letter queue after retries: ' . $exception->getMessage() . "\n");
+                        fwrite(
+                            STDERR,
+                            'Mercure delivery moved to dead-letter queue after retries: ' . $exception->getMessage() . "\n",
+                        );
                         $message->reject(false);
                         return;
                     }
@@ -166,7 +170,11 @@ while (true) {
                         $channel->basic_publish($retryMessage, 'autoflow.mercure.retry', 'retry', true);
                         $channel->wait_for_pending_acks_returns(5);
                         $message->ack();
-                        fwrite(STDERR, 'Mercure delivery scheduled for retry ' . ($retryCount + 1) . ': ' . $exception->getMessage() . "\n");
+                        fwrite(
+                            STDERR,
+                            'Mercure delivery scheduled for retry ' . ($retryCount + 1) . ': '
+                            . $exception->getMessage() . "\n",
+                        );
                     } catch (Throwable $retryFailure) {
                         fwrite(STDERR, 'Mercure retry scheduling failed: ' . $retryFailure->getMessage() . "\n");
                         $message->nack(false, true);
