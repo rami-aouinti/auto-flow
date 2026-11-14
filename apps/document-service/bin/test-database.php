@@ -31,7 +31,7 @@ try{
     if(is_array($maintenanceUrl)&&!empty($maintenanceUrl['host'])&&!empty($maintenanceUrl['path'])){
         $maintenance=new PDO('pgsql:host='.$maintenanceUrl['host'].';port='.($maintenanceUrl['port']??5432).';dbname='.ltrim($maintenanceUrl['path'],'/'),rawurldecode($maintenanceUrl['user']??''),rawurldecode($maintenanceUrl['pass']??''),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
         $role=$maintenance->query("SELECT rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user")->fetch();
-        $assert($role!==false&&$role['rolsuper']==='f'&&$role['rolbypassrls']==='t','maintenance role is not superuser and has only the explicit BYPASSRLS capability');
+        $assert($role!==false&&in_array($role['rolsuper'],[false,'f'],true)&&in_array($role['rolbypassrls'],[true,'t'],true),'maintenance role is not superuser and has only the explicit BYPASSRLS capability');
         $maintenance->beginTransaction();
         $maintenance->query('SELECT id FROM document_service.documents ORDER BY id LIMIT 1 FOR UPDATE')->fetchAll();
         $maintenance->rollBack();
