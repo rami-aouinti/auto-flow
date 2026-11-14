@@ -3,7 +3,7 @@
   "info": {
     "title": "AutoFlow Microservices API",
     "version": "1.0.0",
-    "description": "Central local-development API catalog. Paths are routed through Traefik at localhost:8088. Detailed per-service API.md files document each service's current route contract. Request schemas are strict only where the service documentation supplies the exact contract; unknown payload fields are deliberately not invented. Notification Service is a background worker without public REST routes. Document Service now includes encrypted S3-compatible storage, legal holds, retention purge and delegated access grants."
+    "description": "Central OpenAPI 3.0 catalog for all implemented business HTTP APIs. Swagger UI is served locally at http://localhost:8096. Paths are routed through Traefik at localhost:8088 unless an operation declares a direct service server. Health-only scaffold routes and the Notification background worker are documented in their per-service API.md files. Per-service API references describe parameters, authentication, request examples and possible responses. Request schemas are only declared where grounded in the implementation contract."
   },
   "servers": [
     {
@@ -65,6 +65,14 @@
     },
     {
       "name": "Integration Service"
+    },
+    {
+      "name": "Configuration Service",
+      "description": "Tenant-scoped runtime configuration, immutable versions and feature flags."
+    },
+    {
+      "name": "Audit Service",
+      "description": "Tenant-isolated append-only compliance journal."
     }
   ],
   "components": {
@@ -6481,7 +6489,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       }
     },
     "/api/configurations/{namespace}/{key}": {
@@ -6576,7 +6587,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       },
       "put": {
         "summary": "Create or update configuration",
@@ -6719,7 +6733,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       }
     },
     "/api/configurations/{namespace}/{key}/versions": {
@@ -6804,7 +6821,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       }
     },
     "/api/configurations/{namespace}/{key}/rollback": {
@@ -6928,7 +6948,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       }
     },
     "/api/feature-flags": {
@@ -6995,7 +7018,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       }
     },
     "/api/feature-flags/{key}": {
@@ -7081,7 +7107,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       },
       "put": {
         "summary": "Create or update feature flag",
@@ -7204,7 +7233,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       }
     },
     "/api/feature-flags/{key}/evaluate": {
@@ -7290,7 +7322,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       }
     },
     "/api/audit-events": {
@@ -7368,7 +7403,10 @@
               }
             }
           }
-        }
+        },
+        "tags": [
+          "Configuration Service"
+        ]
       }
     },
     "/api/v1/audit/events": {
@@ -7412,7 +7450,10 @@
           "503": {
             "description": "Audit storage unavailable"
           }
-        }
+        },
+        "tags": [
+          "Audit Service"
+        ]
       },
       "get": {
         "summary": "Search audit events in the authenticated tenant",
@@ -7502,7 +7543,10 @@
           "503": {
             "description": "Audit storage unavailable"
           }
-        }
+        },
+        "tags": [
+          "Audit Service"
+        ]
       }
     },
     "/api/v1/audit/events/{eventId}": {
@@ -7536,7 +7580,10 @@
           "404": {
             "description": "Event not found in this tenant"
           }
-        }
+        },
+        "tags": [
+          "Audit Service"
+        ]
       }
     },
     "/api/v1/documents/{id}/access-grants": {
