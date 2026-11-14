@@ -37,7 +37,13 @@ $channel = $connection->channel();
 $exchange = 'autoflow.inventory.events';
 $queue = 'autoflow.vehicle-reservation.inventory-events';
 $channel->exchange_declare($exchange, 'topic', false, true, false);
-$channel->queue_declare($queue, false, true, false, false);
+$channel->exchange_declare('autoflow.vehicle-reservation.inventory-events.dlx', 'direct', false, true, false);
+$channel->queue_declare('autoflow.vehicle-reservation.inventory-events.dead', false, true, false, false);
+$channel->queue_bind('autoflow.vehicle-reservation.inventory-events.dead', 'autoflow.vehicle-reservation.inventory-events.dlx', 'invalid');
+$channel->queue_declare($queue, false, true, false, false, false, new PhpAmqpLib\\Wire\\AMQPTable([
+    'x-dead-letter-exchange' => 'autoflow.vehicle-reservation.inventory-events.dlx',
+    'x-dead-letter-routing-key' => 'invalid',
+]));
 $channel->queue_bind($queue, $exchange, 'inventory.unit.created.v1');
 $channel->queue_bind($queue, $exchange, 'inventory.status.changed.v1');
 $channel->basic_qos(null, 20, false);
