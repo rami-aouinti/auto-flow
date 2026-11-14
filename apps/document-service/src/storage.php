@@ -25,6 +25,18 @@ function documentS3Request(string $method,string $objectKey='',?string $filePath
     $amzDate=$now->format('Ymd\THis\Z');$date=$now->format('Ymd');
     $canonicalHeaders="host:{$host}\nx-amz-content-sha256:{$payloadHash}\nx-amz-date:{$amzDate}\n";
     $signedHeaders='host;x-amz-content-sha256;x-amz-date';
+    $wireHeaders=['Host: '.$host,'x-amz-content-sha256: '.$payloadHash,'x-amz-date: '.$amzDate];
+    $customerKey=getenv('DOCUMENT_S3_SSE_C_KEY_BASE64')?:'';
+    if($objectKey!==''&&in_array($method,['PUT','GET','HEAD'],true)&&$customerKey!==''){
+        $rawKey=base64_decode($customerKey,true);
+        if(!is_string($rawKey)||strlen($rawKey)!==32)throw new RuntimeException('S3 SSE-C key must be a base64-encoded 32-byte key.');
+        $encryptionHeaders=[
+            'x-amz-server-side-encryption-customer-algorithm'=>'AES256',
+            'x-amz-server-side-encryption-customer-key'=>$customerKey,
+            'x-amz-server-side-encryption-customer-key-md5'=>base64_encode(md5($rawKey,true))
+        ];
+        foreach($encryptionHeaders as $name=>$value){$canonicalHeaders.=$name.':'.$value."\n";$wireHeaders[]=$name.': '.$value;$signedHeaders.=';'.$name;}
+    }
     $canonicalRequest=$method."\n".$uri."\n\n".$canonicalHeaders."\n".$signedHeaders."\n".$payloadHash;
     $scope=$date.'/'.$c['region'].'/s3/aws4_request';
     $stringToSign="AWS4-HMAC-SHA256\n{$amzDate}\n{$scope}\n".hash('sha256',$canonicalRequest);
@@ -34,7 +46,7 @@ function documentS3Request(string $method,string $objectKey='',?string $filePath
     $kSigning=hash_hmac('sha256','aws4_request',$kService,true);
     $signature=hash_hmac('sha256',$stringToSign,$kSigning);
     $authorization='AWS4-HMAC-SHA256 Credential='.$c['access'].'/'.$scope.', SignedHeaders='.$signedHeaders.', Signature='.$signature;
-    $headers=['Host: '.$host,'x-amz-content-sha256: '.$payloadHash,'x-amz-date: '.$amzDate,'Authorization: '.$authorization];
+    $headers=$wireHeaders;$headers[]='Authorization: '.$authorization;
     $ch=curl_init($url);
     curl_setopt_array($ch,[CURLOPT_CUSTOMREQUEST=>$method,CURLOPT_HTTPHEADER=>$headers,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>60,CURLOPT_SSL_VERIFYPEER=>true,CURLOPT_SSL_VERIFYHOST=>2]);
     if($method==='PUT')curl_setopt($ch,CURLOPT_POSTFIELDS,$payload);
