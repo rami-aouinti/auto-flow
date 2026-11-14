@@ -38,7 +38,7 @@ final readonly class ChatController
             return new JsonResponse(['error' => ['code' => 'ai_provider_unavailable', 'message' => 'The AI provider could not process the request.']], 502);
         }
         return new JsonResponse([
-            'data' => ['content' => $result['content'], 'provider' => 'openai', 'model' => $result['model']],
+            'data' => ['content' => $result['content'], 'provider' => 'ollama', 'model' => $result['model']],
             'usage' => ['input_tokens' => $result['input_tokens'], 'output_tokens' => $result['output_tokens']],
         ]);
     }
