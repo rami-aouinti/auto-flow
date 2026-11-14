@@ -1,4 +1,19 @@
 services:
+  # Central Swagger UI for local development; never expose this in production.
+  api-docs:
+    image: swaggerapi/swagger-ui:v5.18.2
+    environment:
+      SWAGGER_JSON: /openapi.json
+      URL: /openapi.json
+      DOC_EXPANSION: none
+      FILTER: "true"
+      DISPLAY_REQUEST_DURATION: "true"
+    ports:
+      - "127.0.0.1:8096:8080"
+    volumes:
+      - ./docs/api/openapi.json:/openapi.json:ro
+    restart: unless-stopped
+
   # Single HTTP entry point for browser, mobile and external API clients.
   # Backend ports remain published for local diagnostics; clients should use :8088.
   api-gateway:
