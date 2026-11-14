@@ -2,6 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-11-07',
   ssr: false,
   app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       title: 'AutoFlow | Mobility Platform',
       meta: [
@@ -41,6 +42,18 @@ export default defineNuxtConfig({
               primary: '#c8f169',
               secondary: '#82939b',
               error: '#ef8d91',
+            },
+          },
+          workspace: {
+            dark: false,
+            colors: {
+              background: '#f4f7f8',
+              surface: '#ffffff',
+              primary: '#173b56',
+              secondary: '#718195',
+              success: '#2f8062',
+              error: '#b94b50',
+              info: '#3d7593',
             },
           },
           marketplace: {

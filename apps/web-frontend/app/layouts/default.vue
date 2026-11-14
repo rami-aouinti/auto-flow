@@ -72,18 +72,19 @@ function logout() {
 </script>
 
 <template>
-  <v-app>
+  <v-app theme="workspace">
     <v-navigation-drawer
       :model-value="mdAndUp || drawer"
       :permanent="mdAndUp"
       :temporary="!mdAndUp"
-      color="surface"
+      color="#10283d"
+      class="workspace-drawer"
       border="end"
       width="284"
       @update:model-value="drawer = $event"
     >
       <div class="brand-lockup">
-        <v-avatar color="primary" rounded="lg" size="43"><v-icon icon="mdi-car-electric" color="on-primary" size="25" /></v-avatar>
+        <v-avatar color="#c8f169" rounded="lg" size="43"><v-icon icon="mdi-car-electric" color="#10283d" size="25" /></v-avatar>
         <div><div class="brand-name">AUTOFLOW</div><div class="brand-caption">MOBILITY OPERATIONS</div></div>
       </div>
 
@@ -156,22 +157,21 @@ function logout() {
 <style scoped>
 .brand-lockup{display:flex;align-items:center;gap:13px;padding:25px 22px 23px}
 .brand-name{font:800 15px Manrope,sans-serif;letter-spacing:2px;color:#f1f5f6}
-.brand-caption{font-size:8px;letter-spacing:1.5px;color:#82939b;margin-top:4px}
-.workspace-label{display:flex;align-items:center;justify-content:space-between;padding:12px 23px 15px;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
-.workspace-label>span,.nav-section-label{color:#71838c;font-size:9px;font-weight:800;letter-spacing:1.55px}
+.brand-caption{font-size:8px;letter-spacing:1.5px;color:#90a3ae;margin-top:4px}
+.workspace-label{display:flex;align-items:center;justify-content:space-between;padding:12px 23px 15px;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)}
+.workspace-label>span,.nav-section-label{color:#8196a3;font-size:9px;font-weight:800;letter-spacing:1.55px}
 .nav-section-label{padding:20px 25px 3px}
 .workspace-nav-item{min-height:57px}
 .workspace-nav-item :deep(.v-list-item-title){font-size:12px;font-weight:700}
-.workspace-nav-item :deep(.v-list-item-subtitle){font-size:9px;color:#82939b;margin-top:3px}
-.drawer-footer{padding:18px 22px 22px;border-top:1px solid rgba(255,255,255,.06)}
-.security-label{font-size:10px;color:#a9bac0}
-.drawer-version{margin-top:12px;color:#71838c;font-size:8px;letter-spacing:1px}
+.workspace-nav-item :deep(.v-list-item-subtitle){font-size:9px;color:#90a3ae;margin-top:3px}
+.drawer-footer{padding:18px 22px 22px;border-top:1px solid rgba(255,255,255,.07)}
+.security-label{font-size:10px;color:#b8c6cc}
+.drawer-version{margin-top:12px;color:#8196a3;font-size:8px;letter-spacing:1px}
 .topbar-title{display:flex;flex-direction:column;line-height:1.25}
 .topbar-overline{font-size:8px;letter-spacing:1.7px;color:#82939b}
-.topbar-heading{font:700 15px Manrope;color:#eef3f4}
-.environment-indicator{align-items:center;gap:8px;color:#a9bac0;font-size:10px}
-
+.topbar-heading{font:800 15px Manrope;color:#14283b}
+.environment-indicator{align-items:center;gap:8px;color:#718195;font-size:10px}
 .account-button{font-size:11px;text-transform:none;letter-spacing:0}
 .workspace-content{max-width:1600px;padding:clamp(22px,3vw,42px) clamp(18px,3vw,48px) 76px}
-.workspace-footer{padding:13px 26px;color:#71838c;font-size:8px;letter-spacing:1.2px}
+.workspace-footer{padding:13px 26px;color:#718195;font-size:8px;letter-spacing:1.2px}
 </style>
