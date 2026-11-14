@@ -6,8 +6,13 @@ require_once __DIR__.'/../src/storage.php';
 const MAX_UPLOAD = 26214400;
 const MIME_TYPES = ['application/pdf','image/jpeg','image/png','text/plain','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
+function requestId():string {
+    $candidate=(string)($_SERVER['HTTP_X_REQUEST_ID']??'');
+    $id=preg_match('/^[A-Za-z0-9._:-]{1,128}$/D',$candidate)?$candidate:uuid();
+    $_SERVER['AUTOFLOW_REQUEST_ID']=$id;header('X-Request-ID: '.$id);return $id;
+}
 function respond(array $body, int $status=200, string $type='application/json'): never {
-    http_response_code($status); header('Content-Type: '.$type.'; charset=utf-8'); header('Cache-Control: no-store');
+    http_response_code($status); header('Content-Type: '.$type.'; charset=utf-8'); header('Cache-Control: no-store'); header('X-Content-Type-Options: nosniff');
     echo json_encode($body, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE); exit;
 }
 function fail(int $status,string $title,string $detail): never {
@@ -88,7 +93,7 @@ function audit(PDO $db,array $u,string $id,string $action,array $data=[]):void{$
 function emit(PDO $db,array $u,string $id,string $type,array $data):void{$q=$db->prepare('INSERT INTO document_outbox_events(id,tenant_id,aggregate_id,event_type,payload) VALUES(:i,:t,:d,:x,:j)');$q->execute(['i'=>uuid(),'t'=>$u['tenant'],'d'=>$id,'x'=>$type,'j'=>json_encode($data)]);}
 function findDoc(PDO $db,array $u,string $id):array{$q=$db->prepare("SELECT * FROM documents WHERE tenant_id=:t AND id=:d AND status<>'deleted'");$q->execute(['t'=>$u['tenant'],'d'=>$id]);$r=$q->fetch();if(!$r)fail(404,'Not Found','Document not found.');unset($r['storage_key']);return $r;}
 function run():never {
-    $path=parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/';$method=$_SERVER['REQUEST_METHOD']??'GET';
+    requestId();$path=parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/';$method=$_SERVER['REQUEST_METHOD']??'GET';
     if(in_array($path,['/health','/health/live'],true))respond(['service'=>'document-service','status'=>'ok','checks'=>['process'=>'ok']]);
     if($path==='/health/ready'){
         $checks=['postgres'=>'unavailable','storage'=>'unavailable','clamav'=>'unavailable'];
@@ -153,4 +158,4 @@ function run():never {
     }
     fail(404,'Not Found','Endpoint not found.');
 }
-try{run();}catch(Throwable $e){error_log('[document-service] '.$e::class.': '.$e->getMessage());fail(500,'Internal Server Error','Request could not be completed.');}
+try{run();}catch(Throwable $e){error_log(json_encode(['timestamp'=>gmdate(DateTimeInterface::ATOM),'level'=>'error','service'=>'document-service','requestId'=>$_SERVER['AUTOFLOW_REQUEST_ID']??null,'exception'=>$e::class,'message'=>$e->getMessage()],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));fail(500,'Internal Server Error','Request could not be completed.');}
