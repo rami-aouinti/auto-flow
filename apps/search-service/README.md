@@ -8,7 +8,7 @@ Elasticsearch-backed search projection for the shared vehicle catalogue.
 - Filters for manufacturer, fuel type, powertrain, body style, transmission, power and seats.
 - Pagination, deterministic sorting and aggregations (facets).
 - Lightweight autocomplete suggestions.
-- Explicit index mapping and a repeatable catalogue reindex command.
+- Explicit index mapping, versioned index builds and an atomic alias switch for zero-downtime reindexing.
 - Readiness check against Elasticsearch; JWT verification uses the shared CoreBundle and Keycloak JWKS.
 
 The indexed catalogue is shared master data. Search stores no customer PII, tenant-specific data, offers, orders or contracts.
@@ -68,4 +68,4 @@ The gateway route is `/api/v1/search/*`; direct local diagnostics use port 8097.
 
 ## Consistency boundary
 
-This first production-shaped slice rebuilds its search projection from the catalogue's published read model. It does not yet claim continuous RabbitMQ event synchronization, delete propagation, alias-based zero-downtime reindexing, or tenant-owned cross-domain projections. Those require versioned catalogue events and are tracked in the feature backlog.
+This first production-shaped slice rebuilds its search projection from the catalogue's published read model. It does not yet claim continuous RabbitMQ event synchronization, delete propagation, or tenant-owned cross-domain projections. Those require versioned catalogue events and are tracked in the feature backlog.
