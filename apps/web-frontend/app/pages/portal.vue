@@ -196,8 +196,8 @@ onMounted(() => { void load(); });
             <v-card-title>Kommunikation</v-card-title>
             <v-card-text class="text-body-2 text-medium-emphasis">Du kannst deine freiwilligen Marketing-Einwilligungen jederzeit ändern. Vertrags- und Serviceinformationen sind davon unabhängig.</v-card-text>
             <v-list>
-              <v-list-item title="Marketing per E-Mail"><template #append><v-switch :model-value="Boolean(consents.find(item => item.purpose === 'marketing.email')?.granted)" color="success" hide-details density="compact" @update:model-value="setConsent('marketing.email', Boolean($event))" /></template></v-list-item>
-              <v-list-item title="Marketing per SMS"><template #append><v-switch :model-value="Boolean(consents.find(item => item.purpose === 'marketing.sms')?.granted)" color="success" hide-details density="compact" @update:model-value="setConsent('marketing.sms', Boolean($event))" /></template></v-list-item>
+              <v-list-item title="Marketing per E-Mail"><template #append><v-switch :model-value="Boolean(consents.find(item => item.purpose === 'marketing.email')?.granted)" color="success" hide-details density="compact" aria-label="Marketing per E-Mail" @update:model-value="setConsent('marketing.email', Boolean($event))" /></template></v-list-item>
+              <v-list-item title="Marketing per SMS"><template #append><v-switch :model-value="Boolean(consents.find(item => item.purpose === 'marketing.sms')?.granted)" color="success" hide-details density="compact" aria-label="Marketing per SMS" @update:model-value="setConsent('marketing.sms', Boolean($event))" /></template></v-list-item>
             </v-list>
           </v-card>
         </v-col>
