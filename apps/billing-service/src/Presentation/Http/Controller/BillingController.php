@@ -111,6 +111,9 @@ final readonly class BillingController
                     }
                     return $row;
                 });
+                if ((string) $document['document_id'] !== $uploaded['id']) {
+                    try { $this->documentService->delete($uploaded['id'], $token); } catch (Throwable) { /* best-effort cleanup of a concurrent duplicate */ }
+                }
             }
 
             $content = $this->documentService->download((string) $document['document_id'], $token);
@@ -183,6 +186,9 @@ final readonly class BillingController
                     }
                     return $row;
                 });
+                if ((string) $document['document_id'] !== $uploaded['id']) {
+                    try { $this->documentService->delete($uploaded['id'], $token); } catch (Throwable) { /* best-effort cleanup of a concurrent duplicate */ }
+                }
             }
             $content = $this->documentService->download((string) $document['document_id'], $token);
             if (!hash_equals((string) $document['checksum_sha256'], hash('sha256', $content))) {
