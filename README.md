@@ -12,7 +12,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - Supervisor-managed Offer background processes in Docker Compose
 - Temporal CLI development server with persistent local SQLite state
 - RoadRunner 3.0.1 HTTP and gRPC workers for the Offer and Pricing services
-- Symfony 7.4 microservices with independent Composer projects (Customer, Inventory, Offer, Pricing, Vehicle Catalog, Order, Payment, Billing and Contract)
+- Symfony 7.4 microservices with independent Composer projects (Customer, Inventory, Offer, Pricing, Vehicle Catalog, Search, Order, Payment, Billing and Contract)
 - OpenTelemetry PHP extension, SDK and Symfony auto-instrumentation
 - PostgreSQL 16, RabbitMQ 4, Redis 7, Elasticsearch 8 and Kibana
 - Mercure Hub for real-time Server-Sent Events
@@ -63,6 +63,7 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
 | Pricing Service | http://localhost:8082 | Tenant-scoped quote calculation API |
 | Vehicle Catalog Service | http://localhost:8084 | Authoritative manufacturers, models, generations and vehicle variants |
+| Search Service | http://localhost:8097 | Authenticated Elasticsearch vehicle search, filters, facets and suggestions |
 | Order Management Service | http://localhost:8085 | Tenant-scoped order lifecycle, audit history, immutable commercial snapshots and payment state |
 | Payment Service | http://localhost:8086 | Stripe PaymentIntents, capture/refund lifecycle and payment events |
 | Pricing Swagger UI | http://localhost:8082/api/doc | Interactive Pricing REST API documentation (dev only) |
@@ -117,7 +118,8 @@ Contract owns contract drafts and their immutable legal snapshots, referencing a
 
 | Public path | Upstream service | Notes |
 | --- | --- | --- |
-| `/api/v1/manufacturers/**`, `/api/v1/vehicles/**`, `/api/v1/admin/catalog/**` | Vehicle Catalog (`vehicle-catalog-service:8080`) | Public catalogue reads and admin catalogue management |
+| `/api/v1/manufacturers/**`, `/api/v1/vehicles/**`, `/api/v1/admin/catalog/**` | Vehicle Catalog (`vehicle-catalog-service:8080`) | Authoritative catalogue reads and admin catalogue management |
+| `/api/v1/search/**` | Search (`search-service:8080`) | Elasticsearch search projection; requires catalog:read or search:read |
 | `/api/offers/**` | Offer (`offer-service:8080`) | Offer lifecycle and quote composition |
 | `/api/pricing/**` | Pricing (`pricing-service:8080`) | Tenant-scoped quote calculation and retrieval |
 | `/api/v1/orders/**` | Order (`order-service:8080`) | Versioned order lifecycle API |
@@ -396,11 +398,11 @@ Start with the [AutoFlow Engineering & Architecture Wiki](docs/wiki/README.md). 
 
 ## New bounded-context scaffolds (health-only)
 
-The following services have been added to Docker Compose as **health-only scaffolds**. They expose `GET /health`, `GET /health/live` and `GET /health/ready`; no business API is implemented yet. Their full responsibilities and unchecked implementation features are documented in each service's `README.md` and `docs/FEATURE_BACKLOG.md`.
+Search is now a Symfony/RoadRunner service with an authenticated Elasticsearch vehicle search API. Workflow, Integration, Document, Audit, Analytics, Media and Configuration remain **health-only scaffolds**. Their remaining responsibilities and unchecked implementation features are documented in each service's `README.md` and `docs/FEATURE_BACKLOG.md`.
 
 | Service | Local health URL | Planned responsibility |
 |---|---|---|
-| Search | http://localhost:8097/health/ready | Tenant-safe Elasticsearch read projections and search |
+| Search | http://localhost:8097/api/v1/search/vehicles | Authenticated Elasticsearch vehicle search, filters, facets and autocomplete |
 | Workflow | http://localhost:8098/health/ready | Temporal orchestration, workflow versions and Saga coordination |
 | Integration | http://localhost:8099/health/ready | External provider adapters, webhooks and delivery reliability |
 | Document | http://localhost:8100/health/ready | Document metadata, versions, access and retention |
@@ -409,12 +411,13 @@ The following services have been added to Docker Compose as **health-only scaffo
 | Media | http://localhost:8103/health/ready | Binary asset processing, transformations and delivery |
 | Configuration | http://localhost:8104/health/ready | Typed tenant configuration and feature flags |
 
-These containers use `docker/php/skeleton-service.Dockerfile` and PHP's built-in server for local bootstrap only. They are not production-ready Symfony/RoadRunner services. Business endpoints must not be routed through Traefik until authentication, tenant isolation, OpenAPI and tests are implemented. See [the missing-services roadmap](docs/architecture/missing-services-roadmap.md).
+The seven remaining scaffold containers use `docker/php/skeleton-service.Dockerfile` and PHP's built-in server for local bootstrap only. Search uses the standard Symfony/RoadRunner image, CoreBundle JWT validation, Keycloak audience `autoflow-search`, and Elasticsearch. Its current index is rebuilt from published catalogue rows with `php bin/reindex-vehicles.php`; continuous RabbitMQ synchronization remains in its backlog. See [the missing-services roadmap](docs/architecture/missing-services-roadmap.md).
 
 Start and check them:
 
 ```bash
 docker compose --env-file .env.example config --quiet
 docker compose --env-file .env.example up -d --build search-service workflow-service integration-service document-service audit-service analytics-service media-service configuration-service
+docker compose --env-file .env.example exec search-service php bin/reindex-vehicles.php
 sh scripts/check-skeleton-health.sh
 ```
