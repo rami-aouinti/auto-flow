@@ -13,7 +13,11 @@ function documentS3Config():array {
     if(!is_array($parts)||empty($parts['host']))throw new RuntimeException('S3 endpoint is invalid.');
     return compact('endpoint','bucket','access','secret','region','parts');
 }
+function documentValidateObjectKey(string $key):void {
+    if($key===''||str_starts_with($key,'/')||preg_match('/^[A-Za-z0-9._\\/-]{1,900}$/D',$key)!==1||in_array('..',explode('/',$key),true)||in_array('.',explode('/',$key),true))throw new RuntimeException('Stored S3 object key is invalid.');
+}
 function documentS3Request(string $method,string $objectKey='',?string $filePath=null):string {
+    if($objectKey!=='')documentValidateObjectKey($objectKey);
     if(!function_exists('curl_init'))throw new RuntimeException('PHP cURL extension is required for S3 storage.');
     $c=documentS3Config();$host=$c['parts']['host'].(isset($c['parts']['port'])?':'.$c['parts']['port']:'');
     $segments=array_map('rawurlencode',array_filter(explode('/',$objectKey),static fn($v)=>$v!==''));
@@ -73,15 +77,15 @@ function documentStorageGet(string $key):string {
     if(str_starts_with($key,'s3://')){
         $parts=parse_url($key);$bucket=$parts['host']??'';$object=ltrim($parts['path']??'','/');
         if($bucket!==(getenv('DOCUMENT_S3_BUCKET')?:''))throw new RuntimeException('Stored object bucket does not match configuration.');
-        return documentS3Request('GET',$object);
+        documentValidateObjectKey($object);return documentS3Request('GET',$object);
     }
-    $body=file_get_contents($key);if(!is_string($body))throw new RuntimeException('Stored document cannot be read.');return $body;
+    $root=realpath(getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents');$real=realpath($key);if($root===false||$real===false||!str_starts_with($real,$root.'/')||!is_file($real))throw new RuntimeException('Stored document path is invalid.');$body=file_get_contents($real);if(!is_string($body))throw new RuntimeException('Stored document cannot be read.');return $body;
 }
 function documentStorageDelete(string $key):void {
     if(str_starts_with($key,'s3://')){
         $parts=parse_url($key);$bucket=$parts['host']??'';$object=ltrim($parts['path']??'','/');
         if($bucket!==(getenv('DOCUMENT_S3_BUCKET')?:''))throw new RuntimeException('Stored object bucket does not match configuration.');
-        documentS3Request('DELETE',$object);return;
+        documentValidateObjectKey($object);documentS3Request('DELETE',$object);return;
     }
     $root=realpath(getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents');$real=realpath($key);
     if($root!==false&&$real!==false&&str_starts_with($real,$root.'/')&&is_file($real)&&!unlink($real))throw new RuntimeException('Unable to remove stored document binary.');
