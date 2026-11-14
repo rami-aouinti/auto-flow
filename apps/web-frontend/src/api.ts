@@ -137,6 +137,7 @@ export const billing = {
   summary: () => api.get(`${billingBase}/api/v1/billing/summary`),
   invoices: (limit = 20, offset = 0) => api.get(`${billingBase}/api/v1/billing/invoices`, { params: { limit, offset } }),
   invoice: (id: string) => api.get(`${billingBase}/api/v1/billing/invoices/${encodeURIComponent(id)}`),
+  downloadInvoiceDocument: (id: string) => api.get(`${billingBase}/api/v1/billing/invoices/${encodeURIComponent(id)}/document`, { responseType: 'blob' }),
   creditNotes: (limit = 20, offset = 0) => api.get(`${billingBase}/api/v1/billing/credit-notes`, { params: { limit, offset } }),
   creditNote: (id: string) => api.get(`${billingBase}/api/v1/billing/credit-notes/${encodeURIComponent(id)}`),
 };
