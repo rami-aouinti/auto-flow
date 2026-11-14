@@ -2,15 +2,17 @@
 declare(strict_types=1);
 
 /** Minimal path-style S3 API client using AWS Signature Version 4. */
+final class DocumentStorageUnavailable extends RuntimeException {}
+
 function documentS3Config():array {
     $endpoint=rtrim(getenv('DOCUMENT_S3_ENDPOINT')?:'','/');
     $bucket=getenv('DOCUMENT_S3_BUCKET')?:'';
     $access=getenv('DOCUMENT_S3_ACCESS_KEY')?:'';
     $secret=getenv('DOCUMENT_S3_SECRET_KEY')?:'';
     $region=getenv('DOCUMENT_S3_REGION')?:'us-east-1';
-    if($endpoint===''||$bucket===''||$access===''||$secret==='')throw new RuntimeException('S3 storage configuration is incomplete.');
+    if($endpoint===''||$bucket===''||$access===''||$secret==='')throw new DocumentStorageUnavailable('S3 storage configuration is incomplete.');
     $parts=parse_url($endpoint);
-    if(!is_array($parts)||empty($parts['host']))throw new RuntimeException('S3 endpoint is invalid.');
+    if(!is_array($parts)||empty($parts['host']))throw new DocumentStorageUnavailable('S3 endpoint is invalid.');
     return compact('endpoint','bucket','access','secret','region','parts');
 }
 function documentValidateObjectKey(string $key):void {
@@ -18,7 +20,7 @@ function documentValidateObjectKey(string $key):void {
 }
 function documentS3Request(string $method,string $objectKey='',?string $filePath=null):string {
     if($objectKey!=='')documentValidateObjectKey($objectKey);
-    if(!function_exists('curl_init'))throw new RuntimeException('PHP cURL extension is required for S3 storage.');
+    if(!function_exists('curl_init'))throw new DocumentStorageUnavailable('PHP cURL extension is required for S3 storage.');
     $c=documentS3Config();$host=$c['parts']['host'].(isset($c['parts']['port'])?':'.$c['parts']['port']:'');
     $segments=array_map('rawurlencode',array_filter(explode('/',$objectKey),static fn($v)=>$v!==''));
     $uri='/'.rawurlencode($c['bucket']).($segments?'/'.implode('/',$segments):'');
@@ -32,9 +34,9 @@ function documentS3Request(string $method,string $objectKey='',?string $filePath
     $wireHeaders=['Host: '.$host,'x-amz-content-sha256: '.$payloadHash,'x-amz-date: '.$amzDate];
     $customerKey=getenv('DOCUMENT_S3_SSE_C_KEY_BASE64')?:'';
     if($objectKey!==''&&in_array($method,['PUT','GET','HEAD'],true)){
-        if($customerKey==='')throw new RuntimeException('S3 SSE-C encryption key is required.');
+        if($customerKey==='')throw new DocumentStorageUnavailable('S3 SSE-C encryption key is required.');
         $rawKey=base64_decode($customerKey,true);
-        if(!is_string($rawKey)||strlen($rawKey)!==32)throw new RuntimeException('S3 SSE-C key must be a base64-encoded 32-byte key.');
+        if(!is_string($rawKey)||strlen($rawKey)!==32)throw new DocumentStorageUnavailable('S3 SSE-C key must be a base64-encoded 32-byte key.');
         $encryptionHeaders=[
             'x-amz-server-side-encryption-customer-algorithm'=>'AES256',
             'x-amz-server-side-encryption-customer-key'=>$customerKey,
@@ -57,7 +59,7 @@ function documentS3Request(string $method,string $objectKey='',?string $filePath
     if($method==='PUT')curl_setopt($ch,CURLOPT_POSTFIELDS,$payload);
     if($method==='HEAD')curl_setopt($ch,CURLOPT_NOBODY,true);
     $body=curl_exec($ch);$status=(int)curl_getinfo($ch,CURLINFO_RESPONSE_CODE);$error=curl_error($ch);curl_close($ch);
-    if($body===false||$status<200||$status>=300)throw new RuntimeException('S3 request failed (HTTP '.$status.').'.($error!==''?' '.$error:''));
+    if($body===false||$status<200||$status>=300)throw new DocumentStorageUnavailable('S3 request failed (HTTP '.$status.').'.($error!==''?' '.$error:''));
     return is_string($body)?$body:'';
 }
 function documentStoragePut(string $tmp,string $tenant,string $documentId,int $version):string {
@@ -76,7 +78,7 @@ function documentStoragePut(string $tmp,string $tenant,string $documentId,int $v
 function documentStorageGet(string $key):string {
     if(str_starts_with($key,'s3://')){
         $parts=parse_url($key);$bucket=$parts['host']??'';$object=ltrim($parts['path']??'','/');
-        if($bucket!==(getenv('DOCUMENT_S3_BUCKET')?:''))throw new RuntimeException('Stored object bucket does not match configuration.');
+        if($bucket!==(getenv('DOCUMENT_S3_BUCKET')?:''))throw new DocumentStorageUnavailable('Stored object bucket does not match configuration.');
         documentValidateObjectKey($object);return documentS3Request('GET',$object);
     }
     $root=realpath(getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents');$real=realpath($key);if($root===false||$real===false||!str_starts_with($real,$root.'/')||!is_file($real))throw new RuntimeException('Stored document path is invalid.');$body=file_get_contents($real);if(!is_string($body))throw new RuntimeException('Stored document cannot be read.');return $body;
