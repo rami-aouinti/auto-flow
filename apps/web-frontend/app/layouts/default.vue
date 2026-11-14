@@ -52,6 +52,7 @@ const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'Au
 const environmentLabel = import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'LOCAL';
 const canUseCustomerPortal = computed(() => $keycloak.hasRealmRole('customers:portal'));
 const canViewOperations = computed(() => $keycloak.hasRealmRole('customers:read'));
+const visibleSections = computed(() => canViewOperations.value ? sections : []);
 
 function isActive(to: string) {
   if (to === '/admin') return route.path === to;
@@ -83,7 +84,7 @@ function logout() {
       </div>
 
       <div class="workspace-label"><span>WORKSPACE</span><v-chip size="x-small" variant="tonal">{{ environmentLabel }}</v-chip></div>
-      <template v-for="section in sections" :key="section.title">
+      <template v-for="section in visibleSections" :key="section.title">
         <div class="nav-section-label">{{ section.title }}</div>
         <v-list nav density="comfortable" bg-color="transparent" class="px-3 pt-1 pb-2">
           <v-list-item
