@@ -221,6 +221,136 @@ jobs:
           cd apps/crm-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Build instrumented Symfony services
         run: docker compose --env-file .env.example build php offer-service offer-workers pricing-service vehicle-catalog-service vehicle-catalog-outbox-publisher order-service order-outbox-publisher order-payment-event-consumer order-workflow-worker payment-service payment-outbox-publisher notification-service billing-service billing-payment-event-consumer customer-service contract-service contract-outbox-publisher fulfillment-service fulfillment-event-consumer fulfillment-outbox-publisher vehicle-reservation-service reservation-expiry-worker reservation-outbox-publisher reservation-saga-command-consumer reservation-inventory-event-consumer inventory-service inventory-outbox-publisher inventory-reservation-event-consumer
+      - name: Run live RabbitMQ and Temporal Saga integration test
+        run: |
+          docker compose --env-file .env.example up -d temporal order-service order-workflow-worker
+          for attempt in $(seq 1 90); do
+            if docker compose --env-file .env.example logs --no-color order-workflow-worker 2>&1 | grep -q "Order workflow worker started"; then
+              break
+            fi
+            sleep 2
+          done
+          if ! docker compose --env-file .env.example logs --no-color order-workflow-worker 2>&1 | grep -q "Order workflow worker started"; then
+            docker compose --env-file .env.example ps -a
+            docker compose --env-file .env.example logs --no-color --tail=200 temporal order-service order-workflow-worker rabbitmq
+            exit 1
+          fi
+          cd apps/order-workflow-worker
+          TEMPORAL_ADDRESS=127.0.0.1:7233 \
+          RABBITMQ_HOST=127.0.0.1 \
+          RABBITMQ_PORT=5672 \
+          RABBITMQ_USER=autoflow \
+          RABBITMQ_PASSWORD=autoflow \
+          AUTOFLOW_TEMPORAL_RABBITMQ_E2E=1 \
+          go test ./internal/orders -run '^TestLiveRabbitMQTemporalSagaStartsAndPublishesReservationHold      - name: Validate development OpenAPI generation
+        run: |
+          docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
+          docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev pricing-service php bin/console nelmio:apidoc:dump --format=json > /tmp/pricing-openapi.json
+          php -r '
+          $offer = json_decode(file_get_contents("/tmp/offer-openapi.json"), true, flags: JSON_THROW_ON_ERROR);
+          $pricing = json_decode(file_get_contents("/tmp/pricing-openapi.json"), true, flags: JSON_THROW_ON_ERROR);
+          $offerPaths = $offer["paths"] ?? [];
+          $pricingPaths = $pricing["paths"] ?? [];
+          $requiredPaths = [
+              isset($offerPaths["/api/offers/{vehicleId}"]["post"]),
+              isset($offerPaths["/api/offers/{offerId}"]["get"]),
+              isset($offerPaths["/api/offers/{offerId}/publish"]["post"]),
+              isset($offerPaths["/api/offers/{offerId}/accept"]["post"]),
+              isset($offerPaths["/api/offers/{offerId}/reject"]["post"]),
+              isset($pricingPaths["/api/pricing/quotes"]["post"]),
+              isset($pricingPaths["/api/pricing/quotes"]["get"]),
+              isset($pricingPaths["/api/pricing/quotes/{quoteId}"]["get"]),
+              isset($pricingPaths["/api/pricing/quotes/{quoteId}"]["delete"]),
+              isset($pricingPaths["/ready"]["get"]),
+          ];
+          $bearer = $pricing["components"]["securitySchemes"]["bearerAuth"] ?? null;
+          $quoteSchema = $pricing["components"]["schemas"]["PricingQuote"] ?? null;
+          $postSchema = $pricingPaths["/api/pricing/quotes"]["post"]["requestBody"]["content"]["application/json"]["schema"]["\$ref"] ?? null;
+          $healthSecurity = $pricingPaths["/health"]["get"]["security"] ?? null;
+          $readySecurity = $pricingPaths["/ready"]["get"]["security"] ?? null;
+          if (in_array(false, $requiredPaths, true)
+              || ($bearer["scheme"] ?? null) !== "bearer"
+              || ($bearer["type"] ?? null) !== "http"
+              || !is_array($quoteSchema)
+              || $postSchema !== "#/components/schemas/PricingQuoteRequest"
+              || $healthSecurity !== []
+              || $readySecurity !== []) {
+              fwrite(STDERR, "Generated OpenAPI is missing required Offer/Pricing operations, Pricing schemas, JWT bearer auth, or public health/readiness definitions.\n");
+              exit(1);
+          }
+          '
+      - name: Apply Vehicle Catalog Doctrine migrations and validate mappings
+        run: |
+          docker compose --env-file .env.example run --rm --no-deps \
+            -e DATABASE_URL=postgresql://autoflow:autoflow@postgres:5432/autoflow \
+            vehicle-catalog-service php bin/console doctrine:migrations:migrate --no-interaction
+          docker compose --env-file .env.example run --rm --no-deps vehicle-catalog-service \
+            php bin/console doctrine:schema:validate --skip-sync
+      - name: Run Vehicle Catalog unit and PostgreSQL integration tests
+        run: |
+          docker compose --env-file .env.example run --rm --no-deps \
+            -e CATALOG_TEST_DATABASE_URL=postgresql://autoflow_catalog:local-only-catalog-password@postgres:5432/autoflow \
+            vehicle-catalog-service php vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Validate Vehicle Catalog OpenAPI contract
+        run: |
+          docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev vehicle-catalog-service \
+            php bin/console nelmio:apidoc:dump --format=json > /tmp/catalog-openapi.json
+          php -r '
+          $api = json_decode(file_get_contents("/tmp/catalog-openapi.json"), true, flags: JSON_THROW_ON_ERROR);
+          $paths = $api["paths"] ?? [];
+          $required = [
+              isset($paths["/api/v1/manufacturers"]["get"]),
+              isset($paths["/api/v1/vehicles"]["get"]),
+              isset($paths["/api/v1/vehicles/{variantId}"]["get"]),
+              isset($paths["/api/v1/manufacturers"]["post"]),
+              isset($paths["/api/v1/models"]["post"]),
+              isset($paths["/api/v1/generations"]["post"]),
+              isset($paths["/api/v1/vehicles"]["post"]),
+              isset($paths["/api/v1/vehicles/{variantId}/publish"]["post"]),
+              isset($api["components"]["schemas"]["VehicleResponse"]),
+              isset($api["components"]["schemas"]["ManufacturerResponse"]),
+          ];
+          $bearer = $api["components"]["securitySchemes"]["bearerAuth"] ?? null;
+          if (in_array(false, $required, true) || ($bearer["scheme"] ?? null) !== "bearer") {
+              fwrite(STDERR, "Vehicle Catalog OpenAPI contract is missing required operations, response schemas or bearer authentication.\\n");
+              exit(1);
+          }
+          '
+      - name: Install Vehicle Catalog dependencies for static analysis
+        run: |
+          composer install \
+            --working-dir=apps/vehicle-catalog-service \
+            --ignore-platform-req=ext-opentelemetry \
+            --no-interaction --prefer-dist --no-progress
+      - name: Install Notification Service dependencies for static analysis
+        run: |
+          composer install \
+            --working-dir=apps/notification-service \
+            --no-interaction --prefer-dist --no-progress
+      - name: Install Billing Service dependencies and run unit tests
+        run: |
+          composer install \
+            --working-dir=apps/billing-service \
+            --ignore-platform-req=ext-opentelemetry \
+            --no-interaction --prefer-dist --no-progress
+          php -l apps/billing-service/bin/consume-payment-events.php
+          cd apps/billing-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Install Contract Service dependencies and lint API
+        run: |
+          composer install --working-dir=apps/contract-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
+          php -l apps/contract-service/src/Presentation/Http/Controller/ContractController.php
+          php -l apps/contract-service/src/Infrastructure/Health/ContractDatabaseHealthCheck.php
+          php -l apps/contract-service/bin/publish-outbox.php
+          php -l apps/contract-service/src/Infrastructure/Document/ContractDocumentManager.php
+          php -l apps/contract-service/src/Infrastructure/Signature/DocuSignSignatureProvider.php
+          php -l apps/contract-service/src/Application/Port/SignatureProviderInterface.php
+          php -l apps/contract-service/src/Presentation/Http/Controller/DocuSignWebhookController.php
+          cd apps/contract-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+      - name: Run PHPStan analysis
+        run: composer phpstan
+      - name: Run quality checks
+        run: composer quality
+ -count=1 -v
       - name: Validate development OpenAPI generation
         run: |
           docker compose --env-file .env.example run --rm --no-deps -e APP_ENV=dev offer-service php bin/console nelmio:apidoc:dump --format=json > /tmp/offer-openapi.json
