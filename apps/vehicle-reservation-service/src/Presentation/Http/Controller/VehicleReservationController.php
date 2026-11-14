@@ -230,10 +230,7 @@ final readonly class VehicleReservationController
 
                 if (in_array($action, ['confirm', 'fulfill'], true)) {
                     $stock = $db->fetchAssociative(
-                        'SELECT status, inventory_status, reservation_id
-                         FROM vehicle_stock_units
-                         WHERE tenant_id = :tenant AND vehicle_unit_id = :unit
-',
+                        'SELECT status, inventory_status, reservation_id FROM vehicle_stock_units WHERE tenant_id = :tenant AND vehicle_unit_id = :unit',
                         ['tenant' => $tenant, 'unit' => $row['vehicle_unit_id']],
                     );
                     if ($stock === false
