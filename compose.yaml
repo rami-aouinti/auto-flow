@@ -1134,6 +1134,35 @@ services:
     init: true
     restart: unless-stopped
 
+  document-object-storage:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-autoflow}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-local-only-minio-password}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - document-object-data:/data
+    restart: unless-stopped
+
+  document-object-storage-init:
+    image: minio/mc:latest
+    depends_on:
+      document-object-storage: {condition: service_started}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        until mc alias set autoflow http://document-object-storage:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; do sleep 2; done
+        mc mb --ignore-existing autoflow/autoflow-documents
+        mc version enable autoflow/autoflow-documents
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-autoflow}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-local-only-minio-password}
+    restart: "no"
+
   document-service:
     build:
       context: ./apps/document-service
@@ -1143,6 +1172,12 @@ services:
       APP_ENV: prod
       DOCUMENT_DATABASE_URL: ${DOCUMENT_DATABASE_URL:-postgresql://autoflow_document:local-only-document-password@postgres:5432/autoflow}
       DOCUMENT_STORAGE_PATH: /var/lib/autoflow/documents
+      DOCUMENT_STORAGE_DRIVER: s3
+      DOCUMENT_S3_ENDPOINT: http://document-object-storage:9000
+      DOCUMENT_S3_BUCKET: autoflow-documents
+      DOCUMENT_S3_REGION: ${DOCUMENT_S3_REGION:-us-east-1}
+      DOCUMENT_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-autoflow}
+      DOCUMENT_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-local-only-minio-password}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       CLAMAV_HOST: clamav
@@ -1153,6 +1188,7 @@ services:
       postgres: {condition: service_healthy}
       postgres-bootstrap: {condition: service_completed_successfully}
       clamav: {condition: service_started}
+      document-object-storage-init: {condition: service_completed_successfully}
       keycloak: {condition: service_started}
     healthcheck:
       test: ["CMD", "php", "/app/bin/healthcheck.php"]
@@ -1190,6 +1226,12 @@ services:
     environment:
       DOCUMENT_MAINTENANCE_DATABASE_URL: ${DOCUMENT_MAINTENANCE_DATABASE_URL:-postgresql://${POSTGRES_USER:-autoflow}:${POSTGRES_PASSWORD:-autoflow}@postgres:5432/${POSTGRES_DB:-autoflow}}
       DOCUMENT_STORAGE_PATH: /var/lib/autoflow/documents
+      DOCUMENT_STORAGE_DRIVER: s3
+      DOCUMENT_S3_ENDPOINT: http://document-object-storage:9000
+      DOCUMENT_S3_BUCKET: autoflow-documents
+      DOCUMENT_S3_REGION: ${DOCUMENT_S3_REGION:-us-east-1}
+      DOCUMENT_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-autoflow}
+      DOCUMENT_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-local-only-minio-password}
       DOCUMENT_RETENTION_INTERVAL_SECONDS: ${DOCUMENT_RETENTION_INTERVAL_SECONDS:-3600}
       DOCUMENT_RETENTION_BATCH_SIZE: ${DOCUMENT_RETENTION_BATCH_SIZE:-25}
     volumes:
@@ -1197,6 +1239,7 @@ services:
     depends_on:
       postgres: {condition: service_healthy}
       postgres-bootstrap: {condition: service_completed_successfully}
+      document-object-storage-init: {condition: service_completed_successfully}
     init: true
     restart: unless-stopped
 
@@ -1974,5 +2017,6 @@ volumes:
   temporal-data:
   contract-documents:
   document-data:
+  document-object-data:
   clamav-data:
   web-frontend-node-modules:
