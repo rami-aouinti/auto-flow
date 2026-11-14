@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { catalog, offers, errorMessage } from './api';
+import { catalog, customers, offers, orders, errorMessage } from './api';
 import MarketplaceHero from '../app/components/marketplace/MarketplaceHero.vue';
 import VehicleCard from '../app/components/marketplace/VehicleCard.vue';
 import MarketplaceHighlights from '../app/components/marketplace/MarketplaceHighlights.vue';
@@ -112,6 +112,12 @@ const expandedOfferId = ref('');
 const offerHistory = ref<Record<string, any[]>>({});
 const offerHistoryLoading = ref('');
 const offerHistoryError = ref('');
+const orderDialog = ref(false);
+const orderBusy = ref(false);
+const orderError = ref('');
+const customerLoading = ref(false);
+const customerOptions = ref<Array<Record<string, any>>>([]);
+const selectedCustomerId = ref('');
 
 function label(value?: string) {
   if (!value) return '–';
@@ -235,6 +241,51 @@ async function createOffer() {
     offerActionBusy.value = false;
   }
 }
+async function openOrderDialog() {
+  orderError.value = '';
+  selectedCustomerId.value = '';
+  orderDialog.value = true;
+  customerLoading.value = true;
+  try {
+    const response = await customers.list({ limit: 100, offset: 0, status: 'active' });
+    customerOptions.value = response.data.items ?? [];
+  } catch (error) {
+    orderError.value = errorMessage(error);
+  } finally {
+    customerLoading.value = false;
+  }
+}
+function customerLabel(customer: Record<string, any>) {
+  const name = customer.customer_type === 'company'
+    ? customer.legal_name
+    : [customer.first_name, customer.last_name].filter(Boolean).join(' ');
+  return [name || 'Customer', customer.email].filter(Boolean).join(' · ');
+}
+async function createOrderFromOffer() {
+  if (!createdOffer.value || createdOffer.value.status !== 'accepted' || !selected.value || !selectedCustomerId.value) return;
+  const quoteId = String(createdOffer.value.quoteId ?? createdOffer.value.quote_id ?? createdOffer.value.pricing?.quoteId ?? quote.value?.quoteId ?? '');
+  if (!quoteId) {
+    orderError.value = 'The accepted offer does not contain a quote reference. Open the offer details and verify the pricing snapshot.';
+    return;
+  }
+  orderBusy.value = true;
+  orderError.value = '';
+  try {
+    await orders.create({
+      offerId: createdOffer.value.offerId,
+      quoteId,
+      vehicleId: selected.value.variantId,
+      customerId: selectedCustomerId.value,
+    }, globalThis.crypto?.randomUUID?.() ?? `market-order-${Date.now()}`);
+    orderDialog.value = false;
+    await navigateTo('/operations/orders');
+  } catch (error) {
+    orderError.value = errorMessage(error);
+  } finally {
+    orderBusy.value = false;
+  }
+}
+
 async function changeCreatedOffer(action: 'publish' | 'accept' | 'reject') {
   if (!createdOffer.value) return;
   offerActionBusy.value = true;
@@ -476,6 +527,7 @@ onMounted(async () => {
                 <v-btn v-if="createdOffer.status === 'draft'" color="primary" size="small" @click="changeCreatedOffer('publish')" :disabled="offerActionBusy">Veröffentlichen</v-btn>
                 <v-btn v-if="createdOffer.status === 'published'" color="success" size="small" @click="changeCreatedOffer('accept')" :disabled="offerActionBusy">Annehmen</v-btn>
                 <v-btn v-if="createdOffer.status === 'published'" color="error" variant="text" size="small" @click="changeCreatedOffer('reject')" :disabled="offerActionBusy">Ablehnen</v-btn>
+                <v-btn v-if="createdOffer.status === 'accepted'" color="success" size="small" prepend-icon="mdi-clipboard-check-outline" @click="openOrderDialog">Auftrag anlegen</v-btn>
                 <v-btn color="secondary" variant="text" size="small" @click="openOffers">Alle Angebote ansehen</v-btn>
               </div>
             </div>
@@ -538,6 +590,18 @@ onMounted(async () => {
         </section>
       </template>
     </v-container>
+    <v-dialog v-model="orderDialog" max-width="560">
+      <v-card rounded="xl">
+        <v-card-title>Accepted offer · create order</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 text-medium-emphasis mb-4">The order will be linked to the accepted offer, its pricing quote, the selected vehicle and one active customer.</p>
+          <v-select v-model="selectedCustomerId" :items="customerOptions" :item-title="customerLabel" item-value="customer_id" label="Select active customer" :loading="customerLoading" :disabled="customerLoading" />
+          <v-alert v-if="!customerLoading && !customerOptions.length && !orderError" type="info" variant="tonal">No active customer found. Create a customer first in <NuxtLink to="/admin/customers">Customer Management</NuxtLink>.</v-alert>
+          <v-alert v-if="orderError" type="error" variant="tonal" class="mt-3">{{ orderError }}</v-alert>
+        </v-card-text>
+        <v-card-actions><v-spacer /><v-btn variant="text" :disabled="orderBusy" @click="orderDialog = false">Cancel</v-btn><v-btn color="primary" :loading="orderBusy" :disabled="!selectedCustomerId || customerLoading" @click="createOrderFromOffer">Create order</v-btn></v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
