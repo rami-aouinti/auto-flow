@@ -1,35 +1,18 @@
 # Inventory Service — API Reference
 
-**Base URL:** http://localhost:8093  
-**Authentication:** Bearer JWT; inventory:read/write
+**Base URL:** http://localhost:8093 (gateway: http://localhost:8088/api/v1/inventory)  
+**Authentication:** Keycloak JWT, audience `autoflow-inventory`, tenant claim and `inventory:read` / `inventory:write`.
 
-## Endpoints and arguments
+| Method | Path | Permission | Arguments / body | Responses |
+|---|---|---|---|---|
+| POST | `/api/v1/inventory/units` | inventory:write | Idempotency-Key required. Register physical unit: vehicleVariantId, VIN, dealer/location, country, condition, mileage, first registration date. Exact DTO constraints are defined by implementation. | 201, 400, 401, 403, 409, 422 |
+| GET | `/api/v1/inventory/units` | inventory:read | Filter by vehicleVariantId?, status?, dealerId?; pagination implementation-defined. | 200, 400, 401, 403 |
+| GET | `/api/v1/inventory/availability?vehicleVariantId={uuid}` | inventory:read | Required query: vehicleVariantId. | 200, 400, 401, 403 |
+| GET | `/api/v1/inventory/units/{id}` | inventory:read | id path. | 200, 401, 403, 404 |
+| POST | `/api/v1/inventory/units/{id}/status` | inventory:write | id; Idempotency-Key and If-Match required. JSON: target status and optional reason. | 200, 400, 401, 403, 404, 409, 412, 422 |
+| GET | `/api/v1/inventory/units/{id}/history` | inventory:read | id path; stock movement history. | 200, 401, 403, 404 |
 
-| Method | Path | Arguments / body | Possible responses |
-|---|---|---|---|
-| POST | `/api/v1/inventory/units` |  Idempotency-Key; body: vehicleVariantId, VIN, dealer/location, country, condition, mileage, first registration date | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| GET | `/api/v1/inventory/units` |  query: vehicleVariantId, status, dealerId | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/v1/inventory/availability` |  query: vehicleVariantId (required) | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/v1/inventory/units/{id}` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| POST | `/api/v1/inventory/units/{id}/status` |  Idempotency-Key, If-Match; body: target status, optional reason | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| GET | `/api/v1/inventory/units/{id}/history` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
+Supported stock states: available, blocked, in_transit, delivered, sold, maintenance, quarantined. VIN is normalized uppercase and unique per tenant. Mutations atomically persist stock, movement, audit and Outbox event.
 
-## Common HTTP responses
-
-- **2xx:** request succeeded; GET returns a resource/collection, POST creates or transitions a resource, DELETE may return 204.
-- **400:** malformed JSON, invalid query parameters or malformed headers.
-- **401:** missing/invalid JWT (except explicitly public provider webhooks).
-- **403:** missing scope/role or tenant access.
-- **404:** resource does not exist or is outside the caller's tenant/ownership boundary.
-- **409:** invalid state transition, duplicate resource or idempotency-key conflict.
-- **412:** stale ETag/If-Match version for optimistic concurrency.
-- **422:** request is syntactically valid but violates domain validation.
-- **500 / 503:** unexpected server failure or unavailable dependency; no internal SQL/stack trace should be exposed.
-
-## Testing
-
-Use the central Swagger UI at http://localhost:8096. Authenticate with the raw Keycloak access token when required. For commands requiring idempotency, send a unique `Idempotency-Key`; for versioned transitions copy the current `ETag` into `If-Match`.
-
-## Contract maintenance
-
-This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+## Health
+- `GET /health/ready` — readiness.
