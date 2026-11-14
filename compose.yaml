@@ -1193,7 +1193,7 @@ services:
       RABBITMQ_VHOST: /
       MERCURE_URL: http://mercure/.well-known/mercure
       MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:-!ChangeThisMercurePublisherKeyForLocalDevelopmentOnly!}
-      AUTOFLOW_MERCURE_TOPIC_BASE: https://autoflow.local/tenants
+      AUTOFLOW_MERCURE_TOPIC_BASE: ${AUTOFLOW_MERCURE_TOPIC_BASE:-https://autoflow.local/tenants}
     depends_on:
       rabbitmq: {condition: service_healthy}
       mercure: {condition: service_started}
