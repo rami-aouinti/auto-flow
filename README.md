@@ -114,7 +114,7 @@ Vehicle Reservation owns physical stock-unit holds and their lifecycle (held, co
 
 ## Contract Service
 
-Contract owns contract drafts and their immutable legal snapshots, referencing accepted orders without cross-service database joins. The first slice includes tenant-isolated storage, idempotent creation, prepare/cancel transitions, audit history and transactional Outbox writes. PDF rendering, Outbox publishing and real e-signature integration are still open. See [Contract Service documentation](apps/contract-service/README.md).
+Contract owns contract drafts and their immutable legal snapshots, referencing accepted orders without cross-service database joins. The first slice includes tenant-isolated storage, idempotent creation, prepare/cancel transitions, audit history, transactional Outbox publishing, PDF rendering and a DocuSign adapter. Contract PDF binaries are still kept in Contract-owned storage; linking them to Document Service's encrypted object store is an explicit integration task. See [Contract Service documentation](apps/contract-service/README.md).
 
 ## API Gateway routes
 
