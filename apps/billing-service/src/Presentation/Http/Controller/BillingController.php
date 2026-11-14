@@ -46,7 +46,7 @@ final readonly class BillingController
         return $this->run($r, function (Connection $db, string $t) use ($r): JsonResponse {
             $l = max(1, min(100, $r->query->getInt('limit', 20)));
             $o = max(0, $r->query->getInt('offset', 0));
-            $items = $db->fetchAllAssociative('SELECT credit_note_id,credit_note_number,invoice_id,payment_id,order_id,currency,gross_minor,net_minor,tax_minor,reason,issued_at FROM billing_credit_notes WHERE tenant_id=:t ORDER BY issued_at DESC LIMIT :l OFFSET :o', ['t' => $t,'l' => $l,'o' => $o]);
+            $items = $db->fetchAllAssociative('SELECT credit_note_id,credit_note_number,invoice_id,payment_id,order_id,currency,gross_minor,net_minor,tax_minor,reason,issued_at,billing_snapshot FROM billing_credit_notes WHERE tenant_id=:t ORDER BY issued_at DESC LIMIT :l OFFSET :o', ['t' => $t,'l' => $l,'o' => $o]);
             $n = (int)$db->fetchOne('SELECT COUNT(*) FROM billing_credit_notes WHERE tenant_id=:t', ['t' => $t]);
             return new JsonResponse(['items' => $items,'total' => $n,'limit' => $l,'offset' => $o], 200, ['Cache-Control' => 'no-store']);
         });
@@ -56,7 +56,9 @@ final readonly class BillingController
     {
         return $this->run($r, function (Connection $db, string $t) use ($id): JsonResponse {
             $x = $db->fetchAssociative('SELECT credit_note_id,credit_note_number,invoice_id,payment_id,order_id,currency,gross_minor,net_minor,tax_minor,tax_rate_basis_points,reason,issued_at,source_event_id FROM billing_credit_notes WHERE tenant_id=:t AND credit_note_id=:id', ['t' => $t,'id' => $id]);
-            return $x === false ? $this->problem(404, 'Credit note not found.') : new JsonResponse($x, 200, ['Cache-Control' => 'no-store']);
+            if ($x === false) { return $this->problem(404, 'Credit note not found.'); }
+            $x['billing_snapshot'] = is_string($x['billing_snapshot']) ? json_decode($x['billing_snapshot'], true, 512, JSON_THROW_ON_ERROR) : $x['billing_snapshot'];
+            return new JsonResponse($x, 200, ['Cache-Control' => 'no-store']);
         });
     }
     #[Route('/summary', methods:['GET'])]
