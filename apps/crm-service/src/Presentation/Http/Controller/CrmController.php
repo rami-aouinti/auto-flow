@@ -135,15 +135,7 @@ final readonly class CrmController
             if ($current === false) {
                 return $this->problem(404, 'Application not found.');
             }
-            $transitions = [
-                'submitted' => ['under_review', 'withdrawn'],
-                'under_review' => ['information_required', 'eligible', 'declined', 'withdrawn'],
-                'information_required' => ['under_review', 'withdrawn'],
-                'eligible' => ['approved', 'declined', 'withdrawn'],
-                'approved' => ['converted'],
-                'declined' => [], 'converted' => [], 'withdrawn' => [],
-            ];
-            if (!in_array($target, $transitions[$current['status']] ?? [], true)) {
+            if (!ApplicationLifecycle::canTransition((string) $current['status'], $target)) {
                 return $this->problem(409, 'Transition from ' . $current['status'] . ' to ' . $target . ' is not allowed.');
             }
             $db->executeStatement(
