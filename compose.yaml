@@ -353,6 +353,10 @@ services:
       DEFAULT_URI: http://localhost:8087
       BILLING_DATABASE_URL: ${BILLING_DATABASE_URL:-postgresql://autoflow_billing:local-only-billing-password@postgres:5432/autoflow}
       BILLING_TAX_RATE_BPS: ${BILLING_TAX_RATE_BPS:-1900}
+      BILLING_ISSUER_LEGAL_NAME: ${BILLING_ISSUER_LEGAL_NAME:-}
+      BILLING_ISSUER_TAX_NUMBER: ${BILLING_ISSUER_TAX_NUMBER:-}
+      BILLING_ISSUER_VAT_ID: ${BILLING_ISSUER_VAT_ID:-}
+      BILLING_ISSUER_ADDRESS_JSON: ${BILLING_ISSUER_ADDRESS_JSON:-{}}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-billing-service
@@ -1295,8 +1299,10 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/146-order-payment-inbox-payload-hash.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/150-payment-role.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/160-payment-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/161-payment-billing-snapshot.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/170-billing-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/171-billing-inbox-payload-hash.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/172-billing-credit-note-snapshot.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/180-customer-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/190-order-customer-reference.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/200-contract-schema.sql
@@ -1325,8 +1331,10 @@ services:
       - ./apps/order-service/migrations/Version20261106000400AddPaymentInboxPayloadHash.sql:/migrations/146-order-payment-inbox-payload-hash.sql:ro
       - ./apps/payment-service/migrations/00_create_payment_database_role.sql:/migrations/150-payment-role.sql:ro
       - ./apps/payment-service/migrations/140-payment-schema.sql:/migrations/160-payment-schema.sql:ro
+      - ./apps/payment-service/migrations/141-payment-billing-snapshot.sql:/migrations/161-payment-billing-snapshot.sql:ro
       - ./apps/billing-service/migrations/170-billing-schema.sql:/migrations/170-billing-schema.sql:ro
       - ./apps/billing-service/migrations/171-billing-inbox-payload-hash.sql:/migrations/171-billing-inbox-payload-hash.sql:ro
+      - ./apps/billing-service/migrations/172-billing-credit-note-snapshot.sql:/migrations/172-billing-credit-note-snapshot.sql:ro
       - ./apps/customer-service/migrations/00-customer-schema.sql:/migrations/180-customer-schema.sql:ro
       - ./apps/order-service/migrations/Version20261107000100AddCustomerReference.sql:/migrations/190-order-customer-reference.sql:ro
       - ./apps/contract-service/migrations/200-contract-schema.sql:/migrations/200-contract-schema.sql:ro
