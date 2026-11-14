@@ -515,6 +515,30 @@
           "tenant-demo"
         ]
       }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "username": "customer-demo",
+      "enabled": true,
+      "email": "customer-demo@autoflow.local",
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Customer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "customer-demo",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "customers:portal"
+      ],
+      "attributes": {
+        "tenant_id": [
+          "tenant-demo"
+        ]
+      }
     }
   ],
   "roles": {
@@ -674,6 +698,10 @@
       {
         "name": "crm:interactions:write",
         "description": "Record CRM customer interactions"
+      },
+      {
+        "name": "customers:portal",
+        "description": "Access only the customer profile linked to the authenticated Keycloak subject"
       }
     ]
   }
