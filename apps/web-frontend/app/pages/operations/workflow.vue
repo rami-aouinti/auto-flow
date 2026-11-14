@@ -25,6 +25,11 @@ const reservationRows = ref<Row[]>([]);
 const invoiceRows = ref<Row[]>([]);
 const creditNoteRows = ref<Row[]>([]);
 const billingSummary = ref<Row | null>(null);
+const detailDialog = ref(false);
+const detailTitle = ref('');
+const detailRecord = ref<Row | null>(null);
+const detailEvents = ref<Row[]>([]);
+const detailLoading = ref(false);
 
 const contractForm = ref({ orderId: '', contractType: 'vehicle_lease', contractVersion: 1 });
 const inventoryForm = ref({ vehicleVariantId: '', vin: '', dealerId: '', locationCode: '', countryCode: 'DE', condition: 'new' });
@@ -39,6 +44,38 @@ const key = () => globalThis.crypto?.randomUUID?.() ?? `af-${Date.now()}-${Math.
 function items(data: any): Row[] { return Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []); }
 function idOf(row: Row, field: string): string { const camel = field.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase()); return String(row[field] ?? row[camel] ?? row.id ?? ''); }
 function clearMessages() { error.value = ''; notice.value = ''; }
+
+async function openHistory(kind: 'contract' | 'fulfillment' | 'inventory' | 'reservation', row: Row) {
+  const field = kind === 'contract' ? 'contract_id' : kind === 'fulfillment' ? 'fulfillment_id' : kind === 'inventory' ? 'inventory_unit_id' : 'reservation_id';
+  const id = idOf(row, field);
+  detailTitle.value = `${kind[0]?.toUpperCase() ?? ''}${kind.slice(1)} · ${id}`;
+  detailRecord.value = row;
+  detailEvents.value = [];
+  detailDialog.value = true;
+  detailLoading.value = true;
+  try {
+    const response = kind === 'contract' ? await contracts.history(id)
+      : kind === 'fulfillment' ? await fulfillments.history(id)
+      : kind === 'inventory' ? await inventory.history(id)
+      : await reservations.history(id);
+    detailEvents.value = items(response.data);
+  } catch (e) { error.value = errorMessage(e); }
+  finally { detailLoading.value = false; }
+}
+
+async function openBillingDetail(kind: 'invoice' | 'credit-note', row: Row) {
+  const id = String(row[kind === 'invoice' ? 'invoice_id' : 'credit_note_id'] ?? row.id ?? '');
+  detailTitle.value = `${kind === 'invoice' ? 'Invoice' : 'Credit note'} · ${id}`;
+  detailRecord.value = null;
+  detailEvents.value = [];
+  detailDialog.value = true;
+  detailLoading.value = true;
+  try {
+    const response = kind === 'invoice' ? await billing.invoice(id) : await billing.creditNote(id);
+    detailRecord.value = response.data;
+  } catch (e) { error.value = errorMessage(e); }
+  finally { detailLoading.value = false; }
+}
 
 async function loadAll() {
   loading.value = true; clearMessages();
@@ -193,7 +230,7 @@ onMounted(loadAll);
           <v-table><thead><tr><th>VIN</th><th>Variant</th><th>Location</th><th>Status</th><th>Version</th><th>Change status</th></tr></thead>
             <tbody><tr v-for="row in inventoryRows" :key="idOf(row,'inventory_unit_id')">
               <td class="text-caption">{{ row.vin }}</td><td class="text-caption">{{ row.vehicle_variant_id }}</td><td>{{ row.location_code || '—' }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.version }}</td>
-              <td><div class="d-flex align-center ga-1"><v-select v-model="inventoryStatus" density="compact" hide-details :items="['available','blocked','in_transit','delivered','sold','maintenance','quarantined']" style="max-width:150px" /><v-btn size="small" color="primary" variant="tonal" :loading="busy === 'inventory-'+idOf(row,'inventory_unit_id')" @click="changeInventory(row)">Apply</v-btn></div></td>
+              <td><div class="d-flex align-center ga-1"><v-btn size="small" variant="text" @click="openHistory('inventory',row)">History</v-btn><v-select v-model="inventoryStatus" density="compact" hide-details :items="['available','blocked','in_transit','delivered','sold','maintenance','quarantined']" style="max-width:150px" /><v-btn size="small" color="primary" variant="tonal" :loading="busy === 'inventory-'+idOf(row,'inventory_unit_id')" @click="changeInventory(row)">Apply</v-btn></div></td>
             </tr><tr v-if="!inventoryRows.length"><td colspan="6" class="text-center text-medium-emphasis py-6">No inventory units found.</td></tr></tbody>
           </v-table>
           <v-card-text><v-text-field v-model="inventoryReason" label="Reason for next stock status change (optional)" /></v-card-text>
@@ -216,7 +253,7 @@ onMounted(loadAll);
           <v-table><thead><tr><th>Reservation</th><th>Vehicle unit</th><th>Order</th><th>Status</th><th>Expires</th><th>Actions</th></tr></thead>
             <tbody><tr v-for="row in reservationRows" :key="idOf(row,'reservation_id')">
               <td class="text-caption">{{ idOf(row,'reservation_id') }}</td><td class="text-caption">{{ row.vehicle_unit_id || row.vehicleUnitId }}</td><td class="text-caption">{{ row.order_id || row.orderId }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.expires_at || row.expiresAt }}</td>
-              <td class="d-flex ga-1"><v-btn v-if="row.status === 'held'" size="small" variant="tonal" @click="reservationAction(row,'confirm')">Confirm</v-btn><v-btn v-if="['held','confirmed'].includes(row.status)" size="small" color="error" variant="text" @click="reservationAction(row,'release')">Release</v-btn><v-btn v-if="row.status === 'confirmed'" size="small" variant="tonal" @click="reservationAction(row,'fulfill')">Fulfill</v-btn></td>
+              <td class="d-flex ga-1"><v-btn size="small" variant="text" @click="openHistory('reservation',row)">History</v-btn><v-btn v-if="row.status === 'held'" size="small" variant="tonal" @click="reservationAction(row,'confirm')">Confirm</v-btn><v-btn v-if="['held','confirmed'].includes(row.status)" size="small" color="error" variant="text" @click="reservationAction(row,'release')">Release</v-btn><v-btn v-if="row.status === 'confirmed'" size="small" variant="tonal" @click="reservationAction(row,'fulfill')">Fulfill</v-btn></td>
             </tr><tr v-if="!reservationRows.length"><td colspan="6" class="text-center text-medium-emphasis py-6">No reservations found.</td></tr></tbody>
           </v-table>
         </v-card>
@@ -229,13 +266,13 @@ onMounted(loadAll);
         </v-row>
         <v-card rounded="xl" border elevation="0" class="mb-4"><v-card-title>Invoices</v-card-title>
           <v-table><thead><tr><th>Invoice</th><th>Order</th><th>Gross</th><th>Status</th><th>Issued</th></tr></thead><tbody>
-            <tr v-for="row in invoiceRows" :key="row.invoice_id"><td>{{ row.invoice_number || row.invoice_id }}</td><td class="text-caption">{{ row.order_id }}</td><td>{{ ((Number(row.gross_minor) || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: row.currency || 'EUR' }) }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.issued_at }}</td></tr>
+            <tr v-for="row in invoiceRows" :key="row.invoice_id"><td><v-btn size="small" variant="text" @click="openBillingDetail('invoice',row)">{{ row.invoice_number || row.invoice_id }}</v-btn></td><td class="text-caption">{{ row.order_id }}</td><td>{{ ((Number(row.gross_minor) || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: row.currency || 'EUR' }) }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.issued_at }}</td></tr>
             <tr v-if="!invoiceRows.length"><td colspan="5" class="text-center text-medium-emphasis py-6">No invoices found.</td></tr>
           </tbody></v-table>
         </v-card>
         <v-card rounded="xl" border elevation="0"><v-card-title>Credit notes</v-card-title>
           <v-table><thead><tr><th>Credit note</th><th>Invoice</th><th>Order</th><th>Gross</th><th>Reason</th></tr></thead><tbody>
-            <tr v-for="row in creditNoteRows" :key="row.credit_note_id"><td>{{ row.credit_note_number || row.credit_note_id }}</td><td class="text-caption">{{ row.invoice_id }}</td><td class="text-caption">{{ row.order_id }}</td><td>{{ ((Number(row.gross_minor) || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: row.currency || 'EUR' }) }}</td><td>{{ row.reason }}</td></tr>
+            <tr v-for="row in creditNoteRows" :key="row.credit_note_id"><td><v-btn size="small" variant="text" @click="openBillingDetail('credit-note',row)">{{ row.credit_note_number || row.credit_note_id }}</v-btn></td><td class="text-caption">{{ row.invoice_id }}</td><td class="text-caption">{{ row.order_id }}</td><td>{{ ((Number(row.gross_minor) || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: row.currency || 'EUR' }) }}</td><td>{{ row.reason }}</td></tr>
             <tr v-if="!creditNoteRows.length"><td colspan="5" class="text-center text-medium-emphasis py-6">No credit notes found.</td></tr>
           </tbody></v-table>
         </v-card>
@@ -269,6 +306,29 @@ onMounted(loadAll);
         </v-card>
       </v-window-item>
     </v-window>
+    <v-dialog v-model="detailDialog" max-width="760">
+      <v-card rounded="xl">
+        <v-card-title class="d-flex align-center">{{ detailTitle }}<v-spacer /><v-btn icon="mdi-close" variant="text" aria-label="Close" @click="detailDialog = false" /></v-card-title>
+        <v-divider />
+        <v-card-text v-if="detailLoading" class="py-8 text-center"><v-progress-circular indeterminate color="primary" /></v-card-text>
+        <v-card-text v-else>
+          <div v-if="detailRecord" class="mb-5">
+            <div class="text-subtitle-2 mb-2">Record snapshot</div>
+            <v-table density="compact"><tbody><tr v-for="(value,keyName) in detailRecord" :key="String(keyName)"><th class="text-left text-caption">{{ keyName }}</th><td class="text-caption text-break">{{ typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—') }}</td></tr></tbody></v-table>
+          </div>
+          <div class="text-subtitle-2 mb-2">Audit history</div>
+          <v-timeline v-if="detailEvents.length" density="compact" side="end">
+            <v-timeline-item v-for="(event,index) in detailEvents" :key="String(event.event_id ?? event.id ?? index)" dot-color="primary" size="small">
+              <div class="font-weight-bold">{{ event.event_type || event.type || 'Event' }}</div>
+              <div class="text-caption text-medium-emphasis">{{ event.occurred_at || event.created_at || event.timestamp || '—' }} · {{ event.actor_id || event.actor || 'System' }}</div>
+              <pre v-if="event.payload" class="text-caption text-wrap mt-2">{{ JSON.stringify(event.payload,null,2) }}</pre>
+            </v-timeline-item>
+          </v-timeline>
+          <div v-else-if="!detailRecord" class="text-body-2 text-medium-emphasis">No audit events available.</div>
+        </v-card-text>
+        <v-card-actions><v-spacer /><v-btn variant="text" @click="detailDialog = false">Close</v-btn></v-card-actions>
+      </v-card>
+    </v-dialog>
     <div class="text-caption text-medium-emphasis mt-4">All operations are tenant-scoped and remain subject to Keycloak scopes and backend state-transition rules.</div>
   </div>
 </template>
