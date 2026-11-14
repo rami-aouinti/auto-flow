@@ -1122,18 +1122,29 @@ services:
   integration-service:
     build:
       context: .
-      dockerfile: docker/php/skeleton-service.Dockerfile
+      dockerfile: docker/php/business-service.Dockerfile
       args:
         SERVICE_PATH: apps/integration-service
     ports: ["127.0.0.1:8099:8080"]
     environment:
-      APP_ENV: dev
-      HEALTH_DEPENDENCIES: rabbitmq:5672
+      INTEGRATION_DATABASE_URL: postgresql://autoflow_integration:local-only-integration-password@postgres:5432/${POSTGRES_DB:-autoflow}
+      INTEGRATION_JWT_AUDIENCE: autoflow-integration
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      INTEGRATION_WEBHOOK_SECRET_DEMO: ${INTEGRATION_WEBHOOK_SECRET_DEMO:-local-only-demo-webhook-secret-change-me}
+      INTEGRATION_PROVIDER_TENANT_DEMO: tenant-demo
     depends_on:
-      rabbitmq: {condition: service_healthy}
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      keycloak: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$c=stream_context_create(['http'=>['timeout'=>3]]); $$r=@file_get_contents('http://127.0.0.1:8080/health/ready',false,$$c); exit($$r===false?1:0);"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     init: true
     restart: unless-stopped
-
   document-object-storage:
     image: minio/minio:latest
     command: ["server", "/data", "--console-address", ":9001"]
@@ -1314,18 +1325,27 @@ services:
   analytics-service:
     build:
       context: .
-      dockerfile: docker/php/skeleton-service.Dockerfile
+      dockerfile: docker/php/business-service.Dockerfile
       args:
         SERVICE_PATH: apps/analytics-service
     ports: ["127.0.0.1:8102:8080"]
     environment:
-      APP_ENV: dev
-      HEALTH_DEPENDENCIES: rabbitmq:5672
+      ANALYTICS_DATABASE_URL: postgresql://autoflow_analytics:local-only-analytics-password@postgres:5432/${POSTGRES_DB:-autoflow}
+      ANALYTICS_JWT_AUDIENCE: autoflow-analytics
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
     depends_on:
-      rabbitmq: {condition: service_healthy}
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      keycloak: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$c=stream_context_create(['http'=>['timeout'=>3]]); $$r=@file_get_contents('http://127.0.0.1:8080/health/ready',false,$$c); exit($$r===false?1:0);"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     init: true
     restart: unless-stopped
-
   media-service:
     build:
       context: .
@@ -1758,6 +1778,12 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/300-configuration-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/305-configuration-outbox-retry.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/310-configuration-demo.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/320-analytics-role.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/321-analytics-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/322-analytics-demo.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/330-integration-role.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/331-integration-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/332-integration-demo.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -1801,6 +1827,12 @@ services:
       - ./apps/configuration-service/migrations/240-configuration-schema.sql:/migrations/300-configuration-schema.sql:ro
       - ./apps/configuration-service/migrations/250-configuration-outbox-retry.sql:/migrations/305-configuration-outbox-retry.sql:ro
       - ./apps/configuration-service/fixtures/demo.sql:/migrations/310-configuration-demo.sql:ro
+      - ./apps/analytics-service/migrations/000_create_analytics_database_role.sql:/migrations/320-analytics-role.sql:ro
+      - ./apps/analytics-service/migrations/001_analytics_schema.sql:/migrations/321-analytics-schema.sql:ro
+      - ./apps/analytics-service/fixtures/demo.sql:/migrations/322-analytics-demo.sql:ro
+      - ./apps/integration-service/migrations/000_create_integration_database_role.sql:/migrations/330-integration-role.sql:ro
+      - ./apps/integration-service/migrations/001_integration_schema.sql:/migrations/331-integration-schema.sql:ro
+      - ./apps/integration-service/fixtures/demo.sql:/migrations/332-integration-demo.sql:ro
     depends_on:
       postgres:
         condition: service_healthy
