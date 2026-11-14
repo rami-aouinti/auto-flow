@@ -122,6 +122,13 @@ $connect = static function () use ($exchanges): array {
     $channel->exchange_declare('autoflow.mercure.dlx', 'direct', false, true, false);
     $channel->queue_declare('autoflow.mercure.failed', false, true, false, false);
     $channel->queue_bind('autoflow.mercure.failed', 'autoflow.mercure.dlx', 'failed');
+    $channel->exchange_declare('autoflow.mercure.retry', 'direct', false, true, false);
+    $channel->queue_declare('autoflow.mercure.retry.5s', false, true, false, false, false, new AMQPTable([
+        'x-message-ttl' => 5000,
+        'x-dead-letter-exchange' => '',
+        'x-dead-letter-routing-key' => 'autoflow.mercure.bridge',
+    ]));
+    $channel->queue_bind('autoflow.mercure.retry.5s', 'autoflow.mercure.retry', 'retry');
     $channel->queue_declare('autoflow.mercure.bridge', false, true, false, false, false, new AMQPTable([
         'x-dead-letter-exchange' => 'autoflow.mercure.dlx',
         'x-dead-letter-routing-key' => 'failed',
@@ -130,6 +137,7 @@ $connect = static function () use ($exchanges): array {
         $channel->exchange_declare($exchange, 'topic', false, true, false);
         $channel->queue_bind('autoflow.mercure.bridge', $exchange, '#');
     }
+    $channel->confirm_select();
     $channel->basic_qos(0, 20, false);
 
     return [$connection, $channel];
@@ -176,8 +184,28 @@ while (true) {
                     fwrite(STDERR, 'Rejected event: ' . $exception->getMessage() . "\n");
                     $message->reject(false);
                 } catch (Throwable $exception) {
-                    fwrite(STDERR, 'Mercure delivery failed: ' . $exception->getMessage() . "\n");
-                    $message->nack(false, true);
+                    $retryCount = (int) ($headerValues['mercureRetryCount'] ?? 0);
+                    if ($retryCount >= 12) {
+                        fwrite(STDERR, 'Mercure delivery moved to dead-letter queue after retries: ' . $exception->getMessage() . "\n");
+                        $message->reject(false);
+                        return;
+                    }
+
+                    try {
+                        $properties = $message->get_properties();
+                        $properties['delivery_mode'] = AMQPMessage::DELIVERY_MODE_PERSISTENT;
+                        $properties['application_headers'] = new AMQPTable(array_merge($headerValues, [
+                            'mercureRetryCount' => $retryCount + 1,
+                        ]));
+                        $retryMessage = new AMQPMessage($message->getBody(), $properties);
+                        $channel->basic_publish($retryMessage, 'autoflow.mercure.retry', 'retry', true);
+                        $channel->wait_for_pending_acks_returns(5);
+                        $message->ack();
+                        fwrite(STDERR, 'Mercure delivery scheduled for retry ' . ($retryCount + 1) . ': ' . $exception->getMessage() . "\n");
+                    } catch (Throwable $retryFailure) {
+                        fwrite(STDERR, 'Mercure retry scheduling failed: ' . $retryFailure->getMessage() . "\n");
+                        $message->nack(false, true);
+                    }
                 }
             }
         );
