@@ -45,7 +45,7 @@ final readonly class MercureAccessController
             ->withValue($token)
             ->withExpires(new \DateTimeImmutable('+5 minutes'))
             ->withPath('/')
-            ->withSecure($request->isSecure())
+            ->withSecure($request->isSecure() || filter_var(getenv('MERCURE_COOKIE_SECURE') ?: 'false', FILTER_VALIDATE_BOOL))
             ->withHttpOnly(true)
             ->withSameSite(Cookie::SAMESITE_LAX));
 
