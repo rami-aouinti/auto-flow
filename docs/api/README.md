@@ -58,3 +58,13 @@ The service docs intentionally do not fabricate response properties or request f
 ## Health-only service scaffolds
 
 Workflow and Media remain bootstrap containers. Analytics and Integration now expose tenant-aware business APIs and are routed through Traefik. See their API references and the implementation roadmap for remaining platform work.
+
+## Analytics and Integration contract details
+
+- [Analytics API](../../apps/analytics-service/docs/API.md): event ingestion, tenant KPI overview, daily event series and CSV export.
+- [Integration API](../../apps/integration-service/docs/API.md): signed inbound webhooks, inbound event history, outbound delivery queue/status and configured provider names.
+- [Central OpenAPI document](./openapi.json): OpenAPI 3.0 request/response schemas, parameters, JWT security and error responses for both services.
+
+For the shared health paths `/health/live` and `/health/ready`, choose direct port **8102** (Analytics) or **8099** (Integration) in Swagger's server selector. Business API paths use the gateway at port **8088**.
+
+Inbound Integration webhooks use HMAC-SHA256 over the exact raw request body rather than a user JWT. All other Analytics and Integration business operations require the service-specific Keycloak audience, tenant claim and scopes. See the per-service API references for exact configuration and examples.
