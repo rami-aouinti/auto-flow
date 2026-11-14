@@ -12,7 +12,8 @@
 ## Reliability and operations
 - [x] RabbitMQ durable queue, dead-letter queue and idempotent event processing.
 - [x] Tenant-scoped projection storage and database row-level security.
-- [ ] Bounded retry/backoff and operator replay workflow for analytics consumer.
+- [x] Bounded delayed retry/backoff (three retries) and dead-lettering for analytics consumer.
+- [ ] Operator replay workflow for analytics consumer.
 - [ ] Projection rebuild/replay command and retention/partitioning policy.
 - [ ] OpenTelemetry spans, consumer lag metrics and alert rules.
 - [ ] Kubernetes manifests, resource limits and autoscaling policy.
