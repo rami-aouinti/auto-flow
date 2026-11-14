@@ -11,7 +11,6 @@ check() {
   done
 }
 
-check search 8097
 check workflow 8098
 check integration 8099
 check document 8100
