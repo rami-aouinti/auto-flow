@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Doctrine\\DBAL\\DriverManager;
-use PhpAmqpLib\\Connection\\AMQPStreamConnection;
-use PhpAmqpLib\\Message\\AMQPMessage;
-use Symfony\\Component\\Uid\\Uuid;
+use Doctrine\DBAL\DriverManager;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
+use Symfony\Component\Uid\Uuid;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -42,7 +42,7 @@ $channel->queue_bind($queue, $exchange, 'inventory.unit.created.v1');
 $channel->queue_bind($queue, $exchange, 'inventory.status.changed.v1');
 $channel->basic_qos(null, 20, false);
 
-fwrite(STDOUT, "Reservation Inventory event consumer started.\\n");
+fwrite(STDOUT, "Reservation Inventory event consumer started.\n");
 $channel->basic_consume($queue, 'reservation-inventory-projection', false, false, false, false,
     static function (AMQPMessage $message) use ($db, $channel): void {
         try {
@@ -93,10 +93,10 @@ $channel->basic_consume($queue, 'reservation-inventory-projection', false, false
             );
             $channel->basic_ack($message->getDeliveryTag());
         } catch (InvalidArgumentException|JsonException $exception) {
-            fwrite(STDERR, 'Rejecting invalid Inventory event: ' . $exception->getMessage() . "\\n");
+            fwrite(STDERR, 'Rejecting invalid Inventory event: ' . $exception->getMessage() . "\n");
             $channel->basic_nack($message->getDeliveryTag(), false, false);
         } catch (Throwable $exception) {
-            fwrite(STDERR, 'Inventory projection failed; requeueing: ' . $exception->getMessage() . "\\n");
+            fwrite(STDERR, 'Inventory projection failed; requeueing: ' . $exception->getMessage() . "\n");
             $channel->basic_nack($message->getDeliveryTag(), false, true);
         }
     }
