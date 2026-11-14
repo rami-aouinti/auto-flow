@@ -400,7 +400,8 @@
         "crm:tasks:read",
         "crm:tasks:write",
         "crm:interactions:read",
-        "crm:interactions:write"
+        "crm:interactions:write",
+        "orders:write"
       ],
       "attributes": {
         "tenant_id": [
