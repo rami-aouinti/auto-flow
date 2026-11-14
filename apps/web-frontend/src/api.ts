@@ -87,11 +87,18 @@ export const billing = {
   creditNote: (id: string) => api.get(`${billingBase}/api/v1/billing/credit-notes/${encodeURIComponent(id)}`),
 };
 
+const customerBase = import.meta.env.VITE_CUSTOMER_API_BASE || '/customers';
 const crmBase = import.meta.env.VITE_CRM_API_BASE || '/crm';
 const contractBase = import.meta.env.VITE_CONTRACT_API_BASE || '/contracts';
 const fulfillmentBase = import.meta.env.VITE_FULFILLMENT_API_BASE || '/fulfillments';
 const inventoryBase = import.meta.env.VITE_INVENTORY_API_BASE || '/inventory';
 const reservationBase = import.meta.env.VITE_RESERVATION_API_BASE || '/reservations';
+
+export const customers = {
+  list: (limit = 20, offset = 0) => api.get(`${customerBase}/api/v1/customers`, { params: { limit, offset } }),
+  get: (id: string) => api.get(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}`),
+  history: (id: string) => api.get(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/history`),
+};
 
 export const crm = {
   applications: (limit = 20, offset = 0) => api.get(`${crmBase}/api/v1/crm/applications`, { params: { limit, offset } }),
