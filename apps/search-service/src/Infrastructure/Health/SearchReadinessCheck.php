@@ -12,6 +12,6 @@ final readonly class SearchReadinessCheck implements HealthCheckInterface
     {
         return $this->elasticsearch->ping()
             ? HealthCheckResult::healthy()
-            : HealthCheckResult::unhealthy('Elasticsearch is unavailable.');
+            : HealthCheckResult::unhealthy(['error' => 'Elasticsearch is unavailable.']);
     }
 }
