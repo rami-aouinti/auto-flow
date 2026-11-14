@@ -35,6 +35,7 @@ CREATE POLICY document_purge_tenant_isolation ON document_purge_events
 GRANT SELECT, INSERT ON document_purge_events TO autoflow_document;
 GRANT USAGE ON SCHEMA document_service TO autoflow_document_maintenance;
 GRANT SELECT, DELETE ON documents, document_versions, document_access_grants TO autoflow_document_maintenance;
+GRANT UPDATE (id) ON documents TO autoflow_document_maintenance;
 GRANT INSERT ON document_audit_events, document_purge_events, document_outbox_events TO autoflow_document_maintenance;
 GRANT USAGE, SELECT ON SEQUENCE document_audit_events_id_seq TO autoflow_document_maintenance;
 
