@@ -5,18 +5,19 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
-    App\\:
+    App\:
         resource: '../src/'
         exclude:
             - '../src/Kernel.php'
             - '../src/Infrastructure/Health/OpenAiConfigurationHealthCheck.php'
-    App\\Infrastructure\\AI\\OllamaChatProvider:
+            - '../src/Infrastructure/AI/OpenAiChatProvider.php'
+    App\Infrastructure\AI\OllamaChatProvider:
         arguments:
             $baseUri: '%app.ai.ollama_base_uri%'
             $model: '%app.ai.ollama_model%'
-    App\\Infrastructure\\Health\\OllamaHealthCheck:
+    App\Infrastructure\Health\OllamaHealthCheck:
         arguments:
             $baseUri: '%app.ai.ollama_base_uri%'
             $model: '%app.ai.ollama_model%'
-    App\\Application\\Port\\Out\\ChatProviderInterface:
-        alias: App\\Infrastructure\\AI\\OllamaChatProvider
+    App\Application\Port\Out\ChatProviderInterface:
+        alias: App\Infrastructure\AI\OllamaChatProvider
