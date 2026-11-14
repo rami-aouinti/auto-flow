@@ -91,6 +91,9 @@ final readonly class BillingController
                     $id,
                     $token,
                 );
+                if (!hash_equals(hash('sha256', $pdf), $uploaded['checksum'])) {
+                    throw new \\RuntimeException('Uploaded invoice PDF checksum differs from the rendered source.');
+                }
                 $this->db->transactional(function (Connection $db) use ($tenant, $id, $uploaded): void {
                     $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
                     $db->executeStatement(
@@ -166,6 +169,9 @@ final readonly class BillingController
                 $pdf = $this->invoicePdfRenderer->renderCreditNote($state['creditNote']);
                 $number = (string) $state['creditNote']['credit_note_number'];
                 $uploaded = $this->documentService->uploadPdf($pdf, $number . '.pdf', 'Credit note ' . $number, 'credit_note', $id, $token);
+                if (!hash_equals(hash('sha256', $pdf), $uploaded['checksum'])) {
+                    throw new \\RuntimeException('Uploaded credit-note PDF checksum differs from the rendered source.');
+                }
                 $this->db->transactional(function (Connection $db) use ($tenant, $id, $uploaded): void {
                     $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
                     $db->executeStatement(
