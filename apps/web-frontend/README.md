@@ -14,7 +14,7 @@ The AutoFlow frontend is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is deliver
 - `/operations/services` — cross-service read-only overview for Customers, CRM, Contracts, Billing, Fulfillment, Inventory and Reservations.
 - `/operations/order/:id` — dedicated order dossier with lifecycle timeline, audit history, linked payments/reservations/fulfillment/invoices and downloadable offer/contract PDFs.
 - `/admin/customer-360` — customer 360 workspace with profile editing, addresses, consents, orders, contracts, audit history and audited Keycloak identity linking.
-- `/portal` — self-service profile and consent workspace, restricted to the customer record mapped to the verified Keycloak subject.
+- `/portal` — self-service profile, editable addresses and consent workspace, restricted to the customer record mapped to the verified Keycloak subject; company legal identity remains advisor-managed.
 - `/operations/events` — searchable cross-service activity explorer with source filters, JSON payload inspection, API read errors, Mercure live messages and 30-second refresh.
 - `/operations/workflow` — operational workspace for contract creation/preparation/signature documents, inventory registration/status changes, vehicle reservations, fulfillment and delivery transitions, invoice/credit-note details, and audit timelines. Accepted marketplace offers can now be handed over to Order Service with the selected vehicle, quote and active customer. Tabs can be deep-linked with `?tab=contracts`, `?tab=inventory`, `?tab=reservations`, `?tab=fulfillment` or `?tab=billing`.
 
@@ -26,7 +26,7 @@ The global notification menu requests a short-lived tenant-scoped subscriber coo
 
 ## End-to-end tests
 
-Run `npm install`, then `npx playwright install chromium`, then `npm run test:e2e`. The suite starts a dedicated Nuxt test server and mocks service APIs to exercise the order dossier and guarded transition, Customer 360 related data, and event monitor filtering and payload inspection. The `VITE_E2E_TEST_MODE` authentication bypass is enabled only by the Playwright web server configuration and must never be enabled in a deployed environment.
+Run `npm install`, then `npx playwright install chromium`, then `npm run test:e2e`. The suite starts a dedicated Nuxt test server and mocks service APIs to exercise the order dossier and guarded transition, Customer 360 data and Keycloak identity linking, individual and company customer self-service, address create/update/delete, consent updates, and event monitor filtering and payload inspection. The `VITE_E2E_TEST_MODE` authentication bypass is enabled only by the Playwright web server configuration and must never be enabled in a deployed environment.
 
 ## Authentication
 
