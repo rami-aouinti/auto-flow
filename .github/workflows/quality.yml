@@ -69,6 +69,25 @@ jobs:
           go mod tidy
           go test ./...
           go build ./cmd/worker
+      - name: Lint Contract and Billing Document Service integration
+        run: |
+          php -l apps/contract-service/src/Infrastructure/Document/DocumentServiceClient.php
+          php -l apps/contract-service/src/Infrastructure/Document/ContractDocumentManager.php
+          php -l apps/contract-service/src/Presentation/Http/Controller/ContractController.php
+          php -l apps/contract-service/bin/smoke-test-document-integration.php
+          php -l apps/billing-service/src/Infrastructure/Document/DocumentServiceClient.php
+          php -l apps/billing-service/src/Presentation/Http/Controller/BillingController.php
+          php -l apps/billing-service/bin/smoke-test-document-integration.php
+          php -r '
+          $migration = file_get_contents("apps/billing-service/migrations/173-billing-document-references.sql");
+          if (!str_contains($migration, "billing_document_references") || !str_contains($migration, "ENABLE ROW LEVEL SECURITY") || !str_contains($migration, "GRANT SELECT, INSERT ON billing_document_references TO autoflow_billing")) {
+              fwrite(STDERR, "Billing Document Service reference migration is incomplete.\n"); exit(1);
+          }
+          $compose = file_get_contents("compose.yaml");
+          if (substr_count($compose, "173-billing-document-references.sql") < 2 || substr_count($compose, "DOCUMENT_SERVICE_URL") < 2) {
+              fwrite(STDERR, "Compose is missing Billing migration mount/command or service URL wiring.\n"); exit(1);
+          }
+          '
       - name: Validate Composer
         run: composer validate --strict
       - name: Validate service Composer manifests
