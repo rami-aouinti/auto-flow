@@ -286,12 +286,14 @@ jobs:
           composer install \
             --working-dir=apps/notification-service \
             --no-interaction --prefer-dist --no-progress
-      - name: Install Billing Service dependencies for static analysis
+      - name: Install Billing Service dependencies and run unit tests
         run: |
           composer install \
             --working-dir=apps/billing-service \
             --ignore-platform-req=ext-opentelemetry \
             --no-interaction --prefer-dist --no-progress
+          php -l apps/billing-service/bin/consume-payment-events.php
+          cd apps/billing-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Install Contract Service dependencies and lint API
         run: |
           composer install --working-dir=apps/contract-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
