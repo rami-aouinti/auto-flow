@@ -69,7 +69,7 @@ function run():never {
         try{pdo()->query('SELECT 1');$checks['postgres']='ok';}catch(Throwable){}
         $root=getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents';$checks['storage']=is_writable($root)?'ok':'unavailable';
         $scanner=@fsockopen(getenv('CLAMAV_HOST')?:'clamav',(int)(getenv('CLAMAV_PORT')?:3310),$errno,$error,1.0);
-        if(is_resource($scanner)){fwrite($scanner,"zPING\\0");$pong=fread($scanner,32);fclose($scanner);if(is_string($pong)&&str_contains($pong,'PONG'))$checks['clamav']='ok';}
+        if(is_resource($scanner)){fwrite($scanner,"zPING\0");$pong=fread($scanner,32);fclose($scanner);if(is_string($pong)&&str_contains($pong,'PONG'))$checks['clamav']='ok';}
         $ready=!in_array('unavailable',$checks,true);respond(['service'=>'document-service','status'=>$ready?'ok':'not_ready','checks'=>$checks],$ready?200:503);
     }
     if($path==='/api/doc.json')respond(['openapi'=>'3.1.0','info'=>['title'=>'AutoFlow Document API','version'=>'1.0.0'],'paths'=>['/api/v1/documents'=>['get'=>['summary'=>'List documents'],'post'=>['summary'=>'Upload document']]]]);
