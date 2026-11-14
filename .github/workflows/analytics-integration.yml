@@ -25,6 +25,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      - name: Lint Analytics and Integration PHP
+        run: |
+          docker run --rm -v "$PWD:/app" -w /app php:8.4-cli sh -lc "find apps/analytics-service apps/integration-service -name '*.php' -print0 | xargs -0 -n1 php -l"
       - name: Validate Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Build and start services
