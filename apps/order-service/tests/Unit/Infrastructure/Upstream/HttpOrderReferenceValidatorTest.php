@@ -75,6 +75,7 @@ final class HttpOrderReferenceValidatorTest extends TestCase
         self::assertSame(self::CUSTOMER_ID, $result['customerSnapshot']['customerId']);
         self::assertSame(3, $result['customerVersion']);
         self::assertSame('Rami', $result['customerSnapshot']['firstName']);
+        self::assertSame('Rami Aouinti', $result['customerSnapshot']['displayName']);
         self::assertCount(1, $result['customerSnapshot']['addresses']);
         self::assertSame('billing', $result['customerSnapshot']['addresses'][0]['address_type']);
         self::assertArrayNotHasKey('consents', $result['customerSnapshot']);
