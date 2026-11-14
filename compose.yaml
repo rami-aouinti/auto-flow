@@ -1535,7 +1535,6 @@ services:
       BILLING_PROXY_TARGET: http://api-gateway
       CRM_PROXY_TARGET: http://api-gateway
       CONTRACT_PROXY_TARGET: http://api-gateway
-      CUSTOMER_PROXY_TARGET: http://api-gateway
       FULFILLMENT_PROXY_TARGET: http://api-gateway
       INVENTORY_PROXY_TARGET: http://api-gateway
       RESERVATION_PROXY_TARGET: http://api-gateway
