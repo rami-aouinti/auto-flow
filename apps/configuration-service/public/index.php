@@ -140,7 +140,7 @@ if (str_starts_with($path, '/api/')) {
                 if ($current && $expected !== null && (int)$expected !== (int)$current['version']) { $pdo->rollBack(); problem(412,'Precondition Failed','Configuration version does not match expectedVersion.'); }
                 if (!$current && $expected !== null && (int)$expected !== 0) { $pdo->rollBack(); problem(412,'Precondition Failed','Configuration does not exist at expectedVersion.'); }
                 $version=$current ? (int)$current['version']+1 : 1;
-                $description=isset($input['description']) ? mb_substr((string)$input['description'],0,500) : null;
+                $description=isset($input['description']) ? substr((string)$input['description'],0,500) : null;
                 if ($current) {
                     $pdo->prepare('UPDATE configurations SET value=?::jsonb,value_type=?,description=?,version=?,updated_by=?,updated_at=NOW() WHERE tenant_id=? AND namespace=? AND config_key=?')
                         ->execute([$json,$type,$description,$version,$actor,$tenant,$namespace,$key]);
@@ -149,7 +149,7 @@ if (str_starts_with($path, '/api/')) {
                         ->execute([uuid(),$tenant,$namespace,$key,$json,$type,$description,$actor,$actor]);
                 }
                 $pdo->prepare('INSERT INTO configuration_versions (id,tenant_id,namespace,config_key,version,value,value_type,description,changed_by,change_reason) VALUES (?,?,?,?,?,?::jsonb,?,?,?,?)')
-                    ->execute([uuid(),$tenant,$namespace,$key,$version,$json,$type,$description,$actor,isset($input['reason'])?mb_substr((string)$input['reason'],0,500):null]);
+                    ->execute([uuid(),$tenant,$namespace,$key,$version,$json,$type,$description,$actor,isset($input['reason'])?substr((string)$input['reason'],0,500):null]);
                 recordEvent($pdo,$tenant,$actor,$current?'updated':'created','configuration',$namespace.'/'.$key,$version,['valueType'=>$type],'ConfigurationUpdated');
                 $pdo->commit(); cacheDelete($tenant,$namespace.'/'.$key);
                 header('ETag: "'.$version.'"'); respond($current?200:201,['namespace'=>$namespace,'key'=>$key,'value'=>$input['value'],'type'=>$type,'version'=>$version]);
@@ -182,7 +182,7 @@ if (str_starts_with($path, '/api/')) {
                 $expected=$input['expectedVersion']??null;
                 if ($current && $expected!==null && (int)$expected!==(int)$current['version']) { $pdo->rollBack(); problem(412,'Precondition Failed','Feature flag version does not match expectedVersion.'); }
                 $version=$current?(int)$current['version']+1:1;
-                $description=isset($input['description'])?mb_substr((string)$input['description'],0,500):null;
+                $description=isset($input['description'])?substr((string)$input['description'],0,500):null;
                 if ($current) $pdo->prepare('UPDATE feature_flags SET enabled=?,rollout_percentage=?,tenant_allowlist=?::jsonb,description=?,version=?,updated_by=?,updated_at=NOW() WHERE tenant_id=? AND flag_key=?')->execute([$input['enabled'],$rollout,json_encode(array_values(array_unique($allow))),$description,$version,$actor,$tenant,$key]);
                 else $pdo->prepare('INSERT INTO feature_flags (id,tenant_id,flag_key,enabled,rollout_percentage,tenant_allowlist,description,version,created_by,updated_by) VALUES (?,?,?,?,?,?,?::jsonb,1,?,?)')->execute([uuid(),$tenant,$key,$input['enabled'],$rollout,json_encode(array_values(array_unique($allow))),$description,$actor,$actor]);
                 recordEvent($pdo,$tenant,$actor,$current?'updated':'created','feature_flag',$key,$version,['enabled'=>$input['enabled'],'rolloutPercentage'=>$rollout],'FeatureFlagChanged');
