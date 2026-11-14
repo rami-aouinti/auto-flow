@@ -8869,6 +8869,59 @@
           }
         }
       }
+    },
+    "/api/v1/billing/credit-notes/{id}/document": {
+      "get": {
+        "tags": [
+          "Billing Service"
+        ],
+        "summary": "Download credit note PDF",
+        "description": "billing:read + documents:read; the first request also requires documents:write. Billing renders the immutable credit-note snapshot, stores the PDF in Document Service, and proxies subsequent downloads with SHA-256 verification.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Gutschrift PDF stored in Document Service",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid bearer token."
+          },
+          "403": {
+            "description": "Missing Billing or Document Service permission."
+          },
+          "404": {
+            "description": "Credit note not found."
+          },
+          "409": {
+            "description": "Credit note cannot be rendered."
+          },
+          "503": {
+            "description": "Document Service unavailable."
+          }
+        }
+      }
     }
   }
 }
