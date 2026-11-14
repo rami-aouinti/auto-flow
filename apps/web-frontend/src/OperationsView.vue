@@ -335,7 +335,7 @@ onMounted(() => {
       </div>
 
       <section v-if="selectedOrder" class="ops-panel ops-detail">
-        <div class="ops-panel-head"><div><p class="eyebrow">ORDER DETAILS</p><h2>{{selectedOrder.orderId}}</h2><span class="ops-status">{{label(selectedOrder.status)}}</span></div><div class="d-flex ga-2"><button class="ops-ghost" @click="router.push(`/operations/orders/${selectedOrder.orderId}`)">Vollständiges Dossier ↗</button><button class="ops-ghost" @click="selectedOrder=null">Schließen</button></div></div>
+        <div class="ops-panel-head"><div><p class="eyebrow">ORDER DETAILS</p><h2>{{selectedOrder.orderId}}</h2><span class="ops-status">{{label(selectedOrder.status)}}</span></div><div class="d-flex ga-2"><button class="ops-ghost" @click="router.push(`/operations/order/${selectedOrder.orderId}`)">Vollständiges Dossier ↗</button><button class="ops-ghost" @click="selectedOrder=null">Schließen</button></div></div>
         <div class="ops-facts"><div><small>Offer</small><b>{{selectedOrder.offerId || '–'}}</b></div><div><small>Quote</small><b>{{selectedOrder.quoteId || '–'}}</b></div><div><small>Vehicle</small><b>{{selectedOrder.vehicleId || '–'}}</b></div><div><small>Erstellt</small><b>{{date(selectedOrder.createdAt)}}</b></div></div>
         <div class="ops-actions">
           <button v-if="selectedOrder.status==='draft'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'submit')">Einreichen</button>
