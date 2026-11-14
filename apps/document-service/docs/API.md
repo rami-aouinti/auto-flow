@@ -16,12 +16,12 @@ Document Service owns binary storage and metadata only. Contract and Billing rem
 | GET | `/api/doc.json` | public | OpenAPI JSON | 200 | — |
 | GET | `/api/v1/documents` | documents:read | `page?`, `limit?` (1–100), `q?`, `category?`, `entity_type?`, `entity_id?`, `status?` | 200 `{data,meta}` | 401, 403, 500 |
 | POST | `/api/v1/documents` | documents:write | multipart: `file` required; `title` required; `category?` (default other); `description?`; `entity_type?`; `entity_id?`; `retention_until?` (ISO-8601) | 201 `{data}` | 400, 401, 403, 413, 415, 422, 503 |
-| GET | `/api/v1/documents/{id}` | documents:read | UUID path | 200 `{data}` | 401, 403, 404 |
-| DELETE | `/api/v1/documents/{id}` | documents:manage | UUID path; soft-delete metadata | 204 | 401, 403, 404 |
-| GET | `/api/v1/documents/{id}/content` | documents:read | UUID path; binary download only after clean scan | binary stream | 401, 403, 404, 423 |
-| GET | `/api/v1/documents/{id}/versions` | documents:read | UUID path | 200 `{data: []}` newest first | 401, 403, 404 |
-| POST | `/api/v1/documents/{id}/versions` | documents:write | multipart `file` required | 201 `{data}` | 400, 401, 403, 413, 415, 422, 503 |
-| GET | `/api/v1/documents/{id}/audit` | documents:read | UUID path; latest 100 audit events | 200 `{data: []}` | 401, 403, 404 |
+| GET | `/api/v1/documents/{id}` | documents:read, owner or active grant | UUID path | 200 `{data}` | 401, 403, 404 |
+| DELETE | `/api/v1/documents/{id}` | owner or documents:manage | UUID path; soft-delete metadata | 204 | 401, 403, 404 |
+| GET | `/api/v1/documents/{id}/content` | documents:read or active grant | UUID path; binary download only after clean scan | binary stream | 401, 403, 404, 423 |
+| GET | `/api/v1/documents/{id}/versions` | documents:read or active grant | UUID path | 200 `{data: []}` newest first | 401, 403, 404 |
+| POST | `/api/v1/documents/{id}/versions` | owner, documents:write or manage grant | multipart `file` required | 201 `{data}` | 400, 401, 403, 413, 415, 422, 503 |
+| GET | `/api/v1/documents/{id}/audit` | owner or documents:manage | UUID path; latest 100 audit events | 200 `{data: []}` | 401, 403, 404 |
 | POST | `/api/v1/documents/{id}/archive` | owner or documents:manage | UUID path | 200 `{data}` | 401, 403, 404, 423 |
 | GET | `/api/v1/documents/{id}/access-grants` | owner or documents:manage | UUID path | 200 `{data: []}` | 401, 403, 404 |
 | POST | `/api/v1/documents/{id}/access-grants` | owner or documents:manage | JSON: `subject_id`, `permission` (read/manage), `expires_at?` | 201 `{data}` | 400, 401, 403, 404, 422 |
@@ -38,7 +38,11 @@ Document Service owns binary storage and metadata only. Contract and Billing rem
 - SHA-256, byte size and detected MIME type are persisted. The original filename is metadata only.
 - Downloads require a valid tenant token and a clean malware scan. Owners and explicit unexpired access grants can access a document; grant permissions are `read` or `manage`. Responses use attachment disposition and `X-Content-Type-Options: nosniff`.
 
-### Retention and legal hold\n\n`retention_until` is an absolute ISO-8601 timestamp. The retention worker checks expired records hourly (configurable), permanently removes current and historical object versions, and emits `DocumentPurged`. A legal hold blocks archive, soft-delete and automatic purge until explicitly released. Purge audit metadata is retained separately from the deleted document record.\n\n### Error format
+### Retention and legal hold
+
+`retention_until` is an absolute ISO-8601 timestamp. The retention worker checks expired records hourly (configurable), permanently removes current and historical object versions, and emits `DocumentPurged`. A legal hold blocks archive, soft-delete and automatic purge until explicitly released. Purge audit metadata is retained separately from the deleted document record.
+
+### Error format
 
 Errors use RFC 7807-style `application/problem+json` with `type`, `title`, `status` and `detail`. Common statuses: 400 malformed request; 401 missing/invalid JWT; 403 missing permission; 404 unknown or cross-tenant document; 413 upload too large; 415 unsupported media; 422 invalid metadata or infected file; 423 file is not clean or a legal hold blocks a lifecycle operation; 503 database, identity provider, object storage or malware scanner unavailable; 500 unexpected server error.
 
@@ -65,7 +69,7 @@ curl -OJ "http://localhost:8088/api/v1/documents/$DOCUMENT_ID/content" \
 
 ## Data model and events
 
-PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived` and `DocumentDeleted` atomically with metadata changes. The separate publisher declares the durable topic exchange and queue `autoflow.document.events`, publishes the event envelope and retries unpublished rows until broker acknowledgement. The retention worker emits `DocumentPurged` after expiry and skips legal holds. Delivery is at-least-once: downstream consumers must deduplicate by `eventId`.
+PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived`, `DocumentDeleted`, `DocumentAccessGranted`, `DocumentAccessRevoked`, `DocumentLegalHoldPlaced` and `DocumentLegalHoldReleased` atomically with metadata changes. The retention worker emits `DocumentPurged` after binary deletion. The separate publisher declares the durable topic exchange and queue `autoflow.document.events`, publishes the event envelope and retries unpublished rows until broker acknowledgement. The retention worker emits `DocumentPurged` after expiry and skips legal holds. Delivery is at-least-once: downstream consumers must deduplicate by `eventId`.
 
 ## Local startup
 
