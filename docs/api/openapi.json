@@ -1,0 +1,6220 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AutoFlow Microservices API",
+    "version": "1.0.0",
+    "description": "Central development API catalog for all HTTP microservices. Each service has a detailed API.md under apps/<service>/docs. Notification Service is a background worker and has no public REST endpoints."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8088",
+      "description": "Local API Gateway; services not routed by the gateway must use their direct localhost port."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Offer Service"
+    },
+    {
+      "name": "Pricing Service"
+    },
+    {
+      "name": "Vehicle Catalog Service"
+    },
+    {
+      "name": "Order Management Service"
+    },
+    {
+      "name": "Payment Service"
+    },
+    {
+      "name": "Billing Service"
+    },
+    {
+      "name": "Customer Service"
+    },
+    {
+      "name": "Contract Service"
+    },
+    {
+      "name": "Fulfillment Service"
+    },
+    {
+      "name": "Vehicle Reservation Service"
+    },
+    {
+      "name": "Inventory Service"
+    },
+    {
+      "name": "CRM Service"
+    },
+    {
+      "name": "AI Service"
+    },
+    {
+      "name": "Notification Service"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Paste the raw Keycloak access token; Swagger adds the Bearer prefix."
+      }
+    }
+  },
+  "paths": {
+    "/api/offers/{vehicleId}": {
+      "post": {
+        "tags": [
+          "Offer Service"
+        ],
+        "summary": "Create offer",
+        "description": "Offer Service. Create offer; body: vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/offers": {
+      "get": {
+        "tags": [
+          "Offer Service"
+        ],
+        "summary": "List",
+        "description": "Offer Service. List; query: status, search, limit (1..100), offset. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/offers/{offerId}": {
+      "get": {
+        "tags": [
+          "Offer Service"
+        ],
+        "summary": "Read offer",
+        "description": "Offer Service. Read offer. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "offerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/offers/{offerId}/history": {
+      "get": {
+        "tags": [
+          "Offer Service"
+        ],
+        "summary": "Audit history",
+        "description": "Offer Service. Audit history. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "offerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/offers/{offerId}/publish": {
+      "post": {
+        "tags": [
+          "Offer Service"
+        ],
+        "summary": "Publish",
+        "description": "Offer Service. Publish. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "offerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/offers/{offerId}/accept": {
+      "post": {
+        "tags": [
+          "Offer Service"
+        ],
+        "summary": "Accept",
+        "description": "Offer Service. Accept. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "offerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/offers/{offerId}/reject": {
+      "post": {
+        "tags": [
+          "Offer Service"
+        ],
+        "summary": "Reject",
+        "description": "Offer Service. Reject. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "offerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/offers/{vehicleId}/quotes": {
+      "post": {
+        "tags": [
+          "Offer Service"
+        ],
+        "summary": "Legacy quote-only",
+        "description": "Offer Service. Legacy quote-only; same lease-term body. Authorization: Bearer JWT; offers:read, offers:quote. See apps/offer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/pricing/quotes": {
+      "post": {
+        "tags": [
+          "Pricing Service"
+        ],
+        "summary": "Calculate",
+        "description": "Pricing Service. Calculate; body: vehicleId, vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints. Authorization: Bearer JWT; pricing:quote. See apps/pricing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Pricing Service"
+        ],
+        "summary": "List",
+        "description": "Pricing Service. List; query: limit, offset. Authorization: Bearer JWT; pricing:quote. See apps/pricing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/pricing/quotes/{quoteId}": {
+      "get": {
+        "tags": [
+          "Pricing Service"
+        ],
+        "summary": "Read quote",
+        "description": "Pricing Service. Read quote. Authorization: Bearer JWT; pricing:quote. See apps/pricing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Pricing Service"
+        ],
+        "summary": "Soft-delete quote",
+        "description": "Pricing Service. Soft-delete quote. Authorization: Bearer JWT; pricing:quote. See apps/pricing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "quoteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/pricing/{vehicleId}": {
+      "get": {
+        "tags": [
+          "Pricing Service"
+        ],
+        "summary": "Deprecated demo compatibility",
+        "description": "Pricing Service. Deprecated demo compatibility. Authorization: Bearer JWT; pricing:quote. See apps/pricing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/manufacturers": {
+      "get": {
+        "tags": [
+          "Vehicle Catalog Service"
+        ],
+        "summary": "Published manufacturers",
+        "description": "Vehicle Catalog Service. Published manufacturers. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Vehicle Catalog Service"
+        ],
+        "summary": "Create manufacturer",
+        "description": "Vehicle Catalog Service. Create manufacturer. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/vehicles": {
+      "get": {
+        "tags": [
+          "Vehicle Catalog Service"
+        ],
+        "summary": "Search/list",
+        "description": "Vehicle Catalog Service. Search/list; query: q, manufacturerId, modelId, generationId, fuelType, powertrain, bodyStyle, transmission, minPowerKw, maxPowerKw, minSeats, maxSeats, limit, offset. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Vehicle Catalog Service"
+        ],
+        "summary": "Create variant",
+        "description": "Vehicle Catalog Service. Create variant. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/vehicles/{variantId}": {
+      "get": {
+        "tags": [
+          "Vehicle Catalog Service"
+        ],
+        "summary": "Variant detail",
+        "description": "Vehicle Catalog Service. Variant detail. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/models": {
+      "post": {
+        "tags": [
+          "Vehicle Catalog Service"
+        ],
+        "summary": "Create model",
+        "description": "Vehicle Catalog Service. Create model. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/generations": {
+      "post": {
+        "tags": [
+          "Vehicle Catalog Service"
+        ],
+        "summary": "Create generation",
+        "description": "Vehicle Catalog Service. Create generation. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/vehicles/{variantId}/publish": {
+      "post": {
+        "tags": [
+          "Vehicle Catalog Service"
+        ],
+        "summary": "Publish variant",
+        "description": "Vehicle Catalog Service. Publish variant. Authorization: Bearer JWT; catalog:read, catalog:manage. See apps/vehicle-catalog-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Create",
+        "description": "Order Management Service. Create; Idempotency-Key; body: offerId, quoteId, vehicleId, customerId. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "List orders",
+        "description": "Order Management Service. List orders. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{id}": {
+      "get": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Read order and snapshots",
+        "description": "Order Management Service. Read order and snapshots. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/submit": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Submit",
+        "description": "Order Management Service. Submit; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/review": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Review",
+        "description": "Order Management Service. Review; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/accept": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Accept",
+        "description": "Order Management Service. Accept; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/reject": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Reject",
+        "description": "Order Management Service. Reject; Idempotency-Key; body: reason. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Cancel",
+        "description": "Order Management Service. Cancel; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/contract-pending": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Contract pending",
+        "description": "Order Management Service. Contract pending; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/orders/{id}/complete": {
+      "post": {
+        "tags": [
+          "Order Management Service"
+        ],
+        "summary": "Complete",
+        "description": "Order Management Service. Complete; Idempotency-Key. Authorization: Bearer JWT; orders:read, orders:write, orders:manage. See apps/order-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/payments": {
+      "post": {
+        "tags": [
+          "Payment Service"
+        ],
+        "summary": "Create",
+        "description": "Payment Service. Create; Idempotency-Key; body: orderId only. Authorization: Bearer JWT; payments:read, payments:write, payments:capture, payments:refund. See apps/payment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/{paymentId}": {
+      "get": {
+        "tags": [
+          "Payment Service"
+        ],
+        "summary": "Read payment",
+        "description": "Payment Service. Read payment. Authorization: Bearer JWT; payments:read, payments:write, payments:capture, payments:refund. See apps/payment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/payments/{paymentId}/capture": {
+      "post": {
+        "tags": [
+          "Payment Service"
+        ],
+        "summary": "Capture",
+        "description": "Payment Service. Capture; Idempotency-Key. Authorization: Bearer JWT; payments:read, payments:write, payments:capture, payments:refund. See apps/payment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/payments/{paymentId}/cancel": {
+      "post": {
+        "tags": [
+          "Payment Service"
+        ],
+        "summary": "Cancel",
+        "description": "Payment Service. Cancel; Idempotency-Key. Authorization: Bearer JWT; payments:read, payments:write, payments:capture, payments:refund. See apps/payment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/payments/{paymentId}/refund": {
+      "post": {
+        "tags": [
+          "Payment Service"
+        ],
+        "summary": "Refund",
+        "description": "Payment Service. Refund; Idempotency-Key. Authorization: Bearer JWT; payments:read, payments:write, payments:capture, payments:refund. See apps/payment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "paymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/payments/webhooks/stripe": {
+      "post": {
+        "tags": [
+          "Payment Service"
+        ],
+        "summary": "Stripe webhook",
+        "description": "Payment Service. Stripe webhook; Stripe-Signature. Authorization: Bearer JWT; payments:read, payments:write, payments:capture, payments:refund. See apps/payment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/billing/invoices": {
+      "get": {
+        "tags": [
+          "Billing Service"
+        ],
+        "summary": "List invoices",
+        "description": "Billing Service. List invoices. Authorization: Bearer JWT; billing:read. See apps/billing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/billing/invoices/{id}": {
+      "get": {
+        "tags": [
+          "Billing Service"
+        ],
+        "summary": "Read invoice",
+        "description": "Billing Service. Read invoice. Authorization: Bearer JWT; billing:read. See apps/billing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/billing/invoices/{id}/document": {
+      "get": {
+        "tags": [
+          "Billing Service"
+        ],
+        "summary": "Download PDF",
+        "description": "Billing Service. Download PDF. Authorization: Bearer JWT; billing:read. See apps/billing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/billing/credit-notes": {
+      "get": {
+        "tags": [
+          "Billing Service"
+        ],
+        "summary": "List credit notes",
+        "description": "Billing Service. List credit notes. Authorization: Bearer JWT; billing:read. See apps/billing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/billing/credit-notes/{id}": {
+      "get": {
+        "tags": [
+          "Billing Service"
+        ],
+        "summary": "Read credit note",
+        "description": "Billing Service. Read credit note. Authorization: Bearer JWT; billing:read. See apps/billing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/billing/summary": {
+      "get": {
+        "tags": [
+          "Billing Service"
+        ],
+        "summary": "Summary",
+        "description": "Billing Service. Summary. Authorization: Bearer JWT; billing:read. See apps/billing-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/customers": {
+      "post": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Create",
+        "description": "Customer Service. Create; Idempotency-Key; body: individual firstName/lastName or company legalName. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "List",
+        "description": "Customer Service. List; query: q, status, type. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/{id}": {
+      "get": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Read profile",
+        "description": "Customer Service. Read profile. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Partial update",
+        "description": "Customer Service. Partial update. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Soft archive",
+        "description": "Customer Service. Soft archive. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/{id}/addresses": {
+      "get": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "List addresses",
+        "description": "Customer Service. List addresses. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Add address",
+        "description": "Customer Service. Add address. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/{id}/addresses/{addressId}": {
+      "put": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Replace address",
+        "description": "Customer Service. Replace address. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Delete address",
+        "description": "Customer Service. Delete address. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/{id}/consents": {
+      "get": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Read consents",
+        "description": "Customer Service. Read consents. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Update consents",
+        "description": "Customer Service. Update consents. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/{id}/history": {
+      "get": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Audit history",
+        "description": "Customer Service. Audit history. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/{id}/identity": {
+      "put": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Link Keycloak subject",
+        "description": "Customer Service. Link Keycloak subject. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/me": {
+      "get": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Own profile",
+        "description": "Customer Service. Own profile. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Update own profile",
+        "description": "Customer Service. Update own profile. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/me/addresses": {
+      "get": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Own addresses",
+        "description": "Customer Service. Own addresses. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Add own address",
+        "description": "Customer Service. Add own address. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/me/addresses/{addressId}": {
+      "put": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Update own address",
+        "description": "Customer Service. Update own address. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Delete own address",
+        "description": "Customer Service. Delete own address. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/customers/me/consents": {
+      "get": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Own consents",
+        "description": "Customer Service. Own consents. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Update own consents",
+        "description": "Customer Service. Update own consents. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/realtime/access": {
+      "get": {
+        "tags": [
+          "Customer Service"
+        ],
+        "summary": "Issue Mercure subscriber cookie",
+        "description": "Customer Service. Issue Mercure subscriber cookie. Authorization: Bearer JWT; customers:read, customers:write, customers:manage, customers:portal. See apps/customer-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/contracts": {
+      "post": {
+        "tags": [
+          "Contract Service"
+        ],
+        "summary": "Create from accepted order",
+        "description": "Contract Service. Create from accepted order; Idempotency-Key; body: orderId, contractType. Authorization: Bearer JWT; contracts:read/write/manage; create also orders:read. See apps/contract-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Contract Service"
+        ],
+        "summary": "List",
+        "description": "Contract Service. List; query: status. Authorization: Bearer JWT; contracts:read/write/manage; create also orders:read. See apps/contract-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/contracts/{contractId}": {
+      "get": {
+        "tags": [
+          "Contract Service"
+        ],
+        "summary": "Read contract and legal snapshot",
+        "description": "Contract Service. Read contract and legal snapshot. Authorization: Bearer JWT; contracts:read/write/manage; create also orders:read. See apps/contract-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contracts/{contractId}/history": {
+      "get": {
+        "tags": [
+          "Contract Service"
+        ],
+        "summary": "Audit history",
+        "description": "Contract Service. Audit history. Authorization: Bearer JWT; contracts:read/write/manage; create also orders:read. See apps/contract-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contracts/{contractId}/prepare": {
+      "post": {
+        "tags": [
+          "Contract Service"
+        ],
+        "summary": "Prepare",
+        "description": "Contract Service. Prepare; Idempotency-Key. Authorization: Bearer JWT; contracts:read/write/manage; create also orders:read. See apps/contract-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contracts/{contractId}/cancel": {
+      "post": {
+        "tags": [
+          "Contract Service"
+        ],
+        "summary": "Cancel",
+        "description": "Contract Service. Cancel; Idempotency-Key. Authorization: Bearer JWT; contracts:read/write/manage; create also orders:read. See apps/contract-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contracts/{contractId}/document": {
+      "post": {
+        "tags": [
+          "Contract Service"
+        ],
+        "summary": "Generate PDF",
+        "description": "Contract Service. Generate PDF. Authorization: Bearer JWT; contracts:read/write/manage; create also orders:read. See apps/contract-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "Contract Service"
+        ],
+        "summary": "Download PDF",
+        "description": "Contract Service. Download PDF. Authorization: Bearer JWT; contracts:read/write/manage; create also orders:read. See apps/contract-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/contracts/{contractId}/send-for-signature": {
+      "post": {
+        "tags": [
+          "Contract Service"
+        ],
+        "summary": "DocuSign envelope",
+        "description": "Contract Service. DocuSign envelope. Authorization: Bearer JWT; contracts:read/write/manage; create also orders:read. See apps/contract-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments": {
+      "get": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "List/filter",
+        "description": "Fulfillment Service. List/filter. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments/{id}": {
+      "get": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "Read",
+        "description": "Fulfillment Service. Read. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments/{id}/history": {
+      "get": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "Audit history",
+        "description": "Fulfillment Service. Audit history. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments/{id}/preparation/start": {
+      "post": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "Start preparation",
+        "description": "Fulfillment Service. Start preparation. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments/{id}/preparation/complete": {
+      "post": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "Complete preparation",
+        "description": "Fulfillment Service. Complete preparation. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments/{id}/schedule": {
+      "post": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "Schedule/reschedule",
+        "description": "Fulfillment Service. Schedule/reschedule. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments/{id}/dispatch": {
+      "post": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "Dispatch",
+        "description": "Fulfillment Service. Dispatch. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments/{id}/delivery/confirm": {
+      "post": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "Confirm delivery",
+        "description": "Fulfillment Service. Confirm delivery. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments/{id}/delivery/fail": {
+      "post": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "Failed delivery",
+        "description": "Fulfillment Service. Failed delivery. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/fulfillments/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Fulfillment Service"
+        ],
+        "summary": "Cancel",
+        "description": "Fulfillment Service. Cancel. Authorization: Bearer JWT; fulfillment:*; mutations require Idempotency-Key and If-Match. See apps/fulfillment-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/reservations": {
+      "get": {
+        "tags": [
+          "Vehicle Reservation Service"
+        ],
+        "summary": "List",
+        "description": "Vehicle Reservation Service. List; query: status, limit, offset. Authorization: Bearer JWT; reservations:read/write/manage; writes require Idempotency-Key and If-Match on transitions. See apps/vehicle-reservation-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Vehicle Reservation Service"
+        ],
+        "summary": "Hold",
+        "description": "Vehicle Reservation Service. Hold; Idempotency-Key; body: vehicleUnitId, vehicleVariantId, orderId, expiresAt. Authorization: Bearer JWT; reservations:read/write/manage; writes require Idempotency-Key and If-Match on transitions. See apps/vehicle-reservation-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reservations/{id}": {
+      "get": {
+        "tags": [
+          "Vehicle Reservation Service"
+        ],
+        "summary": "Read",
+        "description": "Vehicle Reservation Service. Read. Authorization: Bearer JWT; reservations:read/write/manage; writes require Idempotency-Key and If-Match on transitions. See apps/vehicle-reservation-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/reservations/{id}/history": {
+      "get": {
+        "tags": [
+          "Vehicle Reservation Service"
+        ],
+        "summary": "Audit history",
+        "description": "Vehicle Reservation Service. Audit history. Authorization: Bearer JWT; reservations:read/write/manage; writes require Idempotency-Key and If-Match on transitions. See apps/vehicle-reservation-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/reservations/{id}/confirm": {
+      "post": {
+        "tags": [
+          "Vehicle Reservation Service"
+        ],
+        "summary": "Confirm",
+        "description": "Vehicle Reservation Service. Confirm. Authorization: Bearer JWT; reservations:read/write/manage; writes require Idempotency-Key and If-Match on transitions. See apps/vehicle-reservation-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/reservations/{id}/release": {
+      "post": {
+        "tags": [
+          "Vehicle Reservation Service"
+        ],
+        "summary": "Release",
+        "description": "Vehicle Reservation Service. Release. Authorization: Bearer JWT; reservations:read/write/manage; writes require Idempotency-Key and If-Match on transitions. See apps/vehicle-reservation-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/reservations/{id}/fulfill": {
+      "post": {
+        "tags": [
+          "Vehicle Reservation Service"
+        ],
+        "summary": "Fulfill",
+        "description": "Vehicle Reservation Service. Fulfill. Authorization: Bearer JWT; reservations:read/write/manage; writes require Idempotency-Key and If-Match on transitions. See apps/vehicle-reservation-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/inventory/units": {
+      "post": {
+        "tags": [
+          "Inventory Service"
+        ],
+        "summary": "Register",
+        "description": "Inventory Service. Register; Idempotency-Key; body: vehicleVariantId, VIN, dealer/location, country, condition, mileage, first registration date. Authorization: Bearer JWT; inventory:read/write. See apps/inventory-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Inventory Service"
+        ],
+        "summary": "List/filter",
+        "description": "Inventory Service. List/filter; query: vehicleVariantId, status, dealerId. Authorization: Bearer JWT; inventory:read/write. See apps/inventory-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/inventory/availability": {
+      "get": {
+        "tags": [
+          "Inventory Service"
+        ],
+        "summary": "Counts",
+        "description": "Inventory Service. Counts; query: vehicleVariantId (required). Authorization: Bearer JWT; inventory:read/write. See apps/inventory-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "vehicleVariantId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/inventory/units/{id}": {
+      "get": {
+        "tags": [
+          "Inventory Service"
+        ],
+        "summary": "Read unit",
+        "description": "Inventory Service. Read unit. Authorization: Bearer JWT; inventory:read/write. See apps/inventory-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/inventory/units/{id}/status": {
+      "post": {
+        "tags": [
+          "Inventory Service"
+        ],
+        "summary": "Change status",
+        "description": "Inventory Service. Change status; Idempotency-Key, If-Match; body: target status, optional reason. Authorization: Bearer JWT; inventory:read/write. See apps/inventory-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/inventory/units/{id}/history": {
+      "get": {
+        "tags": [
+          "Inventory Service"
+        ],
+        "summary": "Movement history",
+        "description": "Inventory Service. Movement history. Authorization: Bearer JWT; inventory:read/write. See apps/inventory-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications": {
+      "post": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Submit",
+        "description": "CRM Service. Submit; Idempotency-Key; body: customerId, optional offerId, vehicleId, quoteId, optional message. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "List/filter",
+        "description": "CRM Service. List/filter. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications/{id}": {
+      "get": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Read",
+        "description": "CRM Service. Read. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications/{id}/convert": {
+      "post": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Convert to Order",
+        "description": "CRM Service. Convert to Order. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications/{id}/status": {
+      "patch": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Change status",
+        "description": "CRM Service. Change status. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications/{id}/assignment": {
+      "put": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Assign advisor",
+        "description": "CRM Service. Assign advisor. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications/{id}/eligibility": {
+      "put": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Record eligibility",
+        "description": "CRM Service. Record eligibility. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications/{id}/tasks": {
+      "post": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Create task",
+        "description": "CRM Service. Create task. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "List tasks",
+        "description": "CRM Service. List tasks. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications/{id}/tasks/{taskId}": {
+      "patch": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Update task",
+        "description": "CRM Service. Update task. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications/{id}/interactions": {
+      "post": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Record interaction",
+        "description": "CRM Service. Record interaction. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "List interactions",
+        "description": "CRM Service. List interactions. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/crm/applications/{id}/history": {
+      "get": {
+        "tags": [
+          "CRM Service"
+        ],
+        "summary": "Audit history",
+        "description": "CRM Service. Audit history. Authorization: Bearer JWT; crm:*; conversion also orders:write. See apps/crm-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/ai/chat": {
+      "post": {
+        "tags": [
+          "AI Service"
+        ],
+        "summary": "Chat",
+        "description": "AI Service. Chat; body: messages[] with role and content. Authorization: Local-only service; add JWT/tenant authorization before shared exposure. See apps/ai-service/docs/API.md for arguments, examples and response details.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Malformed request or invalid query/body"
+          },
+          "401": {
+            "description": "Missing or invalid access token"
+          },
+          "403": {
+            "description": "Insufficient permission or tenant access"
+          },
+          "404": {
+            "description": "Resource not found or not visible"
+          },
+          "409": {
+            "description": "Business or idempotency conflict"
+          },
+          "412": {
+            "description": "Stale If-Match version"
+          },
+          "422": {
+            "description": "Domain validation error"
+          },
+          "500": {
+            "description": "Unexpected server error"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
