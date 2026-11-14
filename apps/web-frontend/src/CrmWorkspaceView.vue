@@ -62,12 +62,13 @@ const customerName = (c: CustomerOption) => c.customer_type === 'company'
   : [c.first_name, c.last_name].filter(Boolean).join(' ') || 'Kunde';
 const customerTitle = (c: CustomerOption) => [customerName(c), c.email].filter(Boolean).join(' · ');
 const label = (value?: string | null) => (value || '–').replaceAll('_', ' ');
-const statusColor = (value: string) => ({
+const statusColors: Record<string, string> = {
   submitted: 'info', under_review: 'warning', information_required: 'warning',
   eligible: 'success', approved: 'success', declined: 'error', withdrawn: 'default',
   converted: 'success', pending: 'default', in_review: 'warning', ineligible: 'error',
   manual_review: 'warning',
-}[value] || 'default');
+};
+const statusColor = (value: string) => statusColors[value] || 'default';
 
 async function loadCustomers() {
   customerLoading.value = true;
