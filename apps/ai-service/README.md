@@ -21,6 +21,9 @@ Never commit a real API key.
 
 ## Local request
 
+The service is available directly at `http://localhost:8095` in the local Compose stack. It is intentionally not exposed through the public Traefik gateway until tenant authorization and quotas are implemented.
+
+
 POST /api/v1/ai/chat
 Content-Type: application/json
 
