@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 namespace App\Infrastructure\Elasticsearch;
+use RuntimeException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
-use RuntimeException;
 final readonly class ElasticsearchClient
 {
     public function __construct(private HttpClientInterface $http, private string $baseUri, private string $indexName) {}
@@ -31,8 +31,39 @@ final readonly class ElasticsearchClient
                 'status' => ['type' => 'keyword'], 'updated_at' => ['type' => 'date'],
             ]],
         ]]);
+        $this->assertSuccess($response, 'create vehicle index');
+    }
+    public function ensureInboxIndex(): void
+    {
+        $response = $this->http->request('PUT', $this->url('autoflow-search-inbox-v1'), ['json' => [
+            'mappings' => ['dynamic' => 'strict', 'properties' => [
+                'event_id' => ['type' => 'keyword'],
+                'event_type' => ['type' => 'keyword'],
+                'processed_at' => ['type' => 'date'],
+            ]],
+        ]]);
         $status = $response->getStatusCode();
-        if ($status < 200 || $status >= 300) throw new RuntimeException('Elasticsearch could not create the vehicle index: HTTP ' . $status . '.');
+        if ($status !== 400) $this->assertSuccess($response, 'create search inbox index');
+        else {
+            $data = json_decode($response->getContent(false), true);
+            if (!str_contains((string) ($data['error']['type'] ?? ''), 'resource_already_exists_exception')) {
+                throw new RuntimeException('Elasticsearch could not initialize the Search inbox index.');
+            }
+        }
+    }
+    public function hasProcessedEvent(string $eventId): bool
+    {
+        $response = $this->http->request('GET', $this->url('autoflow-search-inbox-v1/_doc/' . rawurlencode($eventId)));
+        $status = $response->getStatusCode();
+        if ($status === 404) return false;
+        $data = $this->decode($response);
+        return ($data['found'] ?? false) === true;
+    }
+    public function markEventProcessed(string $eventId, string $eventType): void
+    {
+        $this->decode($this->http->request('PUT', $this->url('autoflow-search-inbox-v1/_doc/' . rawurlencode($eventId)), ['json' => [
+            'event_id' => $eventId, 'event_type' => $eventType, 'processed_at' => gmdate(DATE_ATOM),
+        ]]));
     }
     /** @param array<string,mixed> $query */
     public function search(array $query): array { return $this->decode($this->http->request('POST', $this->url($this->indexName . '/_search'), ['json' => $query])); }
@@ -61,6 +92,11 @@ final readonly class ElasticsearchClient
         $response = $this->http->request('DELETE', $this->url($index));
         $status = $response->getStatusCode();
         if ($status !== 404 && ($status < 200 || $status >= 300)) throw new RuntimeException('Elasticsearch could not delete temporary index: HTTP ' . $status . '.');
+    }
+    private function assertSuccess(ResponseInterface $response, string $operation): void
+    {
+        $status = $response->getStatusCode();
+        if ($status < 200 || $status >= 300) throw new RuntimeException(sprintf('Elasticsearch could not %s: HTTP %d.', $operation, $status));
     }
     private function decode(ResponseInterface $response): array
     {
