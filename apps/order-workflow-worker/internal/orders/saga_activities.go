@@ -16,6 +16,7 @@ type ReservationSagaCommand struct {
 	OrderID          string
 	VehicleVariantID string
 	ReservationID    string
+	ExpiresAt        string
 	CorrelationID    string
 }
 
@@ -23,7 +24,7 @@ func (a *Activities) RequestReservationHold(ctx context.Context, command Reserva
 	return publishReservationCommand(ctx, command, "reservation.hold.requested.v1", map[string]any{
 		"orderId": command.OrderID,
 		"vehicleVariantId": command.VehicleVariantID,
-		"expiresAt": time.Now().UTC().Add(23 * time.Hour).Format(time.RFC3339Nano),
+		"expiresAt": command.ExpiresAt,
 	})
 }
 
@@ -92,7 +93,7 @@ func publishReservationCommand(ctx context.Context, command ReservationSagaComma
 func newEventUUID(tenantID, orderID, eventType string) string {
 	sum := sha256.Sum256([]byte(tenantID + ":" + orderID + ":" + eventType))
 	bytes := sum[:16]
-	bytes[6] = (bytes[6] & 0x0f) | 0x50
+	bytes[6] = (bytes[6] & 0x0f) | 0x80
 	bytes[8] = (bytes[8] & 0x3f) | 0x80
 	encoded := hex.EncodeToString(bytes)
 	return encoded[:8] + "-" + encoded[8:12] + "-" + encoded[12:16] + "-" + encoded[16:20] + "-" + encoded[20:]
