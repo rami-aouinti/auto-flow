@@ -548,6 +548,7 @@ final readonly class CrmController
         if (!is_string($customerId) || !Uuid::isValid($customerId)) {
             throw new \DomainException('A valid customerId UUID is required.');
         }
+        $customerId = strtolower($customerId);
         $optional = [];
         foreach (['offerId' => 36, 'quoteId' => 128, 'vehicleId' => 128] as $field => $max) {
             $value = $body[$field] ?? null;
@@ -557,7 +558,7 @@ final readonly class CrmController
             if ($field === 'offerId' && $value !== null && !Uuid::isValid($value)) {
                 throw new \DomainException('offerId must be a UUID.');
             }
-            $optional[$field] = $value;
+            $optional[$field] = $field === 'offerId' && is_string($value) ? strtolower($value) : $value;
         }
         $message = $body['message'] ?? null;
         if ($message !== null && (!is_string($message) || strlen($message) > 4000)) {
