@@ -105,4 +105,4 @@ Tests:
 docker compose --env-file .env.example exec audit-service composer test
 ```
 
-See [OpenAPI](docs/openapi.yaml) for request/response contracts and error statuses.
+See [API reference](docs/API.md) for endpoint usage, parameters, scopes, examples and response codes. The machine-readable [OpenAPI contract](docs/openapi.yaml) is the per-service Swagger source; the aggregate contract is [docs/api/openapi.json](../../docs/api/openapi.json).
