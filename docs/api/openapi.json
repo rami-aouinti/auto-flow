@@ -73,6 +73,14 @@
     {
       "name": "Audit Service",
       "description": "Tenant-isolated append-only compliance journal."
+    },
+    {
+      "name": "Media Service",
+      "description": "Health-only scaffold; no business REST endpoints are implemented."
+    },
+    {
+      "name": "Workflow Service",
+      "description": "Health-only scaffold; no business REST endpoints are implemented."
     }
   ],
   "components": {
@@ -6590,10 +6598,12 @@
       "get": {
         "tags": [
           "Analytics Service",
-          "Integration Service"
+          "Integration Service",
+          "Media Service",
+          "Workflow Service"
         ],
         "summary": "Readiness probe",
-        "description": "Public PostgreSQL readiness endpoint; the same path is implemented by both services.",
+        "description": "Public PostgreSQL readiness endpoint; the same path is implemented by both services. Media checks configured TCP dependencies; Workflow checks Temporal at temporal:7233.",
         "responses": {
           "200": {
             "description": "Database is reachable"
@@ -6609,7 +6619,17 @@
             }
           }
         }
-      }
+      },
+      "servers": [
+        {
+          "url": "http://localhost:8103",
+          "description": "Media Service direct local URL"
+        },
+        {
+          "url": "http://localhost:8098",
+          "description": "Workflow Service direct local URL"
+        }
+      ]
     },
     "/api/configurations": {
       "get": {
@@ -8652,10 +8672,12 @@
       "get": {
         "tags": [
           "Analytics Service",
-          "Integration Service"
+          "Integration Service",
+          "Media Service",
+          "Workflow Service"
         ],
         "summary": "Liveness probe",
-        "description": "Public process liveness endpoint; the same path is implemented by both services.",
+        "description": "Public process liveness endpoint; the same path is implemented by both services. Media and Workflow expose the same health route.",
         "responses": {
           "200": {
             "description": "Service process is alive",
@@ -8675,6 +8697,42 @@
                 }
               }
             }
+          }
+        }
+      },
+      "servers": [
+        {
+          "url": "http://localhost:8103",
+          "description": "Media Service direct local URL"
+        },
+        {
+          "url": "http://localhost:8098",
+          "description": "Workflow Service direct local URL"
+        }
+      ]
+    },
+    "/health": {
+      "servers": [
+        {
+          "url": "http://localhost:8103",
+          "description": "Media Service direct local URL"
+        },
+        {
+          "url": "http://localhost:8098",
+          "description": "Workflow Service direct local URL"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Media Service",
+          "Workflow Service"
+        ],
+        "summary": "Liveness compatibility endpoint",
+        "description": "Both health-only scaffolds expose this compatibility route.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service process is alive"
           }
         }
       }
