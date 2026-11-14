@@ -39,6 +39,7 @@ const pageTitle = computed(() => {
   if (route.path.startsWith('/admin/catalog')) return 'Fahrzeugkatalog';
   if (route.path.startsWith('/admin/customers')) return 'Kunden';
   if (route.path.startsWith('/crm')) return 'CRM · Anträge';
+  if (route.path.startsWith('/operations/order/')) return 'Auftragsdossier';
   if (route.path.startsWith('/operations/workflow')) return 'Business Workflows';
   if (route.path.startsWith('/operations/events')) return 'Events & Errors';
   if (route.path.startsWith('/admin/customer-360')) return 'Customer 360';
@@ -52,7 +53,7 @@ function isActive(to: string) {
   if (to === '/admin') return route.path === to;
   if (to === '/operations/payments') return route.path === '/operations/orders' && route.query.tab === 'payments';
   if (to === '/operations/pricing') return route.path === '/operations/orders' && route.query.tab === 'quotes';
-  if (to === '/operations/orders') return route.path === to && (!route.query.tab || route.query.tab === 'orders');
+  if (to === '/operations/orders') return route.path === to && (!route.query.tab || route.query.tab === 'orders') || route.path.startsWith('/operations/order/');
   if (to === '/admin/catalog/manufacturers') return route.path.startsWith('/admin/catalog');
   return route.path === to || route.path.startsWith(`${to}/`);
 }
