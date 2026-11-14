@@ -3,7 +3,6 @@
 **Base URL:** http://localhost:8097  
 **Gateway URL:** http://localhost:8088  
 **Swagger UI:** http://localhost:8096 (central catalogue)  
-**OpenAPI source:** [docs/openapi.yaml](openapi.yaml)  
 **Authentication:** Keycloak RS256 bearer JWT, audience `autoflow-search`; requires `catalog:read` or `search:read`. Vehicle catalogue is shared master data, not tenant-owned.
 
 ## Endpoints
