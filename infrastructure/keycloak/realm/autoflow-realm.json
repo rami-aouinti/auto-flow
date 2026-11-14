@@ -215,6 +215,28 @@
             "access.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "analytics-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-analytics",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "integration-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "autoflow-integration",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
         }
       ],
       "defaultClientScopes": [
@@ -428,6 +450,28 @@
       "serviceAccountsEnabled": false,
       "authorizationServicesEnabled": false,
       "fullScopeAllowed": true
+    },
+    {
+      "clientId": "autoflow-analytics",
+      "name": "Analytics Service resource audience",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "autoflow-integration",
+      "name": "Integration Service resource audience",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
     }
   ],
   "users": [
@@ -487,7 +531,11 @@
         "reservations:write",
         "documents:read",
         "documents:write",
-        "documents:manage"
+        "documents:manage",
+        "analytics:read",
+        "analytics:events:write",
+        "integrations:read",
+        "integrations:write"
       ],
       "attributes": {
         "tenant_id": [
@@ -570,7 +618,11 @@
         "inventory:write",
         "documents:read",
         "documents:write",
-        "documents:manage"
+        "documents:manage",
+        "analytics:read",
+        "analytics:events:write",
+        "integrations:read",
+        "integrations:write"
       ],
       "attributes": {
         "tenant_id": [
@@ -784,6 +836,22 @@
       {
         "name": "documents:manage",
         "description": "Archive and delete tenant documents"
+      },
+      {
+        "name": "analytics:read",
+        "description": "Read tenant analytics KPIs and reports"
+      },
+      {
+        "name": "analytics:events:write",
+        "description": "Ingest trusted analytics events"
+      },
+      {
+        "name": "integrations:read",
+        "description": "Read integration providers and delivery status"
+      },
+      {
+        "name": "integrations:write",
+        "description": "Create and manage outbound integration deliveries"
       }
     ]
   }
