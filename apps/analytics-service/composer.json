@@ -1,0 +1,17 @@
+{
+  "name": "autoflow/analytics-service",
+  "description": "Tenant-scoped event-driven analytics projections.",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.4",
+    "ext-json": "*",
+    "ext-openssl": "*",
+    "ext-pdo": "*",
+    "ext-pdo_pgsql": "*",
+    "php-amqplib/php-amqplib": "^3.7"
+  },
+  "config": {"sort-packages": true, "platform": {"php": "8.4.0"}},
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
