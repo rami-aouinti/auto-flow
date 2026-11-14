@@ -7,8 +7,9 @@ Consumes PaymentCaptured, PaymentRefunded and PaymentPartiallyRefunded from auto
 API (Keycloak billing:read scope and tenant claim):
 - GET /api/v1/billing/invoices
 - GET /api/v1/billing/invoices/{id}
+- GET /api/v1/billing/invoices/{id}/document — downloadable PDF for legally complete issued invoices (drafts return 409)
 - GET /api/v1/billing/credit-notes
 - GET /api/v1/billing/credit-notes/{id}
 - GET /api/v1/billing/summary
 
-BILLING_TAX_RATE_BPS defaults to 1900 (19%). Amounts are treated as VAT-inclusive. This local default is not a multi-country VAT engine. Configure `BILLING_ISSUER_LEGAL_NAME`, `BILLING_ISSUER_TAX_NUMBER` or `BILLING_ISSUER_VAT_ID`, and `BILLING_ISSUER_ADDRESS_JSON` with the actual legal entity details before production. Jurisdiction-aware tax determination, statutory invoice fields, retention and PDF rendering/signing remain production requirements; the local 19% rate is not legal/tax advice.
+BILLING_TAX_RATE_BPS defaults to 1900 (19%). Amounts are treated as VAT-inclusive. This local default is not a multi-country VAT engine. Configure `BILLING_ISSUER_LEGAL_NAME`, `BILLING_ISSUER_TAX_NUMBER` or `BILLING_ISSUER_VAT_ID`, and `BILLING_ISSUER_ADDRESS_JSON` with the actual legal entity details before production. The PDF renderer uses the immutable issuer/recipient snapshot and refuses to render drafts. Jurisdiction-aware tax determination, country-specific statutory invoice fields, archival/retention, accounting exports and legal review remain production requirements; the local 19% rate is not legal/tax advice.
