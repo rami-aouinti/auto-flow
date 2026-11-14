@@ -130,7 +130,7 @@ $ch->basic_consume($q, '', false, false, false, false, static function (AMQPMess
                 'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
                 'message_id' => (string) ($m->get('message_id') ?? ''),
                 'type' => (string) ($m->get('type') ?? 'invalid'),
-                'application_headers' => new \\PhpAmqpLib\\Wire\\AMQPTable([
+                'application_headers' => new \PhpAmqpLib\Wire\AMQPTable([
                     'rejectionReason' => mb_substr($e->getMessage(), 0, 240),
                     'originalQueue' => 'autoflow.billing.payment-events',
                 ]),
