@@ -1169,11 +1169,16 @@ services:
     restart: unless-stopped
 
   document-object-storage:
-    image: minio/minio:latest
-    command: ["server", "/data", "--console-address", ":9001"]
+    image: rustfs/rustfs:latest
+    command: ["/data"]
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-autoflow}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-local-only-minio-password}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_ACCESS_KEY: ${DOCUMENT_S3_ACCESS_KEY:-AUTOFLOWDOCUMENT}
+      RUSTFS_SECRET_KEY: ${DOCUMENT_S3_SECRET_KEY:-local-only-document-object-secret}
+      RUSTFS_CHECK_UPDATE: "false"
     ports:
       - "127.0.0.1:9000:9000"
       - "127.0.0.1:9001:9001"
@@ -1182,26 +1187,35 @@ services:
     restart: unless-stopped
 
   document-object-storage-init:
-    image: minio/mc:latest
+    image: amazon/aws-cli:2
     depends_on:
       document-object-storage: {condition: service_started}
     entrypoint: ["/bin/sh", "-c"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${DOCUMENT_S3_ACCESS_KEY:-AUTOFLOWDOCUMENT}
+      AWS_SECRET_ACCESS_KEY: ${DOCUMENT_S3_SECRET_KEY:-local-only-document-object-secret}
+      AWS_DEFAULT_REGION: ${DOCUMENT_S3_REGION:-us-east-1}
+      AWS_EC2_METADATA_DISABLED: "true"
     command:
       - |
         set -e
-        mc alias set autoflow http://document-object-storage:9000 "${MINIO_ROOT_USER:-autoflow}" "${MINIO_ROOT_PASSWORD:-local-only-minio-password}" || (sleep 2 && mc alias set autoflow http://document-object-storage:9000 "${MINIO_ROOT_USER:-autoflow}" "${MINIO_ROOT_PASSWORD:-local-only-minio-password}") || (sleep 5 && mc alias set autoflow http://document-object-storage:9000 "${MINIO_ROOT_USER:-autoflow}" "${MINIO_ROOT_PASSWORD:-local-only-minio-password}")
-        mc mb --ignore-existing autoflow/autoflow-documents
-        cat > /tmp/document-policy.json <<'POLICY'
-        {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket"],"Resource":["arn:aws:s3:::autoflow-documents"]},{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:DeleteObject"],"Resource":["arn:aws:s3:::autoflow-documents/*"]}]}
-        POLICY
-        mc admin policy create autoflow document-service /tmp/document-policy.json || true
-        mc admin user add autoflow "${DOCUMENT_S3_ACCESS_KEY:-autoflow-document}" "${DOCUMENT_S3_SECRET_KEY:-local-only-document-object-secret}" || true
-        mc admin policy attach autoflow document-service --user "${DOCUMENT_S3_ACCESS_KEY:-autoflow-document}"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-autoflow}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-local-only-minio-password}
-      DOCUMENT_S3_ACCESS_KEY: ${DOCUMENT_S3_ACCESS_KEY:-autoflow-document}
-      DOCUMENT_S3_SECRET_KEY: ${DOCUMENT_S3_SECRET_KEY:-local-only-document-object-secret}
+        endpoint=http://document-object-storage:9000
+        bucket=autoflow-documents
+        echo "Waiting for RustFS and ensuring bucket $bucket exists..."
+        for attempt in $(seq 1 30); do
+          if aws --endpoint-url "$endpoint" s3api head-bucket --bucket "$bucket" >/dev/null 2>&1; then
+            echo "Bucket $bucket already exists."
+            exit 0
+          fi
+          if aws --endpoint-url "$endpoint" s3api create-bucket --bucket "$bucket" >/dev/null 2>&1; then
+            echo "Bucket $bucket created."
+            exit 0
+          fi
+          echo "RustFS is not ready yet ($attempt/30)..."
+          sleep 2
+        done
+        echo "Unable to create or access bucket $bucket."
+        exit 1
     restart: "no"
   document-service:
     build:
