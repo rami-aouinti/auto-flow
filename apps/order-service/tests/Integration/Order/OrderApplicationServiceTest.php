@@ -115,6 +115,7 @@ final class OrderApplicationServiceTest extends TestCase
             $input['offerId'],
             $input['quoteId'],
             $input['vehicleId'],
+            $input['customerId'],
         );
         self::assertSame($created['orderId'], $existing['orderId']);
     }
@@ -181,10 +182,15 @@ final class OrderApplicationServiceTest extends TestCase
     /** @return array<string, mixed> */
     private function validOrderInput(): array
     {
+        $customerId = Uuid::v7()->toRfc4122();
+
         return [
             'offerId' => Uuid::v7()->toRfc4122(),
             'quoteId' => Uuid::v7()->toRfc4122(),
             'vehicleId' => Uuid::v7()->toRfc4122(),
+            'customerId' => $customerId,
+            'customerVersion' => 1,
+            'customerSnapshot' => ['customerId' => $customerId, 'customerType' => 'individual'],
             'offerSnapshot' => ['version' => 1, 'validUntil' => '2030-01-01T00:00:00Z'],
             'quoteSnapshot' => ['currency' => 'EUR', 'monthlyAmount' => '329.00', 'durationMonths' => 48],
             'vehicleSnapshot' => ['manufacturer' => 'Example Motors', 'model' => 'E-1'],
