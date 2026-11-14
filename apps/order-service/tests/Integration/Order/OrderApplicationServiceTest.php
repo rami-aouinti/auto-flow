@@ -138,6 +138,7 @@ final class OrderApplicationServiceTest extends TestCase
             $input['offerId'],
             $input['quoteId'],
             $input['vehicleId'],
+            $input['customerId'],
         );
     }
 
