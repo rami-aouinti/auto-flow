@@ -33,7 +33,9 @@ final class MercureEvent
             ?? self::headerString($headers, 'tenant_id');
 
         if ($tenant === null || preg_match('/^[A-Za-z0-9._:-]{1,128}$/D', $tenant) !== 1) {
-            throw new UnexpectedValueException('Event has no valid tenant identifier; refusing cross-tenant publication.');
+            throw new UnexpectedValueException(
+                'Event has no valid tenant identifier; refusing cross-tenant publication.',
+            );
         }
 
         $eventType = (string) ($envelope['eventType'] ?? $envelope['event_type'] ?? $messageType ?? 'BusinessEvent');
@@ -50,7 +52,11 @@ final class MercureEvent
                 'occurredAt' => (string) ($envelope['occurredAt'] ?? $envelope['occurred_at'] ?? gmdate(DATE_ATOM)),
                 'aggregateType' => isset($aggregate['type']) ? mb_substr((string) $aggregate['type'], 0, 80) : null,
                 'aggregateId' => isset($aggregate['id']) ? mb_substr((string) $aggregate['id'], 0, 128) : null,
-                'message' => mb_substr($eventType . (isset($aggregate['id']) ? ' · ' . (string) $aggregate['id'] : ''), 0, 300),
+                'message' => mb_substr(
+                    $eventType . (isset($aggregate['id']) ? ' · ' . (string) $aggregate['id'] : ''),
+                    0,
+                    300,
+                ),
                 'producer' => mb_substr(self::headerString($headers, 'producer') ?? 'autoflow', 0, 80),
             ],
         ];
