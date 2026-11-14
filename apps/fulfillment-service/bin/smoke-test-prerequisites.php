@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Application\IntegrationEvent;
 use Doctrine\DBAL\DriverManager;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
