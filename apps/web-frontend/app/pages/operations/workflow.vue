@@ -39,7 +39,7 @@ async function loadAll() {
     contracts.list(50, 0), fulfillments.list(50, 0), inventory.units(50, 0), reservations.list(50, 0), billing.invoices(50, 0), billing.creditNotes(50, 0), billing.summary(),
   ]);
   const targets = [contractRows, fulfillmentRows, inventoryRows, reservationRows, invoiceRows, creditNoteRows];
-  jobs.forEach((job, index) => {
+  jobs.slice(0, 6).forEach((job, index) => {
     if (job.status === 'fulfilled') targets[index].value = items(job.value.data);
     else targets[index].value = [];
   });
