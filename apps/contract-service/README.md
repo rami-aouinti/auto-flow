@@ -9,7 +9,8 @@ Dedicated Contract bounded context. Contract owns the lifecycle of legal contrac
 - Capture immutable customer, offer, quote and vehicle snapshots from the Order response.
 - Keep contract type and version unique per tenant and order.
 - Prepare and cancel drafts with an explicit state machine.
-- Store audit history and versioned integration events in a transactional Outbox.
+- Store audit history and versioned integration event envelopes in a transactional Outbox, published to RabbitMQ with publisher confirms.
+- Render immutable PDF drafts to private persistent storage and verify SHA-256 on download.
 - Enforce tenant isolation with PostgreSQL RLS and a dedicated non-superuser database role.
 - Require an idempotency key for contract creation and lifecycle transitions.
 
@@ -34,13 +35,13 @@ Supported contract types: `vehicle_purchase`, `vehicle_lease`, `vehicle_subscrip
 ## Lifecycle and integration
 
 ```text
-draft ──prepare──> prepared ──provider adapter (future)──> awaiting_signature
+draft ──prepare──> prepared ──DocuSign JWT adapter──> awaiting_signature
   └────────────────cancel────────────────────────────────> cancelled
 prepared ─────────cancel─────────────────────────────────> cancelled
-awaiting_signature ──verified provider webhook (future)──> signed
+awaiting_signature ──verified DocuSign Connect webhook──> signed
 ```
 
-The lifecycle now supports `draft` → `prepared` → `awaiting_signature` → `signed`, with cancellation for draft/prepared/declined/voided contracts. PDF generation is server-side and stored on a private persistent volume. The DocuSign adapter uses the JWT OAuth grant, RSA private key, API account ID and a provider idempotency key. It returns 503 without changing state when credentials are missing or the provider does not confirm envelope creation. Only a verified DocuSign Connect HMAC webhook can move an awaiting contract to signed or cancelled; browser requests cannot mark a contract signed.
+The lifecycle supports `draft` → `prepared` → `awaiting_signature` → `signed`, with cancellation for draft/prepared/declined/voided contracts. PDF generation is server-side and stored on a private persistent volume. The DocuSign adapter uses the JWT OAuth grant, RSA private key, API account ID and a provider idempotency key. It returns 503 without changing state when credentials are missing or the provider does not confirm envelope creation. Only a verified DocuSign Connect HMAC webhook can move an awaiting contract to signed or cancelled; browser requests cannot mark a contract signed. Contract Outbox rows use the same versioned envelope contract consumed by Temporal.
 
 The legal snapshot contains the order ID/status at capture, customer ID/version and the customer, offer, quote and vehicle snapshots held by Order. It is immutable through this API. Snapshot size is capped at 128 KiB. No consent records are copied.
 
@@ -72,7 +73,7 @@ curl -i http://localhost:8090/health/ready
 
 The bootstrap migration is idempotent and applies to fresh and existing PostgreSQL volumes. Do not use `docker compose down -v` on a database containing data.
 
-DocuSign remains disabled until `DOCUSIGN_INTEGRATION_KEY`, `DOCUSIGN_USER_ID`, `DOCUSIGN_ACCOUNT_ID`, `DOCUSIGN_WEBHOOK_HMAC_KEY` and the RSA private key file at `DOCUSIGN_PRIVATE_KEY_PATH` are configured. Mount the private key read-only; never commit it. Configure DocuSign Connect to POST JSON to `/webhooks/docusign` and use the same HMAC key.
+DocuSign remains disabled until `DOCUSIGN_INTEGRATION_KEY`, `DOCUSIGN_USER_ID`, `DOCUSIGN_ACCOUNT_ID`, `DOCUSIGN_OAUTH_HOST`, `DOCUSIGN_API_BASE_URL`, `DOCUSIGN_WEBHOOK_HMAC_KEY` and the RSA private key file at `DOCUSIGN_PRIVATE_KEY_PATH` are configured. Mount the private key read-only; never commit it. Configure DocuSign Connect to POST JSON to `/webhooks/docusign` and use the same HMAC key.
 
 Keycloak imports the realm JSON only when the `autoflow` realm does not already exist. Existing local realms must be updated with the `autoflow-contract` audience mapper and `contracts:read/write/manage` roles; re-importing the realm file does not merge changes.
 
