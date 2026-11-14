@@ -1,44 +1,45 @@
 # Order Management Service — API Reference
 
-**Base URL:** http://localhost:8085  
-**Authentication:** Bearer JWT; orders:read, orders:write, orders:manage
+**Direct local URL:** http://localhost:8085  
+**Authentication:** Keycloak bearer JWT; audience `autoflow-order`, verified tenant claim and operation-specific roles. Creating an order also requires customers:read, offers:read, pricing:quote, catalog:read and the `autoflow-customer` audience.
 
-## Endpoints and arguments
+## HTTP endpoints
 
-| Method | Path | Arguments / body | Possible responses |
-|---|---|---|---|
-| POST | `/api/v1/orders` |  Idempotency-Key; body: offerId, quoteId, vehicleId, customerId | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| GET | `/api/v1/orders` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/v1/orders/{id}` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| POST | `/api/v1/orders/{id}/submit` |  Idempotency-Key | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/orders/{id}/review` |  Idempotency-Key | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/orders/{id}/accept` |  Idempotency-Key | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/orders/{id}/reject` |  Idempotency-Key; body: reason | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/orders/{id}/cancel` |  Idempotency-Key | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/orders/{id}/contract-pending` |  Idempotency-Key | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/orders/{id}/complete` |  Idempotency-Key | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
+| Method | Path | Permission / access | Purpose | Arguments and request body | Documented / expected responses |
+|---|---|---|---|---|---|
+| POST | /api/v1/orders | orders:write + customers:read + offers:read + pricing:quote + catalog:read | Create draft order after resolving and validating customer, offer, quote and vehicle snapshots. | Idempotency-Key required. JSON required: offerId, quoteId, vehicleId, customerId (UUID). Client snapshots are not trusted. | 201, 400, 403, 409, 422, 503 |
+| GET | /api/v1/orders | orders:read | List tenant orders. | limit? (1..100, default 20), offset? (default 0). | 200 |
+| GET | /api/v1/orders/{orderId} | orders:read | Retrieve order and immutable snapshots. | orderId (UUID path). | 200, 404 |
+| GET | /api/v1/orders/{orderId}/history | orders:read | Retrieve append-only lifecycle audit history. | orderId (UUID path). | 200, 404 |
+| POST | /api/v1/orders/{orderId}/submit | orders:write | Submit draft order. | orderId; Idempotency-Key required; no body documented. | 200, 409 |
+| POST | /api/v1/orders/{orderId}/review | orders:manage | Start manual review. | orderId; Idempotency-Key required; no body documented. | 200, 409 |
+| POST | /api/v1/orders/{orderId}/accept | orders:manage | Accept order. | orderId; Idempotency-Key required; no body documented. | 200, 409 |
+| POST | /api/v1/orders/{orderId}/reject | orders:manage | Reject order with reason. | orderId; Idempotency-Key required. JSON: reason (1..500 chars). | 200, 409 |
+| POST | /api/v1/orders/{orderId}/cancel | orders:write | Cancel where allowed. | orderId; Idempotency-Key required; no body documented. | 200, 409 |
+| POST | /api/v1/orders/{orderId}/contract-pending | orders:manage | Mark order as awaiting contract preparation. | orderId; Idempotency-Key required; no body documented. | 200 |
+| POST | /api/v1/orders/{orderId}/complete | orders:manage | Complete fulfilment. | orderId; Idempotency-Key required; no body documented. | 200 |
 
-## Common HTTP responses
+## Health and operations
 
-- **2xx:** request succeeded; GET returns a resource/collection, POST creates or transitions a resource, DELETE may return 204.
-- **400:** malformed JSON, invalid query parameters or malformed headers.
-- **401:** missing/invalid JWT (except explicitly public provider webhooks).
-- **403:** missing scope/role or tenant access.
-- **404:** resource does not exist or is outside the caller's tenant/ownership boundary.
-- **409:** invalid state transition, duplicate resource or idempotency-key conflict.
-- **412:** stale ETag/If-Match version for optimistic concurrency.
-- **422:** request is syntactically valid but violates domain validation.
-- **500 / 503:** unexpected server failure or unavailable dependency; no internal SQL/stack trace should be exposed.
+- GET /health/ready — readiness; no JWT.
 
-## Testing
+## Common response semantics
 
-Use the central Swagger UI at http://localhost:8096. Authenticate with the raw Keycloak access token when required. For commands requiring idempotency, send a unique `Idempotency-Key`; for versioned transitions copy the current `ETag` into `If-Match`.
+- `400`: malformed JSON, query string, or required header (when applicable).
+- `401`: missing/invalid bearer token on protected routes.
+- `403`: authenticated caller lacks the endpoint permission or tenant access.
+- `404`: resource is unknown or intentionally hidden by tenant/ownership isolation.
+- `409`: business lifecycle conflict or idempotency key reused for a different command.
+- `412`: stale `If-Match` version for optimistic concurrency.
+- `422`: syntactically valid request that fails domain validation.
+- `503`: required upstream service/dependency unavailable.
 
-## Contract maintenance
+Only status codes explicitly described in the service README or API contract are asserted in the endpoint table. Other statuses in the common section are general meanings and may not be emitted by every endpoint.
 
-This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+## Testing through Swagger UI
 
+Open [http://localhost:8096](http://localhost:8096). The gateway base URL is `http://localhost:8088`; service routes are forwarded without stripping their API path. Use the raw Keycloak access token in **Authorize** for protected services. For idempotent commands, provide a unique `Idempotency-Key`. For versioned commands, read the current response `ETag` and send it unchanged as `If-Match`.
 
-## Health and operational endpoints
+## Contract accuracy
 
-- `GET /health/ready` — readiness probe; no JWT.
+Request fields are marked as DTO-defined where the service README does not publish the full DTO. The central OpenAPI contract provides strict schemas only for request bodies whose complete fields are confirmed by service documentation. Keep this file and `docs/api/openapi.json` synchronized when changing controllers, validators or response DTOs.
