@@ -22,6 +22,7 @@ const sections = [
       { title: 'CRM · Anträge', subtitle: 'Kundenanträge & Beratung', icon: 'mdi-account-tie-outline', to: '/crm/applications' },
       { title: 'Service Operations', subtitle: 'Contracts, Billing, Stock & Fulfillment', icon: 'mdi-application-cog-outline', to: '/operations/services' },
       { title: 'Business Workflows', subtitle: 'Contracts, stock & delivery actions', icon: 'mdi-workflow-outline', to: '/operations/workflow' },
+      { title: 'Events & Errors', subtitle: 'Business activity and service failures', icon: 'mdi-pulse', to: '/operations/events' },
     ],
   },
   {
@@ -29,6 +30,7 @@ const sections = [
     items: [
       { title: 'Fahrzeugkatalog', subtitle: 'Marken, Modelle & Varianten', icon: 'mdi-car-cog', to: '/admin/catalog/manufacturers' },
       { title: 'Kunden', subtitle: 'Profile, Adressen & Einwilligungen', icon: 'mdi-account-group-outline', to: '/admin/customers' },
+      { title: 'Customer 360', subtitle: 'Aufträge, Verträge & Serviceverlauf', icon: 'mdi-account-box-multiple-outline', to: '/admin/customer-360' },
     ],
   },
 ];
@@ -38,6 +40,8 @@ const pageTitle = computed(() => {
   if (route.path.startsWith('/admin/customers')) return 'Kunden';
   if (route.path.startsWith('/crm')) return 'CRM · Anträge';
   if (route.path.startsWith('/operations/workflow')) return 'Business Workflows';
+  if (route.path.startsWith('/operations/events')) return 'Events & Errors';
+  if (route.path.startsWith('/admin/customer-360')) return 'Customer 360';
   if (route.path.startsWith('/operations/services')) return 'Service Operations';
   if (route.path.startsWith('/operations/orders')) return route.query.tab === 'payments' ? 'Payments' : route.query.tab === 'quotes' ? 'Pricing Quotes' : 'Aufträge';
   return 'Workspace';
@@ -108,6 +112,7 @@ function logout() {
         <span class="topbar-overline">AUTOFLOW / WORKSPACE</span>
         <span class="topbar-heading">{{ pageTitle }}</span>
       </v-toolbar-title>
+      <RealtimeNotifications />
       <v-spacer />
       <div class="environment-indicator d-none d-sm-flex"><span class="environment-dot" /> Services verbunden</div>
       <v-divider vertical inset class="mx-4 d-none d-sm-flex" />
