@@ -451,7 +451,7 @@ final readonly class ContractController
     }
 
     #[Route('/{contractId}/document', requirements: ['contractId' => '[0-9a-fA-F-]{36}'], methods: ['GET'])]
-    public function downloadDocument(Request $request, string $contractId): Response|JsonResponse
+    public function downloadDocument(Request $request, string $contractId): Response
     {
         try {
             $principal = $this->principal($request, 'contracts:read');
