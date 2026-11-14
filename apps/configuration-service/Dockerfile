@@ -6,6 +6,7 @@ WORKDIR /app
 COPY public/ /app/public/
 COPY migrations/ /app/migrations/
 COPY bin/ /app/bin/
+COPY tests/ /app/tests/
 RUN mkdir -p /var/lib/autoflow/configuration && chown -R www-data:www-data /app /var/lib/autoflow
 USER www-data
 ENV APP_ENV=prod

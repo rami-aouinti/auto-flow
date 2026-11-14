@@ -33,7 +33,7 @@ X-Autoflow-Auth-Verified: true
 {"value":"EUR","description":"Storefront currency","expectedVersion":0,"reason":"Initial setup"}
 ```
 
-A first write creates version 1. Subsequent writes increment the version. If expectedVersion is supplied, a mismatch returns 412. Version history is immutable. Rollback creates a new version rather than rewriting history.
+A first write creates version 1. Subsequent writes increment the version. Optimistic concurrency accepts the JSON `expectedVersion` field or the standard HTTP `If-Match: \"2\"` header; a mismatch returns 412. `If-Match: *` requires the resource to exist. Version history is immutable. Rollback creates a new version rather than rewriting history.
 
 ### Feature flag example
 
@@ -51,4 +51,4 @@ Evaluation is deterministic for a tenant and flag key. The allowlist overrides p
 
 ## Events and cache
 
-Writes append audit and outbox records in the same PostgreSQL transaction. Event types: `ConfigurationUpdated`, `FeatureFlagChanged`. Outbox delivery to RabbitMQ is a follow-up worker responsibility; the API does not claim events have been published. Redis invalidation is best-effort and never makes a successful database write fail.
+Writes append audit and outbox records in the same PostgreSQL transaction. Event types: `ConfigurationUpdated`, `FeatureFlagChanged`. The `configuration-outbox-publisher` worker publishes events to the durable `autoflow.configuration` topic exchange and `configuration.events` queue. Failed deliveries are retried with exponential backoff capped at five minutes. Delivery is at-least-once; downstream consumers must deduplicate by `eventId`/AMQP `message_id`. Redis invalidation is best-effort and never makes a successful database write fail.

@@ -21,10 +21,10 @@ function problem(int $status, string $title, string $detail, array $extra = []):
 function body(): array {
     $raw = file_get_contents('php://input');
     if ($raw === false || trim($raw) === '') return [];
-    try { $data = json_decode($raw, true, 512, JSON_THROW_ON_ERROR); }
+    try { $data = json_decode($raw, false, 512, JSON_THROW_ON_ERROR); }
     catch (JsonException) { problem(400, 'Bad Request', 'Request body must contain valid JSON.'); }
-    if (!is_array($data)) problem(400, 'Bad Request', 'JSON body must be an object.');
-    return $data;
+    if (!$data instanceof stdClass) problem(400, 'Bad Request', 'JSON body must be an object.');
+    return get_object_vars($data);
 }
 function uuid(): string {
     $b = random_bytes(16); $b[6] = chr((ord($b[6]) & 0x0f) | 0x40); $b[8] = chr((ord($b[8]) & 0x3f) | 0x80);
@@ -74,8 +74,19 @@ function cacheDelete(string $tenant, string $key): void {
     fwrite($socket, "*2\r\n$3\r\nDEL\r\n$".strlen($cacheKey)."\r\n".$cacheKey."\r\n");
     fclose($socket);
 }
+function expectedVersion(array $input): ?int {
+    $raw = $input['expectedVersion'] ?? ($_SERVER['HTTP_IF_MATCH'] ?? null);
+    if ($raw === null || $raw === '') return null;
+    if (is_string($raw)) {
+        $raw = trim($raw);
+        if ($raw === '*') return -1;
+        if (preg_match('/^(?:W\\/)?"?(\\d+)"?$/', $raw, $matches)) $raw = $matches[1];
+    }
+    if (!is_int($raw) && !(is_string($raw) && ctype_digit($raw))) problem(400, 'Bad Request', 'expectedVersion or If-Match must contain a non-negative version or *.');
+    return (int)$raw;
+}
 function jsonValue(mixed $value): array {
-    $type = match (true) { is_string($value)=>'string', is_int($value)||is_float($value)=>'number', is_bool($value)=>'boolean', is_array($value)&&array_is_list($value)=>'array', is_array($value)=>'object', $value===null=>'null', default=>null };
+    $type = match (true) { is_string($value)=>'string', is_int($value)||is_float($value)=>'number', is_bool($value)=>'boolean', $value instanceof stdClass=>'object', is_array($value)&&array_is_list($value)=>'array', is_array($value)=>'object', $value===null=>'null', default=>null };
     if ($type === null) problem(422, 'Unprocessable Content', 'Configuration value must be valid JSON data.');
     return [$type, json_encode($value, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)];
 }
@@ -133,12 +144,11 @@ if (str_starts_with($path, '/api/')) {
             if ($method === 'PUT' && !isset($m[3])) {
                 $input=body(); if (!array_key_exists('value',$input)) problem(422,'Unprocessable Content','The value field is required.');
                 [$type,$json]=jsonValue($input['value']);
-                $expected=$input['expectedVersion'] ?? null;
+                $expected=expectedVersion($input);
                 $pdo->beginTransaction();
                 $s=$pdo->prepare('SELECT version FROM configurations WHERE tenant_id=? AND namespace=? AND config_key=? FOR UPDATE');
                 $s->execute([$tenant,$namespace,$key]); $current=$s->fetch();
-                if ($current && $expected !== null && (int)$expected !== (int)$current['version']) { $pdo->rollBack(); problem(412,'Precondition Failed','Configuration version does not match expectedVersion.'); }
-                if (!$current && $expected !== null && (int)$expected !== 0) { $pdo->rollBack(); problem(412,'Precondition Failed','Configuration does not exist at expectedVersion.'); }
+                if ($expected !== null && (($expected === -1 && !$current) || ($expected >= 0 && $current && $expected !== (int)$current['version']) || ($expected >= 0 && !$current && $expected !== 0))) { $pdo->rollBack(); problem(412,'Precondition Failed','Configuration version does not match If-Match/expectedVersion.'); }
                 $version=$current ? (int)$current['version']+1 : 1;
                 $description=isset($input['description']) ? substr((string)$input['description'],0,500) : null;
                 if ($current) {
@@ -179,8 +189,8 @@ if (str_starts_with($path, '/api/')) {
                 $rollout=(int)($input['rolloutPercentage'] ?? 100); if ($rollout<0 || $rollout>100) problem(422,'Unprocessable Content','rolloutPercentage must be between 0 and 100.');
                 $allow=$input['tenantAllowlist'] ?? []; if (!is_array($allow) || count($allow)>500 || count(array_filter($allow,'is_string'))!==count($allow)) problem(422,'Unprocessable Content','tenantAllowlist must be an array of strings (maximum 500).');
                 $pdo->beginTransaction(); $s=$pdo->prepare('SELECT version FROM feature_flags WHERE tenant_id=? AND flag_key=? FOR UPDATE'); $s->execute([$tenant,$key]); $current=$s->fetch();
-                $expected=$input['expectedVersion']??null;
-                if ($current && $expected!==null && (int)$expected!==(int)$current['version']) { $pdo->rollBack(); problem(412,'Precondition Failed','Feature flag version does not match expectedVersion.'); }
+                $expected=expectedVersion($input);
+                if ($expected !== null && (($expected === -1 && !$current) || ($expected >= 0 && $current && $expected !== (int)$current['version']) || ($expected >= 0 && !$current && $expected !== 0))) { $pdo->rollBack(); problem(412,'Precondition Failed','Feature flag version does not match If-Match/expectedVersion.'); }
                 $version=$current?(int)$current['version']+1:1;
                 $description=isset($input['description'])?substr((string)$input['description'],0,500):null;
                 if ($current) $pdo->prepare('UPDATE feature_flags SET enabled=?,rollout_percentage=?,tenant_allowlist=?::jsonb,description=?,version=?,updated_by=?,updated_at=NOW() WHERE tenant_id=? AND flag_key=?')->execute([$input['enabled'],$rollout,json_encode(array_values(array_unique($allow))),$description,$version,$actor,$tenant,$key]);

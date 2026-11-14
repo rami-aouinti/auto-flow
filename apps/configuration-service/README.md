@@ -7,6 +7,7 @@ Tenant-scoped typed settings, immutable configuration versions, feature flags, r
 - Enforces tenant isolation in every database query.
 - Keeps immutable version history and optimistic concurrency via `expectedVersion` / ETag.
 - Writes audit and outbox records atomically with configuration changes.
+- Publishes outbox events asynchronously to RabbitMQ with retry/backoff and stable event IDs.
 - Invalidates matching Redis keys best-effort after a successful write.
 - Does **not** store secrets, API keys, credentials or private keys. These belong in a secret manager.
 - Does **not** own pricing policies, vehicle data, customer records or contract state.
@@ -58,3 +59,19 @@ Apply migrations in numerical order. The role migration creates `autoflow_config
 
 ## Outbox
 The API guarantees outbox persistence in the same transaction as a write. It does not claim RabbitMQ publication until a dedicated publisher/consumer worker is deployed.
+
+
+## Runtime worker and integration tests
+
+The `configuration-outbox-publisher` worker maintains the durable RabbitMQ topic exchange `autoflow.configuration`, queue `configuration.events` and binding `configuration.#`. It retries failed deliveries with exponential backoff capped at five minutes. Delivery is at-least-once; consumers must deduplicate by `eventId`/AMQP `message_id`.
+
+The idempotent `250-configuration-outbox-retry.sql` migration is applied by `postgres-bootstrap`, including on existing local PostgreSQL volumes.
+
+Run the end-to-end suite:
+
+```bash
+docker compose --env-file .env up -d --build postgres postgres-bootstrap redis rabbitmq configuration-service configuration-outbox-publisher
+docker compose --env-file .env --profile test run --rm configuration-integration-test
+```
+
+The suite covers readiness, JSON values, tenant isolation, version conflicts, HTTP `If-Match`, rollback, feature flags, audit records and RabbitMQ outbox delivery. GitHub Actions runs it for changes to this service.

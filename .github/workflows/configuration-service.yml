@@ -1,0 +1,36 @@
+name: Configuration Service
+on:
+  push:
+    paths: ["apps/configuration-service/**", "compose.yaml", ".github/workflows/configuration-service.yml"]
+  pull_request:
+    paths: ["apps/configuration-service/**", "compose.yaml", ".github/workflows/configuration-service.yml"]
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax
+        run: docker run --rm -v "$PWD/apps/configuration-service:/app" -w /app php:8.4-cli sh -lc 'find public bin tests -name "*.php" -print0 | xargs -0 -n1 php -l'
+      - name: Compose validation
+        run: docker compose config --quiet
+      - name: Start stack
+        run: docker compose up -d --build postgres postgres-bootstrap redis rabbitmq configuration-service configuration-outbox-publisher
+      - name: Wait for readiness
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8104/health/ready && exit 0
+            sleep 2
+          done
+          docker compose logs configuration-service postgres-bootstrap
+          exit 1
+      - name: Integration tests
+        run: docker compose --profile test run --rm -e CONFIGURATION_BASE_URL=http://configuration-service:8080 configuration-integration-test
+      - name: Failure logs
+        if: failure()
+        run: docker compose logs --no-color configuration-service configuration-outbox-publisher rabbitmq postgres-bootstrap
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
