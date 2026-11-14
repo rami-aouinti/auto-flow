@@ -75,6 +75,15 @@ The bootstrap migration is idempotent and applies to fresh and existing PostgreS
 
 DocuSign remains disabled until `DOCUSIGN_INTEGRATION_KEY`, `DOCUSIGN_USER_ID`, `DOCUSIGN_ACCOUNT_ID`, `DOCUSIGN_OAUTH_HOST`, `DOCUSIGN_API_BASE_URL`, `DOCUSIGN_WEBHOOK_HMAC_KEY` and the RSA private key file at `DOCUSIGN_PRIVATE_KEY_PATH` are configured. Mount the private key read-only; never commit it. Configure DocuSign Connect to POST JSON to `/webhooks/docusign` and use the same HMAC key.
 
+For a production deployment, copy `.env.production.example` to a protected `.env.production`, replace every placeholder with the registered legal entity and production DocuSign account values, and keep that file out of Git. The production override mounts the RSA key as a Docker secret at `/run/secrets/docusign_rsa_private_key`:
+
+```bash
+docker compose -f compose.yaml -f compose.production.yaml --env-file .env.production config --quiet
+docker compose -f compose.yaml -f compose.production.yaml --env-file .env.production up -d --build contract-service contract-outbox-publisher api-gateway
+```
+
+The production DocuSign hosts must be `account.docusign.com` and `https://www.docusign.net/restapi`; use the demo hosts only for sandbox testing. Complete JWT impersonation consent and verify the Connect HMAC configuration with a real signed callback before enabling customer signature traffic. The repository intentionally contains no real account IDs, legal tax identity, HMAC secret or private key, so production signing cannot be activated until the operator supplies them.
+
 Keycloak imports the realm JSON only when the `autoflow` realm does not already exist. Existing local realms must be updated with the `autoflow-contract` audience mapper and `contracts:read/write/manage` roles; re-importing the realm file does not merge changes.
 
 ## Remaining production gates
