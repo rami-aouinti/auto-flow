@@ -1,0 +1,28 @@
+{
+  "name": "autoflow/search-service",
+  "description": "Tenant-safe AutoFlow vehicle search backed by Elasticsearch.",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": "^8.4",
+    "ext-json": "*",
+    "ext-pdo": "*",
+    "ext-pdo_pgsql": "*",
+    "symfony/framework-bundle": "7.4.*",
+    "symfony/http-client": "7.4.*",
+    "symfony/yaml": "7.4.*",
+    "autoflow/core-bundle": "^2.0"
+  },
+  "repositories": [
+    {"type": "path", "url": "../../packages/core-bundle", "options": {"symlink": false}}
+  ],
+  "autoload": {"psr-4": {"App\\": "src/"}},
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {"symfony/flex": true},
+    "platform": {"php": "8.4.0"}
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "extra": {"symfony": {"require": "7.4.*"}}
+}
