@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Presentation\Http\Controller;
 
+use App\Domain\ApplicationLifecycle;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
