@@ -83,10 +83,21 @@ INSERT INTO pricing_policies(
  policy_id,tenant_id,version,status,minimum_duration_months,maximum_duration_months,
  minimum_annual_rate_bps,maximum_annual_rate_bps,quote_validity_days,calculation_version,created_by,published_at
 ) VALUES (
- '123e4567-e89b-42d3-a456-426614174000','tenant-demo',1,'active',12,72,0,2000,7,
- 'lease-annuity-v1','demo-fixtures',CURRENT_TIMESTAMP
+ '123e4567-e89b-42d3-a456-426614174000','tenant-demo',1,'draft',12,72,0,2000,7,
+ 'lease-annuity-v1','demo-fixtures',NULL
 )
 ON CONFLICT (policy_id) DO NOTHING;
+
+-- Activate the fixture policy only when this tenant has no other active policy.
+UPDATE pricing_policies
+SET status='active', published_at=CURRENT_TIMESTAMP
+WHERE policy_id='123e4567-e89b-42d3-a456-426614174000'
+  AND tenant_id='tenant-demo'
+  AND status='draft'
+  AND NOT EXISTS (
+    SELECT 1 FROM pricing_policies p
+    WHERE p.tenant_id='tenant-demo' AND p.status='active'
+  );
 
 INSERT INTO pricing_quotes(
  quote_id,tenant_id,created_by,vehicle_id,monthly_amount_minor,total_installments_minor,total_cost_minor,
