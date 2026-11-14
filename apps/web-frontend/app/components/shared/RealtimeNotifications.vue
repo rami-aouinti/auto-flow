@@ -10,6 +10,7 @@ const connection = ref<'disabled' | 'connecting' | 'connected' | 'reconnecting'>
 const notices = ref<Notice[]>([]);
 const menu = ref(false);
 let source: EventSource | null = null;
+let renewalTimer: ReturnType<typeof setTimeout> | undefined;
 let disposed = false;
 
 async function connect() {
@@ -25,6 +26,12 @@ async function connect() {
     if (disposed) return;
     const topic = access.data?.topic;
     if (typeof topic !== 'string' || !topic) throw new Error('Mercure topic is missing.');
+    if (renewalTimer) clearTimeout(renewalTimer);
+    renewalTimer = setTimeout(() => {
+      source?.close();
+      source = null;
+      void connect();
+    }, 4 * 60 * 1000);
     const url = new URL(hubUrl, window.location.origin);
     url.searchParams.append('topic', topic);
     source = new EventSource(url.toString(), { withCredentials: true });
@@ -58,6 +65,7 @@ function clear() {
 onMounted(() => { void connect(); });
 onBeforeUnmount(() => {
   disposed = true;
+  if (renewalTimer) clearTimeout(renewalTimer);
   source?.close();
   source = null;
 });
