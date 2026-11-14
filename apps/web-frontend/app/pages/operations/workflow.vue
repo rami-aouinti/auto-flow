@@ -27,7 +27,7 @@ const deliveryFailureReason = ref('');
 
 const key = () => globalThis.crypto?.randomUUID?.() ?? `af-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 function items(data: any): Row[] { return Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []); }
-function idOf(row: Row, field: string): string { return String(row[field] ?? row.id ?? ''); }
+function idOf(row: Row, field: string): string { const camel = field.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase()); return String(row[field] ?? row[camel] ?? row.id ?? ''); }
 function clearMessages() { error.value = ''; notice.value = ''; }
 
 async function loadAll() {
@@ -200,7 +200,7 @@ onMounted(loadAll);
           <v-card-title>Vehicle reservations <v-spacer /><v-chip>{{ reservationRows.length }}</v-chip></v-card-title>
           <v-table><thead><tr><th>Reservation</th><th>Vehicle unit</th><th>Order</th><th>Status</th><th>Expires</th><th>Actions</th></tr></thead>
             <tbody><tr v-for="row in reservationRows" :key="idOf(row,'reservation_id')">
-              <td class="text-caption">{{ idOf(row,'reservation_id') }}</td><td class="text-caption">{{ row.vehicle_unit_id }}</td><td class="text-caption">{{ row.order_id }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.expires_at || row.expiresAt }}</td>
+              <td class="text-caption">{{ idOf(row,'reservation_id') }}</td><td class="text-caption">{{ row.vehicle_unit_id || row.vehicleUnitId }}</td><td class="text-caption">{{ row.order_id || row.orderId }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.expires_at || row.expiresAt }}</td>
               <td class="d-flex ga-1"><v-btn v-if="row.status === 'held'" size="small" variant="tonal" @click="reservationAction(row,'confirm')">Confirm</v-btn><v-btn v-if="['held','confirmed'].includes(row.status)" size="small" color="error" variant="text" @click="reservationAction(row,'release')">Release</v-btn><v-btn v-if="row.status === 'confirmed'" size="small" variant="tonal" @click="reservationAction(row,'fulfill')">Fulfill</v-btn></td>
             </tr><tr v-if="!reservationRows.length"><td colspan="6" class="text-center text-medium-emphasis py-6">No reservations found.</td></tr></tbody>
           </v-table>
@@ -213,7 +213,7 @@ onMounted(loadAll);
           <v-card-text class="text-body-2 text-medium-emphasis">Commands use the latest record version through If-Match. Refresh after a 412 response before retrying.</v-card-text>
           <v-table><thead><tr><th>Fulfillment</th><th>Order</th><th>Status</th><th>Delivery</th><th>Actions</th></tr></thead>
             <tbody><tr v-for="row in fulfillmentRows" :key="idOf(row,'fulfillment_id')">
-              <td class="text-caption">{{ idOf(row,'fulfillment_id') }}<div class="text-caption text-medium-emphasis">v{{ row.version }}</div></td><td class="text-caption">{{ row.order_id }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.scheduled_for || row.scheduledFor || '—' }}</td>
+              <td class="text-caption">{{ idOf(row,'fulfillment_id') }}<div class="text-caption text-medium-emphasis">v{{ row.version }}</div></td><td class="text-caption">{{ row.order_id || row.orderId }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.scheduled_for || row.scheduledFor || '—' }}</td>
               <td><div class="d-flex flex-wrap ga-1">
                 <v-btn v-if="row.status === 'ready_for_preparation'" size="small" variant="tonal" @click="fulfillmentAction(row,'preparation/start')">Start prep</v-btn>
                 <v-btn v-if="row.status === 'preparing'" size="small" variant="tonal" @click="fulfillmentAction(row,'preparation/complete')">Complete prep</v-btn>
