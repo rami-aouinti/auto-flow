@@ -49,7 +49,9 @@ final readonly class HttpOrderPaymentContextProvider implements OrderPaymentCont
                 || ($payload['orderId'] ?? null) !== $orderId
                 || ($payload['status'] ?? null) !== 'accepted'
                 || !is_int($payload['amountMinor'] ?? null)
-                || !is_string($payload['currency'] ?? null)) {
+                || !is_string($payload['currency'] ?? null)
+                || !is_array($payload['billingSnapshot'] ?? null)
+                || array_is_list($payload['billingSnapshot'])) {
                 throw new DomainException('Order payment context is invalid or not payable.');
             }
             return $payload;
