@@ -24,7 +24,7 @@ Business routes require Keycloak RS256 JWT verification, audience `autoflow-anal
 
 ## Event processing
 
-The `analytics-event-consumer` worker binds a durable queue to the existing AutoFlow domain event exchanges. It normalizes event envelopes, rejects malformed events to a dead-letter queue and deduplicates redelivery using the database unique key. The consumer is at-least-once; downstream projections must remain idempotent.
+The `analytics-event-consumer` worker binds a durable queue to the existing AutoFlow domain event exchanges. It normalizes event envelopes, rejects malformed events to a dead-letter queue, retries transient projection failures through a five-second delayed queue up to three times, and deduplicates redelivery using the database unique key. The consumer is at-least-once; downstream projections must remain idempotent.
 
 ## Database and fixtures
 
