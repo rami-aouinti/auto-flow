@@ -20,7 +20,7 @@ final readonly class MercureAccessController
         $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
         if (!$principal instanceof AuthenticatedPrincipal || !$principal->tenantId
             || (!$principal->hasScope('customers:read') && !$principal->hasScope('customers:portal'))) {
-            throw new AccessDeniedHttpException('A tenant-scoped customer permission is required.');
+            return new JsonResponse(['type' => 'about:blank', 'title' => 'Forbidden', 'status' => 403, 'detail' => 'A tenant-scoped customer permission is required.'], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
         }
 
         $key = getenv('MERCURE_SUBSCRIBER_JWT_KEY') ?: '';
