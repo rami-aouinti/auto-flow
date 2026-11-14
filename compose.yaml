@@ -69,6 +69,7 @@ services:
       pricing-service: {condition: service_healthy}
       vehicle-catalog-service: {condition: service_healthy}
       order-service: {condition: service_healthy}
+      document-service: {condition: service_healthy}
       payment-service: {condition: service_healthy}
       billing-service: {condition: service_healthy}
       customer-service: {condition: service_healthy}
@@ -412,6 +413,441 @@ services:
       BILLING_ISSUER_TAX_NUMBER: ${BILLING_ISSUER_TAX_NUMBER:-}
       BILLING_ISSUER_VAT_ID: ${BILLING_ISSUER_VAT_ID:-}
       BILLING_ISSUER_ADDRESS_JSON: ${BILLING_ISSUER_ADDRESS_JSON:-}
+      DOCUMENT_SERVICE_URL: ${DOCUMENT_SERVICE_URL:-http://document-service:8080}
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      OTEL_SERVICE_NAME: autoflow-billing-service
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_PHP_EXCLUDED_URLS: ^/health
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+services:
+  # Central Swagger UI for local development; never expose this in production.
+  api-docs:
+    image: swaggerapi/swagger-ui:v5.18.2
+    environment:
+      URL: /openapi.json
+      DOC_EXPANSION: none
+      FILTER: "true"
+      DISPLAY_REQUEST_DURATION: "true"
+    ports:
+      - "127.0.0.1:8096:8080"
+    volumes:
+      - ./docs/api/openapi.json:/usr/share/nginx/html/openapi.json:ro
+    restart: unless-stopped
+
+  # Single HTTP entry point for browser, mobile and external API clients.
+  # Backend ports remain published for local diagnostics; clients should use :8088.
+  api-gateway:
+    image: traefik:v3.6.2
+    command:
+      - "--global.checknewversion=false"
+      - "--global.sendanonymoususage=false"
+      - "--api.dashboard=false"
+      - "--api.insecure=false"
+      - "--ping=true"
+      - "--ping.entrypoint=traefik"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.traefik.address=:8081"
+      - "--entrypoints.web.transport.respondingTimeouts.readTimeout=30s"
+      - "--entrypoints.web.transport.respondingTimeouts.writeTimeout=30s"
+      - "--entrypoints.web.transport.respondingTimeouts.idleTimeout=90s"
+      - "--serversTransport.forwardingTimeouts.dialTimeout=5s"
+      - "--serversTransport.forwardingTimeouts.responseHeaderTimeout=30s"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+      - "--accesslog.fields.headers.defaultmode=drop"
+      - "--log.level=INFO"
+      - "--log.format=json"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.entrypoint=traefik"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addRoutersLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+    ports:
+      - "8088:80"
+    expose:
+      - "8081"
+    volumes:
+      - ./infrastructure/gateway/dynamic.yml:/etc/traefik/dynamic/dynamic.yml:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--entryPoints.traefik.address=:8081", "--ping.entryPoint=traefik", "--ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      offer-service: {condition: service_healthy}
+      pricing-service: {condition: service_healthy}
+      vehicle-catalog-service: {condition: service_healthy}
+      order-service: {condition: service_healthy}
+      document-service: {condition: service_healthy}
+      payment-service: {condition: service_healthy}
+      billing-service: {condition: service_healthy}
+      customer-service: {condition: service_healthy}
+      contract-service: {condition: service_healthy}
+      fulfillment-service: {condition: service_healthy}
+      vehicle-reservation-service: {condition: service_healthy}
+      inventory-service: {condition: service_healthy}
+      crm-service: {condition: service_healthy}
+      search-service: {condition: service_healthy}
+      document-service: {condition: service_healthy}
+      audit-service: {condition: service_healthy}
+      analytics-service: {condition: service_healthy}
+      integration-service: {condition: service_healthy}
+
+  # Local LLM runtime. Models are persisted in the ollama-data volume.
+  ollama:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    ports: ["127.0.0.1:11434:11434"]
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  # Download the configured model once; the named volume is shared with Ollama.
+  ollama-model-init:
+    image: ollama/ollama:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull \"$OLLAMA_MODEL\""]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+    volumes:
+      - ollama-data:/root/.ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/ai-service
+        COMPOSER_NO_DEV: ""
+    ports: ["127.0.0.1:8095:8080"]
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: ${AI_APP_SECRET:-local-only-ai-service-secret}
+      DEFAULT_URI: http://localhost:8095
+      AI_PROVIDER: ollama
+      OLLAMA_BASE_URI: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+    depends_on:
+      ollama-model-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    init: true
+    restart: unless-stopped
+
+  fulfillment-service:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/fulfillment-service
+        COMPOSER_NO_DEV: ""
+    ports: ["8091:8080"]
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: local-only-fulfillment-service-secret
+      FULFILLMENT_DATABASE_URL: \${FULFILLMENT_DATABASE_URL:-postgresql://autoflow_fulfillment:local-only-fulfillment-password@postgres:5432/autoflow}
+      AUTOFLOW_JWT_ISSUER: \${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: \${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      OTEL_SERVICE_NAME: autoflow-fulfillment-service
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_PHP_EXCLUDED_URLS: ^/health
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      keycloak: {condition: service_started}
+      tempo: {condition: service_started}
+      alloy: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    init: true
+    restart: unless-stopped
+
+  vehicle-reservation-service:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/vehicle-reservation-service
+        COMPOSER_NO_DEV: ""
+    ports: ["8092:8080"]
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: local-only-vehicle-reservation-service-secret
+      RESERVATION_DATABASE_URL: ${RESERVATION_DATABASE_URL:-postgresql://autoflow_reservation:local-only-reservation-password@postgres:5432/autoflow}
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      OTEL_SERVICE_NAME: autoflow-vehicle-reservation-service
+      OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      OTEL_METRIC_EXPORT_TIMEOUT: "5000"
+      OTEL_LOGS_EXPORTER: none
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: http://alloy:4318/v1/metrics
+      OTEL_PROPAGATORS: tracecontext,baggage
+      OTEL_PHP_EXCLUDED_URLS: ^/health
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      keycloak: {condition: service_started}
+      tempo: {condition: service_started}
+      alloy: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$context = stream_context_create(['http' => ['timeout' => 5, 'ignore_errors' => true]]); $$body = @file_get_contents('http://127.0.0.1:8080/health/ready', false, $$context); $$status = $$http_response_header[0] ?? ''; exit($$body !== false && str_contains($$status, ' 200 ') ? 0 : 1);"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    init: true
+    restart: unless-stopped
+
+  reservation-expiry-worker:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/vehicle-reservation-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/expire-reservations.php"]
+    environment:
+      APP_ENV: prod
+      RESERVATION_WORKER_DATABASE_URL: ${RESERVATION_WORKER_DATABASE_URL:-postgresql://autoflow_reservation_worker:local-only-reservation-worker-password@postgres:5432/autoflow}
+      RESERVATION_EXPIRY_INTERVAL_SECONDS: ${RESERVATION_EXPIRY_INTERVAL_SECONDS:-5}
+      RESERVATION_EXPIRY_BATCH_SIZE: ${RESERVATION_EXPIRY_BATCH_SIZE:-100}
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+    init: true
+    restart: unless-stopped
+
+  reservation-outbox-publisher:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/vehicle-reservation-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/publish-outbox.php"]
+    environment:
+      APP_ENV: prod
+      RESERVATION_PUBLISHER_DATABASE_URL: ${RESERVATION_PUBLISHER_DATABASE_URL:-postgresql://autoflow_reservation_publisher:local-only-reservation-publisher-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  reservation-saga-command-consumer:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/vehicle-reservation-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/consume-saga-commands.php"]
+    environment:
+      APP_ENV: prod
+      RESERVATION_WORKER_DATABASE_URL: ${RESERVATION_WORKER_DATABASE_URL:-postgresql://autoflow_reservation_worker:local-only-reservation-worker-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  reservation-inventory-event-consumer:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/vehicle-reservation-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/consume-inventory-events.php"]
+    environment:
+      APP_ENV: prod
+      RESERVATION_WORKER_DATABASE_URL: ${RESERVATION_WORKER_DATABASE_URL:-postgresql://autoflow_reservation_worker:local-only-reservation-worker-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  fulfillment-event-consumer:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/fulfillment-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/consume-events.php"]
+    environment:
+      APP_ENV: prod
+      FULFILLMENT_DATABASE_URL: \${FULFILLMENT_DATABASE_URL:-postgresql://autoflow_fulfillment:local-only-fulfillment-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: \${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: \${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  fulfillment-outbox-publisher:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/fulfillment-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/publish-outbox.php"]
+    environment:
+      APP_ENV: prod
+      FULFILLMENT_PUBLISHER_DATABASE_URL: \${FULFILLMENT_PUBLISHER_DATABASE_URL:-postgresql://autoflow_fulfillment_publisher:local-only-fulfillment-publisher-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: \${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: \${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  contract-outbox-publisher:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/contract-service
+        COMPOSER_NO_DEV: "--no-dev"
+        ROADRUNNER_BOOT_CHECK: "0"
+    command: ["php", "bin/publish-outbox.php"]
+    environment:
+      APP_ENV: prod
+      CONTRACT_PUBLISHER_DATABASE_URL: \${CONTRACT_PUBLISHER_DATABASE_URL:-postgresql://autoflow_contract_publisher:local-only-contract-publisher-password@postgres:5432/autoflow}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: \${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: \${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_VHOST: /
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      rabbitmq: {condition: service_healthy}
+    restart: unless-stopped
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: docker/php/service.Dockerfile
+      args:
+        SERVICE_PATH: apps/billing-service
+        COMPOSER_NO_DEV: ""
+    ports: ["8087:8080"]
+    environment:
+      APP_ENV: ${BILLING_APP_ENV:-prod}
+      APP_DEBUG: ${BILLING_APP_DEBUG:-0}
+      APP_SECRET: local-only-billing-service-secret
+      DEFAULT_URI: http://localhost:8087
+      BILLING_DATABASE_URL: ${BILLING_DATABASE_URL:-postgresql://autoflow_billing:local-only-billing-password@postgres:5432/autoflow}
+      BILLING_TAX_RATE_BPS: ${BILLING_TAX_RATE_BPS:-1900}
+      BILLING_ISSUER_LEGAL_NAME: ${BILLING_ISSUER_LEGAL_NAME:-}
+      BILLING_ISSUER_TAX_NUMBER: ${BILLING_ISSUER_TAX_NUMBER:-}
+      BILLING_ISSUER_VAT_ID: ${BILLING_ISSUER_VAT_ID:-}
+      BILLING_ISSUER_ADDRESS_JSON: ${BILLING_ISSUER_ADDRESS_JSON:-}
+      DOCUMENT_SERVICE_URL: ${DOCUMENT_SERVICE_URL:-http://document-service:8080}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-billing-service
@@ -431,6 +867,7 @@ services:
       postgres: {condition: service_healthy}
       postgres-bootstrap: {condition: service_completed_successfully}
       rabbitmq: {condition: service_healthy}
+      document-service: {condition: service_healthy}
       tempo: {condition: service_started}
       alloy: {condition: service_started}
       keycloak: {condition: service_started}
@@ -666,6 +1103,7 @@ services:
       CONTRACT_DATABASE_URL: ${CONTRACT_DATABASE_URL:-postgresql://autoflow_contract:local-only-contract-password@postgres:5432/autoflow}
       CONTRACT_ORDER_SERVICE_URL: ${CONTRACT_ORDER_SERVICE_URL:-http://order-service:8080}
       CONTRACT_DOCUMENT_STORAGE_PATH: /var/lib/autoflow/contracts
+      DOCUMENT_SERVICE_URL: ${DOCUMENT_SERVICE_URL:-http://document-service:8080}
       DOCUSIGN_INTEGRATION_KEY: ${DOCUSIGN_INTEGRATION_KEY:-}
       DOCUSIGN_USER_ID: ${DOCUSIGN_USER_ID:-}
       DOCUSIGN_ACCOUNT_ID: ${DOCUSIGN_ACCOUNT_ID:-}
@@ -1809,6 +2247,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/170-billing-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/171-billing-inbox-payload-hash.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/172-billing-credit-note-snapshot.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/173-billing-document-references.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/180-customer-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/181-customer-keycloak-subject.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/182-local-customer-portal-seed.sql
@@ -1859,6 +2298,7 @@ services:
       - ./apps/billing-service/migrations/170-billing-schema.sql:/migrations/170-billing-schema.sql:ro
       - ./apps/billing-service/migrations/171-billing-inbox-payload-hash.sql:/migrations/171-billing-inbox-payload-hash.sql:ro
       - ./apps/billing-service/migrations/172-billing-credit-note-snapshot.sql:/migrations/172-billing-credit-note-snapshot.sql:ro
+      - ./apps/billing-service/migrations/173-billing-document-references.sql:/migrations/173-billing-document-references.sql:ro
       - ./apps/customer-service/migrations/00-customer-schema.sql:/migrations/180-customer-schema.sql:ro
       - ./apps/customer-service/migrations/181-customer-keycloak-subject.sql:/migrations/181-customer-keycloak-subject.sql:ro
       - ./apps/customer-service/migrations/182-local-customer-portal-seed.sql:/migrations/182-local-customer-portal-seed.sql:ro
