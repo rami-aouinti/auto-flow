@@ -95,8 +95,15 @@ final readonly class HttpOrderReferenceValidator implements OrderReferenceValida
         }
 
         // Keep only fields required to understand the order later. Never copy consent data.
+        $displayName = ($customer['customer_type'] ?? null) === 'company'
+            ? trim((string) ($customer['legal_name'] ?? ''))
+            : trim((string) ($customer['first_name'] ?? '') . ' ' . (string) ($customer['last_name'] ?? ''));
+        if ($displayName === '') {
+            $displayName = trim((string) ($customer['legal_name'] ?? ''));
+        }
         $customerSnapshot = [
             'customerId' => $customerId,
+            'displayName' => $displayName,
             'customerType' => $customer['customer_type'] ?? null,
             'firstName' => $customer['first_name'] ?? null,
             'lastName' => $customer['last_name'] ?? null,
