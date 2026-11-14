@@ -51,6 +51,7 @@ const pageTitle = computed(() => {
 const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'AutoFlow User');
 const environmentLabel = import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'LOCAL';
 const canUseCustomerPortal = computed(() => $keycloak.hasRealmRole('customers:portal'));
+const canViewOperations = computed(() => $keycloak.hasRealmRole('customers:read'));
 
 function isActive(to: string) {
   if (to === '/admin') return route.path === to;
@@ -116,7 +117,7 @@ function logout() {
         <span class="topbar-overline">AUTOFLOW / WORKSPACE</span>
         <span class="topbar-heading">{{ pageTitle }}</span>
       </v-toolbar-title>
-      <RealtimeNotifications />
+      <RealtimeNotifications v-if="canViewOperations" />
       <v-spacer />
       <div class="environment-indicator d-none d-sm-flex"><v-icon size="small" icon="mdi-monitor-dashboard" /> API-Status im Kontrollzentrum</div>
       <v-divider vertical inset class="mx-4 d-none d-sm-flex" />
