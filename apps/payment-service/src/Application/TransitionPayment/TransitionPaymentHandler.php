@@ -92,7 +92,8 @@ final readonly class TransitionPaymentHandler
                 );
             }
             $this->db->update('payments', ['status' => $newStatus,'updated_at' => $this->clock->now()->format(DATE_ATOM)], ['tenant_id' => $tenant,'payment_id' => $paymentId]);
-            $payload = ['paymentId' => $paymentId,'orderId' => $row['order_id'],'status' => $newStatus,'operation' => $operation,'amountMinor' => (int)$row['amount_minor'],'currency' => (string)$row['currency'],'refundAmountMinor' => $operation === 'refund' ? $refundAmount : null,'amountRefundedMinor' => $operation === 'refund' ? (int)$row['amount_refunded_minor'] + (int)$refundAmount : (int)$row['amount_refunded_minor']];
+            $billingSnapshot = is_array($row['billing_snapshot']) ? $row['billing_snapshot'] : json_decode((string) ($row['billing_snapshot'] ?? '{}'), true, 512, JSON_THROW_ON_ERROR);
+            $payload = ['paymentId' => $paymentId,'orderId' => $row['order_id'],'billingSnapshot' => $billingSnapshot,'status' => $newStatus,'operation' => $operation,'amountMinor' => (int)$row['amount_minor'],'currency' => (string)$row['currency'],'refundAmountMinor' => $operation === 'refund' ? $refundAmount : null,'amountRefundedMinor' => $operation === 'refund' ? (int)$row['amount_refunded_minor'] + (int)$refundAmount : (int)$row['amount_refunded_minor']];
             $eventType = match ($operation) {
                 'capture' => 'PaymentCaptured',
                 'refund' => $newStatus === 'refunded' ? 'PaymentRefunded' : 'PaymentPartiallyRefunded',
