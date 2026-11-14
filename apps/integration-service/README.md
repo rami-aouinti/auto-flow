@@ -54,6 +54,8 @@ docker compose --env-file .env.example ps integration-service integration-delive
 curl -i http://localhost:8099/health/ready
 ```
 
+Run smoke checks with `sh apps/integration-service/tests/smoke.sh`. Outbound delivery requires the target hostname to be listed in `INTEGRATION_OUTBOUND_ALLOWED_HOSTS`.
+
 Swagger UI: http://localhost:8096. The webhook route is also exposed through the API gateway at `http://localhost:8088/webhooks/{provider}`.
 
 ## Security and remaining provider-specific work
