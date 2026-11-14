@@ -19,6 +19,7 @@ The central OpenAPI 3.0 catalog contains the HTTP endpoints for all API-bearing 
 - [Inventory Service](../../apps/inventory-service/docs/API.md) — http://localhost:8093
 - [CRM Service](../../apps/crm-service/docs/API.md) — http://localhost:8094
 - [AI Service](../../apps/ai-service/docs/API.md) — http://localhost:8095
+- [Search Service](../../apps/search-service/README.md) — http://localhost:8097
 - [Notification Service](../../apps/notification-service/docs/API.md) — RabbitMQ worker; no public REST API
 
 ## Start
@@ -49,4 +50,4 @@ The service docs intentionally do not fabricate response properties or request f
 
 ## Health-only service scaffolds
 
-Search, Workflow, Integration, Document, Audit, Analytics, Media and Configuration are currently bootstrap containers only. Their health endpoints are available directly on loopback ports 8097–8104. They do not yet expose business API routes and are intentionally not included as business routers in Traefik or the central OpenAPI catalog. See [the implementation roadmap](../architecture/missing-services-roadmap.md) and each service's `docs/FEATURE_BACKLOG.md` before implementing an API.
+Workflow, Integration, Document, Audit, Analytics, Media and Configuration remain bootstrap containers with health endpoints on loopback ports 8098–8104. Search is now a Symfony/RoadRunner API routed through Traefik and documented in the central OpenAPI catalog. See [the implementation roadmap](../architecture/missing-services-roadmap.md) and each remaining service's `docs/FEATURE_BACKLOG.md`.
