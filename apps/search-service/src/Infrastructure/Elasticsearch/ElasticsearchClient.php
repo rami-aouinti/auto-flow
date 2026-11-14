@@ -32,7 +32,7 @@ final readonly class ElasticsearchClient
             ]],
         ]]);
         $status = $response->getStatusCode();
-        if ($status >= 400 && $status !== 400) throw new RuntimeException('Elasticsearch could not create the vehicle index.');
+        if ($status < 200 || $status >= 300) throw new RuntimeException('Elasticsearch could not create the vehicle index: HTTP ' . $status . '.');
     }
     /** @param array<string,mixed> $query */
     public function search(array $query): array { return $this->decode($this->http->request('POST', $this->url($this->indexName . '/_search'), ['json' => $query])); }
@@ -48,6 +48,19 @@ final readonly class ElasticsearchClient
         $data = $this->decode($this->http->request('POST', $this->url('_bulk'), ['headers' => ['Content-Type' => 'application/x-ndjson'], 'body' => $body]));
         if (($data['errors'] ?? true) === true) throw new RuntimeException('Elasticsearch bulk indexing reported item errors.');
         return count($documents);
+    }
+    public function activateAlias(string $alias, string $targetIndex): void
+    {
+        $this->decode($this->http->request('POST', $this->url('_aliases'), ['json' => ['actions' => [
+            ['remove' => ['index' => $alias . '-*', 'alias' => $alias, 'must_exist' => false]],
+            ['add' => ['index' => $targetIndex, 'alias' => $alias]],
+        ]]]));
+    }
+    public function deleteIndex(string $index): void
+    {
+        $response = $this->http->request('DELETE', $this->url($index));
+        $status = $response->getStatusCode();
+        if ($status !== 404 && ($status < 200 || $status >= 300)) throw new RuntimeException('Elasticsearch could not delete temporary index: HTTP ' . $status . '.');
     }
     private function decode(ResponseInterface $response): array
     {
