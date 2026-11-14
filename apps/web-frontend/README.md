@@ -8,6 +8,7 @@ The AutoFlow frontend is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is deliver
 - `/operations/orders` — order management, payment operations, Stripe Payment Element and pricing quotes.
 - `/admin` — administration control center with live counts from Catalog, Customer, Order, Payment and Pricing APIs.
 - `/admin/customers` — tenant-scoped customer management with profile CRUD, search, addresses, consent decisions and audit history.
+- `/crm/applications` — CRM application pipeline with assignment, eligibility decisions, tasks, interactions, audit history and order conversion.
 - `/admin/catalog/manufacturers`, `/admin/catalog/models`, `/admin/catalog/generations`, `/admin/catalog/variants` — resource-specific catalog administration routes with shared CRUD workspace.
 - `/operations/orders`, `/operations/payments`, `/operations/pricing` — deep links into order, payment and pricing operations.
 - `/operations/services` — cross-service read-only overview for Customers, CRM, Contracts, Billing, Fulfillment, Inventory and Reservations.
@@ -32,7 +33,7 @@ Nuxt server routes proxy the same-origin prefixes to the internal Compose servic
 | `/orders/**` | Order |
 | `/payments/**` | Payment |
 
-The proxy forwards the original HTTP method, query string, request body and Authorization header. Customer personal-data responses remain `no-store`; the browser never receives internal service addresses. The Customer Service requires the `autoflow-customer` audience plus `customers:read`, `customers:write` or `customers:manage` as appropriate.
+The proxy forwards the original HTTP method, query string, request body and Authorization header. Customer personal-data responses remain `no-store`; the browser never receives internal service addresses. The Customer Service requires the `autoflow-customer` audience plus `customers:read`, `customers:write` or `customers:manage` as appropriate. CRM actions require the corresponding `crm:applications:*`, `crm:eligibility:manage`, `crm:tasks:*` and `crm:interactions:*` scopes.
 
 ## Local development
 
