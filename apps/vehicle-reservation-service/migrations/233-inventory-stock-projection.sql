@@ -73,7 +73,7 @@ BEGIN
         inventory_status = EXCLUDED.inventory_status,
         inventory_version = EXCLUDED.inventory_version,
         status = CASE
-            WHEN public.vehicle_stock_units.status = 'reserved' THEN 'reserved'
+            WHEN public.vehicle_stock_units.status IN ('reserved','sold') THEN public.vehicle_stock_units.status
             WHEN EXCLUDED.inventory_status = 'available' THEN 'available'
             WHEN EXCLUDED.inventory_status = 'sold' THEN 'sold'
             ELSE 'unavailable'
