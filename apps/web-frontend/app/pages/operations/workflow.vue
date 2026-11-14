@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { billing, contracts, fulfillments, inventory, reservations, errorMessage } from '../../../src/api';
 
 definePageMeta({ layout: 'default' });
+const route = useRoute();
+const router = useRouter();
 useHead({ title: 'Business workflows | AutoFlow' });
 
 type Row = Record<string, any>;
-const tab = ref('contracts');
+const workflowTabs = ['contracts', 'inventory', 'reservations', 'fulfillment', 'billing'];
+const initialTab = String(route.query.tab ?? 'contracts');
+const tab = ref(workflowTabs.includes(initialTab) ? initialTab : 'contracts');
+watch(tab, (value) => {
+  void router.replace({ query: { ...route.query, tab: value } });
+});
 const loading = ref(false);
 const busy = ref('');
 const error = ref('');
