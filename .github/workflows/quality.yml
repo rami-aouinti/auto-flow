@@ -77,6 +77,7 @@ jobs:
           php -l apps/contract-service/bin/smoke-test-document-integration.php
           php -l apps/billing-service/src/Infrastructure/Document/DocumentServiceClient.php
           php -l apps/billing-service/src/Presentation/Http/Controller/BillingController.php
+          php -l apps/billing-service/src/Infrastructure/Document/InvoicePdfRenderer.php
           php -l apps/billing-service/bin/smoke-test-document-integration.php
           php -r '
           $migration = file_get_contents("apps/billing-service/migrations/173-billing-document-references.sql");
@@ -84,6 +85,12 @@ jobs:
               fwrite(STDERR, "Billing Document Service reference migration is incomplete.\n"); exit(1);
           }
           $compose = file_get_contents("compose.yaml");
+          $billing = file_get_contents("apps/billing-service/src/Presentation/Http/Controller/BillingController.php");
+          $contract = file_get_contents("apps/contract-service/src/Infrastructure/Document/ContractDocumentManager.php");
+          $openapi = json_decode(file_get_contents("docs/api/openapi.json"), true, flags: JSON_THROW_ON_ERROR);
+          if (!str_contains($billing, "creditNoteDocument") || !str_contains($contract, "downloadLatest") || !isset($openapi["paths"]["/api/v1/billing/credit-notes/{id}/document"])) {
+              fwrite(STDERR, "Contract/Billing Document Service endpoints are incomplete.\\n"); exit(1);
+          }
           if (substr_count($compose, "173-billing-document-references.sql") < 2 || substr_count($compose, "DOCUMENT_SERVICE_URL") < 2) {
               fwrite(STDERR, "Compose is missing Billing migration mount/command or service URL wiring.\n"); exit(1);
           }
