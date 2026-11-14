@@ -88,7 +88,7 @@ http:
     catalog:
       entryPoints:
         - web
-      rule: "PathPrefix(`/api/v1/manufacturers`) || PathPrefix(`/api/v1/vehicles`) || PathPrefix(`/api/v1/admin/catalog`)"
+      rule: "PathPrefix(`/api/v1/manufacturers`) || PathPrefix(`/api/v1/models`) || PathPrefix(`/api/v1/generations`) || PathPrefix(`/api/v1/vehicles`) || PathPrefix(`/api/v1/admin/catalog`)"
       service: catalog
       middlewares:
         - api-defaults
