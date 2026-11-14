@@ -18,7 +18,9 @@ useHead({
 });
 
 type Row = Record<string, unknown>;
+type PanelKey = 'customers' | 'crm' | 'contracts' | 'billing' | 'fulfillments' | 'inventory' | 'reservations';
 type Panel = {
+  key: PanelKey;
   key: string;
   title: string;
   description: string;
@@ -40,8 +42,8 @@ const panels = ref<Panel[]>([
 ]);
 
 const requests: Record<string, () => Promise<{ data: unknown }>> = {
-  customers: () => customers.list(5, 0),
-  crm: () => crm.applications(5, 0),
+  customers: () => customers.list({ limit: 5, offset: 0 }),
+  crm: () => crm.listApplications({ limit: 5, offset: 0 }),
   contracts: () => contracts.list(5, 0),
   billing: () => billing.invoices(5, 0),
   fulfillments: () => fulfillments.list(5, 0),
@@ -66,7 +68,9 @@ async function refresh() {
     panel.loading = true;
     panel.error = '';
     try {
-      const response = await requests[panel.key]();
+      const request = requests[panel.key];
+      if (!request) throw new Error('No API client is configured for this service.');
+      const response = await request();
       const result = normalize(response.data);
       panel.rows = result.rows;
       panel.total = result.total;
