@@ -22,7 +22,7 @@ ops = [(path, method, op) for path, methods in paths.items()
        for method, op in methods.items()
        if method.lower() in {"get", "post", "put", "patch", "delete", "options", "head"}]
 assert len(ops) >= 100, f"Expected at least 100 operations, found {len(ops)}"
-assert len(spec.get("tags", [])) >= 14, "Expected all 14 microservice tags"
+assert len(spec.get("tags", [])) >= 20, "Expected all 20 API service tags"
 missing = []
 for path, method, op in ops:
     if not op.get("responses"):
