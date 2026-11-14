@@ -62,6 +62,7 @@ func consumeSagaEventsOnce(ctx context.Context, temporal client.Client) error {
 	if err != nil { return err }
 
 	bindings := []struct{ exchange, key string }{
+		{"autoflow.order.events", "OrderCreated"},
 		{"autoflow.order.events", "OrderSubmitted"},
 		{"autoflow.order.events", "OrderAccepted"},
 		{"autoflow.order.events", "OrderRejected"},
@@ -115,10 +116,13 @@ func consumeSagaEventsOnce(ctx context.Context, temporal client.Client) error {
 
 func forwardSagaEventToTemporal(ctx context.Context, temporal client.Client, event Event) error {
 	id := sagaWorkflowID(event)
-	if event.EventType == "OrderSubmitted" {
+	if event.EventType == "OrderCreated" || event.EventType == "OrderSubmitted" {
 		variantID := eventString(event.Data, "vehicleVariantId")
 		if variantID == "" {
-			return fmt.Errorf("OrderSubmitted event is missing data.vehicleVariantId")
+			variantID = eventString(event.Data, "vehicleId")
+		}
+		if variantID == "" {
+			return fmt.Errorf("%s event is missing data.vehicleVariantId/vehicleId", event.EventType)
 		}
 		_, err := temporal.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 			ID: id, TaskQueue: env("TEMPORAL_TASK_QUEUE", "autoflow-order-workflows"),
@@ -149,7 +153,7 @@ func DecodeSagaEvent(body []byte) (Event, error) {
 		return Event{}, fmt.Errorf("decode Saga event: %w", err)
 	}
 	allowed := map[string]bool{
-		"OrderSubmitted": true, "OrderAccepted": true, "OrderRejected": true,
+		"OrderCreated": true, "OrderSubmitted": true, "OrderAccepted": true, "OrderRejected": true,
 		"OrderCancelled": true, "OrderPaymentCaptured": true, "OrderPaymentFailed": true,
 		"OrderPaymentRefunded": true, "reservation.held.v1": true,
 		"reservation.hold.rejected.v1": true, "reservation.confirmed.v1": true,
