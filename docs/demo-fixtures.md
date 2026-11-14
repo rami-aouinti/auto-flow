@@ -14,11 +14,21 @@ docker compose --env-file .env.example up -d --build
 docker compose --env-file .env.example ps
 ```
 
-From the repository root, apply the fixtures:
+From the repository root, obtain the local demo user's Keycloak subject and apply the fixtures. Pricing quote ownership is tied to the authenticated subject, so the same subject is written into the seeded records:
 
 ```bash
+TOKEN=$(curl -fsS -X POST http://localhost:8080/realms/autoflow/protocol/openid-connect/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'grant_type=password' \
+  --data-urlencode 'client_id=autoflow-local-client' \
+  --data-urlencode 'username=demo' \
+  --data-urlencode 'password=demo' | jq -r .access_token)
+
+DEMO_SUBJECT=$(TOKEN="$TOKEN" php -r '$p=explode(".",getenv("TOKEN"))[1]; $p.=str_repeat("=", (4-strlen($p)%4)%4); $claims=json_decode(base64_decode(strtr($p,"-_","+/")), true, 512, JSON_THROW_ON_ERROR); echo $claims["sub"];')
+
 docker compose --env-file .env.example exec -T postgres \
   psql -v ON_ERROR_STOP=1 -U autoflow -d autoflow \
+  -v demo_subject="$DEMO_SUBJECT" \
   < infrastructure/fixtures/demo-platform.sql
 ```
 
