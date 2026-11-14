@@ -1,3 +1,9 @@
+parameters:
+    app.crm_customer_service_url: '%env(resolve:CRM_CUSTOMER_SERVICE_URL)%'
+    app.crm_offer_service_url: '%env(resolve:CRM_OFFER_SERVICE_URL)%'
+    app.crm_pricing_service_url: '%env(resolve:CRM_PRICING_SERVICE_URL)%'
+    app.crm_catalog_service_url: '%env(resolve:CRM_CATALOG_SERVICE_URL)%'
+
 services:
     _defaults: { autowire: true, autoconfigure: true }
     App\:
@@ -5,3 +11,10 @@ services:
         exclude: ['../src/Kernel.php']
     App\Infrastructure\Health\CrmDatabaseHealthCheck:
         tags: ['autoflow_core.health_check']
+
+    App\Infrastructure\Upstream\CrmReferenceValidator:
+        arguments:
+            $customerServiceUrl: '%app.crm_customer_service_url%'
+            $offerServiceUrl: '%app.crm_offer_service_url%'
+            $pricingServiceUrl: '%app.crm_pricing_service_url%'
+            $catalogServiceUrl: '%app.crm_catalog_service_url%'
