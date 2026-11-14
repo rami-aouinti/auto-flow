@@ -2079,6 +2079,12 @@ services:
       INVENTORY_PROXY_TARGET: http://api-gateway
       SEARCH_PROXY_TARGET: http://api-gateway
       RESERVATION_PROXY_TARGET: http://api-gateway
+      AUDIT_PROXY_TARGET: http://api-gateway
+      ANALYTICS_PROXY_TARGET: http://api-gateway
+      CONFIGURATION_PROXY_TARGET: http://api-gateway
+      DOCUMENT_PROXY_TARGET: http://api-gateway
+      INTEGRATION_PROXY_TARGET: http://api-gateway
+      WORKFLOW_PROXY_TARGET: http://workflow-service:8080
     depends_on:
       api-gateway: {condition: service_healthy}
       keycloak: {condition: service_started}
