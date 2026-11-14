@@ -35,9 +35,9 @@ Configuration:
 
 - 48 hours: review decision (accepted, rejected or cancelled).
 - 24 hours: accepted order must reach `contract_pending` or be cancelled.
-- 7 days: contract-pending order must complete or be cancelled.
+- 23 hours: a physical vehicle hold expires automatically; the fulfillment Saga uses a shared 22-hour payment/contract deadline and releases the hold on timeout.
 
-The worker does not decide an order or mutate its status. The Order API remains the source of truth; Temporal waits for its events and emits SLA alerts. Alert queue messages are intentionally retained until an operational alert consumer or operator acknowledges them.
+Reservation hold/confirm/release activities use deterministic event IDs so Temporal retries do not create new logical commands. The worker does not decide an order or mutate its status. The Order API remains the source of truth; Temporal waits for its events and emits SLA alerts. Alert queue messages are intentionally retained until an operational alert consumer or operator acknowledges them.
 
 ## Development checks
 
