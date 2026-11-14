@@ -33,6 +33,9 @@ final readonly class SearchController
         if ($page === null || $limit === null) {
             return $this->error(400, 'Invalid pagination', 'page must be 1..10000 and limit must be 1..100.');
         }
+        if ((($page - 1) * $limit) + $limit > 10000) {
+            return $this->error(400, 'Pagination window exceeded', 'Search pagination is limited to the first 10,000 results.');
+        }
 
         $filters = [];
         foreach ([
@@ -92,7 +95,7 @@ final readonly class SearchController
                 'size' => $limit,
                 'query' => ['bool' => ['must' => $must, 'filter' => $filters]],
                 'sort' => $sort === 'relevance'
-                    ? [['_score' => 'desc'], ['_id' => 'asc']]
+                    ? [['_score' => 'desc'], ['vehicle_id' => 'asc']]
                     : [$sortMap[$sort], ['_id' => 'asc']],
                 'aggs' => [
                     'fuel_types' => ['terms' => ['field' => 'fuel_type']],
