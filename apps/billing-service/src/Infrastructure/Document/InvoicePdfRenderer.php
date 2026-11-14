@@ -49,6 +49,8 @@ final class InvoicePdfRenderer
         $invoiceNumber = htmlspecialchars((string) ($invoice['invoice_number'] ?? $invoice['credit_note_number'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $safeDocumentLabel = htmlspecialchars($documentLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $safeLineDescription = htmlspecialchars($lineDescription, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $recipientHeading = $documentLabel === 'GUTSCHRIFT' ? 'Gutschriftempfänger' : 'Rechnungsempfänger';
+        $detailsHeading = $documentLabel === 'GUTSCHRIFT' ? 'Gutschriftdaten' : 'Rechnungsdaten';
         $taxRate = number_format(((int) ($invoice['tax_rate_basis_points'] ?? 0)) / 100, 2, ',', '');
 
         $html = '<!doctype html><html lang="de"><meta charset="utf-8"><style>
@@ -61,7 +63,7 @@ final class InvoicePdfRenderer
             .footer{margin-top:55px;border-top:1px solid #d0d5dd;padding-top:12px;font-size:9px;color:#667085}
         </style><body>
         <div class="top"><div><div class="muted">' . $safeDocumentLabel . '</div><h1>' . $invoiceNumber . '</h1><div class="muted">Ausgestellt am ' . htmlspecialchars((string) ($invoice['issued_at'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div></div><div><strong>' . $issuerName . '</strong><br>' . $address($issuerAddress) . '</div></div>
-        <div class="cols"><div class="col"><h2>Rechnungsempfänger</h2><strong>' . $recipientName . '</strong><br>' . $address($recipientAddress) . '<br>' . htmlspecialchars((string) ($recipient['vatId'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div><div class="col"><h2>Rechnungsdaten</h2>Bestellnummer: ' . htmlspecialchars((string) ($invoice['order_id'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '<br>Zahlungsreferenz: ' . htmlspecialchars((string) ($invoice['payment_id'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div></div>
+        <div class="cols"><div class="col"><h2>' . $recipientHeading . '</h2><strong>' . $recipientName . '</strong><br>' . $address($recipientAddress) . '<br>' . htmlspecialchars((string) ($recipient['vatId'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div><div class="col"><h2>' . $detailsHeading . '</h2>Bestellnummer: ' . htmlspecialchars((string) ($invoice['order_id'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '<br>Zahlungsreferenz: ' . htmlspecialchars((string) ($invoice['payment_id'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</div></div>
         <table><thead><tr><th>Beschreibung</th><th>Netto</th><th>USt. (' . $taxRate . '%)</th><th>Brutto</th></tr></thead><tbody><tr><td>' . $safeLineDescription . '</td><td>' . $money($net) . '</td><td>' . $money($tax) . '</td><td>' . $money($gross) . '</td></tr><tr class="total"><td colspan="3">Gesamtbetrag</td><td>' . $money($gross) . '</td></tr></tbody></table>
         <div class="footer">Steuer-ID: ' . htmlspecialchars((string) ($issuer['taxNumber'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' · USt-IdNr.: ' . htmlspecialchars((string) ($issuer['vatId'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '<br>Dieses Dokument basiert auf dem beim Zahlungseingang gespeicherten unveränderlichen Rechnungs- und Kundensnapshot.</div>
         </body></html>';
