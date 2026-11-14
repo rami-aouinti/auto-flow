@@ -56,6 +56,7 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | Customer Service | http://localhost:8089 | Tenant-scoped individual/company profiles, addresses, consents and audit history |
 | Inventory Service | http://localhost:8093 | Physical vehicle units, VIN registry, stock availability and movement history |
 | Contract Service | http://localhost:8090 | Tenant-scoped contract drafts, immutable legal snapshots and lifecycle audit |
+| AI Service | http://localhost:8094 | Internal AI provider gateway (OpenAI first adapter; local development only) |
 | Offer Service | http://localhost:8081 | Demo offer API, calls Pricing Service |
 | Offer Swagger UI | http://localhost:8081/api/doc | Interactive Offer REST API documentation (dev only) |
 | Offer OpenAPI JSON | http://localhost:8081/api/doc.json | Machine-readable Offer API contract (dev only) |
