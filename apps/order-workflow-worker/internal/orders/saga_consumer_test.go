@@ -51,3 +51,14 @@ func TestDecodeSagaEventRejectsUnsupportedSchemaVersion(t *testing.T) {
 		t.Fatal("expected unsupported schema version to be rejected")
 	}
 }
+
+func TestDecodeSagaEventNormalizesContractSignedEnvelopeToOrder(t *testing.T) {
+	body := []byte(`{"eventId":"evt-contract","eventType":"contract.signed.v1","schemaVersion":1,"producer":"contract-service","aggregate":{"type":"Contract","id":"contract-1"},"tenantId":"tenant-a","data":{"contractId":"contract-1","orderId":"order-1","status":"signed"}}`)
+	event, err := DecodeSagaEvent(body)
+	if err != nil {
+		t.Fatalf("DecodeSagaEvent() error = %v", err)
+	}
+	if event.Aggregate.Type != "Order" || event.Aggregate.ID != "order-1" {
+		t.Fatalf("contract event was not normalized to its order: %+v", event.Aggregate)
+	}
+}
