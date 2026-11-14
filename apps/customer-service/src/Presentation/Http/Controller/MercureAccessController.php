@@ -8,7 +8,6 @@ use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/v1/realtime')]
@@ -18,8 +17,7 @@ final readonly class MercureAccessController
     public function access(Request $request): JsonResponse
     {
         $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
-        if (!$principal instanceof AuthenticatedPrincipal || !$principal->tenantId
-            || (!$principal->hasScope('customers:read') && !$principal->hasScope('customers:portal'))) {
+        if (!$principal instanceof AuthenticatedPrincipal || !$principal->tenantId || !$principal->hasScope('customers:read')) {
             return new JsonResponse(['type' => 'about:blank', 'title' => 'Forbidden', 'status' => 403, 'detail' => 'A tenant-scoped customer permission is required.'], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
         }
 
