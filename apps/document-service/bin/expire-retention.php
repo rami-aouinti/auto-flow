@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__.'/../src/storage.php';
+function retentionUuid():string{$b=random_bytes(16);$b[6]=chr((ord($b[6])&15)|64);$b[8]=chr((ord($b[8])&63)|128);return vsprintf('%s%s-%s-%s-%s-%s%s%s',str_split(bin2hex($b),4));}
 
 /**
  * Permanently purges documents whose retention date has passed.
@@ -29,9 +30,9 @@ while(true){
             $audit=$pdo->prepare("INSERT INTO document_service.document_audit_events(tenant_id,document_id,actor_id,action,details) VALUES(:t,:d,'document-retention-worker','document.purged',jsonb_build_object('reason','retention_expired'))");
             $audit->execute(['t'=>$tenant,'d'=>$id]);
             $purge=$pdo->prepare("INSERT INTO document_service.document_purge_events(id,tenant_id,document_id,checksum_sha256,reason) VALUES(:i,:t,:d,:h,'retention_expired')");
-            $purge->execute(['i'=>sprintf('%s-%s-%s-%s-%s',substr($id,0,8),substr($id,9,4),substr($id,14,4),substr($id,19,4),substr($id,24,12)),'t'=>$tenant,'d'=>$id,'h'=>$doc['checksum_sha256']]);
+            $purge->execute(['i'=>retentionUuid(),'t'=>$tenant,'d'=>$id,'h'=>$doc['checksum_sha256']]);
             $event=$pdo->prepare("INSERT INTO document_service.document_outbox_events(id,tenant_id,aggregate_id,event_type,payload) VALUES(:i,:t,:d,'DocumentPurged',jsonb_build_object('documentId',:d,'reason','retention_expired'))");
-            $event->execute(['i'=>bin2hex(random_bytes(16)),'t'=>$tenant,'d'=>$id]);
+            $event->execute(['i'=>retentionUuid(),'t'=>$tenant,'d'=>$id]);
             $pdo->prepare("DELETE FROM document_service.document_versions WHERE tenant_id=:t AND document_id=:d")->execute(['t'=>$tenant,'d'=>$id]);
             $pdo->prepare("DELETE FROM document_service.document_access_grants WHERE tenant_id=:t AND document_id=:d")->execute(['t'=>$tenant,'d'=>$id]);
             $pdo->prepare("DELETE FROM document_service.documents WHERE tenant_id=:t AND id=:d AND legal_hold=FALSE")->execute(['t'=>$tenant,'d'=>$id]);
