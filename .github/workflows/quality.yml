@@ -78,6 +78,13 @@ jobs:
           exit "$status"
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
+      - name: Install Billing Service dependencies and run legal snapshot tests
+        run: |
+          composer install --working-dir=apps/billing-service --no-interaction --prefer-dist --no-progress
+          cd apps/billing-service
+          vendor/bin/phpunit --configuration phpunit.xml.dist
+          php -l bin/consume-payment-events.php
+          php -l src/Application/InvoiceLegalSnapshot.php
       - name: Install Offer Service dependencies for integration tests
         run: |
           composer install \
