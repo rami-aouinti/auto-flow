@@ -130,6 +130,79 @@ final readonly class BillingController
         }
     }
 
+    #[Route('/credit-notes/{id}/document', methods:['GET'], requirements:['id' => '[0-9a-fA-F-]{36}'])]
+    public function creditNoteDocument(Request $r, string $id): Response
+    {
+        try {
+            $principal = $r->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+            if (!$principal instanceof AuthenticatedPrincipal || !$principal->hasScope('billing:read') || $principal->tenantId === null) {
+                return $this->problem(403, 'Billing permission or tenant context is missing.');
+            }
+            $token = preg_replace('/^Bearer\\s+/i', '', (string) $r->headers->get('Authorization')) ?? '';
+            $tenant = $principal->tenantId;
+            $state = $this->db->transactional(function (Connection $db) use ($tenant, $id): array {
+                $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
+                $creditNote = $db->fetchAssociative(
+                    'SELECT credit_note_id,credit_note_number,order_id,payment_id,currency,gross_minor,net_minor,tax_minor,tax_rate_basis_points,issued_at,billing_snapshot FROM billing_credit_notes WHERE tenant_id=:t AND credit_note_id=:id',
+                    ['t' => $tenant, 'id' => $id],
+                );
+                if ($creditNote === false) {
+                    return ['creditNote' => null, 'document' => null];
+                }
+                $document = $db->fetchAssociative(
+                    "SELECT document_id,checksum_sha256,byte_size FROM billing_document_references WHERE tenant_id=:t AND entity_type='credit_note' AND entity_id=:id",
+                    ['t' => $tenant, 'id' => $id],
+                );
+                return ['creditNote' => $creditNote, 'document' => $document === false ? null : $document];
+            });
+            if ($state['creditNote'] === null) {
+                return $this->problem(404, 'Credit note not found.');
+            }
+            $document = $state['document'];
+            if ($document === null) {
+                $pdf = $this->invoicePdfRenderer->renderCreditNote($state['creditNote']);
+                $number = (string) $state['creditNote']['credit_note_number'];
+                $uploaded = $this->documentService->uploadPdf($pdf, $number . '.pdf', 'Credit note ' . $number, 'credit_note', $id, $token);
+                $this->db->transactional(function (Connection $db) use ($tenant, $id, $uploaded): void {
+                    $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
+                    $db->executeStatement(
+                        "INSERT INTO billing_document_references (tenant_id,entity_type,entity_id,document_id,checksum_sha256,byte_size)
+                         VALUES (:t,'credit_note',:id,:document,:checksum,:size)
+                         ON CONFLICT (tenant_id,entity_type,entity_id) DO NOTHING",
+                        ['t' => $tenant, 'id' => $id, 'document' => $uploaded['id'], 'checksum' => $uploaded['checksum'], 'size' => $uploaded['byteSize']],
+                    );
+                });
+                $document = $this->db->transactional(function (Connection $db) use ($tenant, $id): array {
+                    $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
+                    $row = $db->fetchAssociative(
+                        "SELECT document_id,checksum_sha256,byte_size FROM billing_document_references WHERE tenant_id=:t AND entity_type='credit_note' AND entity_id=:id",
+                        ['t' => $tenant, 'id' => $id],
+                    );
+                    if ($row === false) {
+                        throw new RuntimeException('Credit note document reference was not persisted.');
+                    }
+                    return $row;
+                });
+            }
+            $content = $this->documentService->download((string) $document['document_id'], $token);
+            if (!hash_equals((string) $document['checksum_sha256'], hash('sha256', $content))) {
+                throw new RuntimeException('Credit note PDF failed its SHA-256 integrity check.');
+            }
+            $filename = preg_replace('/[^A-Za-z0-9._-]/', '-', (string) $state['creditNote']['credit_note_number']);
+            return new Response($content, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '.pdf"',
+                'Cache-Control' => 'private, no-store',
+                'X-Content-SHA256' => (string) $document['checksum_sha256'],
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        } catch (DomainException $exception) {
+            return $this->problem(409, $exception->getMessage());
+        } catch (Throwable) {
+            return $this->problem(503, 'Credit note document is temporarily unavailable.');
+        }
+    }
+
     #[Route('/credit-notes', methods:['GET'])]
     public function creditNotes(Request $r): JsonResponse
     {
