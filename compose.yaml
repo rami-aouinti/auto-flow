@@ -531,6 +531,7 @@ services:
       CRM_OFFER_SERVICE_URL: ${CRM_OFFER_SERVICE_URL:-http://offer-service:8080}
       CRM_PRICING_SERVICE_URL: ${CRM_PRICING_SERVICE_URL:-http://pricing-service:8080}
       CRM_CATALOG_SERVICE_URL: ${CRM_CATALOG_SERVICE_URL:-http://vehicle-catalog-service:8080}
+      CRM_ORDER_SERVICE_URL: ${CRM_ORDER_SERVICE_URL:-http://order-service:8080}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-crm-service
