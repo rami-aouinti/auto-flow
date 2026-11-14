@@ -67,4 +67,10 @@ test('business event monitor renders service activity', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Business Events & Errors' })).toBeVisible();
   await expect(page.getByText('order-demo')).toBeVisible();
   await expect(page.getByText('Orders', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Ansehen' }).first().click();
+  await expect(page.getByText('Ereignisdetails')).toBeVisible();
+  await expect(page.getByText(/order-demo/)).toBeVisible();
+  await page.getByRole('button', { name: 'Schließen' }).last().click();
+  await page.getByLabel('Aktivitäten durchsuchen').fill('not-a-real-order');
+  await expect(page.getByText('Keine Aktivitäten passen zu diesem Filter.')).toBeVisible();
 });
