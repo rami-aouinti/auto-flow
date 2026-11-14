@@ -30,7 +30,7 @@ func OrderFulfillmentSagaWorkflow(ctx workflow.Context, input SagaWorkflowInput)
 			InitialInterval: time.Second,
 			BackoffCoefficient: 2,
 			MaximumInterval: time.Minute,
-			MaximumAttempts: 0,
+			MaximumAttempts: 8,
 		},
 	})
 	seen := make(map[string]struct{})
@@ -76,10 +76,16 @@ func OrderFulfillmentSagaWorkflow(ctx workflow.Context, input SagaWorkflowInput)
 		return temporal.NewNonRetryableApplicationError("reservation.held event has no reservation identifier", "InvalidReservationEvent", nil)
 	}
 
-	// Payment and contract may arrive in either order. A failed/cancelled order compensates the hold.
+	// Payment and contract may arrive in either order. The reservation API caps holds at 24 hours.
+	// Use one shared prerequisite deadline and compensate the physical hold on timeout.
 	paymentCaptured := false
 	contractSigned := false
+	prerequisiteDeadline := workflow.Now(ctx).Add(22 * time.Hour)
 	for !paymentCaptured || !contractSigned {
+		remaining := prerequisiteDeadline.Sub(workflow.Now(ctx))
+		if remaining <= 0 {
+			remaining = time.Nanosecond
+		}
 		event, waitErr := waitForSagaEvent(ctx, map[string]bool{
 			"OrderPaymentCaptured": true,
 			"contract.signed.v1": true,
@@ -88,8 +94,14 @@ func OrderFulfillmentSagaWorkflow(ctx workflow.Context, input SagaWorkflowInput)
 			"OrderPaymentRefunded": true,
 			"reservation.expired.v1": true,
 			"reservation.released.v1": true,
-		}, 7*24*time.Hour, seen)
+		}, remaining, seen)
 		if waitErr != nil {
+			if releaseErr := workflow.ExecuteActivity(activityCtx, "RequestReservationRelease", ReservationSagaCommand{
+				TenantID: input.TenantID, OrderID: input.OrderID, ReservationID: reservationID,
+				CorrelationID: input.CorrelationID,
+			}).Get(ctx, nil); releaseErr != nil {
+				return temporal.NewApplicationError("payment/contract prerequisite timed out and reservation compensation failed", "SagaCompensationRequired", releaseErr)
+			}
 			return waitErr
 		}
 		switch event.EventType {
