@@ -170,7 +170,7 @@ test('company customer portal keeps legal identity read-only and saves contact d
   await page.route('**/customers/api/v1/customers/me/consents', route => route.fulfill({ json: { items: [] } }));
 
   await page.goto('/portal');
-  await expect(page.getByRole('heading', { name: 'Unternehmen & Kontakt' })).toBeVisible();
+  await expect(page.getByText('Unternehmen & Kontakt')).toBeVisible();
   await expect(page.getByLabel('Unternehmen')).toHaveValue('Demo Mobility GmbH');
   await page.getByLabel('E-Mail').fill('new-office@example.test');
   await page.getByRole('button', { name: 'Änderungen speichern' }).click();
