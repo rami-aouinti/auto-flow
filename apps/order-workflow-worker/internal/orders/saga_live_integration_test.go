@@ -48,7 +48,7 @@ func TestLiveRabbitMQTemporalSagaStartsAndPublishesReservationHold(t *testing.T)
 	if err := channel.ExchangeDeclare("autoflow.vehicle-reservation.commands", "topic", true, false, false, false, nil); err != nil {
 		t.Fatalf("declare Reservation command exchange: %v", err)
 	}
-	queue, err := channel.QueueDeclare("", false, false, true, true, nil)
+	queue, err := channel.QueueDeclare("", false, true, true, false, nil)
 	if err != nil {
 		t.Fatalf("declare temporary Reservation command queue: %v", err)
 	}
