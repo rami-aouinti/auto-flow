@@ -98,14 +98,14 @@ if (str_starts_with($path, '/api/')) {
             $args = [$tenant];
             if ($namespace !== null) { $sql .= ' AND namespace=?'; $args[] = $namespace; }
             $sql .= ' ORDER BY namespace,config_key LIMIT 500';
-            $s=$pdo->prepare($sql); $s->execute($args); respond(200,['data'=>$s->fetchAll()]);
+            $s=$pdo->prepare($sql); $s->execute($args); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['value']=json_decode($row['value'],true); } unset($row); respond(200,['data'=>$rows]);
         }
         // /api/configurations/{namespace}/{key}[/{versions|rollback}]
         if (preg_match('#^/api/configurations/([^/]+)/([^/]+)(?:/(versions|rollback))?$#', $path, $m)) {
             $namespace=validName(rawurldecode($m[1]),'namespace'); $key=validName(rawurldecode($m[2]),'key');
             if (($m[3] ?? '') === 'versions' && $method === 'GET') {
                 $s=$pdo->prepare('SELECT version,value,value_type,description,changed_by,change_reason,created_at FROM configuration_versions WHERE tenant_id=? AND namespace=? AND config_key=? ORDER BY version DESC LIMIT 100');
-                $s->execute([$tenant,$namespace,$key]); respond(200,['data'=>$s->fetchAll()]);
+                $s->execute([$tenant,$namespace,$key]); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['value']=json_decode($row['value'],true); } unset($row); respond(200,['data'=>$rows]);
             }
             if (($m[3] ?? '') === 'rollback' && $method === 'POST') {
                 $input=body(); $target=(int)($input['version'] ?? 0);
@@ -118,7 +118,7 @@ if (str_starts_with($path, '/api/')) {
                 if (!$current) { $pdo->rollBack(); problem(404,'Not Found','Configuration was not found.'); }
                 $next=(int)$current['version']+1;
                 $pdo->prepare('UPDATE configurations SET value=?::jsonb,value_type=?,description=?,version=?,updated_by=?,updated_at=NOW() WHERE tenant_id=? AND namespace=? AND config_key=?')
-                    ->execute([json_encode(json_decode($old['value'],true),JSON_THROW_ON_ERROR),$old['value_type'],$old['description'],$next,$actor,$tenant,$namespace,$key]);
+                    ->execute([$old['value'],$old['value_type'],$old['description'],$next,$actor,$tenant,$namespace,$key]);
                 $pdo->prepare('INSERT INTO configuration_versions (id,tenant_id,namespace,config_key,version,value,value_type,description,changed_by,change_reason) VALUES (?,?,?,?,?,?::jsonb,?,?,?,?)')
                     ->execute([uuid(),$tenant,$namespace,$key,$next,$old['value'],$old['value_type'],$old['description'],$actor,'Rollback to version '.$target]);
                 recordEvent($pdo,$tenant,$actor,'rollback','configuration',$namespace.'/'.$key,$next,['rolledBackTo'=>$target],'ConfigurationUpdated');
@@ -128,7 +128,7 @@ if (str_starts_with($path, '/api/')) {
             if ($method === 'GET' && !isset($m[3])) {
                 $s=$pdo->prepare('SELECT namespace,config_key,value,value_type,description,version,updated_by,updated_at FROM configurations WHERE tenant_id=? AND namespace=? AND config_key=?');
                 $s->execute([$tenant,$namespace,$key]); $row=$s->fetch(); if (!$row) problem(404,'Not Found','Configuration was not found.');
-                header('ETag: "'.$row['version'].'"'); respond(200,$row);
+                $row['value']=json_decode($row['value'],true); header('ETag: "'.$row['version'].'"'); respond(200,$row);
             }
             if ($method === 'PUT' && !isset($m[3])) {
                 $input=body(); if (!array_key_exists('value',$input)) problem(422,'Unprocessable Content','The value field is required.');
@@ -158,7 +158,7 @@ if (str_starts_with($path, '/api/')) {
         // Feature flags: list, read and create/update.
         if ($path === '/api/feature-flags' && $method === 'GET') {
             $s=$pdo->prepare('SELECT flag_key,enabled,rollout_percentage,tenant_allowlist,description,version,updated_at FROM feature_flags WHERE tenant_id=? ORDER BY flag_key');
-            $s->execute([$tenant]); respond(200,['data'=>$s->fetchAll()]);
+            $s->execute([$tenant]); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['tenant_allowlist']=json_decode($row['tenant_allowlist'],true) ?: []; } unset($row); respond(200,['data'=>$rows]);
         }
         if (preg_match('#^/api/feature-flags/([^/]+)(?:/(evaluate))?$#',$path,$m)) {
             $key=validName(rawurldecode($m[1]),'flag key');
@@ -172,7 +172,7 @@ if (str_starts_with($path, '/api/')) {
             }
             if ($method === 'GET' && !isset($m[2])) {
                 $s=$pdo->prepare('SELECT flag_key,enabled,rollout_percentage,tenant_allowlist,description,version,updated_at FROM feature_flags WHERE tenant_id=? AND flag_key=?');
-                $s->execute([$tenant,$key]); $flag=$s->fetch(); if (!$flag) problem(404,'Not Found','Feature flag was not found.'); respond(200,$flag);
+                $s->execute([$tenant,$key]); $flag=$s->fetch(); if (!$flag) problem(404,'Not Found','Feature flag was not found.'); $flag['tenant_allowlist']=json_decode($flag['tenant_allowlist'],true) ?: []; respond(200,$flag);
             }
             if ($method === 'PUT' && !isset($m[2])) {
                 $input=body(); if (!array_key_exists('enabled',$input) || !is_bool($input['enabled'])) problem(422,'Unprocessable Content','enabled must be a boolean.');
@@ -193,7 +193,7 @@ if (str_starts_with($path, '/api/')) {
         if ($path === '/api/audit-events' && $method === 'GET') {
             $limit=max(1,min(100,(int)($_GET['limit']??50)));
             $s=$pdo->prepare('SELECT actor_id,action,resource_type,resource_key,version,details,occurred_at FROM configuration_audit_events WHERE tenant_id=? ORDER BY occurred_at DESC,id DESC LIMIT ?');
-            $s->bindValue(1,$tenant); $s->bindValue(2,$limit,PDO::PARAM_INT); $s->execute(); respond(200,['data'=>$s->fetchAll()]);
+            $s->bindValue(1,$tenant); $s->bindValue(2,$limit,PDO::PARAM_INT); $s->execute(); $rows=$s->fetchAll(); foreach ($rows as &$row) { $row['details']=json_decode($row['details'],true) ?: []; } unset($row); respond(200,['data'=>$rows]);
         }
         problem(404,'Not Found','The requested endpoint does not exist.');
     } catch (PDOException $e) {
