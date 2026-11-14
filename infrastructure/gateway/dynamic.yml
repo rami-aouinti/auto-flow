@@ -164,6 +164,12 @@ http:
       service: inventory
       middlewares: [api-defaults]
 
+    audit:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/audit`)"
+      service: audit
+      middlewares: [api-defaults]
+
   services:
     ai:
       loadBalancer:
@@ -306,6 +312,16 @@ http:
         passHostHeader: true
         servers:
           - url: "http://inventory-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    audit:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://audit-service:8080"
         healthCheck:
           path: /health/ready
           interval: 10s
