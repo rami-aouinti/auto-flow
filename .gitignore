@@ -2,6 +2,8 @@
 /var/
 /.env
 /.env.*.local
+/.env.production
+/secrets/
 /.phpunit.cache/
 /.php-cs-fixer.cache
 /.phpunit.result.cache
