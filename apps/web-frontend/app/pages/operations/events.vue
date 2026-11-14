@@ -34,7 +34,7 @@ async function refresh(){
  events.value=output.sort((a,b)=>new Date(b.occurredAt).getTime()-new Date(a.occurredAt).getTime()).slice(0,150);
  lastUpdated.value=new Date().toLocaleString('de-DE');loading.value=false;
 }
-function onRealtime(event:Event){const item=(event as CustomEvent).detail as Activity;if(item)events.value=[{id:item.id,source:'Mercure',event:item.title,occurredAt:item.receivedAt,reference:item.detail,payload:item},...events.value].slice(0,150);}
+function onRealtime(event:Event){const item=(event as CustomEvent).detail as {id:string;title:string;receivedAt:string;detail:string};if(item)events.value=[{id:item.id,source:'Mercure',event:item.title,occurredAt:item.receivedAt,reference:item.detail,payload:item},...events.value].slice(0,150);}
 onMounted(()=>{void refresh();timer=setInterval(()=>void refresh(),30000);window.addEventListener('autoflow:realtime-event',onRealtime);});
 onBeforeUnmount(()=>{if(timer)clearInterval(timer);window.removeEventListener('autoflow:realtime-event',onRealtime);});
 </script>
