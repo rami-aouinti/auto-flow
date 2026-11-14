@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__.'/../src/storage.php';
+
 /**
  * Permanently purges documents whose retention date has passed.
  * Run with a dedicated maintenance DB role in production; the local Compose
@@ -9,7 +11,6 @@ declare(strict_types=1);
 $url=parse_url(getenv('DOCUMENT_MAINTENANCE_DATABASE_URL')?:'');
 if(!is_array($url)||empty($url['host'])||empty($url['path'])){fwrite(STDERR,"DOCUMENT_MAINTENANCE_DATABASE_URL is required\n");exit(1);}
 $pdo=new PDO('pgsql:host='.$url['host'].';port='.($url['port']??5432).';dbname='.ltrim($url['path'],'/'),rawurldecode($url['user']??''),rawurldecode($url['pass']??''),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);
-$root=rtrim(getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents','/');
 $interval=max(60,(int)(getenv('DOCUMENT_RETENTION_INTERVAL_SECONDS')?:3600));
 $batch=max(1,min(100,(int)(getenv('DOCUMENT_RETENTION_BATCH_SIZE')?:25)));
 fwrite(STDOUT,"Document retention worker started; batch={$batch}, interval={$interval}s\n");
@@ -24,10 +25,7 @@ while(true){
             $id=$doc['id'];$tenant=$doc['tenant_id'];
             $versions=$pdo->prepare("SELECT storage_key FROM document_service.document_versions WHERE tenant_id=:t AND document_id=:d");
             $versions->execute(['t'=>$tenant,'d'=>$id]);$keys=array_column($versions->fetchAll(),'storage_key');$keys[]=$doc['storage_key'];
-            foreach(array_unique($keys) as $key){
-                $real=realpath($key);
-                if($real!==false&&str_starts_with($real,$root.'/')&&is_file($real)&&!@unlink($real))throw new RuntimeException("Unable to remove expired document binary.");
-            }
+            foreach(array_unique($keys) as $key)documentStorageDelete($key);
             $audit=$pdo->prepare("INSERT INTO document_service.document_audit_events(tenant_id,document_id,actor_id,action,details) VALUES(:t,:d,'document-retention-worker','document.purged',jsonb_build_object('reason','retention_expired'))");
             $audit->execute(['t'=>$tenant,'d'=>$id]);
             $purge=$pdo->prepare("INSERT INTO document_service.document_purge_events(id,tenant_id,document_id,checksum_sha256,reason) VALUES(:i,:t,:d,:h,'retention_expired')");
