@@ -27,17 +27,16 @@ type Panel = {
   total: number;
   loading: boolean;
   error: string;
-  to: string;
 };
 
 const panels = ref<Panel[]>([
-  { key: 'customers', title: 'Customers', description: 'Customer profiles and lifecycle', icon: 'mdi-account-group-outline', rows: [], total: 0, loading: true, error: '', to: '/customers' },
-  { key: 'crm', title: 'CRM applications', description: 'Leasing applications and advisor workflow', icon: 'mdi-account-tie-outline', rows: [], total: 0, loading: true, error: '', to: '/crm' },
-  { key: 'contracts', title: 'Contracts', description: 'Preparation and electronic signatures', icon: 'mdi-file-sign', rows: [], total: 0, loading: true, error: '', to: '/contracts' },
-  { key: 'billing', title: 'Invoices', description: 'Invoices and credit notes', icon: 'mdi-receipt-text-outline', rows: [], total: 0, loading: true, error: '', to: '/billing' },
-  { key: 'fulfillments', title: 'Fulfillment', description: 'Vehicle preparation and handover', icon: 'mdi-truck-delivery-outline', rows: [], total: 0, loading: true, error: '', to: '/fulfillments' },
-  { key: 'inventory', title: 'Inventory', description: 'Physical vehicle units and stock status', icon: 'mdi-warehouse', rows: [], total: 0, loading: true, error: '', to: '/inventory' },
-  { key: 'reservations', title: 'Reservations', description: 'Vehicle stock allocation lifecycle', icon: 'mdi-calendar-check-outline', rows: [], total: 0, loading: true, error: '', to: '/reservations' },
+  { key: 'customers', title: 'Customers', description: 'Customer profiles and lifecycle', icon: 'mdi-account-group-outline', rows: [], total: 0, loading: true, error: '' },
+  { key: 'crm', title: 'CRM applications', description: 'Leasing applications and advisor workflow', icon: 'mdi-account-tie-outline', rows: [], total: 0, loading: true, error: '' },
+  { key: 'contracts', title: 'Contracts', description: 'Preparation and electronic signatures', icon: 'mdi-file-sign', rows: [], total: 0, loading: true, error: '' },
+  { key: 'billing', title: 'Invoices', description: 'Invoices and credit notes', icon: 'mdi-receipt-text-outline', rows: [], total: 0, loading: true, error: '' },
+  { key: 'fulfillments', title: 'Fulfillment', description: 'Vehicle preparation and handover', icon: 'mdi-truck-delivery-outline', rows: [], total: 0, loading: true, error: '' },
+  { key: 'inventory', title: 'Inventory', description: 'Physical vehicle units and stock status', icon: 'mdi-warehouse', rows: [], total: 0, loading: true, error: '' },
+  { key: 'reservations', title: 'Reservations', description: 'Vehicle stock allocation lifecycle', icon: 'mdi-calendar-check-outline', rows: [], total: 0, loading: true, error: '' },
 ]);
 
 const requests: Record<string, () => Promise<{ data: unknown }>> = {
@@ -130,7 +129,6 @@ onMounted(refresh);
             </v-list>
             <v-empty-state v-else icon="mdi-database-search-outline" title="No records" text="No records are currently available for this tenant." />
           </v-card-text>
-          <v-card-actions><v-spacer /><v-btn variant="text" size="small" append-icon="mdi-arrow-top-right" :href="panel.to">API prefix</v-btn></v-card-actions>
         </v-card>
       </v-col>
     </v-row>
