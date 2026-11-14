@@ -23,7 +23,7 @@ Enterprise mobility and vehicle-leasing portfolio project built with Symfony mic
 - Mailpit for local email testing
 - Adminer 5 for local PostgreSQL inspection
 - Keycloak OIDC with RS256 JWT access tokens for local authentication
-- Document Service with tenant-scoped metadata, versioned file storage, SHA-256 checksums, ClamAV scanning, audit trail and transactional outbox
+- Document Service with tenant-scoped metadata, encrypted S3-compatible object storage, immutable versions, ClamAV scanning, delegated access, legal holds, retention purge, audit trail and transactional RabbitMQ outbox
 - NelmioApiDocBundle + Swagger UI / OpenAPI 3 for interactive REST API testing in development only
 - PHP-CS-Fixer, PHP_CodeSniffer, PHPStan, PHPMD, Rector and PHPUnit
 - GitHub Actions quality workflow
@@ -65,7 +65,7 @@ Use **http://localhost:8088** as the single HTTP entry point for application cli
 | Pricing Service | http://localhost:8082 | Tenant-scoped quote calculation API |
 | Vehicle Catalog Service | http://localhost:8084 | Authoritative manufacturers, models, generations and vehicle variants |
 | Search Service | http://localhost:8097 | Authenticated Elasticsearch vehicle search, filters, facets and suggestions |
-| Document Service | http://localhost:8100 | Tenant-scoped document upload/download, versions, audit and malware scanning (gateway: /api/v1/documents) |
+| Document Service | http://localhost:8100 | Encrypted S3 upload/download, versions, access grants, legal holds and retention (gateway: /api/v1/documents) |
 | Order Management Service | http://localhost:8085 | Tenant-scoped order lifecycle, audit history, immutable commercial snapshots and payment state |
 | Payment Service | http://localhost:8086 | Stripe PaymentIntents, capture/refund lifecycle and payment events |
 | Pricing Swagger UI | http://localhost:8082/api/doc | Interactive Pricing REST API documentation (dev only) |
@@ -401,13 +401,13 @@ Start with the [AutoFlow Engineering & Architecture Wiki](docs/wiki/README.md). 
 
 ## Additional bounded-context services
 
-Search is a Symfony/RoadRunner service with an authenticated Elasticsearch vehicle search API. Workflow, Integration, Document, Audit, Analytics, Media and Configuration remain **health-only scaffolds**. Their remaining responsibilities and unchecked implementation features are documented in each service's `README.md` and `docs/FEATURE_BACKLOG.md`.
+Search is a Symfony/RoadRunner service with an authenticated Elasticsearch vehicle search API. Document is a functional standalone PHP API with MinIO/S3 storage, ClamAV, tenant RLS, legal hold, delegated sharing, retention and an outbox publisher. Workflow, Integration, Audit, Analytics, Media and Configuration remain **health-only scaffolds**. Their remaining responsibilities and unchecked implementation features are documented in each service's `README.md` and `docs/FEATURE_BACKLOG.md`.
 
 | Service | Local health URL | Planned responsibility |
 |---|---|---|
 | Workflow | http://localhost:8098/health/ready | Temporal orchestration, workflow versions and Saga coordination |
 | Integration | http://localhost:8099/health/ready | External provider adapters, webhooks and delivery reliability |
-| Document | http://localhost:8100/health/ready | Document metadata, versions, access and retention |
+| Document | http://localhost:8100/health/ready | PostgreSQL, S3-compatible object storage and ClamAV readiness |
 | Audit | http://localhost:8101/health/ready | Immutable cross-domain audit projection and compliance exports |
 | Analytics | http://localhost:8102/health/ready | Event-driven read models, KPIs and reports |
 | Media | http://localhost:8103/health/ready | Binary asset processing, transformations and delivery |
@@ -419,7 +419,9 @@ Start and check them:
 
 ```bash
 docker compose --env-file .env.example config --quiet
-docker compose --env-file .env.example up -d --build search-service search-sync-worker workflow-service integration-service document-service audit-service analytics-service media-service configuration-service
+docker compose --env-file .env.example up -d --build search-service search-sync-worker workflow-service integration-service audit-service analytics-service media-service configuration-service
+# Document has its own encrypted MinIO, ClamAV and retention dependencies:
+docker compose --env-file .env.example up -d --build postgres postgres-bootstrap rabbitmq clamav document-object-storage document-object-storage-init document-service document-outbox-publisher document-retention-worker
 docker compose --env-file .env.example exec search-service php bin/reindex-vehicles.php
 sh scripts/check-skeleton-health.sh
 ```
