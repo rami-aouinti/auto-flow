@@ -1158,6 +1158,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/220-vehicle-reservation-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/230-vehicle-stock-registry-and-allocation.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/240-vehicle-reservation-confirm.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/245-enforce-physical-stock-reservation.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/250-inventory-schema.sql
     environment:
       PGHOST: postgres
@@ -1182,6 +1183,7 @@ services:
       - ./apps/vehicle-reservation-service/migrations/220-vehicle-reservation-schema.sql:/migrations/220-vehicle-reservation-schema.sql:ro
       - ./apps/vehicle-reservation-service/migrations/230-vehicle-stock-registry-and-allocation.sql:/migrations/230-vehicle-stock-registry-and-allocation.sql:ro
       - ./apps/vehicle-reservation-service/migrations/231-confirm-reservation-for-saga.sql:/migrations/240-vehicle-reservation-confirm.sql:ro
+      - ./apps/vehicle-reservation-service/migrations/232-enforce-physical-stock-reservation.sql:/migrations/245-enforce-physical-stock-reservation.sql:ro
       - ./apps/inventory-service/migrations/00-inventory-schema.sql:/migrations/250-inventory-schema.sql:ro
     depends_on:
       postgres:
