@@ -469,6 +469,59 @@
             "minimum": 0
           }
         }
+      },
+      "AuditEventInput": {
+        "type": "object",
+        "required": [
+          "eventId",
+          "eventType",
+          "actorType",
+          "resourceType",
+          "resourceId",
+          "occurredAt"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 128
+          },
+          "eventType": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "actorType": {
+            "type": "string",
+            "enum": [
+              "user",
+              "service",
+              "system"
+            ]
+          },
+          "actorId": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "resourceType": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "resourceId": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "correlationId": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
       }
     }
   },
@@ -7230,6 +7283,174 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/audit/events": {
+      "post": {
+        "summary": "Append an audit event",
+        "description": "Tenant identity is taken from the verified JWT. Event ID is idempotent per tenant.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditEventInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Event appended"
+          },
+          "400": {
+            "description": "Invalid JSON"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Missing audit:write scope or tenant"
+          },
+          "422": {
+            "description": "Validation failed"
+          },
+          "503": {
+            "description": "Audit storage unavailable"
+          }
+        }
+      },
+      "get": {
+        "summary": "Search audit events in the authenticated tenant",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "eventType",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "actorId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resourceType",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resourceId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated audit events"
+          },
+          "400": {
+            "description": "Invalid pagination"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Missing audit:read scope or tenant"
+          },
+          "503": {
+            "description": "Audit storage unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/audit/events/{eventId}": {
+      "get": {
+        "summary": "Read one audit event",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit event"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Missing audit:read scope or tenant"
+          },
+          "404": {
+            "description": "Event not found in this tenant"
           }
         }
       }

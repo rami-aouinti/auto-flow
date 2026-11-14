@@ -1,11 +1,11 @@
 # Audit Service — delivery status
 
-## Implemented in the first production-shaped slice
+## Implemented
 
 - [x] Authenticated, versioned HTTP ingestion and tenant-scoped read API.
 - [x] Keycloak JWT validation via CoreBundle (issuer, audience, signature, expiry).
 - [x] Scope checks: audit:write and audit:read.
-- [x] Tenant context comes from the verified principal; tenant cannot be supplied in the body.
+- [x] Tenant context comes only from the verified principal for HTTP requests.
 - [x] PostgreSQL row-level security and forced RLS.
 - [x] Append-only database permissions and mutation-blocking trigger.
 - [x] Idempotent event ingestion using tenant + eventId.
@@ -13,15 +13,19 @@
 - [x] Payload size limit and recursive redaction of common sensitive fields.
 - [x] Search filters, pagination, event detail and OpenAPI contract.
 - [x] Readiness check against PostgreSQL.
+- [x] Durable RabbitMQ consumer bound to existing domain outbox exchanges.
+- [x] Producer-envelope normalization, tenant validation and payload redaction.
+- [x] Bounded retry, publisher confirms and dead-letter queue.
+- [x] Unit tests for payload redaction and producer-envelope normalization.
+- [x] RabbitMQ ingestion smoke test in the Quality workflow.
+- [x] API Gateway route and central Swagger/OpenAPI registration.
 
 ## Remaining production hardening
 
-- [ ] Publish a versioned integration-event envelope and onboard each producer through its transactional outbox.
-- [ ] Add RabbitMQ consumer, durable queue, inbox deduplication, retry policy and dead-letter queue.
 - [ ] Add privileged-read audit events and export authorization/audit trail.
 - [ ] Add CSV/NDJSON compliance export with bounded streaming.
-- [ ] Add chain-verification and evidence report command.
-- [ ] Define retention/legal-hold policy with privacy and legal review; do not silently delete immutable evidence.
-- [ ] Add database migration runner and restore/replay runbook.
-- [ ] Add integration, contract, tenant-isolation and tamper-detection tests.
-- [ ] Add metrics, tracing, rate limits and load tests.
+- [ ] Add a chain-verification and evidence-report command.
+- [ ] Define retention/legal-hold policy with privacy and legal review; never silently delete immutable evidence.
+- [ ] Add a database migration runner and restore/replay runbook.
+- [ ] Add full multi-tenant, retry/DLQ and tamper-detection integration tests.
+- [ ] Add service-specific metrics, tracing, rate limits and load tests.

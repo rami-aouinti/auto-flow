@@ -10,11 +10,12 @@ Tenant-isolated, append-only audit journal for compliance, investigations and op
 - Redacts common credential and personal-data fields before persistence.
 - Uses the shared CoreBundle for Keycloak JWT signature, issuer, audience, expiry, tenant and scope validation.
 
-The first delivery exposes an authenticated ingestion and query API. Producers can send their committed domain facts using the ingestion endpoint. The RabbitMQ consumer is intentionally not claimed as enabled until domain producers publish the agreed versioned envelope.
+The service exposes an authenticated ingestion/query API and a RabbitMQ consumer. The consumer subscribes to existing durable domain-event exchanges, normalizes producer envelopes, and appends tenant-scoped events. Delivery is at-least-once; eventId provides tenant-scoped idempotency.
 
 ## API
 
-Base URL (local direct): http://localhost:8101
+Base URL (API Gateway): http://localhost:8088
+Direct local URL: http://localhost:8101
 
 | Method | Path | Scope | Description |
 |---|---|---|---|
@@ -57,6 +58,21 @@ Authorization: Bearer <Keycloak access token>
 ```
 
 Filters: `eventType`, `actorId`, `resourceType`, `resourceId`, `from`, `to`, `page`, `limit` (1–100). Results are ordered newest first.
+
+## RabbitMQ integration
+
+The `audit-consumer` process binds a durable queue to existing producer exchanges: `autoflow.events`, `autoflow.order.events`, `autoflow.payment.events`, `autoflow.contract.events`, `autoflow.fulfillment.events`, `autoflow.crm.events`, `autoflow.catalog.events`, `autoflow.inventory.events`, `autoflow.vehicle-reservation.events`, `autoflow.document.events`, and `autoflow.configuration`.
+
+Messages are normalized from `eventId/eventType/tenantId` (snake_case variants are accepted). Tenant ID can also be supplied in the AMQP `tenant_id` header. Events without a valid tenant or event identity are dead-lettered rather than stored under a guessed tenant. Transient persistence failures are retried up to five attempts through a 30-second retry queue, then routed to `audit.events.failed`. The consumer acknowledges a source message only after the audit insert or a confirmed retry/dead-letter publish.
+
+Start the API and consumer:
+
+```bash
+docker compose --env-file .env.example up -d --build audit-service audit-consumer
+docker compose --env-file .env.example logs -f audit-consumer
+```
+
+The consumer provides at-least-once delivery. The database uniqueness key `(tenant_id,event_id)` makes redelivery idempotent.
 
 ## Security model
 

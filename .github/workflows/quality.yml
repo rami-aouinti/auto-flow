@@ -71,6 +71,7 @@ jobs:
           composer validate --strict --working-dir=apps/vehicle-reservation-service
           composer validate --strict --working-dir=apps/inventory-service
           composer validate --strict --working-dir=apps/crm-service
+          composer validate --strict --working-dir=apps/audit-service
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Build Document Service API and outbox worker images
@@ -337,6 +338,34 @@ jobs:
             --working-dir=apps/vehicle-catalog-service \
             --ignore-platform-req=ext-opentelemetry \
             --no-interaction --prefer-dist --no-progress
+      - name: Install Audit Service dependencies and run tests
+        run: |
+          composer install --working-dir=apps/audit-service --no-interaction --prefer-dist --no-progress
+          php -l apps/audit-service/bin/audit-consumer.php
+          php -l apps/audit-service/bin/smoke-test-rabbitmq.php
+          php -l apps/audit-service/src/Infrastructure/Messaging/AuditEventConsumer.php
+          cd apps/audit-service && vendor/bin/phpunit --configuration phpunit.xml.dist
+
+      - name: Build Audit Service API and consumer images
+        run: docker compose --env-file .env.example build audit-service audit-consumer
+
+      - name: Smoke test Audit RabbitMQ ingestion
+        run: |
+          docker compose --env-file .env.example up -d audit-service audit-consumer
+          ready=0
+          for attempt in $(seq 1 30); do
+            if docker compose --env-file .env.example logs audit-consumer 2>&1 | grep -q "Started; listening to domain outbox exchanges"; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            docker compose --env-file .env.example logs --no-color --tail=200 audit-service audit-consumer postgres-bootstrap rabbitmq
+            exit 1
+          fi
+          docker compose --env-file .env.example exec -T audit-consumer php bin/smoke-test-rabbitmq.php
+
       - name: Install Notification Service dependencies for static analysis
         run: |
           composer install \
