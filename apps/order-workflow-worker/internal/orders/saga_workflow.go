@@ -48,7 +48,9 @@ func OrderFulfillmentSagaWorkflow(ctx workflow.Context, input SagaWorkflowInput)
 
 	hold := ReservationSagaCommand{
 		TenantID: input.TenantID, OrderID: input.OrderID,
-		VehicleVariantID: input.VehicleVariantID, CorrelationID: input.CorrelationID,
+		VehicleVariantID: input.VehicleVariantID,
+		ExpiresAt: workflow.Now(ctx).Add(23 * time.Hour).Format(time.RFC3339Nano),
+		CorrelationID: input.CorrelationID,
 	}
 	if err := workflow.ExecuteActivity(activityCtx, "RequestReservationHold", hold).Get(ctx, nil); err != nil {
 		return err
@@ -60,6 +62,7 @@ func OrderFulfillmentSagaWorkflow(ctx workflow.Context, input SagaWorkflowInput)
 		"OrderCancelled": true,
 		"OrderPaymentFailed": true,
 		"OrderPaymentRefunded": true,
+		"OrderPaymentCancelled": true,
 	}, 30*time.Minute, seen)
 	if err != nil {
 		return err
@@ -110,7 +113,7 @@ func OrderFulfillmentSagaWorkflow(ctx workflow.Context, input SagaWorkflowInput)
 		case "contract.signed.v1":
 			contractSigned = true
 		default:
-			if event.EventType == "OrderCancelled" || event.EventType == "OrderPaymentFailed" || event.EventType == "OrderPaymentRefunded" {
+			if event.EventType == "OrderCancelled" || event.EventType == "OrderPaymentFailed" || event.EventType == "OrderPaymentRefunded" || event.EventType == "OrderPaymentCancelled" {
 				if err := workflow.ExecuteActivity(activityCtx, "RequestReservationRelease", ReservationSagaCommand{
 					TenantID: input.TenantID, OrderID: input.OrderID, ReservationID: reservationID,
 					CorrelationID: input.CorrelationID,
