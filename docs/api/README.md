@@ -46,3 +46,7 @@ Obtain a Keycloak access token from the local realm, open Swagger's **Authorize*
 ## Notes
 
 The service docs intentionally do not fabricate response properties or request fields absent from the service documentation. They list documented response status codes and identify any service-defined payloads that need to be kept synchronized with controllers and tests. Notification Service is a RabbitMQ worker, not an HTTP API.
+
+## Health-only service scaffolds
+
+Search, Workflow, Integration, Document, Audit, Analytics, Media and Configuration are currently bootstrap containers only. Their health endpoints are available directly on loopback ports 8097–8104. They do not yet expose business API routes and are intentionally not included as business routers in Traefik or the central OpenAPI catalog. See [the implementation roadmap](../architecture/missing-services-roadmap.md) and each service's `docs/FEATURE_BACKLOG.md` before implementing an API.
