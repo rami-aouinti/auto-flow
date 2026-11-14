@@ -1,0 +1,5 @@
+controllers:
+    resource: ../src/Controller/
+    type: attribute
+autoflow_core:
+    resource: '@CoreBundle/Resources/config/routes.yaml'
