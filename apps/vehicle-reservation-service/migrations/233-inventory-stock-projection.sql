@@ -111,6 +111,16 @@ BEGIN
             RAISE EXCEPTION 'physical stock unit does not exist, is unavailable, or does not match tenant and variant'
                 USING ERRCODE = '23503';
         END IF;
+    ELSIF OLD.status = 'held' AND NEW.status = 'confirmed' THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM public.vehicle_stock_units
+            WHERE tenant_id = NEW.tenant_id AND vehicle_unit_id = NEW.vehicle_unit_id
+              AND reservation_id = NEW.reservation_id AND status = 'reserved'
+              AND inventory_status = 'available'
+        ) THEN
+            RAISE EXCEPTION 'Inventory no longer reports this reserved unit as available'
+                USING ERRCODE = '23514';
+        END IF;
     ELSIF OLD.status IN ('held','confirmed') AND NEW.status IN ('expired','released') THEN
         UPDATE public.vehicle_stock_units
         SET status = CASE
@@ -130,9 +140,9 @@ BEGIN
         SET status = 'sold', inventory_status = 'sold',
             reservation_id = NULL, order_id = NULL, updated_at = clock_timestamp()
         WHERE tenant_id = OLD.tenant_id AND vehicle_unit_id = OLD.vehicle_unit_id
-          AND reservation_id = OLD.reservation_id AND status = 'reserved';
+          AND reservation_id = OLD.reservation_id AND status = 'reserved' AND inventory_status = 'available';
         IF NOT FOUND THEN
-            RAISE EXCEPTION 'reserved physical stock unit is missing or no longer owned by this reservation'
+            RAISE EXCEPTION 'reserved physical stock unit is missing, unavailable in Inventory, or no longer owned by this reservation'
                 USING ERRCODE = '23503';
         END IF;
     END IF;
