@@ -1,0 +1,802 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AutoFlow Document Service API",
+    "version": "1.1.0",
+    "description": "Tenant-isolated document metadata and encrypted S3-compatible binary storage. Contract and Billing retain ownership of business workflows and generated PDFs."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8100",
+      "description": "Direct local Document Service"
+    },
+    {
+      "url": "http://localhost:8088",
+      "description": "API Gateway"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Document Service"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "DocumentAccessGrantInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subject_id",
+          "permission"
+        ],
+        "properties": {
+          "subject_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Keycloak subject ID of the recipient"
+          },
+          "permission": {
+            "type": "string",
+            "enum": [
+              "read",
+              "manage"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "DocumentLegalHoldInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "DocumentProblem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/documents": {
+      "get": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "List tenant documents",
+        "description": "Requires documents:read. Tenant-scoped metadata search.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entity_type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "archived"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated tenant document metadata"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "500": {
+            "description": "Problem Details response"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Upload and scan a document",
+        "description": "Requires documents:write. Files are malware-scanned before encrypted object storage.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "title"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "category": {
+                    "type": "string",
+                    "default": "other"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "entity_type": {
+                    "type": "string"
+                  },
+                  "entity_id": {
+                    "type": "string"
+                  },
+                  "retention_until": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Document created"
+          },
+          "400": {
+            "description": "Problem Details response"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "413": {
+            "description": "Problem Details response"
+          },
+          "415": {
+            "description": "Problem Details response"
+          },
+          "422": {
+            "description": "Problem Details response"
+          },
+          "503": {
+            "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}": {
+      "get": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Get document metadata",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document metadata"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Soft-delete a document",
+        "description": "Requires owner or documents:manage. Blocked while legal hold is active.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          },
+          "423": {
+            "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/content": {
+      "get": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Download a clean scanned file",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Binary file",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          },
+          "423": {
+            "description": "Problem Details response"
+          },
+          "503": {
+            "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/versions": {
+      "get": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "List document versions",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version history"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Upload a new document version",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "New version created"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          },
+          "413": {
+            "description": "Problem Details response"
+          },
+          "415": {
+            "description": "Problem Details response"
+          },
+          "422": {
+            "description": "Problem Details response"
+          },
+          "503": {
+            "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/audit": {
+      "get": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Read document audit history",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Latest 100 audit events"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/archive": {
+      "post": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Archive a document",
+        "description": "Requires owner or documents:manage. Blocked while legal hold is active.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived document"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          },
+          "423": {
+            "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/access-grants": {
+      "get": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "List delegated access grants",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active access grants"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Grant document access to another user",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentAccessGrantInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Access grant created or renewed"
+          },
+          "400": {
+            "description": "Problem Details response"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          },
+          "422": {
+            "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/access-grants/{grantId}": {
+      "delete": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Revoke delegated access",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "grantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Access revoked"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/legal-hold": {
+      "post": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Place a legal hold",
+        "description": "Prevents archive, delete and retention purge.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentLegalHoldInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Legal hold active"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          },
+          "422": {
+            "description": "Problem Details response"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Document Service"
+        ],
+        "summary": "Release a legal hold",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Legal hold released"
+          },
+          "401": {
+            "description": "Problem Details response"
+          },
+          "403": {
+            "description": "Problem Details response"
+          },
+          "404": {
+            "description": "Problem Details response"
+          }
+        }
+      }
+    }
+  }
+}
