@@ -159,18 +159,30 @@ final readonly class DocuSignWebhookController
                             'status' => $normalizedStatus,
                         ], JSON_THROW_ON_ERROR),
                     ]);
-                    $db->insert('contract_outbox', [
-                        'tenant_id' => $tenant,
-                        'event_id' => Uuid::v7()->toRfc4122(),
-                        'contract_id' => $contractId,
-                        'event_type' => $outboxType,
-                        'payload' => json_encode([
+                    $outboxEventId = Uuid::v7()->toRfc4122();
+                    $outboxOccurredAt = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(DATE_ATOM);
+                    $outboxEnvelope = [
+                        'eventId' => $outboxEventId,
+                        'eventType' => $outboxType,
+                        'schemaVersion' => 1,
+                        'producer' => 'contract-service',
+                        'aggregate' => ['type' => 'Contract', 'id' => $contractId],
+                        'tenantId' => $tenant,
+                        'occurredAt' => $outboxOccurredAt,
+                        'data' => [
                             'contractId' => $contractId,
                             'orderId' => (string) $contract['order_id'],
                             'provider' => 'docusign',
                             'envelopeId' => $envelopeId,
                             'status' => $targetStatus,
-                        ], JSON_THROW_ON_ERROR),
+                        ],
+                    ];
+                    $db->insert('contract_outbox', [
+                        'tenant_id' => $tenant,
+                        'event_id' => $outboxEventId,
+                        'contract_id' => $contractId,
+                        'event_type' => $outboxType,
+                        'payload' => json_encode($outboxEnvelope, JSON_THROW_ON_ERROR),
                     ]);
                 }
 
