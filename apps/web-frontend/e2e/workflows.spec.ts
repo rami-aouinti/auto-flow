@@ -138,3 +138,28 @@ test('customer self-service portal reads and updates only the linked profile', a
   await page.getByRole('button', { name: 'Speichern' }).last().click();
   await expect(page.getByText(/Demo Street 2/)).toBeVisible();
 });
+
+
+test('company customer portal keeps legal identity read-only and saves contact data', async ({ page }) => {
+  const company = {
+    customer_id: 'company-demo', customer_type: 'company', legal_name: 'Demo Mobility GmbH',
+    email: 'office@example.test', phone: '+4912345', locale: 'de-DE', status: 'active', version: 1,
+  };
+  let savedPayload: Record<string, unknown> | undefined;
+  await page.route('**/customers/api/v1/customers/me', async route => {
+    if (route.request().method() === 'PATCH') savedPayload = route.request().postDataJSON();
+    await route.fulfill({ json: company });
+  });
+  await page.route('**/customers/api/v1/customers/me/addresses', route => route.fulfill({ json: { items: [] } }));
+  await page.route('**/customers/api/v1/customers/me/consents', route => route.fulfill({ json: { items: [] } }));
+
+  await page.goto('/portal');
+  await expect(page.getByRole('heading', { name: 'Unternehmen & Kontakt' })).toBeVisible();
+  await expect(page.getByLabel('Unternehmen')).toHaveValue('Demo Mobility GmbH');
+  await page.getByLabel('E-Mail').fill('new-office@example.test');
+  await page.getByRole('button', { name: 'Änderungen speichern' }).click();
+  await expect(page.getByText('Deine Profildaten wurden gespeichert.')).toBeVisible();
+  expect(savedPayload).toBeDefined();
+  expect(savedPayload).not.toHaveProperty('firstName');
+  expect(savedPayload).not.toHaveProperty('lastName');
+});
