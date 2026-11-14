@@ -388,7 +388,7 @@ final readonly class ContractController
                     return $this->problem(409, 'Contract state changed while the signature request was being sent.');
                 }
 
-                $timestamp = (new \\DateTimeImmutable())->format(DATE_ATOM);
+                $timestamp = (new \DateTimeImmutable())->format(DATE_ATOM);
                 $db->update('contract_records', [
                     'status' => 'awaiting_signature',
                     'signature_provider' => $envelope['provider'],
