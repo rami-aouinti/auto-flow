@@ -104,7 +104,7 @@ onMounted(load);
             <v-btn v-if="['submitted','under_review'].includes(status)" color="success" :loading="busy" @click="transition('accept')">Annehmen</v-btn>
             <v-btn v-if="['submitted','under_review'].includes(status)" color="error" variant="tonal" :disabled="!rejectReason.trim()" :loading="busy" @click="transition('reject')">Ablehnen</v-btn>
             <v-btn v-if="!['completed','cancelled','rejected'].includes(status)" color="error" variant="text" :loading="busy" @click="transition('cancel')">Stornieren</v-btn>
-            <v-btn v-if="status==='accepted'" color="primary" variant="tonal" :to="{ path:'/operations/workflow', query:{tab:'contracts'} }">Vertrag vorbereiten</v-btn>
+            <v-btn v-if="status==='accepted'" color="primary" variant="tonal"  :to="{ path:'/operations/workflow', query:{tab:'contracts',orderId:orderId} }>Vertrag vorbereiten</v-btn>
             <v-btn v-if="status==='contract_pending'" color="success" :loading="busy" @click="transition('complete')">Abschließen</v-btn>
           </div>
           <v-text-field v-if="['submitted','under_review'].includes(status)" v-model="rejectReason" label="Ablehnungsgrund" class="mt-3" hide-details="auto" />
