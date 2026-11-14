@@ -1,12 +1,17 @@
 # Notification Service — API Reference
 
-**Base URL:** No public HTTP base URL (background worker only)  
-**Authentication:** RabbitMQ worker; no public HTTP API
+**HTTP API:** None. This service is a background RabbitMQ worker, not a REST microservice.
 
-## HTTP surface
+## Messaging contract
+- Consumes routing key `offer.published` from the AutoFlow events exchange.
+- Currently accepts schemaVersion 2.
+- Required event envelope fields: `eventId`, `tenantId`, `aggregate.id`, `data.createdBy`, `data.vehicleId`, `data.quoteId`, `data.expiresAt`, and `data.pricing`.
+- Resolves offer owner's email through Keycloak Admin API, renders HTML/plain-text email and PDF attachment from immutable pricing snapshot, then sends via Symfony Mailer.
+- Delivery state is persisted and event ID deduplication is used. RabbitMQ delivery is at-least-once; SMTP does not guarantee exactly-once delivery.
 
-This service is a background RabbitMQ notification worker and does not expose public REST endpoints. It consumes the `offer.published` event (schema version 2), resolves the offer owner's email, renders the notification and sends via SMTP. Mailpit is available at http://localhost:8025. Prometheus metrics are internal to the Docker network.
-
-## Contract maintenance
-
-This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+## Local operations
+- SMTP: `smtp://mailpit:1025`
+- Mailpit UI: http://localhost:8025
+- Prometheus metrics: `http://notification-metrics:9464/metrics` (internal Docker network only)
+- Queues: `notification.offer-published`, `notification.offer-published.retry`, `notification.failed`
+- No public HTTP health endpoint is documented.
