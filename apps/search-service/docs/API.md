@@ -39,6 +39,10 @@ Authorization: Bearer <access-token>
 
 Successful responses contain `data`, `meta.page`, `meta.limit`, `meta.total`, and `facets` for fuel types, body styles and manufacturers. Errors use `application/problem+json`. Invalid filters/pagination return 400; missing/invalid tokens 401; missing read scope 403; unavailable Elasticsearch or index returns 503.
 
+## Event-driven synchronization
+
+The `search-sync-worker` binds queue `autoflow.search.catalog.sync` to the Vehicle Catalog topic exchange `autoflow.catalog.events`. It records successfully applied event IDs in Elasticsearch index `autoflow-search-inbox-v1`; duplicate deliveries are acknowledged. Failed processing is retried up to five times with a 15-second delay, then routed to `autoflow.search.catalog.dlq`. The worker currently performs a full projection rebuild per event to guarantee parent updates and unpublishing are reflected; incremental aggregate-aware indexing is a documented optimization still to implement.
+
 ## Projection and consistency
 
 Search reads only published manufacturer/model/generation/variant rows from the Vehicle Catalog PostgreSQL read model. It indexes technical and catalogue fields only; customer PII, tenant-specific pricing, offers, orders and contracts are excluded.
