@@ -24,3 +24,15 @@ CREATE TABLE IF NOT EXISTS integration_service.delivery_attempts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS integration_delivery_due_idx ON integration_service.delivery_attempts(status,next_attempt_at);
+ALTER TABLE integration_service.webhook_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_service.webhook_events FORCE ROW LEVEL SECURITY;
+ALTER TABLE integration_service.delivery_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE integration_service.delivery_attempts FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS integration_webhooks_tenant_policy ON integration_service.webhook_events;
+CREATE POLICY integration_webhooks_tenant_policy ON integration_service.webhook_events
+ USING (tenant_id=current_setting('app.tenant_id',true))
+ WITH CHECK (tenant_id=current_setting('app.tenant_id',true));
+DROP POLICY IF EXISTS integration_deliveries_tenant_policy ON integration_service.delivery_attempts;
+CREATE POLICY integration_deliveries_tenant_policy ON integration_service.delivery_attempts
+ USING (tenant_id=current_setting('app.tenant_id',true))
+ WITH CHECK (tenant_id=current_setting('app.tenant_id',true));
