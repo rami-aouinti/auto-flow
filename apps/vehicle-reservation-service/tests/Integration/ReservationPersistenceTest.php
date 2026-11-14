@@ -62,7 +62,7 @@ final class ReservationPersistenceTest extends TestCase
         $blockedEvent = $this->uuid();
 
         $apply = $this->worker->prepare(
-            'SELECT public.vehicle_stock_apply_inventory_event(:tenant,:event,:unit,:variant,:vin,:status,:version)'
+            'SELECT public.vehicle_stock_apply_inventory_event(:tenant,:event,:unit,:variant,:vin,:status,:version)::int'
         );
         $apply->execute([
             'tenant' => $tenant,
@@ -73,7 +73,7 @@ final class ReservationPersistenceTest extends TestCase
             'status' => 'available',
             'version' => 1,
         ]);
-        self::assertTrue((bool) $apply->fetchColumn());
+        self::assertSame(1, (int) $apply->fetchColumn());
 
         // Re-delivery of the same event is acknowledged but not applied twice.
         $apply->execute([
@@ -85,7 +85,7 @@ final class ReservationPersistenceTest extends TestCase
             'status' => 'available',
             'version' => 1,
         ]);
-        self::assertFalse((bool) $apply->fetchColumn());
+        self::assertSame(0, (int) $apply->fetchColumn());
 
         $this->setTenant($this->runtime, $tenant);
         $this->insertHeld($this->runtime, $tenant, $reservationId, $unitId, $variantId, $orderId);
