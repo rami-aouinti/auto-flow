@@ -1,18 +1,22 @@
-# Configuration and Feature Management Service — Feature backlog
+# Configuration Service — Delivery status
 
-**Not implemented. Planned scope only.**
+## Implemented
+- [x] Tenant-scoped typed configuration values (JSON scalar/object/array/null).
+- [x] Immutable version history and rollback by creating a new version.
+- [x] Optimistic concurrency through expectedVersion and ETag response headers.
+- [x] Tenant-scoped feature flags with deterministic percentage rollout and allowlist.
+- [x] Audit events and transactional outbox persistence.
+- [x] Best-effort Redis cache invalidation.
+- [x] PostgreSQL schema, role migration, demo fixtures, Dockerfile and API documentation.
+- [x] Health, liveness and database readiness endpoints.
 
-## Functional capabilities
-- [ ] Define typed schemas and validation for each configuration namespace.
-- [ ] Implement tenant-scoped reads/writes and immutable version history.
-- [ ] Add feature flags, gradual rollout, targeting and kill switches.
-- [ ] Publish change events and implement Redis cache invalidation.
-- [ ] Add approval/audit workflow for sensitive business configuration.
-- [ ] Keep passwords, API keys, private keys and tokens in a secret manager.
+## Follow-up hardening
+- [ ] Deploy and monitor a dedicated transactional outbox publisher to RabbitMQ; add retry/backoff and dead-letter handling.
+- [ ] Add automated PHPUnit integration and concurrency tests against PostgreSQL and Redis.
+- [ ] Replace gateway identity headers with direct JWT/JWKS validation if the service is ever exposed outside the trusted internal network.
+- [ ] Add schema registry / JSON Schema validation per namespace and key.
+- [ ] Add approval workflows for selected high-impact settings.
+- [ ] Add OpenTelemetry traces, metrics and structured request correlation.
+- [ ] Add per-key retention policies and audit export controls.
 
-## API, security and quality
-- [ ] Define owned configuration and flag use cases; no business routes exist yet.
-- [ ] Add Keycloak JWT, audience, tenant and scope validation to business endpoints.
-- [ ] Add OpenAPI, unit/integration/contract/E2E/security tests and load tests.
-- [ ] Add optimistic concurrency, audit history, event versioning and replay strategy.
-- [ ] Add OpenTelemetry, retention/privacy controls and Kubernetes resource limits/probes.
+Do not store passwords, API keys, signing keys or access tokens in this service.
