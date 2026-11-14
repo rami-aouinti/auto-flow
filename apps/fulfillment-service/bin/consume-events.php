@@ -70,6 +70,7 @@ $channel->queue_bind('autoflow.fulfillment.integration-events', 'autoflow.vehicl
 $channel->basic_qos(null, 20, null);
 
 $handler = new FulfillmentEventHandler($db);
+fwrite(STDOUT, "Fulfillment integration event consumer started.\n");
 $channel->basic_consume(
     'autoflow.fulfillment.integration-events',
     '',
