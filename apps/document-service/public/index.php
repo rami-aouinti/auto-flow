@@ -97,7 +97,7 @@ function run():never {
         if(is_resource($scanner)){fwrite($scanner,"zPING\0");$pong=fread($scanner,32);fclose($scanner);if(is_string($pong)&&str_contains($pong,'PONG'))$checks['clamav']='ok';}
         $ready=!in_array('unavailable',$checks,true);respond(['service'=>'document-service','status'=>$ready?'ok':'not_ready','checks'=>$checks],$ready?200:503);
     }
-    if($path==='/api/doc.json')respond(['openapi'=>'3.1.0','info'=>['title'=>'AutoFlow Document API','version'=>'1.0.0'],'paths'=>['/api/v1/documents'=>['get'=>['summary'=>'List documents'],'post'=>['summary'=>'Upload document']]]]);
+    if($path==='/api/doc.json'){$spec=@file_get_contents(__DIR__.'/../docs/openapi.json');if(!is_string($spec))fail(503,'OpenAPI unavailable','Document API specification is missing.');header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');echo $spec;exit;}
     if($path==='/api/doc'){header('Location: /api/doc.json',true,302);exit;}
     $u=auth();$db=pdo();$tenant=$db->prepare("SELECT set_config('app.tenant_id', :tenant, false)");$tenant->execute(['tenant'=>$u['tenant']]);
     if($path==='/api/v1/documents'&&$method==='GET'){
