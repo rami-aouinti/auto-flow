@@ -79,9 +79,9 @@ function upload(array $u,string $id,int $v):array {
     $sock=@fsockopen(getenv('CLAMAV_HOST')?:'clamav',(int)(getenv('CLAMAV_PORT')?:3310),$errno,$err,4);if(!$sock)fail(503,'Scanner unavailable','Upload rejected because malware scanning is unavailable.');
     stream_set_timeout($sock,30);socketWriteAll($sock,"zINSTREAM\0");$in=fopen($f['tmp_name'],'rb');if(!is_resource($in)){fclose($sock);throw new RuntimeException('Could not open upload for malware scan.');}while(!feof($in)){$chunk=fread($in,65536);if($chunk===false){fclose($in);fclose($sock);throw new RuntimeException('Could not read complete upload for malware scan.');}if($chunk!=='')socketWriteAll($sock,pack('N',strlen($chunk)).$chunk);}socketWriteAll($sock,pack('N',0));$scan=stream_get_contents($sock);fclose($in);fclose($sock);
     if(!is_string($scan)||!str_ends_with(trim($scan),'OK'))fail(422,'Unprocessable Content',str_contains((string)$scan,'FOUND')?'Malware detected.':'Malware scan did not complete cleanly.');
-    $key=documentStoragePut($f['tmp_name'],$u['tenant'],$id,$v);
-    $name=basename(str_replace('\\\\','/',(string)$f['name']));$name=preg_replace('/[^A-Za-z0-9._ -]/u','_',$name)?:'document';
-    return ['key'=>$key,'name'=>mb_substr($name,0,255),'mime'=>$mime,'size'=>$size,'hash'=>hash_file('sha256',$f['tmp_name'])];
+    $hash=hash_file('sha256',$f['tmp_name']);if(!is_string($hash))throw new RuntimeException('Could not calculate document checksum.');$key=documentStoragePut($f['tmp_name'],$u['tenant'],$id,$v);
+    $name=basename(str_replace('\\','/',(string)$f['name']));$name=preg_replace('/[^A-Za-z0-9._ -]/u','_',$name)?:'document';
+    return ['key'=>$key,'name'=>mb_substr($name,0,255),'mime'=>$mime,'size'=>$size,'hash'=>$hash];
 }
 function audit(PDO $db,array $u,string $id,string $action,array $data=[]):void{$q=$db->prepare('INSERT INTO document_audit_events(tenant_id,document_id,actor_id,action,details) VALUES(:t,:d,:a,:x,:j)');$q->execute(['t'=>$u['tenant'],'d'=>$id,'a'=>$u['sub'],'x'=>$action,'j'=>json_encode($data)]);}
 function emit(PDO $db,array $u,string $id,string $type,array $data):void{$q=$db->prepare('INSERT INTO document_outbox_events(id,tenant_id,aggregate_id,event_type,payload) VALUES(:i,:t,:d,:x,:j)');$q->execute(['i'=>uuid(),'t'=>$u['tenant'],'d'=>$id,'x'=>$type,'j'=>json_encode($data)]);}
