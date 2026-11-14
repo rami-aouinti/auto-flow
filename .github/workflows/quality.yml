@@ -309,6 +309,7 @@ jobs:
           composer install \
             --working-dir=apps/notification-service \
             --no-interaction --prefer-dist --no-progress
+          php -l apps/notification-service/bin/relay-to-mercure.php
       - name: Install Billing Service dependencies and run unit tests
         run: |
           composer install \
