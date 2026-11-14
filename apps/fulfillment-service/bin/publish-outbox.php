@@ -94,6 +94,10 @@ try {
                 'message_id' => $eventId,
                 'type' => $eventType,
                 'timestamp' => time(),
+                'application_headers' => new \\PhpAmqpLib\\Wire\\AMQPTable([
+                    'tenantId' => $tenantId,
+                    'producer' => 'fulfillment-service',
+                ]),
             ]);
             $channel->basic_publish($message, 'autoflow.fulfillment.events', $eventType, true);
             $channel->wait_for_pending_acks_returns(5);
