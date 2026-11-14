@@ -18,7 +18,7 @@ use DomainException;
 #[Route('/api/v1/billing')]
 final readonly class BillingController
 {
-    public function __construct(private Connection $db, private InvoicePdfRenderer $invoicePdfRenderer)
+    public function __construct(private Connection $db, private InvoicePdfRenderer $invoicePdfRenderer, private DocumentServiceClient $documentService)
     {
     }
     #[Route('/invoices', methods:['GET'])]
@@ -51,31 +51,79 @@ final readonly class BillingController
             if (!$principal instanceof AuthenticatedPrincipal || !$principal->hasScope('billing:read') || $principal->tenantId === null) {
                 return $this->problem(403, 'Billing permission or tenant context is missing.');
             }
+            $token = preg_replace('/^Bearer\\s+/i', '', (string) $r->headers->get('Authorization')) ?? '';
+            $tenant = $principal->tenantId;
 
-            return $this->db->transactional(function (Connection $db) use ($principal, $id): Response {
-                $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $principal->tenantId]);
+            $state = $this->db->transactional(function (Connection $db) use ($tenant, $id): array {
+                $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
                 $invoice = $db->fetchAssociative(
                     'SELECT invoice_id,invoice_number,order_id,payment_id,currency,gross_minor,net_minor,tax_minor,tax_rate_basis_points,status,issued_at,billing_snapshot FROM billing_invoices WHERE tenant_id=:t AND invoice_id=:id',
-                    ['t' => $principal->tenantId, 'id' => $id],
+                    ['t' => $tenant, 'id' => $id],
                 );
                 if ($invoice === false) {
-                    return $this->problem(404, 'Invoice not found.');
+                    return ['invoice' => null, 'document' => null];
                 }
+                $document = $db->fetchAssociative(
+                    "SELECT document_id,checksum_sha256,byte_size FROM billing_document_references WHERE tenant_id=:t AND entity_type='invoice' AND entity_id=:id",
+                    ['t' => $tenant, 'id' => $id],
+                );
 
+                return ['invoice' => $invoice, 'document' => $document === false ? null : $document];
+            });
+            if ($state['invoice'] === null) {
+                return $this->problem(404, 'Invoice not found.');
+            }
+
+            $document = $state['document'];
+            if ($document === null) {
                 try {
-                    $pdf = $this->invoicePdfRenderer->render($invoice);
+                    $pdf = $this->invoicePdfRenderer->render($state['invoice']);
                 } catch (DomainException $exception) {
                     return $this->problem(409, $exception->getMessage());
                 }
+                $number = (string) $state['invoice']['invoice_number'];
+                $uploaded = $this->documentService->uploadPdf(
+                    $pdf,
+                    $number . '.pdf',
+                    'Invoice ' . $number,
+                    'invoice',
+                    $id,
+                    $token,
+                );
+                $this->db->transactional(function (Connection $db) use ($tenant, $id, $uploaded): void {
+                    $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
+                    $db->executeStatement(
+                        "INSERT INTO billing_document_references (tenant_id,entity_type,entity_id,document_id,checksum_sha256,byte_size)
+                         VALUES (:t,'invoice',:id,:document,:checksum,:size)
+                         ON CONFLICT (tenant_id,entity_type,entity_id) DO NOTHING",
+                        ['t' => $tenant, 'id' => $id, 'document' => $uploaded['id'], 'checksum' => $uploaded['checksum'], 'size' => $uploaded['byteSize']],
+                    );
+                });
+                $document = $this->db->transactional(function (Connection $db) use ($tenant, $id): array {
+                    $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
+                    $row = $db->fetchAssociative(
+                        "SELECT document_id,checksum_sha256,byte_size FROM billing_document_references WHERE tenant_id=:t AND entity_type='invoice' AND entity_id=:id",
+                        ['t' => $tenant, 'id' => $id],
+                    );
+                    if ($row === false) {
+                        throw new RuntimeException('Invoice document reference was not persisted.');
+                    }
+                    return $row;
+                });
+            }
 
-                $filename = preg_replace('/[^A-Za-z0-9._-]/', '-', (string) $invoice['invoice_number']);
-                return new Response($pdf, 200, [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'attachment; filename="' . $filename . '.pdf"',
-                    'Cache-Control' => 'private, no-store',
-                    'X-Content-Type-Options' => 'nosniff',
-                ]);
-            });
+            $content = $this->documentService->download((string) $document['document_id'], $token);
+            if (!hash_equals((string) $document['checksum_sha256'], hash('sha256', $content))) {
+                throw new RuntimeException('Invoice PDF failed its SHA-256 integrity check.');
+            }
+            $filename = preg_replace('/[^A-Za-z0-9._-]/', '-', (string) $state['invoice']['invoice_number']);
+            return new Response($content, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '.pdf"',
+                'Cache-Control' => 'private, no-store',
+                'X-Content-SHA256' => (string) $document['checksum_sha256'],
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
         } catch (Throwable) {
             return $this->problem(503, 'Invoice document is temporarily unavailable.');
         }
