@@ -4,7 +4,7 @@
 
 | Service | Responsibility | First real milestone |
 |---|---|---|
-| Search | Shared vehicle-catalogue search in Elasticsearch | RabbitMQ event synchronization, alias-based reindexing and cross-domain projections |
+| Search | Shared vehicle-catalogue search in Elasticsearch | Incremental event projection, retention, SLOs and cross-domain projections |
 | Workflow | Temporal workflow definitions and orchestration | Versioned leasing/order workflows, signals, retries and compensations |
 | Integration | External-provider adapters and webhooks | Provider registry, secret references, signature verification and retry/DLQ |
 | Document | Document metadata, versions, access, retention | Object storage, authorization, checksums and malware scan |
@@ -39,7 +39,7 @@
 
 ## Current scaffold endpoints
 
-Workflow, Integration, Document, Audit, Analytics, Media and Configuration expose health-only endpoints (`/health`, `/health/live`, `/health/ready`). Search is a real Symfony/RoadRunner API with authenticated vehicle search and autocomplete at `/api/v1/search/vehicles` and `/api/v1/search/vehicles/suggest`; it builds its projection from the published Vehicle Catalog read model. Continuous event-driven synchronization and blue/green reindexing remain open.
+Workflow, Integration, Document, Audit, Analytics, Media and Configuration expose health-only endpoints (`/health`, `/health/live`, `/health/ready`). Search is a real Symfony/RoadRunner API with authenticated vehicle search and autocomplete at `/api/v1/search/vehicles` and `/api/v1/search/vehicles/suggest`; it builds its projection from the published Vehicle Catalog read model. RabbitMQ Outbox synchronization and atomic alias-based reindexing are implemented; incremental indexing, old-index retention and cross-domain projections remain open.
 
 ## Local run
 
@@ -53,7 +53,7 @@ Loopback ports: Workflow 8098, Integration 8099, Document 8100, Audit 8101, Anal
 
 ## Implementation sequence
 
-1. Search: catalogue event synchronization and alias-based reindexing.
+1. Search: incremental catalogue event projection, retention and operational SLOs.
 2. Workflow: end-to-end leasing workflow and activity ownership.
 3. Integration: provider adapters and webhook reliability.
 4. Document + Media: decide ownership, then object storage and scanning.
