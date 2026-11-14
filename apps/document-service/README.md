@@ -56,7 +56,7 @@ The gateway exposes the same API under `http://localhost:8088/api/v1/documents`.
 
 The realm export now includes the `autoflow-document` audience mapper and the `documents:read`, `documents:write` and `documents:manage` realm roles. The seeded `demo` and `order-operator` users receive these roles. If Keycloak already imported the realm before this change, the import process will not overwrite an existing realm: add the audience mapper and roles in the Keycloak Admin Console (or recreate the local development realm), then obtain a fresh access token.
 
-## Security notes and boundaries
+## Object storage, retention and sharing\n\n- Compose starts MinIO, creates a private bucket and a least-privilege application user, and enables SSE-C AES-256 object encryption. Keep `DOCUMENT_S3_SSE_C_KEY_BASE64` stable and back it up securely; losing it makes stored objects unreadable.\n- Upload and download operations use a small AWS Signature Version 4 adapter and path-style S3 requests. Set `DOCUMENT_STORAGE_DRIVER=local` only for isolated local filesystem development.\n- `document-retention-worker` permanently deletes expired objects and historical versions hourly. Active legal holds prevent purge, archive and soft-delete. Purge metadata is retained in `document_purge_events`.\n- Owners can grant another Keycloak subject `read` or `manage` access, optionally with an expiry, and revoke grants.\n\n## Security notes and boundaries
 
 - JWT signature, issuer, audience, expiry and tenant claim are checked before business routes.
 - Every document lookup is scoped by the tenant claim; storage keys are never returned by metadata APIs.
