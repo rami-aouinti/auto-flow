@@ -77,6 +77,22 @@ async function openBillingDetail(kind: 'invoice' | 'credit-note', row: Row) {
   finally { detailLoading.value = false; }
 }
 
+async function downloadInvoice(row: Row) {
+  const id = String(row.invoice_id ?? '');
+  if (!id) return;
+  try {
+    const response = await billing.downloadInvoiceDocument(id);
+    const url = URL.createObjectURL(response.data);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${String(row.invoice_number ?? id)}.pdf`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    error.value = errorMessage(e);
+  }
+}
+
 async function loadAll() {
   loading.value = true; clearMessages();
   const jobs = await Promise.allSettled([
@@ -266,9 +282,9 @@ onMounted(loadAll);
           <v-col cols="12" md="6"><v-card rounded="xl" border elevation="0"><v-card-title>Credit notes</v-card-title><v-card-text class="text-h4 font-weight-bold">{{ billingSummary?.creditNotes?.credit_note_count ?? creditNoteRows.length }}</v-card-text><v-card-subtitle>Gross credited: {{ ((billingSummary?.creditNotes?.credited_gross_minor ?? 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) }}</v-card-subtitle></v-card></v-col>
         </v-row>
         <v-card rounded="xl" border elevation="0" class="mb-4"><v-card-title>Invoices</v-card-title>
-          <v-table><thead><tr><th>Invoice</th><th>Order</th><th>Gross</th><th>Status</th><th>Issued</th></tr></thead><tbody>
-            <tr v-for="row in invoiceRows" :key="row.invoice_id"><td><v-btn size="small" variant="text" @click="openBillingDetail('invoice',row)">{{ row.invoice_number || row.invoice_id }}</v-btn></td><td class="text-caption">{{ row.order_id }}</td><td>{{ ((Number(row.gross_minor) || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: row.currency || 'EUR' }) }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.issued_at }}</td></tr>
-            <tr v-if="!invoiceRows.length"><td colspan="5" class="text-center text-medium-emphasis py-6">No invoices found.</td></tr>
+          <v-table><thead><tr><th>Invoice</th><th>Order</th><th>Gross</th><th>Status</th><th>Issued</th><th>Document</th></tr></thead><tbody>
+            <tr v-for="row in invoiceRows" :key="row.invoice_id"><td><v-btn size="small" variant="text" @click="openBillingDetail('invoice',row)">{{ row.invoice_number || row.invoice_id }}</v-btn></td><td class="text-caption">{{ row.order_id }}</td><td>{{ ((Number(row.gross_minor) || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: row.currency || 'EUR' }) }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.issued_at }}</td><td><v-btn v-if="row.status === 'issued'" size="small" variant="tonal" prepend-icon="mdi-file-pdf-box" @click="downloadInvoice(row)">PDF</v-btn><span v-else class="text-caption text-medium-emphasis">Legal data missing</span></td></tr>
+            <tr v-if="!invoiceRows.length"><td colspan="6" class="text-center text-medium-emphasis py-6">No invoices found.</td></tr>
           </tbody></v-table>
         </v-card>
         <v-card rounded="xl" border elevation="0"><v-card-title>Credit notes</v-card-title>
