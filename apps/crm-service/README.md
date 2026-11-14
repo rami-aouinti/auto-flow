@@ -19,9 +19,10 @@ All routes require a verified Keycloak bearer token, tenant claim and the permis
 
 | Method | Endpoint | Permission | Purpose |
 |---|---|---|---|
-| POST | /api/v1/crm/applications | crm:applications:write | Submit a leasing application; requires Idempotency-Key |
+| POST | /api/v1/crm/applications | crm:applications:write + customers:read; optional offer/quote/vehicle references require their read scopes | Submit a leasing application; requires Idempotency-Key |
 | GET | /api/v1/crm/applications | crm:applications:read | Filter and paginate applications |
 | GET | /api/v1/crm/applications/{id} | crm:applications:read | Read an application |
+| POST | /api/v1/crm/applications/{id}/convert | crm:applications:manage + orders:write | Convert an approved, eligible application into an Order |
 | POST | /api/v1/crm/applications/{id}/convert | crm:applications:manage + orders:write | Create an Order from an approved, eligible application |
 | PATCH | /api/v1/crm/applications/{id}/status | crm:applications:manage | Execute a permitted lifecycle transition |
 | PUT | /api/v1/crm/applications/{id}/assignment | crm:applications:assign | Assign a sales advisor |
@@ -51,6 +52,7 @@ The transactional Outbox publishes persistent messages to the `autoflow.crm.even
 - `crm.application.status_changed.v1`
 - `crm.application.advisor_assigned.v1`
 - `crm.application.eligibility_updated.v1`
+- `crm.application.converted.v1`
 
 Each envelope contains `eventId`, `eventType`, `schemaVersion`, `occurredAt`, `tenantId`, `producer` and `payload`. Publisher confirms are required before an Outbox row is marked published; failures are retried with bounded exponential backoff.
 
@@ -61,11 +63,13 @@ docker compose --env-file .env.example up -d --build crm-service crm-outbox-publ
 curl http://localhost:8094/health/ready
 ```
 
-The local Keycloak realm includes the `autoflow-crm` audience and CRM permissions for the demo user. Local-only database credentials are not production secrets.
+The local Keycloak realm includes the `autoflow-crm` audience and CRM permissions for the demo user. The demo user also needs `orders:write` and the upstream read permissions/audiences to convert applications. Keycloak only imports the realm on first creation; add `orders:write` to an existing demo user manually if the realm already exists. Local-only database credentials are not production secrets.
 
 ## Explicit integration work still required
 
 - Customer, offer, quote and vehicle references are validated synchronously through their owning APIs using the caller token; no cross-service database access is used.
 - Implement automated eligibility-provider adapters and policy governance; current API records human/system review results only.
 - Customer/offer lifecycle event consumers and Inbox deduplication remain future work; current submission/conversion paths revalidate references synchronously.
+- Automated credit/eligibility provider adapters and governance remain future work; CRM only records human review outcomes.
+- Full PostgreSQL RLS and RabbitMQ end-to-end tests, including duplicate publication and retry recovery, remain required before production.
 - Add full PostgreSQL RLS and RabbitMQ end-to-end integration tests, including duplicate publication and retry recovery.
