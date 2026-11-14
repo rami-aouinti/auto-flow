@@ -11,7 +11,7 @@ Symfony 7.4 / PHP 8.4 bounded context for payment lifecycle management. Stripe i
 - Never store PAN, CVC, expiry or raw card data. Stripe.js/Payment Element handles payment details.
 
 ## Order integration boundary
-Payment accepts only an order ID from the caller. Before contacting Stripe it calls Order Service over the private network, authenticates with `X-Autoflow-Service-Token`, verifies the tenant and requires the order status to be `accepted`. Order derives `amountMinor` and `currency` from its immutable quote snapshot; request-supplied amounts are ignored. Configure `ORDER_PAYMENT_CONTEXT_URL` and the same high-entropy `ORDER_PAYMENT_SHARED_SECRET` in both services. The local default in Compose is for development only.
+Payment accepts only an order ID from the caller. Before contacting Stripe it calls Order Service over the private network, authenticates with `X-Autoflow-Service-Token`, verifies the tenant and requires the order status to be `accepted`. Order derives `amountMinor` and `currency` from its immutable quote snapshot; request-supplied amounts are ignored. Order also supplies the immutable customer/legal billing snapshot, which Payment persists with the payment and includes in captured/refund events for Billing; this snapshot is not returned by the Payment API. Configure `ORDER_PAYMENT_CONTEXT_URL` and the same high-entropy `ORDER_PAYMENT_SHARED_SECRET` in both services. The local default in Compose is for development only.
 
 ## Configuration
 Set PAYMENT_DATABASE_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, AUTOFLOW_JWT_ISSUER and AUTOFLOW_JWT_JWKS_URI. Use Stripe test keys locally; never commit live credentials.
