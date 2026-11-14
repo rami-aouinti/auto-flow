@@ -55,7 +55,7 @@ The Domain model enforces allowed transitions. The application locks the order r
 - Customer, Offer, quote and vehicle snapshots are immutable through the lifecycle API. Customer references are UUIDs only; no cross-service foreign key or database join is used. Existing orders created before this migration retain a null customer reference, while all new order commands require one.
 - Each state change appends an audit row and an integration event in the same transaction.
 - The Outbox publisher has a separate `autoflow_order_publisher` login that can only execute narrow SECURITY DEFINER claim/ack/retry functions. Those functions are owned by a dedicated non-login BYPASSRLS role with access only to the Outbox table; neither runtime login receives BYPASSRLS. Retries stop after ten failed attempts and leave a terminal failed row for operator inspection.
-- RabbitMQ delivery is at-least-once. Consumers must deduplicate by `eventId`.
+- RabbitMQ delivery is at-least-once. The Payment event consumer validates the producer, schema version, event type, tenant and RabbitMQ metadata; its tenant-scoped Inbox stores a SHA-256 payload fingerprint. Exact redeliveries are ignored, while reuse of an `eventId` with different bytes is rejected to the DLQ. Transient database failures are requeued.
 - Rejection requires a reason. Terminal states cannot transition further.
 - CoreBundle propagates correlation IDs and verifies JWTs; OpenTelemetry exports traces and low-cardinality business counters.
 
