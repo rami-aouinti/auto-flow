@@ -393,3 +393,28 @@ for replacing RabbitMQ or Temporal in backend workflows.
 The architecture documentation explains the product domain, service boundaries, DDD, Clean / Hexagonal Architecture, communication patterns, data consistency, quality practices and the reasoning behind major technology choices.
 
 Start with the [AutoFlow Engineering & Architecture Wiki](docs/wiki/README.md). The chapters distinguish implemented capabilities, technical demonstrations and target architecture so that planned work is not confused with delivered functionality.
+
+## New bounded-context scaffolds (health-only)
+
+The following services have been added to Docker Compose as **health-only scaffolds**. They expose `GET /health`, `GET /health/live` and `GET /health/ready`; no business API is implemented yet. Their full responsibilities and unchecked implementation features are documented in each service's `README.md` and `docs/FEATURE_BACKLOG.md`.
+
+| Service | Local health URL | Planned responsibility |
+|---|---|---|
+| Search | http://localhost:8097/health/ready | Tenant-safe Elasticsearch read projections and search |
+| Workflow | http://localhost:8098/health/ready | Temporal orchestration, workflow versions and Saga coordination |
+| Integration | http://localhost:8099/health/ready | External provider adapters, webhooks and delivery reliability |
+| Document | http://localhost:8100/health/ready | Document metadata, versions, access and retention |
+| Audit | http://localhost:8101/health/ready | Immutable cross-domain audit projection and compliance exports |
+| Analytics | http://localhost:8102/health/ready | Event-driven read models, KPIs and reports |
+| Media | http://localhost:8103/health/ready | Binary asset processing, transformations and delivery |
+| Configuration | http://localhost:8104/health/ready | Typed tenant configuration and feature flags |
+
+These containers use `docker/php/skeleton-service.Dockerfile` and PHP's built-in server for local bootstrap only. They are not production-ready Symfony/RoadRunner services. Business endpoints must not be routed through Traefik until authentication, tenant isolation, OpenAPI and tests are implemented. See [the missing-services roadmap](docs/architecture/missing-services-roadmap.md).
+
+Start and check them:
+
+```bash
+docker compose --env-file .env.example config --quiet
+docker compose --env-file .env.example up -d --build search-service workflow-service integration-service document-service audit-service analytics-service media-service configuration-service
+./scripts/check-skeleton-health.sh
+```
