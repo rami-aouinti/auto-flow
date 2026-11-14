@@ -18,7 +18,7 @@
 - Search is a projection, never source of truth. Every index and query must enforce tenant scope.
 - Workflow coordinates domain services; it does not own Order, Payment, Reservation or Contract aggregates. Temporal workflows must be deterministic; I/O belongs in Activities.
 - Integration owns provider transport concerns, not business decisions. Payment and Contract remain owners of their aggregates. Store secret references only.
-- Document owns document metadata/lifecycle only after explicit ownership decisions. Contract and Billing remain authoritative for their records; avoid duplicate PDF generation.
+- Document owns binary storage and document metadata/lifecycle. Contract and Billing remain authoritative for their business workflows and PDF generation; they reference Document IDs rather than duplicating file storage.
 - Audit consumes service-owned transactional audit/outbox records; it does not replace local atomic audit writes.
 - Analytics is asynchronous/read-only; never scan OLTP databases for reports.
 - Media owns binary asset processing. Document owns business-document lifecycle; define MIME/type boundaries.
@@ -48,7 +48,7 @@ docker compose --env-file .env.example config --quiet
 docker compose --env-file .env.example up -d --build workflow-service integration-service audit-service analytics-service media-service configuration-service
 # Document has its own PostgreSQL, RabbitMQ and ClamAV dependencies:
 docker compose --env-file .env.example up -d --build postgres postgres-bootstrap rabbitmq clamav document-service document-outbox-publisher
-sh scripts/check-skeleton-health.sh
+sh scripts/check-skeleton-health.sh # checks only the six remaining health-only scaffolds
 ```
 
 Loopback ports: Workflow 8098, Integration 8099, Audit 8101, Analytics 8102, Media 8103, Configuration 8104. Document API is on 8100 and is also routed through the API Gateway. Search runs on 8097 as a Symfony/RoadRunner API.
