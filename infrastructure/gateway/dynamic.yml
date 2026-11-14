@@ -14,6 +14,8 @@ http:
         accessControlAllowOriginList:
           - "http://localhost:3000"
           - "http://127.0.0.1:3000"
+          - "http://localhost:8096"
+          - "http://127.0.0.1:8096"
         accessControlAllowMethods:
           - GET
           - POST
@@ -55,6 +57,12 @@ http:
           - api-in-flight
 
   routers:
+    ai:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/ai`) "
+      service: ai
+      middlewares: [api-defaults]
+
     contract-webhook:
       entryPoints: [web]
       rule: "Path(`/webhooks/docusign`)"
@@ -144,6 +152,12 @@ http:
       middlewares: [api-defaults]
 
   services:
+    ai:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://ai-service:8080"
+
     contracts:
       loadBalancer:
         passHostHeader: true
