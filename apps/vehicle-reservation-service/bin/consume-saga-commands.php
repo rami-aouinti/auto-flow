@@ -85,19 +85,29 @@ $channel->basic_consume(
             $eventType = $command['eventType'] ?? null;
             $tenantId = $command['tenantId'] ?? null;
             $data = $command['data'] ?? null;
+            $aggregate = $command['aggregate'] ?? null;
             if (!is_string($eventId) || !Uuid::isValid($eventId)
+                || !is_string($eventType) || !in_array($eventType, [
+                    'reservation.hold.requested.v1',
+                    'reservation.confirm.requested.v1',
+                    'reservation.release.requested.v1',
+                ], true)
+                || ($command['schemaVersion'] ?? null) !== 1
+                || ($command['producer'] ?? null) !== 'order-workflow-worker'
                 || !is_string($tenantId) || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $tenantId)
+                || !is_array($aggregate) || ($aggregate['type'] ?? null) !== 'Order'
+                || !is_string($aggregate['id'] ?? null) || !Uuid::isValid($aggregate['id'])
                 || !is_array($data) || array_is_list($data)
             ) {
-                throw new InvalidArgumentException('Command requires UUID eventId, valid tenantId and object data.');
+                throw new InvalidArgumentException('Command requires a supported versioned Order command envelope.');
             }
             if (($message->get('message_id') ?? null) !== $eventId || ($message->get('type') ?? null) !== $eventType) {
                 throw new InvalidArgumentException('RabbitMQ metadata does not match command envelope.');
             }
 
             $orderId = $data['orderId'] ?? null;
-            if (!is_string($orderId) || !Uuid::isValid($orderId)) {
-                throw new InvalidArgumentException('Command data.orderId must be a UUID.');
+            if (!is_string($orderId) || !Uuid::isValid($orderId) || $orderId !== $aggregate['id']) {
+                throw new InvalidArgumentException('Command data.orderId must match the Order aggregate UUID.');
             }
 
             if ($eventType === 'reservation.hold.requested.v1') {
