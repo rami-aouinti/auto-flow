@@ -1,39 +1,41 @@
 # AutoFlow AI Service
 
-The AI Service is the provider-integration boundary for AutoFlow. It owns communication with external model providers and returns a provider-neutral response contract. Business decisions and authoritative vehicle/pricing data remain owned by their respective services.
+The AI Service is the provider-integration boundary for AutoFlow. It owns communication with model providers and returns a provider-neutral response contract. Business decisions and authoritative vehicle/pricing data remain owned by their respective services.
 
-## First vertical slice
+## Local provider
 
-- Symfony 7.4 / PHP 8.4.
-- RoadRunner HTTP worker, following the existing AutoFlow runtime.
-- Provider port and an OpenAI adapter.
-- POST /api/v1/ai/chat accepts a bounded list of system/user/assistant messages.
-- Provider credentials and model selection are configured through environment variables.
-- Provider errors are normalized; upstream response bodies and secrets are not returned.
+The default local provider is **Ollama**. No API key or paid cloud account is required. Docker Compose starts Ollama, downloads the configured model into the persistent `ollama-data` volume, and starts the Symfony AI service after the model is available.
 
-## Configuration
+Defaults:
 
-- OPENAI_API_KEY: secret API key. Inject through a secret manager in shared environments.
-- OPENAI_MODEL: model identifier enabled for the project.
-- OPENAI_BASE_URI: optional API base URI; defaults to the OpenAI v1 API.
+- `OLLAMA_BASE_URI=http://ollama:11434`
+- `OLLAMA_MODEL=qwen2.5:3b`
+- Ollama API: `http://localhost:11434` from the host
+- AI API: `http://localhost:8095`
 
-Never commit a real API key.
+Change `OLLAMA_MODEL` in the root `.env` to select another model. The model is downloaded on first startup and may require several GB of disk space and sufficient RAM. Model files remain in the Docker volume across container recreations.
 
-## Local request
+## API
 
-The service is available directly at `http://localhost:8095` in the local Compose stack. It is intentionally not exposed through the public Traefik gateway until tenant authorization and quotas are implemented.
+`POST /api/v1/ai/chat`
 
-
-POST /api/v1/ai/chat
-Content-Type: application/json
-
+```json
 {
   "messages": [
     {"role": "system", "content": "You are the AutoFlow vehicle assistant."},
     {"role": "user", "content": "Explain the difference between leasing and financing."}
   ]
 }
+```
 
-## Security / production hardening
+The response includes generated content, provider/model metadata and token counts when reported by the local runtime.
 
-This initial provider-integration slice is not yet exposed through the public Traefik gateway. Before routing user traffic to it, add a service-specific Keycloak audience/scopes, tenant-aware authorization, per-tenant quotas, request correlation, usage persistence, retry policy and provider timeout/circuit-breaker policy. Do not pass arbitrary user-controlled provider/model names through the API.
+## Health and operations
+
+- `/health/ready` checks that Ollama responds and that the configured model is installed.
+- Ollama model downloads are performed by the one-shot `ollama-model-init` Compose service.
+- `ollama-data` is persistent. Do not remove it with `docker compose down -v` unless you intentionally want to delete downloaded models.
+
+## Security
+
+The local Ollama endpoint is bound to loopback on the host and is not routed through the public Traefik gateway. Keep it private; do not expose the unauthenticated local model API to the internet. Before routing AI requests to tenants, add service-specific Keycloak audience/scopes, tenant-aware authorization, per-tenant quotas, usage persistence, request correlation, retry policy and provider timeout/circuit-breaker policy.
