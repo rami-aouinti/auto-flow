@@ -63,7 +63,10 @@ func TestLiveRabbitMQTemporalSagaStartsAndPublishesReservationHold(t *testing.T)
 	tenantID := "temporal-e2e-" + integrationUUID()[:8]
 	orderID := integrationUUID()
 	variantID := integrationUUID()
-	workflowID := sagaWorkflowID(Event{TenantID: tenantID, Aggregate: Aggregate{Type: "Order", ID: orderID}})
+	workflowIdentity := Event{TenantID: tenantID}
+	workflowIdentity.Aggregate.Type = "Order"
+	workflowIdentity.Aggregate.ID = orderID
+	workflowID := sagaWorkflowID(workflowIdentity)
 
 	publishOrderEvent := func(eventType string, data map[string]any) {
 		t.Helper()
