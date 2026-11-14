@@ -6,6 +6,10 @@ namespace App\Tests\Unit;
 
 use App\Presentation\Http\Controller\CustomerController;
 use App\Presentation\Http\Controller\CustomerPortalController;
+use App\Presentation\Http\Controller\MercureAccessController;
+use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
+use Doctrine\DBAL\Connection;
+use Symfony\Component\HttpFoundation\Request;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -102,3 +106,91 @@ final class CustomerRulesTest extends TestCase
         ]);
     }
 }
+
+    public function testPortalRejectsPrincipalsWithoutPortalScope(): void
+    {
+        $db = $this->createMock(Connection::class);
+        $db->expects(self::never())->method('transactional');
+        $controller = new CustomerPortalController($db);
+        $request = Request::create('/api/v1/customers/me');
+        $request->attributes->set(
+            AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
+            new AuthenticatedPrincipal('user-1', 'tenant-a', ['customers:read']),
+        );
+
+        $response = $controller->profile($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertStringContainsString('customers:portal', (string) $response->getContent());
+    }
+
+    public function testPortalRejectsMissingTenantContext(): void
+    {
+        $db = $this->createMock(Connection::class);
+        $db->expects(self::never())->method('transactional');
+        $controller = new CustomerPortalController($db);
+        $request = Request::create('/api/v1/customers/me');
+        $request->attributes->set(
+            AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
+            new AuthenticatedPrincipal('user-1', null, ['customers:portal']),
+        );
+
+        $response = $controller->profile($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertStringContainsString('Tenant context is missing', (string) $response->getContent());
+    }
+
+    public function testMercureAccessIssuesOnlyTenantScopedHttpOnlyCookie(): void
+    {
+        $previousKey = getenv('MERCURE_SUBSCRIBER_JWT_KEY');
+        $previousBase = getenv('AUTOFLOW_MERCURE_TOPIC_BASE');
+        putenv('MERCURE_SUBSCRIBER_JWT_KEY=' . str_repeat('subscriber-key-', 4));
+        putenv('AUTOFLOW_MERCURE_TOPIC_BASE=https://events.autoflow.test/tenants');
+
+        try {
+            $request = Request::create('https://api.autoflow.test/api/v1/realtime/access');
+            $request->attributes->set(
+                AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
+                new AuthenticatedPrincipal('user-1', 'tenant-a', ['customers:read']),
+            );
+
+            $response = (new MercureAccessController())->access($request);
+            $payload = json_decode((string) $response->getContent(), true, 512, JSON_THROW_ON_ERROR);
+            $cookies = $response->headers->getCookies();
+
+            self::assertSame(200, $response->getStatusCode());
+            self::assertSame('https://events.autoflow.test/tenants/tenant-a/events', $payload['topic']);
+            self::assertCount(1, $cookies);
+            self::assertSame('mercureAuthorization', $cookies[0]->getName());
+            self::assertTrue($cookies[0]->isHttpOnly());
+            self::assertTrue($cookies[0]->isSecure());
+
+            $segments = explode('.', $cookies[0]->getValue());
+            self::assertCount(3, $segments);
+            $jwtPayload = json_decode(
+                base64_decode(strtr($segments[1], '-_', '+/') . str_repeat('=', (4 - strlen($segments[1]) % 4) % 4)),
+                true,
+                512,
+                JSON_THROW_ON_ERROR,
+            );
+            self::assertSame([$payload['topic']], $jwtPayload['mercure']['subscribe']);
+        } finally {
+            putenv('MERCURE_SUBSCRIBER_JWT_KEY' . ($previousKey === false ? '' : '=' . $previousKey));
+            putenv('AUTOFLOW_MERCURE_TOPIC_BASE' . ($previousBase === false ? '' : '=' . $previousBase));
+        }
+    }
+
+    public function testMercureAccessRejectsUsersWithoutCustomerReadScope(): void
+    {
+        putenv('MERCURE_SUBSCRIBER_JWT_KEY=' . str_repeat('subscriber-key-', 4));
+        $request = Request::create('https://api.autoflow.test/api/v1/realtime/access');
+        $request->attributes->set(
+            AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
+            new AuthenticatedPrincipal('user-1', 'tenant-a', ['customers:portal']),
+        );
+
+        $response = (new MercureAccessController())->access($request);
+
+        self::assertSame(403, $response->getStatusCode());
+    }
