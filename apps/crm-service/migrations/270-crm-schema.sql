@@ -114,3 +114,41 @@ BEGIN
   EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON %I TO autoflow_crm',t);
  END LOOP;
 END $$;
+
+DO $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='autoflow_crm_publisher') THEN
+  CREATE ROLE autoflow_crm_publisher LOGIN PASSWORD 'local-only-crm-publisher-password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+ END IF;
+END $$;
+ALTER ROLE autoflow_crm_publisher WITH LOGIN PASSWORD 'local-only-crm-publisher-password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+GRANT CONNECT ON DATABASE autoflow TO autoflow_crm_publisher;
+GRANT USAGE ON SCHEMA public TO autoflow_crm_publisher;
+CREATE OR REPLACE FUNCTION public.crm_outbox_claim()
+RETURNS TABLE(tenant_id VARCHAR,event_id UUID,event_type VARCHAR,payload JSONB)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public SET row_security=off AS $$
+BEGIN
+ RETURN QUERY
+ WITH picked AS (
+  SELECT o.tenant_id,o.event_id FROM public.crm_outbox_events o
+  WHERE o.published_at IS NULL AND o.next_attempt_at<=CURRENT_TIMESTAMP
+  ORDER BY o.occurred_at FOR UPDATE SKIP LOCKED LIMIT 50
+ )
+ UPDATE public.crm_outbox_events o SET attempts=o.attempts+1
+ FROM picked p WHERE o.tenant_id=p.tenant_id AND o.event_id=p.event_id
+ RETURNING o.tenant_id,o.event_id,o.event_type,o.payload;
+END $$;
+CREATE OR REPLACE FUNCTION public.crm_outbox_mark_published(p_tenant VARCHAR,p_event UUID)
+RETURNS VOID LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,public SET row_security=off AS $$
+ UPDATE public.crm_outbox_events SET published_at=CURRENT_TIMESTAMP,last_error=NULL
+ WHERE tenant_id=p_tenant AND event_id=p_event AND published_at IS NULL;
+$$;
+CREATE OR REPLACE FUNCTION public.crm_outbox_schedule_retry(p_tenant VARCHAR,p_event UUID,p_error TEXT)
+RETURNS VOID LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,public SET row_security=off AS $$
+ UPDATE public.crm_outbox_events SET next_attempt_at=CURRENT_TIMESTAMP + LEAST(300, power(2, LEAST(attempts,8))::integer) * INTERVAL '1 second',
+ last_error=left(p_error,500)
+ WHERE tenant_id=p_tenant AND event_id=p_event AND published_at IS NULL;
+$$;
+GRANT EXECUTE ON FUNCTION public.crm_outbox_claim() TO autoflow_crm_publisher;
+GRANT EXECUTE ON FUNCTION public.crm_outbox_mark_published(VARCHAR,UUID) TO autoflow_crm_publisher;
+GRANT EXECUTE ON FUNCTION public.crm_outbox_schedule_retry(VARCHAR,UUID,TEXT) TO autoflow_crm_publisher;
