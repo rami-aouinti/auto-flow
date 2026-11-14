@@ -1,10 +1,10 @@
 # AutoFlow — Missing service bootstrap and implementation roadmap
 
-**Status:** health-only scaffold. These services do not implement business functionality yet.
+**Status:** Search has an implemented vehicle-catalogue API and Elasticsearch projection; the other seven services remain health-only scaffolds.
 
 | Service | Responsibility | First real milestone |
 |---|---|---|
-| Search | Tenant-safe read projections in Elasticsearch | Consume versioned domain events, build indexes and expose query API |
+| Search | Shared vehicle-catalogue search in Elasticsearch | RabbitMQ event synchronization, alias-based reindexing and cross-domain projections |
 | Workflow | Temporal workflow definitions and orchestration | Versioned leasing/order workflows, signals, retries and compensations |
 | Integration | External-provider adapters and webhooks | Provider registry, secret references, signature verification and retry/DLQ |
 | Document | Document metadata, versions, access, retention | Object storage, authorization, checksums and malware scan |
@@ -39,10 +39,7 @@
 
 ## Current scaffold endpoints
 
-- GET /health — liveness compatibility endpoint.
-- GET /health/live — process liveness.
-- GET /health/ready — readiness plus configured dependency TCP checks.
-- No /api business route is implemented. Do not advertise these services as feature-complete or route business traffic to them.
+Workflow, Integration, Document, Audit, Analytics, Media and Configuration expose health-only endpoints (`/health`, `/health/live`, `/health/ready`). Search is a real Symfony/RoadRunner API with authenticated vehicle search and autocomplete at `/api/v1/search/vehicles` and `/api/v1/search/vehicles/suggest`; it builds its projection from the published Vehicle Catalog read model. Continuous event-driven synchronization and blue/green reindexing remain open.
 
 ## Local run
 
@@ -56,7 +53,7 @@ Loopback ports: Search 8097, Workflow 8098, Integration 8099, Document 8100, Aud
 
 ## Implementation sequence
 
-1. Search: event contracts and tenant-safe indexing.
+1. Search: catalogue event synchronization and alias-based reindexing.
 2. Workflow: end-to-end leasing workflow and activity ownership.
 3. Integration: provider adapters and webhook reliability.
 4. Document + Media: decide ownership, then object storage and scanning.
