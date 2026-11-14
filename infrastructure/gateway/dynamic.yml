@@ -131,6 +131,12 @@ http:
       service: reservations
       middlewares: [api-defaults]
 
+    fulfillments:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/fulfillments`)"
+      service: fulfillments
+      middlewares: [api-defaults]
+
     inventory:
       entryPoints: [web]
       rule: "PathPrefix(`/api/v1/inventory`)"
@@ -233,6 +239,16 @@ http:
         passHostHeader: true
         servers:
           - url: "http://vehicle-reservation-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    fulfillments:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://fulfillment-service:8080"
         healthCheck:
           path: /health/ready
           interval: 10s
