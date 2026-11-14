@@ -160,4 +160,48 @@ END
 $function$;
 ALTER FUNCTION public.vehicle_stock_sync_reservation() OWNER TO autoflow_reservation_stock_owner;
 
+-- Backfill the projection for physical units that existed before the consumer was deployed.
+DO $identity$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM public.inventory_units i
+        JOIN public.vehicle_stock_units s
+          ON s.tenant_id = i.tenant_id AND s.vehicle_unit_id = i.inventory_unit_id
+        WHERE s.vehicle_variant_id <> i.vehicle_variant_id
+           OR (s.vin IS NOT NULL AND s.vin <> i.vin)
+    ) THEN
+        RAISE EXCEPTION 'Existing Reservation stock conflicts with Inventory physical unit identity';
+    END IF;
+END
+$identity$;
+
+INSERT INTO public.vehicle_stock_units (
+    tenant_id,vehicle_unit_id,vehicle_variant_id,vin,status,inventory_status,inventory_version
+)
+SELECT
+    i.tenant_id,
+    i.inventory_unit_id,
+    i.vehicle_variant_id,
+    i.vin,
+    CASE WHEN i.status = 'available' THEN 'available'
+         WHEN i.status = 'sold' THEN 'sold'
+         ELSE 'unavailable' END,
+    i.status,
+    i.version
+FROM public.inventory_units i
+ON CONFLICT (tenant_id,vehicle_unit_id) DO UPDATE
+SET vin = EXCLUDED.vin,
+    inventory_status = EXCLUDED.inventory_status,
+    inventory_version = EXCLUDED.inventory_version,
+    status = CASE
+        WHEN public.vehicle_stock_units.status IN ('reserved','sold') THEN public.vehicle_stock_units.status
+        WHEN EXCLUDED.inventory_status = 'available' THEN 'available'
+        WHEN EXCLUDED.inventory_status = 'sold' THEN 'sold'
+        ELSE 'unavailable'
+    END,
+    updated_at = clock_timestamp()
+WHERE public.vehicle_stock_units.inventory_version < EXCLUDED.inventory_version
+  AND public.vehicle_stock_units.vehicle_variant_id = EXCLUDED.vehicle_variant_id;
+
 -- Holds are possible only for units whose latest Inventory state is available.
