@@ -16,6 +16,7 @@ The AutoFlow frontend is a Nuxt 4 + Vue 3 + Vuetify 3 application. It is deliver
 - `/admin/customer-360` — customer 360 workspace with profile editing, addresses, consents, orders, contracts, audit history and audited Keycloak identity linking.
 - `/portal` — self-service profile, editable addresses and consent workspace, restricted to the customer record mapped to the verified Keycloak subject; company legal identity remains advisor-managed.
 - `/operations/events` — searchable cross-service activity explorer with source filters, JSON payload inspection, API read errors, Mercure live messages and 30-second refresh.
+- `/operations/platform` — central workspace for Analytics KPIs/CSV export, tenant-scoped Audit events, versioned Configuration and Feature Flags, secure Document upload/download, Integration providers/webhooks/delivery queue, vehicle Search and Workflow readiness. Workflow business orchestration is explicitly marked as unavailable until its API is implemented.
 - `/operations/workflow` — operational workspace for contract creation/preparation/signature documents, inventory registration/status changes, vehicle reservations, fulfillment and delivery transitions, invoice/credit-note details, and audit timelines. Accepted marketplace offers can now be handed over to Order Service with the selected vehicle, quote and active customer. Tabs can be deep-linked with `?tab=contracts`, `?tab=inventory`, `?tab=reservations`, `?tab=fulfillment` or `?tab=billing`.
 
 Nuxt owns the route lifecycle and provides separate layouts for the customer-facing marketplace and the authenticated operations workspace. The marketplace uses reusable vehicle cards, search and filter controls, responsive navigation and a light visual theme. The operations and catalogue administration screens use the authenticated workspace shell. Shared PageHeader and MetricCard components keep administration screens consistent; the catalog editor uses resource-specific routes, Vuetify form controls, searchable data tables, explicit loading/error states and soft-archive actions. Catalogue filtering is delegated to the Vehicle Catalog API (manufacturer, fuel, body style, transmission, power and seats); sorting is applied to the current result page. Vehicle prices and inventory are not fabricated because those concerns do not belong to the Vehicle Catalog Service. The old independent HTML entry points and bootstrap scripts are not used.
@@ -50,6 +51,13 @@ Nuxt server routes proxy the same-origin prefixes to the internal Compose servic
 | `/fulfillments/**` | Fulfillment |
 | `/inventory/**` | Inventory |
 | `/reservations/**` | Vehicle Reservation |
+| `/audit/**` | API Gateway → Audit Service |
+| `/analytics/**` | API Gateway → Analytics Service |
+| `/configuration/**` | API Gateway → Configuration Service |
+| `/documents/**` | API Gateway → Document Service |
+| `/integrations/**` | API Gateway → Integration Service |
+| `/search/**` | API Gateway → Search Service |
+| `/workflow/**` | Workflow Service health endpoints |
 
 The proxy forwards the original HTTP method, query string, request body and Authorization header for every service prefix. Customer personal-data responses remain `no-store`; the browser never receives internal service addresses. The Customer Service requires the `autoflow-customer` audience plus `customers:read`, `customers:write` or `customers:manage` as appropriate. Customer 360 is an internal tenant-scoped admin workspace. The `/portal` self-service endpoints enforce a server-side tenant + Keycloak-subject mapping and never trust a customer ID supplied by the browser. CRM actions require the corresponding `crm:applications:*`, `crm:eligibility:manage`, `crm:tasks:*` and `crm:interactions:*` scopes.
 
