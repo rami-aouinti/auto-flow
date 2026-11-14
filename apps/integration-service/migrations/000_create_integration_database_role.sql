@@ -6,7 +6,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='autoflow_integration_worker') THEN
     CREATE ROLE autoflow_integration_worker LOGIN BYPASSRLS PASSWORD 'local-only-integration-worker-password';
   END IF;
-END $;
+END $$;
 CREATE SCHEMA IF NOT EXISTS integration_service;
 GRANT CONNECT ON DATABASE autoflow TO autoflow_integration;
 GRANT USAGE,CREATE ON SCHEMA integration_service TO autoflow_integration;
