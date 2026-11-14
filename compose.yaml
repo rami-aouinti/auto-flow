@@ -1636,6 +1636,7 @@ services:
       - ./apps/inventory-service/migrations/00-inventory-schema.sql:/docker-entrypoint-initdb.d/250-inventory-schema.sql:ro
       - ./apps/document-service/migrations/00_create_document_database_role.sql:/docker-entrypoint-initdb.d/260-document-role.sql:ro
       - ./apps/document-service/migrations/230-document-schema.sql:/docker-entrypoint-initdb.d/270-document-schema.sql:ro
+      - ./apps/document-service/migrations/231-document-retention-sharing.sql:/docker-entrypoint-initdb.d/275-document-retention-sharing.sql:ro
       - ./apps/document-service/fixtures/demo.sql:/docker-entrypoint-initdb.d/280-document-demo.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
@@ -1681,6 +1682,7 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/280-audit-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/260-document-role.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/270-document-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/275-document-retention-sharing.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/280-document-demo.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/290-configuration-role.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/300-configuration-schema.sql
