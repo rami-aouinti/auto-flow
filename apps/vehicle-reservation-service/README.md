@@ -59,6 +59,12 @@ docker compose --env-file .env.example logs -f reservation-inventory-event-consu
 
 The projection is eventually consistent: a new or changed Inventory unit becomes visible to Reservation after its RabbitMQ event is processed. Do not seed duplicate Reservation stock for units managed by Inventory.
 
+## Inventory fulfillment feedback
+
+When a confirmed reservation is fulfilled, Reservation commits its state transition and publishes `reservation.fulfilled.v1` through its transactional Outbox. Inventory consumes that event from its own durable queue and applies the sale to its authoritative physical-unit record. Inventory then emits the normal `inventory.status.changed.v1` event with status `sold`; this is consumed back into the Reservation stock projection. No service writes directly into another service's business tables.
+
+The Inventory consumer deduplicates by tenant/event ID and reservation ID. It rejects a fulfilled event if the tenant/unit/variant does not match or the Inventory unit is no longer available. The Inventory update, movement, audit, inbox and Inventory Outbox event are one database transaction.
+
 ## HTTP API
 
 The service listens on port `8092`; through the gateway use `http://localhost:8088/api/v1/reservations`.
