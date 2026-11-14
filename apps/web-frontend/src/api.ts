@@ -57,6 +57,29 @@ export const pricing = {
   deleteQuote: (id: string) => api.delete(`${pricingBase}/api/pricing/quotes/${encodeURIComponent(id)}`),
 };
 
+const customerBase = import.meta.env.VITE_CUSTOMER_API_BASE || '/customers';
+
+export const customers = {
+  list: (params: Record<string, unknown> = {}) => api.get(`${customerBase}/api/v1/customers`, { params }),
+  get: (id: string) => api.get(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}`),
+  create: (payload: Record<string, unknown>, key: string) =>
+    api.post(`${customerBase}/api/v1/customers`, payload, { headers: { 'Idempotency-Key': key } }),
+  update: (id: string, payload: Record<string, unknown>) =>
+    api.patch(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}`, payload),
+  archive: (id: string) => api.delete(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}`),
+  addresses: (id: string) => api.get(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/addresses`),
+  addAddress: (id: string, payload: Record<string, unknown>) =>
+    api.post(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/addresses`, payload),
+  updateAddress: (id: string, addressId: string, payload: Record<string, unknown>) =>
+    api.put(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/addresses/${encodeURIComponent(addressId)}`, payload),
+  deleteAddress: (id: string, addressId: string) =>
+    api.delete(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/addresses/${encodeURIComponent(addressId)}`),
+  consents: (id: string) => api.get(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/consents`),
+  setConsent: (id: string, payload: { purpose: string; granted: boolean; source?: string }) =>
+    api.put(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/consents`, payload),
+  history: (id: string) => api.get(`${customerBase}/api/v1/customers/${encodeURIComponent(id)}/history`),
+};
+
 export const orders = {
   list: (limit = 20, offset = 0) => api.get(`${orderBase}/api/v1/orders`, { params: { limit, offset } }),
   get: (id: string) => api.get(`${orderBase}/api/v1/orders/${encodeURIComponent(id)}`),
