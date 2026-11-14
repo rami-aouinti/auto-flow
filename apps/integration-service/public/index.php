@@ -1,28 +1,25 @@
 <?php
 declare(strict_types=1);
-
-// Health-only bootstrap. Business routes intentionally return 404 until implemented.
-$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-if (!in_array($path, ['/health', '/health/live', '/health/ready'], true)) {
-    http_response_code(404);
-    header('Content-Type: application/problem+json');
-    echo json_encode(['type'=>'about:blank','title'=>'Not Found','status'=>404,'detail'=>'Business endpoints are not implemented in this scaffold.']);
-    return;
-}
-$ready = true;
-$checks = [];
-if ($path === '/health/ready') {
-    $dependencies = trim((string) (getenv('HEALTH_DEPENDENCIES') ?: ''));
-    foreach (array_filter(array_map('trim', explode(';', $dependencies))) as $dependency) {
-        [$host, $port] = array_pad(explode(':', $dependency, 2), 2, '');
-        $socket = @fsockopen($host, (int) $port, $errno, $error, 1.5);
-        $ok = is_resource($socket);
-        if ($ok) { fclose($socket); }
-        $checks[$dependency] = $ok ? 'ok' : 'unavailable';
-        $ready = $ready && $ok;
-    }
-} else { $checks['process'] = 'ok'; }
-http_response_code($ready ? 200 : 503);
-header('Content-Type: application/json');
-header('Cache-Control: no-store');
-echo json_encode(['service'=>'integration-service','status'=>$ready ? 'ok' : 'not_ready','checks'=>$checks], JSON_UNESCAPED_SLASHES);
+function out(array $d,int $s=200):never{http_response_code($s);header('Content-Type: application/json');header('Cache-Control: no-store');echo json_encode($d,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR);exit;}
+function fail(int $s,string $t,string $d):never{out(['type'=>'about:blank','title'=>$t,'status'=>$s,'detail'=>$d],$s);}
+function db():PDO{static $p=null;if($p instanceof PDO)return $p;$u=getenv('INTEGRATION_DATABASE_URL')?:getenv('DATABASE_URL');if(!$u)throw new RuntimeException('Database URL missing');$x=parse_url($u);$p=new PDO('pgsql:host='.$x['host'].';port='.($x['port']??5432).';dbname='.ltrim($x['path'],'/'),rawurldecode($x['user']??''),rawurldecode($x['pass']??''),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);return $p;}
+function principal():array{$h=$_SERVER['HTTP_AUTHORIZATION']??'';if(!preg_match('/^Bearer\s+(.+)$/i',$h,$m))fail(401,'Unauthorized','Bearer token required.');$z=explode('.',$m[1]);if(count($z)!==3)fail(401,'Unauthorized','Malformed token.');$dec=fn($v)=>base64_decode(strtr($v,'-_','+/').str_repeat('=',(4-strlen($v)%4)%4),true);$head=json_decode((string)$dec($z[0]),true);$c=json_decode((string)$dec($z[1]),true);if(!is_array($head)||!is_array($c)||($head['alg']??'')!=='RS256')fail(401,'Unauthorized','Unsupported token.');$url=getenv('AUTOFLOW_JWT_JWKS_URI')?:'';$iss=getenv('AUTOFLOW_JWT_ISSUER')?:'';if(!$url||!$iss)fail(503,'Authentication unavailable','JWT verifier not configured.');$raw=@file_get_contents($url,false,stream_context_create(['http'=>['timeout'=>3]]));$j=$raw?json_decode($raw,true):null;$cert=null;foreach(($j['keys']??[]) as $k)if(($k['kid']??'')===($head['kid']??'')&&isset($k['x5c'][0])){$cert="-----BEGIN CERTIFICATE-----\n".chunk_split($k['x5c'][0],64,"\n")."-----END CERTIFICATE-----";break;}$sig=$dec($z[2]);$pub=$cert?openssl_pkey_get_public($cert):false;$aud=$c['aud']??[];$aud=is_array($aud)?$aud:[$aud];if(!$pub||$sig===false||openssl_verify($z[0].'.'.$z[1],$sig,$pub,OPENSSL_ALGO_SHA256)!==1||($c['iss']??'')!==$iss||!in_array(getenv('INTEGRATION_JWT_AUDIENCE')?:'autoflow-integration',$aud,true)||($c['exp']??0)<time())fail(401,'Unauthorized','Invalid token signature, issuer, audience or expiry.');$tenant=(string)($c['tenant_id']??$c['tenantId']??'');if(!$tenant)fail(403,'Forbidden','Tenant claim required.');$roles=$c['realm_access']['roles']??[];$sc=preg_split('/\s+/',(string)($c['scope']??''),-1,PREG_SPLIT_NO_EMPTY);return ['tenant'=>$tenant,'scopes'=>array_unique(array_merge($sc,is_array($roles)?$roles:[]))];}
+function allow(array $u,string $s):void{if(!in_array($s,$u['scopes'],true))fail(403,'Forbidden','Missing permission: '.$s);}
+try{$path=parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/';$method=$_SERVER['REQUEST_METHOD']??'GET';
+ if(in_array($path,['/health','/health/live'],true))out(['service'=>'integration-service','status'=>'ok']);
+ if($path==='/health/ready'){db()->query('SELECT 1');out(['service'=>'integration-service','status'=>'ok','checks'=>['postgres'=>'ok']]);}
+ if(preg_match('#^/webhooks/([a-z0-9_-]{2,40})$#i',$path,$m)&&$method==='POST'){
+  $provider=strtolower($m[1]);$secret=getenv('INTEGRATION_WEBHOOK_SECRET_'.strtoupper($provider))?:'';$tenant=getenv('INTEGRATION_PROVIDER_TENANT_'.strtoupper($provider))?:'';
+  if(!$secret||!$tenant)fail(404,'Unknown Provider','Webhook provider is not configured.');
+  $raw=file_get_contents('php://input');$signature=$_SERVER['HTTP_X_WEBHOOK_SIGNATURE']??$_SERVER['HTTP_X_SIGNATURE']??'';$expected='sha256='.hash_hmac('sha256',$raw,$secret);
+  if(!hash_equals($expected,$signature))fail(401,'Invalid Signature','Webhook signature verification failed.');
+  $b=json_decode($raw,true);if(!is_array($b))fail(400,'Bad Request','Webhook body must be a JSON object.');$id=(string)($b['id']??$b['eventId']??'');$type=(string)($b['type']??$b['eventType']??'unknown');
+  if($id===''||strlen($id)>200)fail(422,'Validation Failed','Provider event ID is required.');
+  $q=db()->prepare('INSERT INTO integration_service.webhook_events(tenant_id,provider,external_event_id,event_type,payload) VALUES(:t,:p,:i,:e,:b) ON CONFLICT(tenant_id,provider,external_event_id) DO NOTHING');$q->execute(['t'=>$tenant,'p'=>$provider,'i'=>$id,'e'=>$type,'b'=>$raw]);out(['accepted'=>true,'duplicate'=>$q->rowCount()===0],$q->rowCount()?202:200);
+ }
+ $u=principal();
+ if($path==='/api/v1/integrations/webhook-events'&&$method==='GET'){allow($u,'integrations:read');$limit=max(1,min(100,(int)($_GET['limit']??25)));$q=db()->prepare('SELECT provider,external_event_id AS "eventId",event_type AS "eventType",received_at AS "receivedAt" FROM integration_service.webhook_events WHERE tenant_id=:t ORDER BY received_at DESC LIMIT '.$limit);$q->execute(['t'=>$u['tenant']]);out(['data'=>$q->fetchAll()]);}
+ if($path==='/api/v1/integrations/deliveries'&&$method==='GET'){allow($u,'integrations:read');$q=db()->prepare('SELECT id,provider,event_type AS "eventType",status,attempts,next_attempt_at AS "nextAttemptAt",last_error AS "lastError",created_at AS "createdAt" FROM integration_service.delivery_attempts WHERE tenant_id=:t ORDER BY created_at DESC LIMIT 100');$q->execute(['t'=>$u['tenant']]);out(['data'=>$q->fetchAll()]);}
+ if($path==='/api/v1/integrations/providers'&&$method==='GET'){allow($u,'integrations:read');$providers=[];foreach(getenv() as $k=>$v)if(str_starts_with($k,'INTEGRATION_WEBHOOK_SECRET_')&&$v!=='')$providers[]=strtolower(substr($k,27));out(['data'=>array_values(array_unique($providers))]);}
+ fail(404,'Not Found','No integration route matches this request.');
+}catch(Throwable $e){error_log('integration-service: '.$e->getMessage());fail(503,'Service Unavailable','The integration service could not complete the request.');}
