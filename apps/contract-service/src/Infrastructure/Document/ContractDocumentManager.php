@@ -185,7 +185,27 @@ final readonly class ContractDocumentManager
     /** @return array{document:array<string,mixed>,content:string}|null */
     public function downloadLatest(string $tenant, string $contractId, string $accessToken): ?array
     {
-        $document = $this->findLatest($tenant, $contractId);
+        $document = $this->db->transactional(function (Connection $db) use ($tenant, $contractId): ?array {
+            $this->setTenant($db, $tenant);
+            $row = $db->fetchAssociative(
+                'SELECT document_id, document_version, checksum_sha256, byte_size, generated_at
+                 FROM contract_documents
+                 WHERE tenant_id = :tenant AND contract_id = :id
+                 ORDER BY document_version DESC LIMIT 1',
+                ['tenant' => $tenant, 'id' => $contractId],
+            );
+            if (!is_array($row)) {
+                return null;
+            }
+            return [
+                'documentId' => (string) $row['document_id'],
+                'contractId' => $contractId,
+                'version' => (int) $row['document_version'],
+                'checksum' => (string) $row['checksum_sha256'],
+                'byteSize' => (int) $row['byte_size'],
+                'generatedAt' => (string) $row['generated_at'],
+            ];
+        });
         if ($document === null) {
             return null;
         }
