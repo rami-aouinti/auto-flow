@@ -2085,6 +2085,8 @@ services:
       DOCUMENT_PROXY_TARGET: http://api-gateway
       INTEGRATION_PROXY_TARGET: http://api-gateway
       WORKFLOW_PROXY_TARGET: http://workflow-service:8080
+      AI_PROXY_TARGET: http://ai-service:8080
+      MEDIA_PROXY_TARGET: http://media-service:8080
     depends_on:
       api-gateway: {condition: service_healthy}
       keycloak: {condition: service_started}
