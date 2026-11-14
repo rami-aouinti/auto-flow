@@ -1589,6 +1589,9 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/260-document-role.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/270-document-schema.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/280-document-demo.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/290-configuration-role.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/300-configuration-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/310-configuration-demo.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -1627,6 +1630,9 @@ services:
       - ./apps/document-service/migrations/00_create_document_database_role.sql:/migrations/260-document-role.sql:ro
       - ./apps/document-service/migrations/230-document-schema.sql:/migrations/270-document-schema.sql:ro
       - ./apps/document-service/fixtures/demo.sql:/migrations/280-document-demo.sql:ro
+      - ./apps/configuration-service/migrations/00_create_configuration_database_role.sql:/migrations/290-configuration-role.sql:ro
+      - ./apps/configuration-service/migrations/240-configuration-schema.sql:/migrations/300-configuration-schema.sql:ro
+      - ./apps/configuration-service/fixtures/demo.sql:/migrations/310-configuration-demo.sql:ro
     depends_on:
       postgres:
         condition: service_healthy

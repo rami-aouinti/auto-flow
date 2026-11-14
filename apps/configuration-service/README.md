@@ -28,9 +28,9 @@ See [docs/API.md](docs/API.md) for every endpoint, request, response and error c
 
 ## Local Docker
 
-The service uses PostgreSQL (port 5432) and Redis (port 6379), listens on host port 8104 and runs PHP 8.4 with PDO PostgreSQL.
+The service uses PostgreSQL (port 5432) and Redis (port 6379), listens on host port 8104 and runs PHP 8.4 with PDO PostgreSQL. The shared `postgres-bootstrap` service applies its role, schema and demo fixture on startup, including for existing PostgreSQL volumes.
 
-1. Create the service database role and apply the schema (from repository root):
+1. The `postgres-bootstrap` container applies the role, schema and demo fixture automatically. To apply them manually (from repository root) if needed:
 ```bash
 docker compose --env-file .env.example exec -T postgres psql -U autoflow -d autoflow < apps/configuration-service/migrations/00_create_configuration_database_role.sql
 docker compose --env-file .env.example exec -T postgres psql -U autoflow -d autoflow < apps/configuration-service/migrations/240-configuration-schema.sql
