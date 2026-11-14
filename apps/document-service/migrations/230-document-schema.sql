@@ -89,4 +89,31 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA document_service TO
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA document_service TO autoflow_document;
 ALTER DEFAULT PRIVILEGES IN SCHEMA document_service GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO autoflow_document;
 ALTER DEFAULT PRIVILEGES IN SCHEMA document_service GRANT USAGE, SELECT ON SEQUENCES TO autoflow_document;
+
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE documents FORCE ROW LEVEL SECURITY;
+ALTER TABLE document_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE document_versions FORCE ROW LEVEL SECURITY;
+ALTER TABLE document_access_grants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE document_access_grants FORCE ROW LEVEL SECURITY;
+ALTER TABLE document_audit_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE document_audit_events FORCE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS documents_tenant_isolation ON documents;
+CREATE POLICY documents_tenant_isolation ON documents
+    USING (tenant_id = current_setting('app.tenant_id', true))
+    WITH CHECK (tenant_id = current_setting('app.tenant_id', true));
+DROP POLICY IF EXISTS document_versions_tenant_isolation ON document_versions;
+CREATE POLICY document_versions_tenant_isolation ON document_versions
+    USING (tenant_id = current_setting('app.tenant_id', true))
+    WITH CHECK (tenant_id = current_setting('app.tenant_id', true));
+DROP POLICY IF EXISTS document_access_grants_tenant_isolation ON document_access_grants;
+CREATE POLICY document_access_grants_tenant_isolation ON document_access_grants
+    USING (tenant_id = current_setting('app.tenant_id', true))
+    WITH CHECK (tenant_id = current_setting('app.tenant_id', true));
+DROP POLICY IF EXISTS document_audit_tenant_isolation ON document_audit_events;
+CREATE POLICY document_audit_tenant_isolation ON document_audit_events
+    USING (tenant_id = current_setting('app.tenant_id', true))
+    WITH CHECK (tenant_id = current_setting('app.tenant_id', true));
+
 RESET ROLE;
