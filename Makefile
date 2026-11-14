@@ -41,3 +41,8 @@ api-docs:
 	@echo "Central OpenAPI catalog: docs/api/openapi.json (Swagger UI: http://localhost:8096)"
 	@echo "Per-service API references: apps/*/docs/API.md"
 	@echo "Order Management contract: apps/order-service/docs/openapi.yaml"
+
+
+.PHONY: api-docs-test
+api-docs-test:
+	bash bin/test-api-docs.sh
