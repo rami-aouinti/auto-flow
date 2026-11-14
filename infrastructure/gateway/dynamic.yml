@@ -118,6 +118,12 @@ http:
       middlewares:
         - api-defaults
 
+    search:
+      entryPoints: [web]
+      rule: "PathPrefix(`/api/v1/search`)"
+      service: search
+      middlewares: [api-defaults]
+
     orders:
       entryPoints:
         - web
@@ -224,6 +230,16 @@ http:
         passHostHeader: true
         servers:
           - url: "http://pricing-service:8080"
+        healthCheck:
+          path: /health/ready
+          interval: 10s
+          timeout: 3s
+
+    search:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://search-service:8080"
         healthCheck:
           path: /health/ready
           interval: 10s
