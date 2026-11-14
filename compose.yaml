@@ -1243,6 +1243,7 @@ services:
       REDIS_PORT: 6379
     depends_on:
       postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
       redis: {condition: service_healthy}
     init: true
     restart: unless-stopped
