@@ -210,6 +210,9 @@ jobs:
       - name: Install Customer Service dependencies and run unit tests
         run: |
           composer install --working-dir=apps/customer-service --ignore-platform-req=ext-opentelemetry --no-interaction --prefer-dist --no-progress
+          php -l apps/customer-service/src/Presentation/Http/Controller/CustomerPortalController.php
+          php -l apps/customer-service/src/Presentation/Http/Controller/CustomerIdentityController.php
+          php -l apps/customer-service/src/Presentation/Http/Controller/MercureAccessController.php
           cd apps/customer-service && vendor/bin/phpunit --configuration phpunit.xml.dist
       - name: Install CRM Service dependencies and run tests
         env:
