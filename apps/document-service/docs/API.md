@@ -32,7 +32,7 @@ Document Service owns binary storage and metadata only. Contract and Billing rem
 ### Upload rules
 
 - Maximum size: 25 MiB.
-- MIME types are detected from file content (not trusted from the browser): PDF, JPEG, PNG, plain text and DOCX.
+- MIME types are detected from file content (not trusted from the browser): PDF, JPEG, PNG, plain text and DOCX. DOCX ZIP containers are checked for the required Word document entries rather than accepted as arbitrary ZIP files.
 - Every upload is streamed to ClamAV. If the scanner is unavailable or does not return a clean result, the request fails closed and the binary is not stored.
 - Files are stored in the private S3-compatible bucket using tenant-hashed object prefixes and random object keys. Server-side encryption uses SSE-C AES-256; the 32-byte key must be backed up securely and kept stable. Local filesystem mode remains available for isolated development.
 - SHA-256, byte size and detected MIME type are persisted. The original filename is metadata only.
