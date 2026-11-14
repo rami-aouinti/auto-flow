@@ -3,6 +3,7 @@ parameters:
     app.crm_offer_service_url: '%env(resolve:CRM_OFFER_SERVICE_URL)%'
     app.crm_pricing_service_url: '%env(resolve:CRM_PRICING_SERVICE_URL)%'
     app.crm_catalog_service_url: '%env(resolve:CRM_CATALOG_SERVICE_URL)%'
+    app.crm_order_service_url: '%env(resolve:CRM_ORDER_SERVICE_URL)%'
 
 services:
     _defaults: { autowire: true, autoconfigure: true }
@@ -18,3 +19,7 @@ services:
             $offerServiceUrl: '%app.crm_offer_service_url%'
             $pricingServiceUrl: '%app.crm_pricing_service_url%'
             $catalogServiceUrl: '%app.crm_catalog_service_url%'
+
+    App\Presentation\Http\Controller\CrmController:
+        arguments:
+            $orderServiceUrl: '%app.crm_order_service_url%'
