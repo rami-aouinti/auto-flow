@@ -81,7 +81,7 @@ func OrderLifecycleWorkflow(ctx workflow.Context, input WorkflowInput) error {
 		}
 		contractState, err = waitForLifecycleEvent(ctx, map[string]bool{
 			"OrderContractPending": true, "OrderPaymentAuthorized": true,
-			"OrderPaymentFailed": true, "OrderPaymentRefunded": true, "OrderCancelled": true,
+			"OrderPaymentFailed": true, "OrderPaymentRefunded": true, "OrderPaymentCancelled": true, "OrderCancelled": true,
 		}, 0, seenEventIDs)
 		if err != nil {
 			return err
