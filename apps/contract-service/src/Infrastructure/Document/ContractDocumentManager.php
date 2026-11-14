@@ -91,7 +91,7 @@ final readonly class ContractDocumentManager
                 $documentId = $remoteDocument['id'];
                 $remoteDocumentId = $documentId;
                 if (!hash_equals($checksum, $remoteDocument['checksum'])) {
-                    throw new \\RuntimeException('Uploaded contract PDF checksum differs from the rendered source.');
+                    throw new \RuntimeException('Uploaded contract PDF checksum differs from the rendered source.');
                 }
                 $generatedAt = (new \DateTimeImmutable())->format(DATE_ATOM);
                 $db->insert('contract_documents', [
