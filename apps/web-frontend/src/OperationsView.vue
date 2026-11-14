@@ -43,7 +43,7 @@ const selectedOrder = ref<Order | null>(null);
 const orderHistory = ref<any[]>([]);
 const historyError = ref('');
 const historyLoading = ref(false);
-const createForm = ref({ offerId: '', quoteId: '', vehicleId: '' });
+const createForm = ref({ offerId: '', quoteId: '', vehicleId: '', customerId: '' });
 const createBusy = ref(false);
 const createError = ref('');
 const actionBusy = ref('');
@@ -93,7 +93,7 @@ async function createOrder() {
   createBusy.value = true; createError.value = ''; actionError.value = '';
   try {
     const response = await orders.create(createForm.value, idempotencyKey());
-    createForm.value = { offerId: '', quoteId: '', vehicleId: '' };
+    createForm.value = { offerId: '', quoteId: '', vehicleId: '', customerId: '' };
     await loadOrders();
     await selectOrder(response.data);
   } catch (error) { createError.value = errorMessage(error); }
@@ -278,11 +278,12 @@ onMounted(() => {
       <div class="ops-columns">
         <section class="ops-panel">
           <div class="ops-panel-head"><div><p class="eyebrow">ORDER MANAGEMENT</p><h2>Neuen Auftrag anlegen</h2></div><span class="ops-count">{{orderTotal}} Aufträge</span></div>
-          <p class="ops-help">Es werden nur Referenz-IDs gesendet. Order Service validiert Offer, Quote und Fahrzeug serverseitig und erstellt die unveränderlichen Snapshots selbst.</p>
+          <p class="ops-help">Es werden nur Referenz-IDs gesendet. Order Service validiert Kunde, Offer, Quote und Fahrzeug serverseitig und erstellt die unveränderlichen Snapshots selbst.</p>
           <form class="ops-form" @submit.prevent="createOrder">
             <label>Offer ID<input v-model.trim="createForm.offerId" required placeholder="offer-…"/></label>
             <label>Quote ID<input v-model.trim="createForm.quoteId" required placeholder="quote-…"/></label>
             <label>Vehicle Variant ID<input v-model.trim="createForm.vehicleId" required placeholder="vehicle variant UUID"/></label>
+            <label>Customer ID<input v-model.trim="createForm.customerId" required placeholder="customer UUID"/></label>
             <button class="ops-primary" :disabled="createBusy">{{createBusy?'Auftrag wird angelegt …':'Draft Order erstellen ↗'}}</button>
           </form>
           <p v-if="createError" class="ops-error">{{createError}}</p>
