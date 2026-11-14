@@ -38,7 +38,7 @@ jobs:
           php -l apps/document-service/bin/expire-retention.php
           php -l apps/document-service/bin/test-storage.php
           php -l apps/document-service/bin/test-database.php
-          php -r '$spec = json_decode(file_get_contents("apps/document-service/docs/openapi.json"), true, flags: JSON_THROW_ON_ERROR); foreach (["/api/v1/documents/{id}/access-grants", "/api/v1/documents/{id}/access-grants/{grantId}", "/api/v1/documents/{id}/legal-hold"] as $path) { if (!isset($spec["paths"][$path])) { fwrite(STDERR, "Missing Document endpoint: ".$path."\n"); exit(1); } }'
+          php -r '$spec = json_decode(file_get_contents("apps/document-service/docs/openapi.json"), true, flags: JSON_THROW_ON_ERROR); foreach (["/api/v1/documents/{id}/access-grants", "/api/v1/documents/{id}/access-grants/{grantId}", "/api/v1/documents/{id}/legal-hold", "/api/v1/documents/{id}/retention"] as $path) { if (!isset($spec["paths"][$path])) { fwrite(STDERR, "Missing Document endpoint: ".$path."\n"); exit(1); } }'
           ruby -e 'require "yaml"; docs = YAML.load_stream(File.read("infrastructure/kubernetes/document-service.yaml")); abort "Kubernetes manifest is empty" if docs.empty?; puts "Document Kubernetes manifest YAML is valid (#{docs.length} resources)."'
           php -l apps/document-service/src/storage.php
           php -r '
