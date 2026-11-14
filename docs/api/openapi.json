@@ -7444,6 +7444,9 @@
           "403": {
             "description": "Missing audit:write scope or tenant"
           },
+          "413": {
+            "description": "Payload exceeds the 16 KiB limit"
+          },
           "422": {
             "description": "Validation failed"
           },
