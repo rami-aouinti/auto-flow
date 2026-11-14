@@ -45,13 +45,15 @@ const tabs: { title: string; value: Tab; icon: string }[] = [
 ];
 
 const services = [
-  { name: 'Audit', prefix: '/audit', endpoint: '/health/ready', scope: 'audit:read', icon: 'mdi-shield-search-outline' },
-  { name: 'Analytics', prefix: '/analytics', endpoint: '/health/ready', scope: 'analytics:read', icon: 'mdi-chart-box-outline' },
-  { name: 'Configuration', prefix: '/configuration', endpoint: '/health/ready', scope: 'configuration:read', icon: 'mdi-tune-variant' },
-  { name: 'Document', prefix: '/documents', endpoint: '/health/ready', scope: 'documents:read', icon: 'mdi-file-document-multiple-outline' },
-  { name: 'Integration', prefix: '/integrations', endpoint: '/health/ready', scope: 'integrations:read', icon: 'mdi-connection' },
-  { name: 'Search', prefix: '/search', endpoint: '/health/ready', scope: 'search:read', icon: 'mdi-magnify' },
+  { name: 'Audit', prefix: '/audit', endpoint: '/api/v1/audit/events?limit=1', scope: 'audit:read', icon: 'mdi-shield-search-outline' },
+  { name: 'Analytics', prefix: '/analytics', endpoint: '/api/v1/analytics/overview?days=1', scope: 'analytics:read', icon: 'mdi-chart-box-outline' },
+  { name: 'Configuration', prefix: '/configuration', endpoint: '/api/configurations', scope: 'configuration:read', icon: 'mdi-tune-variant' },
+  { name: 'Document', prefix: '/documents', endpoint: '/api/v1/documents?page=1&limit=1', scope: 'documents:read', icon: 'mdi-file-document-multiple-outline' },
+  { name: 'Integration', prefix: '/integrations', endpoint: '/api/v1/integrations/providers', scope: 'integrations:read', icon: 'mdi-connection' },
+  { name: 'Search', prefix: '/search', endpoint: '/api/v1/search/vehicles?limit=1', scope: 'search:read', icon: 'mdi-magnify' },
   { name: 'Workflow', prefix: '/workflow', endpoint: '/health/ready', scope: '—', icon: 'mdi-transit-connection-variant' },
+  { name: 'AI', prefix: '/ai', endpoint: '/health/ready', scope: 'local-only', icon: 'mdi-robot-outline' },
+  { name: 'Media', prefix: '/media', endpoint: '/health/ready', scope: 'health-only scaffold', icon: 'mdi-image-multiple-outline' },
 ];
 const serviceStates = ref(services.map((service) => ({ ...service, status: 'unknown', detail: 'Not checked' })));
 
@@ -77,8 +79,14 @@ async function checkServices() {
       service.status = response.status >= 200 && response.status < 300 ? 'healthy' : 'degraded';
       service.detail = response.data?.status ?? 'HTTP ' + response.status;
     } catch (e) {
-      service.status = 'unavailable';
-      service.detail = errorMessage(e);
+      const status = (e as { response?: { status?: number } }).response?.status;
+      if (status === 401 || status === 403) {
+        service.status = 'healthy';
+        service.detail = 'API reachable; authenticated scope required';
+      } else {
+        service.status = 'unavailable';
+        service.detail = errorMessage(e);
+      }
     }
   }));
 }
@@ -219,7 +227,7 @@ async function downloadAnalyticsCsv() {
           </v-card>
         </v-col>
       </v-row>
-      <v-alert type="info" variant="tonal" class="mt-4">Health checks verify service readiness only. A healthy service does not imply that the current user has permission to every business operation.</v-alert>
+      <v-alert type="info" variant="tonal" class="mt-4">Checks call each service API through its configured proxy. HTTP 401/403 means the API is reachable but the current token lacks permission. Notification Service is a RabbitMQ worker and intentionally has no REST API. Media and Workflow currently expose health endpoints only.</v-alert>
     </div>
 
     <div v-else-if="tab === 'analytics'">
