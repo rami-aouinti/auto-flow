@@ -41,6 +41,14 @@ jobs:
           php -r '$spec = json_decode(file_get_contents("apps/document-service/docs/openapi.json"), true, flags: JSON_THROW_ON_ERROR); foreach (["/api/v1/documents/{id}/access-grants", "/api/v1/documents/{id}/access-grants/{grantId}", "/api/v1/documents/{id}/legal-hold"] as $path) { if (!isset($spec["paths"][$path])) { fwrite(STDERR, "Missing Document endpoint: ".$path."\n"); exit(1); } }'
           ruby -e 'require "yaml"; docs = YAML.load_stream(File.read("infrastructure/kubernetes/document-service.yaml")); abort "Kubernetes manifest is empty" if docs.empty?; puts "Document Kubernetes manifest YAML is valid (#{docs.length} resources)."'
           php -l apps/document-service/src/storage.php
+          php -r '
+          $realm = json_decode(file_get_contents("infrastructure/keycloak/realm/autoflow-realm.json"), true, flags: JSON_THROW_ON_ERROR);
+          $client = array_values(array_filter($realm["clients"] ?? [], fn($c) => ($c["clientId"] ?? null) === "autoflow-document"));
+          $local = array_values(array_filter($realm["clients"] ?? [], fn($c) => ($c["clientId"] ?? null) === "autoflow-local-client"));
+          $mapper = array_filter($local[0]["protocolMappers"] ?? [], fn($m) => ($m["name"] ?? null) === "document-api-audience" && ($m["config"]["included.client.audience"] ?? null) === "autoflow-document");
+          $roles = array_column($realm["roles"]["realm"] ?? [], "name");
+          if (!$client || !$mapper || !in_array("documents:read", $roles, true) || !in_array("documents:write", $roles, true) || !in_array("documents:manage", $roles, true)) { fwrite(STDERR, "Document Keycloak audience or permissions are missing.\n"); exit(1); }
+          '
           php apps/document-service/bin/test-storage.php
           php -r '
           $api = json_decode(file_get_contents("docs/api/openapi.json"), true, flags: JSON_THROW_ON_ERROR);
