@@ -95,6 +95,7 @@ func OrderFulfillmentSagaWorkflow(ctx workflow.Context, input SagaWorkflowInput)
 			"OrderCancelled": true,
 			"OrderPaymentFailed": true,
 			"OrderPaymentRefunded": true,
+			"OrderPaymentCancelled": true,
 			"reservation.expired.v1": true,
 			"reservation.released.v1": true,
 		}, remaining, seen)
