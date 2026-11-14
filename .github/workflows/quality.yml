@@ -35,9 +35,13 @@ jobs:
           php -l apps/document-service/public/index.php
           php -l apps/document-service/bin/healthcheck.php
           php -l apps/document-service/bin/publish-outbox.php
+          php -l apps/document-service/bin/expire-retention.php
+          php -l apps/document-service/bin/test-storage.php
+          php -l apps/document-service/src/storage.php
+          php apps/document-service/bin/test-storage.php
           php -r '
           $api = json_decode(file_get_contents("docs/api/openapi.json"), true, flags: JSON_THROW_ON_ERROR);
-          foreach (["/api/v1/documents", "/api/v1/documents/{id}", "/api/v1/documents/{id}/content", "/api/v1/documents/{id}/versions", "/api/v1/documents/{id}/audit"] as $path) {
+          foreach (["/api/v1/documents", "/api/v1/documents/{id}", "/api/v1/documents/{id}/content", "/api/v1/documents/{id}/versions", "/api/v1/documents/{id}/audit", "/api/v1/documents/{id}/access-grants", "/api/v1/documents/{id}/legal-hold"] as $path) {
               if (!isset($api["paths"][$path])) { fwrite(STDERR, "Missing Document API path: ".$path."\\n"); exit(1); }
           }
           '
@@ -75,7 +79,7 @@ jobs:
       - name: Validate Docker Compose configuration
         run: docker compose --env-file .env.example config --quiet
       - name: Build Document Service API and outbox worker images
-        run: docker compose --env-file .env.example build document-service document-outbox-publisher
+        run: docker compose --env-file .env.example build document-service document-outbox-publisher document-retention-worker
       - name: Validate Grafana Alloy configuration
         run: |
           set +e
