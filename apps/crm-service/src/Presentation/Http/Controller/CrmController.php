@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Presentation\Http\Controller;
 
 use App\Domain\ApplicationLifecycle;
+use App\Infrastructure\Upstream\CrmReferenceValidator;
 use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -17,7 +18,10 @@ use Throwable;
 #[Route('/api/v1/crm')]
 final readonly class CrmController
 {
-    public function __construct(private Connection $db) {}
+    public function __construct(
+        private Connection $db,
+        private CrmReferenceValidator $referenceValidator,
+    ) {}
 
     #[Route('/applications', methods: ['POST'])]
     public function createApplication(Request $request): JsonResponse
@@ -25,6 +29,22 @@ final readonly class CrmController
         try {
             $principal = $this->principal($request, 'crm:applications:write');
             $data = $this->applicationInput($this->body($request));
+            foreach (['customers:read'] as $scope) {
+                if (!$principal->hasScope($scope)) {
+                    throw new AccessDeniedHttpException('Required downstream permission is missing: ' . $scope);
+                }
+            }
+            if ($data['offerId'] !== null) {
+                foreach (['offers:read', 'pricing:quote', 'catalog:read'] as $scope) {
+                    if (!$principal->hasScope($scope)) {
+                        throw new AccessDeniedHttpException('Required downstream permission is missing: ' . $scope);
+                    }
+                }
+            }
+            $this->referenceValidator->validate(
+                $data['customerId'], $data['offerId'], $data['quoteId'], $data['vehicleId'],
+                $this->tenant($principal), $this->bearerToken($request),
+            );
             $key = trim((string) $request->headers->get('Idempotency-Key', ''));
             if ($key === '' || strlen($key) > 128) {
                 return $this->problem(400, 'A valid Idempotency-Key header is required.');
@@ -332,6 +352,15 @@ final readonly class CrmController
         } catch (Throwable) {
             return $this->problem(503, 'CRM operation is temporarily unavailable.');
         }
+    }
+
+    private function bearerToken(Request $request): string
+    {
+        $authorization = $request->headers->get('Authorization', '');
+        if (!is_string($authorization) || preg_match('/^Bearer ([A-Za-z0-9._~-]+)$/D', $authorization, $matches) !== 1) {
+            throw new AccessDeniedHttpException('A verified bearer token is required for downstream validation.');
+        }
+        return $matches[1];
     }
 
     private function principal(Request $request, string $scope): AuthenticatedPrincipal
