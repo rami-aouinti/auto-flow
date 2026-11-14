@@ -17,7 +17,7 @@ Document Service owns binary storage and metadata only. Contract and Billing rem
 | GET | `/api/v1/documents` | documents:read | `page?`, `limit?` (1–100), `q?`, `category?`, `entity_type?`, `entity_id?`, `status?` | 200 `{data,meta}` | 401, 403, 500 |
 | POST | `/api/v1/documents` | documents:write | multipart: `file` required; `title` required; `category?` (default other); `description?`; `entity_type?`; `entity_id?`; `retention_until?` (ISO-8601) | 201 `{data}` | 400, 401, 403, 413, 415, 422, 503 |
 | GET | `/api/v1/documents/{id}` | documents:read, owner or active grant | UUID path | 200 `{data}` | 401, 403, 404 |
-| DELETE | `/api/v1/documents/{id}` | owner or documents:manage | UUID path; soft-delete metadata | 204 | 401, 403, 404 |
+| DELETE | `/api/v1/documents/{id}` | owner or documents:manage | UUID path; soft-delete metadata; blocked by legal hold | 204 | 401, 403, 404, 423 |
 | GET | `/api/v1/documents/{id}/content` | documents:read or active grant | UUID path; binary download only after clean scan | binary stream | 401, 403, 404, 423 |
 | GET | `/api/v1/documents/{id}/versions` | documents:read or active grant | UUID path | 200 `{data: []}` newest first | 401, 403, 404 |
 | POST | `/api/v1/documents/{id}/versions` | owner, documents:write or manage grant | multipart `file` required | 201 `{data}` | 400, 401, 403, 413, 415, 422, 503 |
@@ -40,7 +40,7 @@ Document Service owns binary storage and metadata only. Contract and Billing rem
 
 ### Retention and legal hold
 
-`retention_until` is an absolute ISO-8601 timestamp. The retention worker checks expired records hourly (configurable), permanently removes current and historical object versions, and emits `DocumentPurged`. A legal hold blocks archive, soft-delete and automatic purge until explicitly released. Purge audit metadata is retained separately from the deleted document record.
+`retention_until` is an absolute ISO-8601 timestamp. The retention worker checks expired records hourly (configurable), permanently removes current and historical object versions, and emits `DocumentPurged`. A legal hold blocks archive, soft-delete and automatic purge until explicitly released. If `retention_until` is omitted, the document is retained indefinitely until an explicit retention date is set; no legal retention period is guessed by the service. Purge audit metadata is retained separately from the deleted document record.
 
 ### Error format
 
@@ -69,7 +69,7 @@ curl -OJ "http://localhost:8088/api/v1/documents/$DOCUMENT_ID/content" \
 
 ## Data model and events
 
-PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived`, `DocumentDeleted`, `DocumentAccessGranted`, `DocumentAccessRevoked`, `DocumentLegalHoldPlaced` and `DocumentLegalHoldReleased` atomically with metadata changes. The retention worker emits `DocumentPurged` after binary deletion. The separate publisher declares the durable topic exchange and queue `autoflow.document.events`, publishes the event envelope and retries unpublished rows until broker acknowledgement. The retention worker emits `DocumentPurged` after expiry and skips legal holds. Delivery is at-least-once: downstream consumers must deduplicate by `eventId`.
+PostgreSQL schema: `document_service`. Tables: `documents`, `document_versions`, `document_access_grants`, `document_audit_events`, `document_outbox_events`, `document_purge_events`. Each query includes tenant scope. The outbox records `DocumentCreated`, `DocumentVersionCreated`, `DocumentArchived`, `DocumentDeleted`, `DocumentAccessGranted`, `DocumentAccessRevoked`, `DocumentLegalHoldPlaced` and `DocumentLegalHoldReleased` atomically with metadata changes. The retention worker emits `DocumentPurged` after binary deletion. The separate publisher declares the durable topic exchange and queue `autoflow.document.events`, publishes the event envelope and retries unpublished rows until broker acknowledgement. The retention worker emits `DocumentPurged` after expiry and skips legal holds. Delivery is at-least-once: downstream consumers must deduplicate by `eventId`.
 
 ## Local startup
 
