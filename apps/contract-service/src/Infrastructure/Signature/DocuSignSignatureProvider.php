@@ -7,7 +7,7 @@ namespace App\Infrastructure\Signature;
 use App\Application\Port\SignatureProviderInterface;
 use Firebase\JWT\JWT;
 use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Component\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
 final readonly class DocuSignSignatureProvider implements SignatureProviderInterface
