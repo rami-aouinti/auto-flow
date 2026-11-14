@@ -168,6 +168,13 @@ jobs:
             sleep 2
           done
           curl -fsS http://127.0.0.1:8092/health/ready
+          for attempt in $(seq 1 30); do
+            if docker compose --env-file .env.example logs reservation-inventory-event-consumer 2>&1 | grep -q "consumer started"; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose --env-file .env.example logs reservation-inventory-event-consumer 2>&1 | grep -q "consumer started"
           docker compose --env-file .env.example exec -T vehicle-reservation-service php bin/smoke-test-inventory-events.php
           docker compose --env-file .env.example exec -T vehicle-reservation-service php bin/smoke-test-rabbitmq.php
 
