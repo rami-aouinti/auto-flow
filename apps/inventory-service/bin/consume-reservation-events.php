@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Doctrine\\DBAL\\DriverManager;
-use PhpAmqpLib\\Connection\\AMQPStreamConnection;
-use PhpAmqpLib\\Message\\AMQPMessage;
-use Symfony\\Component\\Uid\\Uuid;
+use Doctrine\DBAL\DriverManager;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
+use Symfony\Component\Uid\Uuid;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -43,14 +43,14 @@ $channel->exchange_declare($exchange, 'topic', false, true, false);
 $channel->exchange_declare($deadExchange, 'direct', false, true, false);
 $channel->queue_declare($deadQueue, false, true, false, false);
 $channel->queue_bind($deadQueue, $deadExchange, 'invalid');
-$channel->queue_declare($queue, false, true, false, false, false, new PhpAmqpLib\\Wire\\AMQPTable([
+$channel->queue_declare($queue, false, true, false, false, false, new PhpAmqpLib\Wire\AMQPTable([
     'x-dead-letter-exchange' => $deadExchange,
     'x-dead-letter-routing-key' => 'invalid',
 ]));
 $channel->queue_bind($queue, $exchange, 'reservation.fulfilled.v1');
 $channel->basic_qos(null, 20, false);
 
-fwrite(STDOUT, "Inventory Reservation fulfillment consumer started.\\n");
+fwrite(STDOUT, "Inventory Reservation fulfillment consumer started.\n");
 $channel->basic_consume($queue, 'inventory-reservation-fulfillment', false, false, false, false,
     static function (AMQPMessage $message) use ($db, $channel): void {
         try {
@@ -106,10 +106,10 @@ $channel->basic_consume($queue, 'inventory-reservation-fulfillment', false, fals
             );
             $channel->basic_ack($message->getDeliveryTag());
         } catch (InvalidArgumentException|JsonException $exception) {
-            fwrite(STDERR, 'Rejecting invalid Reservation fulfillment event: ' . $exception->getMessage() . "\\n");
+            fwrite(STDERR, 'Rejecting invalid Reservation fulfillment event: ' . $exception->getMessage() . "\n");
             $channel->basic_nack($message->getDeliveryTag(), false, false);
         } catch (Throwable $exception) {
-            fwrite(STDERR, 'Reservation fulfillment failed; requeueing: ' . $exception->getMessage() . "\\n");
+            fwrite(STDERR, 'Reservation fulfillment failed; requeueing: ' . $exception->getMessage() . "\n");
             $channel->basic_nack($message->getDeliveryTag(), false, true);
         }
     }
