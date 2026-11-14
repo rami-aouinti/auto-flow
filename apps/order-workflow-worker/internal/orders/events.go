@@ -29,6 +29,9 @@ func DecodeEvent(body []byte) (Event, error) {
 	if event.EventID == "" || event.TenantID == "" || event.Aggregate.ID == "" {
 		return Event{}, errors.New("order event is missing eventId, tenantId or aggregate.id")
 	}
+	if event.SchemaVersion != 1 || event.Producer != "order-service" {
+		return Event{}, errors.New("order event has an unsupported schema version or producer")
+	}
 	if event.Aggregate.Type != "Order" {
 		return Event{}, fmt.Errorf("unsupported aggregate type %q", event.Aggregate.Type)
 	}
