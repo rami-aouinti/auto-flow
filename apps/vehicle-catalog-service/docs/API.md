@@ -1,43 +1,43 @@
 # Vehicle Catalog Service — API Reference
 
-**Base URL:** http://localhost:8084  
-**Authentication:** Bearer JWT; catalog:read, catalog:manage
+**Direct local URL:** http://localhost:8084  
+**Authentication:** Keycloak RS256 JWT; audience `autoflow-catalog`. Global catalogue (not tenant-owned). Reads require `catalog:read`; writes and publishing require `catalog:manage`.
 
-## Endpoints and arguments
+## HTTP endpoints
 
-| Method | Path | Arguments / body | Possible responses |
-|---|---|---|---|
-| GET | `/api/v1/manufacturers` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/v1/vehicles` |  query: q, manufacturerId, modelId, generationId, fuelType, powertrain, bodyStyle, transmission, minPowerKw, maxPowerKw, minSeats, maxSeats, limit, offset | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/v1/vehicles/{variantId}` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| POST | `/api/v1/manufacturers` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/models` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/generations` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/vehicles` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/v1/vehicles/{variantId}/publish` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
+| Method | Path | Permission / access | Purpose | Arguments and request body | Documented / expected responses |
+|---|---|---|---|---|---|
+| GET | /api/v1/manufacturers | catalog:read | List published manufacturers. | No query arguments documented. | 200, 400, 401, 403 |
+| GET | /api/v1/vehicles | catalog:read | List published variants with filters and pagination. | q?, manufacturerId?, modelId?, generationId?, fuelType?, powertrain?, bodyStyle?, transmission?, minPowerKw?, maxPowerKw?, minSeats?, maxSeats?, limit (1..100)?, offset (0+)? | 200, 400, 401, 403 |
+| GET | /api/v1/vehicles/{variantId} | catalog:read | Read published variant detail. | variantId (path). | 200, 401, 403, 404 |
+| POST | /api/v1/manufacturers | catalog:manage | Create a draft manufacturer. | JSON manufacturer fields; exact DTO schema is maintained in service code. | 201, 400, 401, 403, 409, 422 |
+| POST | /api/v1/models | catalog:manage | Create a draft model. | JSON model fields incl. manufacturer relationship; exact DTO schema in service code. | 201, 400, 401, 403, 422 |
+| POST | /api/v1/generations | catalog:manage | Create a draft generation. | JSON generation fields incl. model relationship; exact DTO schema in service code. | 201, 400, 401, 403, 422 |
+| POST | /api/v1/vehicles | catalog:manage | Create a draft technical variant. | JSON technical fields; measurements use explicit units in field names; exact DTO schema in service code. | 201, 400, 401, 403, 422 |
+| POST | /api/v1/vehicles/{variantId}/publish | catalog:manage | Publish variant and non-archived ancestors. | variantId (path); no body documented. | 200, 401, 403, 404, 409 |
 
-## Common HTTP responses
+## Health and operations
 
-- **2xx:** request succeeded; GET returns a resource/collection, POST creates or transitions a resource, DELETE may return 204.
-- **400:** malformed JSON, invalid query parameters or malformed headers.
-- **401:** missing/invalid JWT (except explicitly public provider webhooks).
-- **403:** missing scope/role or tenant access.
-- **404:** resource does not exist or is outside the caller's tenant/ownership boundary.
-- **409:** invalid state transition, duplicate resource or idempotency-key conflict.
-- **412:** stale ETag/If-Match version for optimistic concurrency.
-- **422:** request is syntactically valid but violates domain validation.
-- **500 / 503:** unexpected server failure or unavailable dependency; no internal SQL/stack trace should be exposed.
+- GET /health/live — liveness; no JWT.
+- GET /health/ready — readiness; no JWT.
 
-## Testing
+## Common response semantics
 
-Use the central Swagger UI at http://localhost:8096. Authenticate with the raw Keycloak access token when required. For commands requiring idempotency, send a unique `Idempotency-Key`; for versioned transitions copy the current `ETag` into `If-Match`.
+- `400`: malformed JSON, query string, or required header (when applicable).
+- `401`: missing/invalid bearer token on protected routes.
+- `403`: authenticated caller lacks the endpoint permission or tenant access.
+- `404`: resource is unknown or intentionally hidden by tenant/ownership isolation.
+- `409`: business lifecycle conflict or idempotency key reused for a different command.
+- `412`: stale `If-Match` version for optimistic concurrency.
+- `422`: syntactically valid request that fails domain validation.
+- `503`: required upstream service/dependency unavailable.
 
-## Contract maintenance
+Only status codes explicitly described in the service README or API contract are asserted in the endpoint table. Other statuses in the common section are general meanings and may not be emitted by every endpoint.
 
-This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+## Testing through Swagger UI
 
+Open [http://localhost:8096](http://localhost:8096). The gateway base URL is `http://localhost:8088`; service routes are forwarded without stripping their API path. Use the raw Keycloak access token in **Authorize** for protected services. For idempotent commands, provide a unique `Idempotency-Key`. For versioned commands, read the current response `ETag` and send it unchanged as `If-Match`.
 
-## Health and operational endpoints
+## Contract accuracy
 
-- `GET /health/live` — liveness; no JWT.
-- `GET /health/ready` — readiness; no JWT.
+Request fields are marked as DTO-defined where the service README does not publish the full DTO. The central OpenAPI contract provides strict schemas only for request bodies whose complete fields are confirmed by service documentation. Keep this file and `docs/api/openapi.json` synchronized when changing controllers, validators or response DTOs.
