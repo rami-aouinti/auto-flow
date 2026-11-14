@@ -10,7 +10,7 @@ Inventory is the source of truth for physical vehicle units. Vehicle Catalog own
 - Keep append-only movement history, audit events and transactional Outbox events.
 - Enforce tenant isolation with PostgreSQL RLS and a dedicated non-superuser role.
 
-Inventory does not create reservations or decide commercial eligibility. The Reservation service remains responsible for locking a specific physical unit during a customer journey. Inventory emits durable stock events through its Outbox. The Reservation service still has its own stock projection today; consuming Inventory events and replacing its current stock registry with an Inventory-backed allocation flow remains an explicit integration task. Do not treat the two registries as already synchronized.
+Inventory does not create reservations or decide commercial eligibility. The Reservation service remains responsible for locking a specific physical unit during a customer journey. Inventory emits durable stock events through its Outbox. Vehicle Reservation consumes unit-created and status-changed events into a versioned, idempotent stock projection. Inventory remains authoritative; Reservation stores only the allocation state plus the latest observed Inventory status. Synchronization is eventually consistent, so a unit becomes reservable only after its creation event has been processed.
 
 ## API
 All endpoints require a Keycloak access token with audience `autoflow-inventory`, tenant claim and operation-specific permission.
