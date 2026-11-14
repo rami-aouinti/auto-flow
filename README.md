@@ -416,5 +416,5 @@ Start and check them:
 ```bash
 docker compose --env-file .env.example config --quiet
 docker compose --env-file .env.example up -d --build search-service workflow-service integration-service document-service audit-service analytics-service media-service configuration-service
-./scripts/check-skeleton-health.sh
+sh scripts/check-skeleton-health.sh
 ```
