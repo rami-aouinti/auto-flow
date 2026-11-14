@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { contracts, fulfillments, inventory, reservations, errorMessage } from '../../../src/api';
+import { billing, contracts, fulfillments, inventory, reservations, errorMessage } from '../../../src/api';
 
 definePageMeta({ layout: 'default' });
 useHead({ title: 'Business workflows | AutoFlow' });
@@ -15,6 +15,9 @@ const contractRows = ref<Row[]>([]);
 const fulfillmentRows = ref<Row[]>([]);
 const inventoryRows = ref<Row[]>([]);
 const reservationRows = ref<Row[]>([]);
+const invoiceRows = ref<Row[]>([]);
+const creditNoteRows = ref<Row[]>([]);
+const billingSummary = ref<Row | null>(null);
 
 const contractForm = ref({ orderId: '', contractType: 'vehicle_lease', contractVersion: 1 });
 const inventoryForm = ref({ vehicleVariantId: '', vin: '', dealerId: '', locationCode: '', countryCode: 'DE', condition: 'new' });
@@ -33,13 +36,14 @@ function clearMessages() { error.value = ''; notice.value = ''; }
 async function loadAll() {
   loading.value = true; clearMessages();
   const jobs = await Promise.allSettled([
-    contracts.list(50, 0), fulfillments.list(50, 0), inventory.units(50, 0), reservations.list(50, 0),
+    contracts.list(50, 0), fulfillments.list(50, 0), inventory.units(50, 0), reservations.list(50, 0), billing.invoices(50, 0), billing.creditNotes(50, 0), billing.summary(),
   ]);
-  const targets = [contractRows, fulfillmentRows, inventoryRows, reservationRows];
+  const targets = [contractRows, fulfillmentRows, inventoryRows, reservationRows, invoiceRows, creditNoteRows];
   jobs.forEach((job, index) => {
     if (job.status === 'fulfilled') targets[index].value = items(job.value.data);
     else targets[index].value = [];
   });
+  billingSummary.value = jobs[6]?.status === 'fulfilled' ? jobs[6].value.data as Row : null;
   const failed = jobs.filter((job) => job.status === 'rejected');
   if (failed.length) error.value = 'Some services could not be loaded. Check your permissions and service health, then refresh.';
   loading.value = false;
@@ -129,6 +133,7 @@ onMounted(loadAll);
       <v-tab value="inventory" prepend-icon="mdi-warehouse">Inventory</v-tab>
       <v-tab value="reservations" prepend-icon="mdi-calendar-check">Reservations</v-tab>
       <v-tab value="fulfillment" prepend-icon="mdi-truck-delivery">Fulfillment</v-tab>
+      <v-tab value="billing" prepend-icon="mdi-receipt-text-outline">Billing</v-tab>
     </v-tabs>
 
     <v-window v-model="tab">
@@ -207,6 +212,25 @@ onMounted(loadAll);
         </v-card>
       </v-window-item>
 
+      <v-window-item value="billing">
+        <v-row class="mb-2">
+          <v-col cols="12" md="6"><v-card rounded="xl" border elevation="0"><v-card-title>Issued invoices</v-card-title><v-card-text class="text-h4 font-weight-bold">{{ billingSummary?.invoices?.invoice_count ?? invoiceRows.length }}</v-card-text><v-card-subtitle>Gross invoiced: {{ ((billingSummary?.invoices?.invoiced_gross_minor ?? 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) }}</v-card-subtitle></v-card></v-col>
+          <v-col cols="12" md="6"><v-card rounded="xl" border elevation="0"><v-card-title>Credit notes</v-card-title><v-card-text class="text-h4 font-weight-bold">{{ billingSummary?.creditNotes?.credit_note_count ?? creditNoteRows.length }}</v-card-text><v-card-subtitle>Gross credited: {{ ((billingSummary?.creditNotes?.credited_gross_minor ?? 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) }}</v-card-subtitle></v-card></v-col>
+        </v-row>
+        <v-card rounded="xl" border elevation="0" class="mb-4"><v-card-title>Invoices</v-card-title>
+          <v-table><thead><tr><th>Invoice</th><th>Order</th><th>Gross</th><th>Status</th><th>Issued</th></tr></thead><tbody>
+            <tr v-for="row in invoiceRows" :key="row.invoice_id"><td>{{ row.invoice_number || row.invoice_id }}</td><td class="text-caption">{{ row.order_id }}</td><td>{{ ((Number(row.gross_minor) || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: row.currency || 'EUR' }) }}</td><td><v-chip size="small" variant="tonal">{{ row.status }}</v-chip></td><td>{{ row.issued_at }}</td></tr>
+            <tr v-if="!invoiceRows.length"><td colspan="5" class="text-center text-medium-emphasis py-6">No invoices found.</td></tr>
+          </tbody></v-table>
+        </v-card>
+        <v-card rounded="xl" border elevation="0"><v-card-title>Credit notes</v-card-title>
+          <v-table><thead><tr><th>Credit note</th><th>Invoice</th><th>Order</th><th>Gross</th><th>Reason</th></tr></thead><tbody>
+            <tr v-for="row in creditNoteRows" :key="row.credit_note_id"><td>{{ row.credit_note_number || row.credit_note_id }}</td><td class="text-caption">{{ row.invoice_id }}</td><td class="text-caption">{{ row.order_id }}</td><td>{{ ((Number(row.gross_minor) || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: row.currency || 'EUR' }) }}</td><td>{{ row.reason }}</td></tr>
+            <tr v-if="!creditNoteRows.length"><td colspan="5" class="text-center text-medium-emphasis py-6">No credit notes found.</td></tr>
+          </tbody></v-table>
+        </v-card>
+        <div class="text-caption text-medium-emphasis mt-3">Billing records are generated from payment and refund events. This workspace is intentionally read-only.</div>
+      </v-window-item>
       <v-window-item value="fulfillment">
         <v-card rounded="xl" border elevation="0">
           <v-card-title>Vehicle fulfillment <v-spacer /><v-chip>{{ fulfillmentRows.length }}</v-chip></v-card-title>
