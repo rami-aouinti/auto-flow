@@ -233,7 +233,7 @@ final readonly class VehicleReservationController
                         'SELECT status, inventory_status, reservation_id
                          FROM vehicle_stock_units
                          WHERE tenant_id = :tenant AND vehicle_unit_id = :unit
-                         FOR UPDATE',
+',
                         ['tenant' => $tenant, 'unit' => $row['vehicle_unit_id']],
                     );
                     if ($stock === false
