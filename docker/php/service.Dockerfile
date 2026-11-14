@@ -4,10 +4,13 @@ FROM php:8.4-cli-bookworm
 
 COPY --from=roadrunner /usr/bin/rr /usr/local/bin/rr
 
+ARG SERVICE_PATH
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         unzip zip supervisor protobuf-compiler libicu-dev libcurl4-openssl-dev libzip-dev libonig-dev libpq-dev libxml2-dev \
-    && docker-php-ext-install -j"$(nproc)" dom intl curl mbstring opcache pdo_pgsql sockets zip \
+    && docker-php-ext-install -j"$(nproc)" intl curl mbstring opcache pdo_pgsql sockets zip \
+    && if [ "$SERVICE_PATH" = "apps/billing-service" ]; then docker-php-ext-install -j"$(nproc)" dom; fi \
     && pecl install opentelemetry \
     && docker-php-ext-enable opentelemetry \
     && apt-get clean \
@@ -20,7 +23,6 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 COPY docker/php/conf.d/99-app.ini /usr/local/etc/php/conf.d/99-app.ini
 COPY docker/php/supervisor/offer-workers.conf /etc/supervisor/conf.d/offer-workers.conf
 
-ARG SERVICE_PATH
 ARG COMPOSER_NO_DEV=--no-dev
 ARG ROADRUNNER_BOOT_CHECK=1
 WORKDIR /app
