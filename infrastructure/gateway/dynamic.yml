@@ -29,6 +29,7 @@ http:
           - Content-Type
           - Idempotency-Key
           - If-Match
+          - Stripe-Signature
           - Origin
           - X-Correlation-ID
         accessControlExposeHeaders:
