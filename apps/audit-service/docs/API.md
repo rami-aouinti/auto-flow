@@ -1,70 +1,56 @@
 # Audit Service — HTTP API reference
 
-This document is the detailed, implementation-aligned reference for the Audit Service. The machine-readable contract is [`docs/openapi.yaml`](openapi.yaml); the aggregate AutoFlow Swagger document is [`docs/api/openapi.json`](../../../docs/api/openapi.json).
+This document is the implementation-aligned reference for the Audit Service. The machine-readable contract is [`openapi.yaml`](openapi.yaml); the aggregate AutoFlow API contract is [`../../../docs/api/openapi.json`](../../../docs/api/openapi.json).
 
-## 1. Base URLs
+## Base URLs
 
 | Access | Base URL |
 |---|---|
 | API Gateway | `http://localhost:8088` |
-| Direct service (local development) | `http://localhost:8101` |
+| Direct service | `http://localhost:8101` |
 
-All paths below are relative to the selected base URL. The API is JSON over HTTP. Protected routes require a Keycloak access token in the `Authorization: Bearer <token>` header.
+All routes below use JSON over HTTP. Protected routes require `Authorization: Bearer <Keycloak access token>`.
 
-## 2. Authentication and authorization
+## Authentication and tenant isolation
 
-| Operation | Required scope | Tenant |
+| Route | Scope | Tenant |
 |---|---|---|
-| `GET /health` | Public | Not applicable |
-| `GET /health/live` | Public | Not applicable |
-| `GET /health/ready` | Public | Not applicable |
+| `GET /health`, `GET /health/live`, `GET /health/ready` | Public | None |
 | `POST /api/v1/audit/events` | `audit:write` | Required `tenant_id` JWT claim |
 | `GET /api/v1/audit/events` | `audit:read` | Required `tenant_id` JWT claim |
 | `GET /api/v1/audit/events/{eventId}` | `audit:read` | Required `tenant_id` JWT claim |
 
-The tenant is always taken from the verified token principal. A request body, query parameter, or custom header cannot select another tenant. Reads are additionally constrained by PostgreSQL row-level security (RLS).
+The tenant is derived exclusively from the verified principal. A body field, query parameter or custom header cannot override it. PostgreSQL row-level security additionally isolates tenant reads.
 
-## 3. Endpoint catalogue
+## Endpoint catalogue
 
-### 3.1 Health checks
+### 1. Health checks
 
-#### `GET /health` and `GET /health/live`
+- `GET /health` and `GET /health/live`: public liveness probes; `200` means the HTTP process is alive, not that PostgreSQL is available.
+- `GET /health/ready`: public readiness probe; `200` when PostgreSQL is reachable, `503` otherwise.
 
-Public liveness probes. They indicate that the HTTP process is running; they do not guarantee database availability.
+### 2. Append an audit event
 
-- `200 OK`: process is alive.
-
-#### `GET /health/ready`
-
-Public readiness probe.
-
-- `200 OK`: PostgreSQL is reachable.
-- `503 Service Unavailable`: the database readiness check failed.
-
-### 3.2 Append an audit event
-
-#### `POST /api/v1/audit/events`
-
-Required scope: `audit:write`.
+`POST /api/v1/audit/events` — requires `audit:write`.
 
 Headers:
-- `Authorization: Bearer <access-token>`
+- `Authorization: Bearer <token>`
 - `Content-Type: application/json`
-- `X-Correlation-ID: <optional-id>` (optional; body `correlationId` takes precedence when non-empty)
+- `X-Correlation-ID: <id>` (optional fallback if body `correlationId` is omitted)
 
-Request body:
+Request fields:
 
 | Field | Type | Required | Constraints / behavior |
 |---|---|---:|---|
-| `eventId` | string | Yes | 3–128 chars; pattern `^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$`; idempotency key within tenant |
+| `eventId` | string | Yes | 3–128 chars; pattern `^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$`; idempotency key per tenant |
 | `eventType` | string | Yes | 1–120 chars |
-| `actorType` | string | Yes | One of `user`, `service`, `system` |
-| `actorId` | string | No | Max 255 chars; defaults to authenticated JWT subject |
+| `actorType` | string | Yes | `user`, `service`, or `system` |
+| `actorId` | string | No | Max 255 chars; defaults to JWT subject |
 | `resourceType` | string | Yes | 1–80 chars |
 | `resourceId` | string | Yes | 1–160 chars |
 | `occurredAt` | string | Yes | ISO-8601 date-time; normalized to UTC |
-| `correlationId` | string | No | Max 128 chars; otherwise uses `X-Correlation-ID` |
-| `payload` | object/array | No | Defaults to empty object; serialized size max 16 KiB; sensitive fields are recursively redacted |
+| `correlationId` | string | No | Max 128 chars; otherwise `X-Correlation-ID` is used |
+| `payload` | object/array | No | Defaults to empty object; serialized size max 16 KiB; sensitive fields recursively redacted |
 
 Example:
 
@@ -89,35 +75,31 @@ Responses:
 
 | Status | Meaning | Body |
 |---|---|---|
-| `201 Created` | Event inserted | `{"created":true,"eventId":"...","eventHash":"<sha256>"}` |
-| `200 OK` | Same tenant + `eventId` already exists | `{"created":false,"eventId":"...","eventHash":"<sha256>"}` |
-| `400 Bad Request` | Body is not valid JSON | Problem Details |
-| `401 Unauthorized` | Missing/invalid bearer token | Problem Details |
-| `403 Forbidden` | Missing `audit:write` or `tenant_id` claim | Problem Details |
-| `413 Content Too Large` | Payload exceeds 16 KiB | Problem Details |
-| `422 Unprocessable Entity` | Required field, format, enum, or length validation failed | Problem Details |
-| `503 Service Unavailable` | Audit storage failed | Problem Details; retry with the same `eventId` |
+| `201 Created` | New event inserted | `{"created":true,"eventId":"...","eventHash":"<sha256>"}` |
+| `200 OK` | Same tenant + eventId already exists | `{"created":false,"eventId":"...","eventHash":"<sha256>"}` |
+| `400` | Invalid JSON | Problem Details |
+| `401` | Missing/invalid token | Problem Details |
+| `403` | Missing `audit:write` or `tenant_id` | Problem Details |
+| `413` | Payload exceeds 16 KiB | Problem Details |
+| `422` | Required field, format, enum or length validation failed | Problem Details |
+| `503` | Storage unavailable | Problem Details; retry with the same eventId |
 
-A retry with the same `eventId` is safe within the same tenant. The database uniqueness key is tenant-scoped. The service does not accept a tenant identifier in this request.
+The service accepts no tenant identifier from the caller. A retry using the same eventId is safe within the same tenant.
 
-### 3.3 Search audit events
+### 3. Search audit events
 
-#### `GET /api/v1/audit/events`
+`GET /api/v1/audit/events` — requires `audit:read`.
 
-Required scope: `audit:read`.
-
-Query parameters:
-
-| Name | Type | Required | Default / constraints |
-|---|---|---:|---|
-| `eventType` | string | No | Exact match |
-| `actorId` | string | No | Exact match |
-| `resourceType` | string | No | Exact match |
-| `resourceId` | string | No | Exact match |
-| `from` | date-time | No | Inclusive lower bound for `occurred_at` |
-| `to` | date-time | No | Inclusive upper bound for `occurred_at` |
-| `page` | integer | No | Default 1; minimum 1 |
-| `limit` | integer | No | Default 25; range 1–100 |
+| Query parameter | Type | Default / constraints |
+|---|---|---|
+| `eventType` | string | Exact match |
+| `actorId` | string | Exact match |
+| `resourceType` | string | Exact match |
+| `resourceId` | string | Exact match |
+| `from` | date-time | Inclusive lower bound |
+| `to` | date-time | Inclusive upper bound |
+| `page` | integer | Default 1; minimum 1 |
+| `limit` | integer | Default 25; range 1–100 |
 
 Example:
 
@@ -131,48 +113,43 @@ curl -G http://localhost:8088/api/v1/audit/events \
   --data-urlencode "limit=25"
 ```
 
-Success response (`200 OK`):
+Success response (`200`):
 
 ```json
 {
-  "data": [
-    {
-      "event_id": "order:ord-1001:created:v1",
-      "event_type": "order.created",
-      "actor_type": "user",
-      "actor_id": "user-123",
-      "resource_type": "order",
-      "resource_id": "ord-1001",
-      "occurred_at": "2026-11-14T06:30:00+00:00",
-      "correlation_id": "checkout-journey-42",
-      "payload": {"status": "created"},
-      "previous_hash": "<sha256>",
-      "event_hash": "<sha256>",
-      "created_at": "2026-11-14T06:30:00+00:00"
-    }
-  ],
+  "data": [{
+    "event_id": "order:ord-1001:created:v1",
+    "event_type": "order.created",
+    "actor_type": "user",
+    "actor_id": "user-123",
+    "resource_type": "order",
+    "resource_id": "ord-1001",
+    "occurred_at": "2026-11-14T06:30:00+00:00",
+    "correlation_id": "checkout-journey-42",
+    "payload": {"status": "created"},
+    "previous_hash": "<sha256>",
+    "event_hash": "<sha256>",
+    "created_at": "2026-11-14T06:30:00+00:00"
+  }],
   "meta": {"page": 1, "limit": 25, "total": 1, "pages": 1}
 }
 ```
 
-Results are tenant-scoped and ordered by `occurred_at DESC, event_id DESC`. Search response event fields use the database snake_case names shown above.
+Results are tenant-scoped and sorted by `occurred_at DESC, event_id DESC`. Response event fields use database snake_case names.
 
 | Status | Meaning |
 |---|---|
 | `200` | Search completed |
-| `400` | Invalid `page` or `limit` |
-| `401` | Missing/invalid bearer token |
-| `403` | Missing `audit:read` or `tenant_id` |
-| `503` | Audit storage unavailable |
+| `400` | Invalid page or limit |
+| `401` | Missing/invalid token |
+| `403` | Missing `audit:read` or tenant |
+| `503` | Storage unavailable |
 
-### 3.4 Read one event
+### 4. Read one event
 
-#### `GET /api/v1/audit/events/{eventId}`
+`GET /api/v1/audit/events/{eventId}` — requires `audit:read`.
 
-Required scope: `audit:read`.
-
-Path parameter:
-- `eventId` (string, required): exact event identifier.
+Path parameter: `eventId` (string, required).
 
 Example:
 
@@ -182,38 +159,33 @@ curl -i "http://localhost:8088/api/v1/audit/events/order%3Aord-1001%3Acreated%3A
 ```
 
 Responses:
-- `200 OK`: `{"data": { ...audit event fields... }}`
-- `401 Unauthorized`: missing/invalid token.
-- `403 Forbidden`: missing scope or tenant claim.
-- `404 Not Found`: event does not exist in the authenticated tenant (events in other tenants are not disclosed).
-- `503 Service Unavailable`: storage lookup failed.
+- `200`: `{"data": { ...audit event fields... }}`
+- `401`: missing/invalid token.
+- `403`: missing scope or tenant claim.
+- `404`: event does not exist in the authenticated tenant; another tenant's event is not disclosed.
+- `503`: storage lookup failed.
 
-## 4. Error response format
+## Error format
 
 Application errors use `application/problem+json`:
 
 ```json
-{
-  "type": "about:blank",
-  "title": "Validation failed",
-  "status": 422,
-  "detail": "eventId has an invalid format."
-}
+{"type":"about:blank","title":"Validation failed","status":422,"detail":"eventId has an invalid format."}
 ```
 
-The `detail` field is safe diagnostic text. Clients should branch on the HTTP status and stable validation rules rather than parsing human-readable detail strings.
+Clients should branch on HTTP status and validation rules, not human-readable detail text.
 
-## 5. Event integrity and data handling
+## Integrity and data handling
 
-- Events are append-only; application database permissions and a mutation-blocking trigger prevent ordinary updates/deletes.
-- A per-tenant SHA-256 chain links each event to the previous event hash.
-- Duplicate detection is scoped to `(tenant_id, event_id)`.
-- Payloads are limited to 16 KiB and recursively redacted before persistence.
-- Never include bearer tokens, passwords, payment credentials, or unnecessary personal data in an audit payload.
-- Domain events are also consumed asynchronously from configured RabbitMQ exchanges. That consumer uses a durable queue, bounded retry and a dead-letter queue; it is not an HTTP endpoint.
+- Append-only storage, mutation-blocking database trigger and restricted database permissions.
+- Per-tenant SHA-256 chain links each event to the previous event hash.
+- Idempotency key is `(tenant_id, event_id)`.
+- Payloads are limited to 16 KiB and recursively redacted.
+- Never include tokens, passwords, payment credentials or unnecessary personal data.
+- RabbitMQ domain-event ingestion is an asynchronous worker, not an HTTP endpoint; it uses durable queues, bounded retry and a dead-letter queue.
 
-## 6. Swagger / OpenAPI
+## Swagger / OpenAPI
 
-- Per-service contract: [`docs/openapi.yaml`](openapi.yaml), OpenAPI 3.1.
-- Central API contract: [`docs/api/openapi.json`](../../../docs/api/openapi.json), served through the repository's Swagger UI setup.
-- Keep both contracts in sync when changing controller routes, validation, scopes, or response payloads.
+- Per-service OpenAPI 3.1: [`openapi.yaml`](openapi.yaml).
+- Central AutoFlow OpenAPI JSON: [`docs/api/openapi.json`](../../../docs/api/openapi.json).
+- Keep both contracts aligned with controller routes, scopes, validation and response bodies.
