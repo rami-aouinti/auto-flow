@@ -5,6 +5,7 @@ declare(strict_types=1);
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
+use AutoFlow\Notification\Infrastructure\Messaging\MercureEvent;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -35,25 +36,6 @@ function publisherToken(string $key, string $topic): string
     $signature = b64url(hash_hmac('sha256', $header . '.' . $payload, $key, true));
 
     return $header . '.' . $payload . '.' . $signature;
-}
-
-function nestedString(array $data, array $paths): ?string
-{
-    foreach ($paths as $path) {
-        $value = $data;
-        foreach (explode('.', $path) as $segment) {
-            if (!is_array($value) || !array_key_exists($segment, $value)) {
-                $value = null;
-                break;
-            }
-            $value = $value[$segment];
-        }
-        if (is_string($value) && trim($value) !== '') {
-            return trim($value);
-        }
-    }
-
-    return null;
 }
 
 function publishMercure(string $hubUrl, string $key, string $topic, array $data): void
@@ -152,34 +134,16 @@ while (true) {
             static function (AMQPMessage $message) use ($publisherKey, $hubUrl, $topicBase, $channel): void {
                 $headerValues = [];
                 try {
-                    $envelope = json_decode($message->getBody(), true, 512, JSON_THROW_ON_ERROR);
-                    if (!is_array($envelope) || array_is_list($envelope)) {
-                        throw new UnexpectedValueException('Event envelope must be a JSON object.');
-                    }
                     $headers = $message->get('application_headers');
                     $headerValues = $headers instanceof AMQPTable ? $headers->getNativeData() : [];
-                    $tenant = nestedString($envelope, ['tenantId', 'tenant_id', 'metadata.tenantId', 'context.tenantId'])
-                        ?? (is_string($headerValues['tenantId'] ?? null) ? trim($headerValues['tenantId']) : null)
-                        ?? (is_string($headerValues['tenant_id'] ?? null) ? trim($headerValues['tenant_id']) : null);
-                    if ($tenant === null || !preg_match('/^[A-Za-z0-9._:-]{1,128}$/', $tenant)) {
-                        throw new UnexpectedValueException('Event has no valid tenant identifier; refusing cross-tenant publication.');
-                    }
-
-                    $eventType = (string) ($envelope['eventType'] ?? $envelope['event_type'] ?? $message->get('type') ?? 'BusinessEvent');
-                    $eventId = (string) ($envelope['eventId'] ?? $envelope['event_id'] ?? $message->get('message_id') ?? bin2hex(random_bytes(12)));
-                    $aggregate = is_array($envelope['aggregate'] ?? null) ? $envelope['aggregate'] : [];
-                    $topic = $topicBase . '/' . rawurlencode($tenant) . '/events';
-                    $publicData = [
-                        'id' => $eventId,
-                        'type' => mb_substr($eventType, 0, 120),
-                        'tenantId' => $tenant,
-                        'occurredAt' => (string) ($envelope['occurredAt'] ?? $envelope['occurred_at'] ?? gmdate(DATE_ATOM)),
-                        'aggregateType' => isset($aggregate['type']) ? mb_substr((string) $aggregate['type'], 0, 80) : null,
-                        'aggregateId' => isset($aggregate['id']) ? mb_substr((string) $aggregate['id'], 0, 128) : null,
-                        'message' => mb_substr($eventType . (isset($aggregate['id']) ? ' · ' . (string) $aggregate['id'] : ''), 0, 300),
-                        'producer' => mb_substr((string) ($headerValues['producer'] ?? 'autoflow'), 0, 80),
-                    ];
-                    publishMercure($hubUrl, $publisherKey, $topic, $publicData);
+                    $event = MercureEvent::fromDelivery(
+                        $message->getBody(),
+                        $headerValues,
+                        $message->get('type'),
+                        $message->get('message_id'),
+                        $topicBase,
+                    );
+                    publishMercure($hubUrl, $publisherKey, $event['topic'], $event['data']);
                     $message->ack();
                 } catch (UnexpectedValueException|JsonException $exception) {
                     fwrite(STDERR, 'Rejected event: ' . $exception->getMessage() . "\n");
