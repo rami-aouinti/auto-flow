@@ -31,7 +31,7 @@ const detailRecord = ref<Row | null>(null);
 const detailEvents = ref<Row[]>([]);
 const detailLoading = ref(false);
 
-const contractForm = ref({ orderId: '', contractType: 'vehicle_lease', contractVersion: 1 });
+const contractForm = ref({ orderId: String(route.query.orderId ?? ''), contractType: 'vehicle_lease', contractVersion: 1 });
 const inventoryForm = ref({ vehicleVariantId: '', vin: '', dealerId: '', locationCode: '', countryCode: 'DE', condition: 'new' });
 const reservationForm = ref({ vehicleUnitId: '', vehicleVariantId: '', orderId: '', expiresAt: '' });
 const inventoryStatus = ref('blocked');
