@@ -15,6 +15,7 @@ try{
     $db->prepare("INSERT INTO document_access_grants(id,tenant_id,document_id,subject_id,permission,created_by) VALUES(:g,:t,:d,'document-test-recipient','read','document-test-owner')")->execute(['g'=>$grant,'t'=>$tenantA,'d'=>$id]);
     $db->prepare("INSERT INTO document_access_grants(id,tenant_id,document_id,subject_id,permission,created_by,expires_at) VALUES('77777777-7777-4777-8777-777777777777',:t,:d,'document-expired-recipient','read','document-test-owner',NOW()-INTERVAL '1 minute')")->execute(['t'=>$tenantA,'d'=>$id]);
     $db->prepare("SELECT set_config('app.tenant_id',:t,false)")->execute(['t'=>$tenantB]);
+    $insert->execute(['id'=>'88888888-8888-4888-8888-888888888888','t'=>$tenantB,'hash'=>hash('sha256','tenant-b')]);
     $q=$db->prepare('SELECT COUNT(*) FROM documents WHERE id=:id');$q->execute(['id'=>$id]);
     $assert((int)$q->fetchColumn()===0,'tenant B cannot read tenant A document metadata');
     $q=$db->prepare('SELECT COUNT(*) FROM document_access_grants WHERE id=:id');$q->execute(['id'=>$grant]);
@@ -23,6 +24,9 @@ try{
     try{$insert->execute(['id'=>'55555555-5555-4555-8555-555555555555','t'=>$tenantA,'hash'=>hash('sha256','y')]);$assert(false,'tenant B cannot insert a row for tenant A');}
     catch(PDOException){$db->exec('ROLLBACK TO SAVEPOINT cross_tenant_insert');}
     $db->prepare("SELECT set_config('app.tenant_id',:t,false)")->execute(['t'=>$tenantA]);
+    $db->exec('SAVEPOINT cross_tenant_grant');
+    try{$db->prepare("INSERT INTO document_access_grants(id,tenant_id,document_id,subject_id,permission,created_by) VALUES('99999999-9999-4999-8999-999999999999',:t,'88888888-8888-4888-8888-888888888888','document-cross-tenant-recipient','read','document-test-owner')")->execute(['t'=>$tenantA]);$assert(false,'tenant A cannot grant access to tenant B document');}
+    catch(PDOException){$db->exec('ROLLBACK TO SAVEPOINT cross_tenant_grant');}
     $q=$db->prepare("SELECT COUNT(*) FROM document_access_grants WHERE tenant_id=:t AND subject_id='document-test-recipient' AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>NOW()) AND permission IN ('read','manage')");$q->execute(['t'=>$tenantA]);
     $assert((int)$q->fetchColumn()===1,'active delegated grant is visible');
     $q=$db->prepare("SELECT COUNT(*) FROM document_access_grants WHERE tenant_id=:t AND subject_id='document-expired-recipient' AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>NOW())");$q->execute(['t'=>$tenantA]);
