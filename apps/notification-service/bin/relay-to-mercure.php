@@ -150,6 +150,7 @@ while (true) {
         [$connection, $channel] = $connect();
         $channel->basic_consume('autoflow.mercure.bridge', '', false, false, false, false,
             static function (AMQPMessage $message) use ($publisherKey, $hubUrl, $topicBase, $channel): void {
+                $headerValues = [];
                 try {
                     $envelope = json_decode($message->getBody(), true, 512, JSON_THROW_ON_ERROR);
                     if (!is_array($envelope) || array_is_list($envelope)) {
@@ -180,7 +181,7 @@ while (true) {
                     ];
                     publishMercure($hubUrl, $publisherKey, $topic, $publicData);
                     $message->ack();
-                } catch (UnexpectedValueException $exception) {
+                } catch (UnexpectedValueException|JsonException $exception) {
                     fwrite(STDERR, 'Rejected event: ' . $exception->getMessage() . "\n");
                     $message->reject(false);
                 } catch (Throwable $exception) {
