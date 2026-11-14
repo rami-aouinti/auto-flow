@@ -168,6 +168,7 @@ jobs:
             sleep 2
           done
           curl -fsS http://127.0.0.1:8092/health/ready
+          docker compose --env-file .env.example exec -T vehicle-reservation-service php bin/smoke-test-inventory-events.php
           docker compose --env-file .env.example exec -T vehicle-reservation-service php bin/smoke-test-rabbitmq.php
 
       - name: Install Customer Service dependencies and run unit tests
