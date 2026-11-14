@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -21,6 +22,8 @@ final readonly class CrmController
     public function __construct(
         private Connection $db,
         private CrmReferenceValidator $referenceValidator,
+        private HttpClientInterface $httpClient,
+        private string $orderServiceUrl,
     ) {}
 
     #[Route('/applications', methods: ['POST'])]
@@ -137,6 +140,125 @@ final readonly class CrmController
         });
     }
 
+    #[Route('/applications/{id}/convert', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['POST'])]
+    public function convertApplication(Request $request, string $id): JsonResponse
+    {
+        try {
+            $principal = $this->principal($request, 'crm:applications:manage');
+            if (!$principal->hasScope('orders:write')) {
+                throw new AccessDeniedHttpException('orders:write permission is required.');
+            }
+            $tenant = $this->tenant($principal);
+            $token = $this->bearerToken($request);
+            $idempotencyKey = 'crm-application-' . strtolower($id);
+
+            $claim = $this->db->transactional(function (Connection $db) use ($principal, $tenant, $id): array {
+                $this->tenantContext($db, $tenant);
+                $application = $db->fetchAssociative(
+                    'SELECT customer_id,offer_id,vehicle_id,quote_id,status,eligibility_status FROM crm_applications WHERE tenant_id=:tenant AND application_id=:id FOR UPDATE',
+                    ['tenant' => $tenant, 'id' => $id],
+                );
+                if ($application === false) {
+                    return ['error' => 404, 'detail' => 'Application not found.'];
+                }
+                $conversion = $db->fetchAssociative(
+                    'SELECT order_id,initiated_by,conversion_status FROM crm_order_conversions WHERE tenant_id=:tenant AND application_id=:id',
+                    ['tenant' => $tenant, 'id' => $id],
+                );
+                if ($conversion !== false && $conversion['conversion_status'] === 'completed') {
+                    return ['completed' => true, 'orderId' => $conversion['order_id']];
+                }
+                if ($application['status'] !== 'approved' || $application['eligibility_status'] !== 'eligible') {
+                    return ['error' => 409, 'detail' => 'Only approved applications with eligible review status can be converted.'];
+                }
+                if ($conversion !== false && $conversion['initiated_by'] !== $principal->subject) {
+                    return ['error' => 409, 'detail' => 'The conversion was initiated by another advisor and must be retried by that advisor.'];
+                }
+                if ($conversion === false) {
+                    $db->insert('crm_order_conversions', [
+                        'tenant_id' => $tenant,
+                        'application_id' => $id,
+                        'initiated_by' => $principal->subject,
+                        'conversion_status' => 'processing',
+                    ]);
+                }
+                return [
+                    'customerId' => $application['customer_id'],
+                    'offerId' => $application['offer_id'],
+                    'vehicleId' => $application['vehicle_id'],
+                    'quoteId' => $application['quote_id'],
+                ];
+            });
+
+            if (isset($claim['error'])) {
+                return $this->problem((int) $claim['error'], (string) $claim['detail']);
+            }
+            if (($claim['completed'] ?? false) === true) {
+                return new JsonResponse(['applicationId' => $id, 'orderId' => $claim['orderId'], 'status' => 'converted'], 200, ['Cache-Control' => 'no-store']);
+            }
+
+            $response = $this->httpClient->request('POST', rtrim($this->orderServiceUrl, '/') . '/api/v1/orders', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $token,
+                    'Idempotency-Key' => $idempotencyKey,
+                    'X-Tenant-ID' => $tenant,
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $claim,
+                'timeout' => 5.0,
+                'max_duration' => 10.0,
+                'max_redirects' => 0,
+            ]);
+            $status = $response->getStatusCode();
+            if ($status === 401 || $status === 403) {
+                return $this->problem(403, 'The caller is not authorized to create an order.');
+            }
+            if ($status === 409) {
+                return $this->problem(409, 'The order conversion conflicts with an existing order command.');
+            }
+            if ($status === 422) {
+                return $this->problem(422, 'The application references are not valid for order creation.');
+            }
+            if ($status < 200 || $status >= 300) {
+                return $this->problem(503, 'Order Service is temporarily unavailable; retry the same conversion.');
+            }
+            $order = $response->toArray(false);
+            $orderId = is_array($order) ? ($order['orderId'] ?? null) : null;
+            if (!is_string($orderId) || !Uuid::isValid($orderId)) {
+                return $this->problem(503, 'Order Service returned an invalid order identifier; retry the same conversion.');
+            }
+
+            return $this->db->transactional(function (Connection $db) use ($principal, $tenant, $id, $orderId): JsonResponse {
+                $this->tenantContext($db, $tenant);
+                $application = $db->fetchAssociative(
+                    'SELECT status FROM crm_applications WHERE tenant_id=:tenant AND application_id=:id FOR UPDATE',
+                    ['tenant' => $tenant, 'id' => $id],
+                );
+                if ($application === false) {
+                    return $this->problem(404, 'Application not found.');
+                }
+                if ($application['status'] !== 'converted') {
+                    $db->executeStatement(
+                        "UPDATE crm_applications SET status='converted',version=version+1,updated_at=CURRENT_TIMESTAMP,updated_by=:actor WHERE tenant_id=:tenant AND application_id=:id AND status='approved'",
+                        ['actor' => $principal->subject, 'tenant' => $tenant, 'id' => $id],
+                    );
+                    $this->audit($db, $tenant, $id, $principal->subject, 'CrmApplicationConverted', ['orderId' => $orderId]);
+                    $this->outbox($db, $tenant, $id, 'crm.application.converted.v1', ['applicationId' => $id, 'orderId' => $orderId]);
+                }
+                $db->executeStatement(
+                    "UPDATE crm_order_conversions SET order_id=:order,conversion_status='completed',updated_at=CURRENT_TIMESTAMP WHERE tenant_id=:tenant AND application_id=:id",
+                    ['order' => $orderId, 'tenant' => $tenant, 'id' => $id],
+                );
+                return new JsonResponse(['applicationId' => $id, 'orderId' => $orderId, 'status' => 'converted'], 201, ['Cache-Control' => 'no-store']);
+            });
+        } catch (AccessDeniedHttpException $error) {
+            return $this->problem(403, $error->getMessage());
+        } catch (Throwable) {
+            return $this->problem(503, 'Application conversion is temporarily unavailable; retry the same conversion.');
+        }
+    }
+
     #[Route('/applications/{id}/status', requirements: ['id' => '[0-9a-fA-F-]{36}'], methods: ['PATCH'])]
     public function transition(Request $request, string $id): JsonResponse
     {
@@ -149,6 +271,10 @@ final readonly class CrmController
             }
         } catch (Throwable $error) {
             return $this->problem(400, $error->getMessage());
+        }
+
+        if ($target === 'converted') {
+            return $this->problem(409, 'Use the application conversion endpoint to create an Order.');
         }
 
         return $this->run($request, 'crm:applications:manage', function (Connection $db, string $tenant, AuthenticatedPrincipal $principal) use ($id, $target, $reason): JsonResponse {
