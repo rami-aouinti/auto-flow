@@ -8,14 +8,17 @@ use AutoFlow\CoreBundle\Security\AuthenticatedPrincipal;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Throwable;
+use App\Infrastructure\Document\InvoicePdfRenderer;
+use DomainException;
 
 #[Route('/api/v1/billing')]
 final readonly class BillingController
 {
-    public function __construct(private Connection $db)
+    public function __construct(private Connection $db, private InvoicePdfRenderer $invoicePdfRenderer)
     {
     }
     #[Route('/invoices', methods:['GET'])]
@@ -40,6 +43,44 @@ final readonly class BillingController
             return new JsonResponse($x, 200, ['Cache-Control' => 'no-store']);
         });
     }
+    #[Route('/invoices/{id}/document', methods:['GET'], requirements:['id' => '[0-9a-fA-F-]{36}'])]
+    public function invoiceDocument(Request $r, string $id): Response
+    {
+        try {
+            $principal = $r->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+            if (!$principal instanceof AuthenticatedPrincipal || !$principal->hasScope('billing:read') || $principal->tenantId === null) {
+                return $this->problem(403, 'Billing permission or tenant context is missing.');
+            }
+
+            return $this->db->transactional(function (Connection $db) use ($principal, $id): Response {
+                $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $principal->tenantId]);
+                $invoice = $db->fetchAssociative(
+                    'SELECT invoice_id,invoice_number,order_id,payment_id,currency,gross_minor,net_minor,tax_minor,tax_rate_basis_points,status,issued_at,billing_snapshot FROM billing_invoices WHERE tenant_id=:t AND invoice_id=:id',
+                    ['t' => $principal->tenantId, 'id' => $id],
+                );
+                if ($invoice === false) {
+                    return $this->problem(404, 'Invoice not found.');
+                }
+
+                try {
+                    $pdf = $this->invoicePdfRenderer->render($invoice);
+                } catch (DomainException $exception) {
+                    return $this->problem(409, $exception->getMessage());
+                }
+
+                $filename = preg_replace('/[^A-Za-z0-9._-]/', '-', (string) $invoice['invoice_number']);
+                return new Response($pdf, 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'attachment; filename="' . $filename . '.pdf"',
+                    'Cache-Control' => 'private, no-store',
+                    'X-Content-Type-Options' => 'nosniff',
+                ]);
+            });
+        } catch (Throwable) {
+            return $this->problem(503, 'Invoice document is temporarily unavailable.');
+        }
+    }
+
     #[Route('/credit-notes', methods:['GET'])]
     public function creditNotes(Request $r): JsonResponse
     {
