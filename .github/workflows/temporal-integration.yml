@@ -1,0 +1,53 @@
+name: Temporal Integration
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  rabbitmq-temporal-saga:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.23"
+          cache: true
+          cache-dependency-path: apps/order-workflow-worker/go.mod
+      - name: Build Order API and Temporal worker
+        run: docker compose --env-file .env.example build order-service order-workflow-worker
+      - name: Start PostgreSQL, RabbitMQ, Temporal and Order worker
+        run: |
+          docker compose --env-file .env.example up -d temporal order-service order-workflow-worker
+          for attempt in $(seq 1 90); do
+            if docker compose --env-file .env.example logs --no-color order-workflow-worker 2>&1 | grep -q "Order workflow worker started"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose --env-file .env.example ps -a
+          docker compose --env-file .env.example logs --no-color --tail=200 temporal order-service order-workflow-worker rabbitmq postgres postgres-bootstrap
+          exit 1
+      - name: Verify real RabbitMQ to Temporal Saga execution
+        env:
+          TEMPORAL_ADDRESS: 127.0.0.1:7233
+          RABBITMQ_HOST: 127.0.0.1
+          RABBITMQ_PORT: "5672"
+          RABBITMQ_USER: autoflow
+          RABBITMQ_PASSWORD: autoflow
+          AUTOFLOW_TEMPORAL_RABBITMQ_E2E: "1"
+        working-directory: apps/order-workflow-worker
+        run: go test ./internal/orders -run '^TestLiveRabbitMQTemporalSagaStartsAndPublishesReservationHold$' -count=1 -v
+      - name: Collect integration diagnostics
+        if: failure()
+        run: |
+          docker compose --env-file .env.example ps -a
+          docker compose --env-file .env.example logs --no-color --tail=250 temporal order-service order-workflow-worker rabbitmq postgres postgres-bootstrap
+      - name: Stop test infrastructure
+        if: always()
+        run: docker compose --env-file .env.example down -v
