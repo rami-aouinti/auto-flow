@@ -28,7 +28,7 @@ jobs:
         with:
           php-version: "8.4"
           coverage: xdebug
-          extensions: pdo_pgsql, mbstring, sockets
+          extensions: pdo_pgsql, mbstring, sockets, dom
           tools: composer:v2
       - name: Setup Go for Temporal Order worker
         uses: actions/setup-go@v7
