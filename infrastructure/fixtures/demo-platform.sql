@@ -52,11 +52,11 @@ INSERT INTO customer_records(
  tenant_id,customer_id,customer_type,first_name,last_name,legal_name,email,email_normalized,
  phone,locale,status,created_by,updated_by
 ) VALUES
-('tenant-demo','a0000000-0000-4000-8000-000000000001','individual','Lena','Schneider',NULL,'lena.schneider@example.test','lena.schneider@example.test','+49 30 5550 0101','de-DE','active','demo-fixtures','demo-fixtures'),
-('tenant-demo','a0000000-0000-4000-8000-000000000002','individual','Jonas','Weber',NULL,'jonas.weber@example.test','jonas.weber@example.test','+49 30 5550 0102','de-DE','active','demo-fixtures','demo-fixtures'),
-('tenant-demo','a0000000-0000-4000-8000-000000000003','individual','Mia','Fischer',NULL,'mia.fischer@example.test','mia.fischer@example.test','+49 30 5550 0103','de-DE','active','demo-fixtures','demo-fixtures'),
-('tenant-demo','a0000000-0000-4000-8000-000000000004','company',NULL,NULL,'Nordlicht Mobility GmbH','fleet@example.test','fleet@example.test','+49 40 5550 0104','de-DE','active','demo-fixtures','demo-fixtures'),
-('tenant-demo','a0000000-0000-4000-8000-000000000005','individual','Noah','Wagner',NULL,'noah.wagner@example.test','noah.wagner@example.test','+49 89 5550 0105','de-DE','active','demo-fixtures','demo-fixtures')
+('tenant-demo','a0000000-0000-4000-8000-000000000001','individual','Lena','Schneider',NULL,'lena.schneider@example.test','lena.schneider@example.test','+49 30 5550 0101','de-DE','active',:'demo_subject',:'demo_subject'),
+('tenant-demo','a0000000-0000-4000-8000-000000000002','individual','Jonas','Weber',NULL,'jonas.weber@example.test','jonas.weber@example.test','+49 30 5550 0102','de-DE','active',:'demo_subject',:'demo_subject'),
+('tenant-demo','a0000000-0000-4000-8000-000000000003','individual','Mia','Fischer',NULL,'mia.fischer@example.test','mia.fischer@example.test','+49 30 5550 0103','de-DE','active',:'demo_subject',:'demo_subject'),
+('tenant-demo','a0000000-0000-4000-8000-000000000004','company',NULL,NULL,'Nordlicht Mobility GmbH','fleet@example.test','fleet@example.test','+49 40 5550 0104','de-DE','active',:'demo_subject',:'demo_subject'),
+('tenant-demo','a0000000-0000-4000-8000-000000000005','individual','Noah','Wagner',NULL,'noah.wagner@example.test','noah.wagner@example.test','+49 89 5550 0105','de-DE','active',:'demo_subject',:'demo_subject')
 ON CONFLICT (tenant_id,customer_id) DO NOTHING;
 
 INSERT INTO customer_addresses(tenant_id,address_id,customer_id,address_type,label,line1,postal_code,city,region,country_code,is_default) VALUES
@@ -84,7 +84,7 @@ INSERT INTO pricing_policies(
  minimum_annual_rate_bps,maximum_annual_rate_bps,quote_validity_days,calculation_version,created_by,published_at
 ) VALUES (
  '123e4567-e89b-42d3-a456-426614174000','tenant-demo',1,'draft',12,72,0,2000,7,
- 'lease-annuity-v1','demo-fixtures',NULL
+ 'lease-annuity-v1',:'demo_subject',NULL
 )
 ON CONFLICT (policy_id) DO NOTHING;
 
@@ -104,21 +104,21 @@ INSERT INTO pricing_quotes(
  residual_value_minor,currency,duration_months,annual_interest_rate_basis_points,calculation_version,
  vehicle_price_minor,down_payment_minor,expires_at,policy_id,policy_version
 ) VALUES
-('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','tenant-demo','demo-fixtures','40000000000000000000000000000004',68638,3294624,3794624,800000,'EUR',48,425,'lease-annuity-v1',4200000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
-('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb','tenant-demo','demo-fixtures','40000000000000000000000000000003',58935,2828880,3328880,950000,'EUR',48,425,'lease-annuity-v1',3899000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
-('cccccccccccccccccccccccccccccccc','tenant-demo','demo-fixtures','40000000000000000000000000000005',58801,2822448,3222448,720000,'EUR',48,425,'lease-annuity-v1',3599000,400000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
-('dddddddddddddddddddddddddddddddd','tenant-demo','demo-fixtures','40000000000000000000000000000007',67657,3247536,3747536,850000,'EUR',48,425,'lease-annuity-v1',4199000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
-('eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee','tenant-demo','demo-fixtures','40000000000000000000000000000006',75805,3638640,4138640,780000,'EUR',48,425,'lease-annuity-v1',4499000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
-('ffffffffffffffffffffffffffffffff','tenant-demo','demo-fixtures','40000000000000000000000000000001',34145,1638960,2138960,1200000,'EUR',48,450,'lease-annuity-v1',3000000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
-('77777777777777777777777777777777','tenant-demo','demo-fixtures','40000000000000000000000000000002',41745,1502820,1902820,750000,'EUR',36,350,'lease-annuity-v1',2500000,400000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1)
+('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','tenant-demo',:'demo_subject','40000000000000000000000000000004',68638,3294624,3794624,800000,'EUR',48,425,'lease-annuity-v1',4200000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
+('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb','tenant-demo',:'demo_subject','40000000000000000000000000000003',58935,2828880,3328880,950000,'EUR',48,425,'lease-annuity-v1',3899000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
+('cccccccccccccccccccccccccccccccc','tenant-demo',:'demo_subject','40000000000000000000000000000005',58801,2822448,3222448,720000,'EUR',48,425,'lease-annuity-v1',3599000,400000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
+('dddddddddddddddddddddddddddddddd','tenant-demo',:'demo_subject','40000000000000000000000000000007',67657,3247536,3747536,850000,'EUR',48,425,'lease-annuity-v1',4199000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
+('eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee','tenant-demo',:'demo_subject','40000000000000000000000000000006',75805,3638640,4138640,780000,'EUR',48,425,'lease-annuity-v1',4499000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
+('ffffffffffffffffffffffffffffffff','tenant-demo',:'demo_subject','40000000000000000000000000000001',34145,1638960,2138960,1200000,'EUR',48,450,'lease-annuity-v1',3000000,500000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1),
+('77777777777777777777777777777777','tenant-demo',:'demo_subject','40000000000000000000000000000002',41745,1502820,1902820,750000,'EUR',36,350,'lease-annuity-v1',2500000,400000,CURRENT_TIMESTAMP + INTERVAL '7 days','123e4567-e89b-42d3-a456-426614174000',1)
 ON CONFLICT (quote_id) DO NOTHING;
 
 INSERT INTO offers(tenant_id,offer_id,created_by,status,quote_id,pricing_snapshot,created_at,expires_at) VALUES
-('tenant-demo','b0000000-0000-4000-8000-000000000001','demo-fixtures','accepted','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','{"currency":"EUR","monthlyAmount":"686.38","durationMonths":48,"vehicleId":"40000000000000000000000000000004"}',CURRENT_TIMESTAMP - INTERVAL '18 days',CURRENT_TIMESTAMP + INTERVAL '12 days'),
-('tenant-demo','b0000000-0000-4000-8000-000000000002','demo-fixtures','published','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb','{"currency":"EUR","monthlyAmount":"589.35","durationMonths":48,"vehicleId":"40000000000000000000000000000003"}',CURRENT_TIMESTAMP - INTERVAL '4 days',CURRENT_TIMESTAMP + INTERVAL '3 days'),
-('tenant-demo','b0000000-0000-4000-8000-000000000003','demo-fixtures','accepted','cccccccccccccccccccccccccccccccc','{"currency":"EUR","monthlyAmount":"588.01","durationMonths":48,"vehicleId":"40000000000000000000000000000005"}',CURRENT_TIMESTAMP - INTERVAL '8 days',CURRENT_TIMESTAMP + INTERVAL '6 days'),
-('tenant-demo','b0000000-0000-4000-8000-000000000004','demo-fixtures','draft','dddddddddddddddddddddddddddddddd','{"currency":"EUR","monthlyAmount":"676.57","durationMonths":48,"vehicleId":"40000000000000000000000000000007"}',CURRENT_TIMESTAMP - INTERVAL '1 day',CURRENT_TIMESTAMP + INTERVAL '6 days'),
-('tenant-demo','b0000000-0000-4000-8000-000000000005','demo-fixtures','rejected','eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee','{"currency":"EUR","monthlyAmount":"758.05","durationMonths":48,"vehicleId":"40000000000000000000000000000006"}',CURRENT_TIMESTAMP - INTERVAL '12 days',CURRENT_TIMESTAMP + INTERVAL '2 days')
+('tenant-demo','b0000000-0000-4000-8000-000000000001',:'demo_subject','accepted','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','{"currency":"EUR","monthlyAmount":"686.38","durationMonths":48,"vehicleId":"40000000000000000000000000000004"}',CURRENT_TIMESTAMP - INTERVAL '18 days',CURRENT_TIMESTAMP + INTERVAL '12 days'),
+('tenant-demo','b0000000-0000-4000-8000-000000000002',:'demo_subject','published','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb','{"currency":"EUR","monthlyAmount":"589.35","durationMonths":48,"vehicleId":"40000000000000000000000000000003"}',CURRENT_TIMESTAMP - INTERVAL '4 days',CURRENT_TIMESTAMP + INTERVAL '3 days'),
+('tenant-demo','b0000000-0000-4000-8000-000000000003',:'demo_subject','accepted','cccccccccccccccccccccccccccccccc','{"currency":"EUR","monthlyAmount":"588.01","durationMonths":48,"vehicleId":"40000000000000000000000000000005"}',CURRENT_TIMESTAMP - INTERVAL '8 days',CURRENT_TIMESTAMP + INTERVAL '6 days'),
+('tenant-demo','b0000000-0000-4000-8000-000000000004',:'demo_subject','draft','dddddddddddddddddddddddddddddddd','{"currency":"EUR","monthlyAmount":"676.57","durationMonths":48,"vehicleId":"40000000000000000000000000000007"}',CURRENT_TIMESTAMP - INTERVAL '1 day',CURRENT_TIMESTAMP + INTERVAL '6 days'),
+('tenant-demo','b0000000-0000-4000-8000-000000000005',:'demo_subject','rejected','eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee','{"currency":"EUR","monthlyAmount":"758.05","durationMonths":48,"vehicleId":"40000000000000000000000000000006"}',CURRENT_TIMESTAMP - INTERVAL '12 days',CURRENT_TIMESTAMP + INTERVAL '2 days')
 ON CONFLICT (tenant_id,offer_id) DO NOTHING;
 
 -- ---------------------------------------------------------------------------
@@ -129,31 +129,31 @@ INSERT INTO orders(
  offer_snapshot,quote_snapshot,vehicle_snapshot,created_at,updated_at,submitted_at,decided_at,
  customer_id,customer_version,customer_snapshot
 ) VALUES
-('tenant-demo','c0000000-0000-4000-8000-000000000001','demo-fixtures','b0000000-0000-4000-8000-000000000001','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','40000000000000000000000000000004','completed',
+('tenant-demo','c0000000-0000-4000-8000-000000000001',:'demo_subject','b0000000-0000-4000-8000-000000000001','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','40000000000000000000000000000004','completed',
  '{"offerId":"b0000000-0000-4000-8000-000000000001","status":"accepted"}',
  '{"quoteId":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","currency":"EUR","monthlyAmount":"686.38","durationMonths":48,"totalCost":"37946.24"}',
  '{"manufacturer":"BMW","model":"3 Series","variant":"320d 140 kW","vehicleId":"40000000000000000000000000000004"}',
  CURRENT_TIMESTAMP - INTERVAL '30 days',CURRENT_TIMESTAMP - INTERVAL '5 days',CURRENT_TIMESTAMP - INTERVAL '29 days',CURRENT_TIMESTAMP - INTERVAL '28 days',
  'a0000000-0000-4000-8000-000000000001',1,'{"customerId":"a0000000-0000-4000-8000-000000000001","displayName":"Lena Schneider","email":"lena.schneider@example.test"}'),
-('tenant-demo','c0000000-0000-4000-8000-000000000002','demo-fixtures','b0000000-0000-4000-8000-000000000002','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb','40000000000000000000000000000003','accepted',
+('tenant-demo','c0000000-0000-4000-8000-000000000002',:'demo_subject','b0000000-0000-4000-8000-000000000002','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb','40000000000000000000000000000003','accepted',
  '{"offerId":"b0000000-0000-4000-8000-000000000002","status":"accepted"}',
  '{"quoteId":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","currency":"EUR","monthlyAmount":"589.35","durationMonths":48,"totalCost":"33288.80"}',
  '{"manufacturer":"Volkswagen","model":"ID.4","variant":"ID.4 Pro 210 kW","vehicleId":"40000000000000000000000000000003"}',
  CURRENT_TIMESTAMP - INTERVAL '12 days',CURRENT_TIMESTAMP - INTERVAL '1 day',CURRENT_TIMESTAMP - INTERVAL '11 days',CURRENT_TIMESTAMP - INTERVAL '10 days',
  'a0000000-0000-4000-8000-000000000002',1,'{"customerId":"a0000000-0000-4000-8000-000000000002","displayName":"Jonas Weber","email":"jonas.weber@example.test"}'),
-('tenant-demo','c0000000-0000-4000-8000-000000000003','demo-fixtures','b0000000-0000-4000-8000-000000000003','cccccccccccccccccccccccccccccccc','40000000000000000000000000000005','under_review',
+('tenant-demo','c0000000-0000-4000-8000-000000000003',:'demo_subject','b0000000-0000-4000-8000-000000000003','cccccccccccccccccccccccccccccccc','40000000000000000000000000000005','under_review',
  '{"offerId":"b0000000-0000-4000-8000-000000000003","status":"accepted"}',
  '{"quoteId":"cccccccccccccccccccccccccccccccc","currency":"EUR","monthlyAmount":"588.01","durationMonths":48,"totalCost":"32224.48"}',
  '{"manufacturer":"BMW","model":"3 Series","variant":"330e Plug-in Hybrid","vehicleId":"40000000000000000000000000000005"}',
  CURRENT_TIMESTAMP - INTERVAL '7 days',CURRENT_TIMESTAMP - INTERVAL '2 days',CURRENT_TIMESTAMP - INTERVAL '6 days',NULL,
  'a0000000-0000-4000-8000-000000000003',1,'{"customerId":"a0000000-0000-4000-8000-000000000003","displayName":"Mia Fischer","email":"mia.fischer@example.test"}'),
-('tenant-demo','c0000000-0000-4000-8000-000000000004','demo-fixtures','b0000000-0000-4000-8000-000000000004','dddddddddddddddddddddddddddddddd','40000000000000000000000000000007','submitted',
+('tenant-demo','c0000000-0000-4000-8000-000000000004',:'demo_subject','b0000000-0000-4000-8000-000000000004','dddddddddddddddddddddddddddddddd','40000000000000000000000000000007','submitted',
  '{"offerId":"b0000000-0000-4000-8000-000000000004","status":"draft"}',
  '{"quoteId":"dddddddddddddddddddddddddddddddd","currency":"EUR","monthlyAmount":"676.57","durationMonths":48,"totalCost":"37475.36"}',
  '{"manufacturer":"Audi","model":"A4","variant":"A4 40 TDI 150 kW","vehicleId":"40000000000000000000000000000007"}',
  CURRENT_TIMESTAMP - INTERVAL '2 days',CURRENT_TIMESTAMP - INTERVAL '1 day',CURRENT_TIMESTAMP - INTERVAL '1 day',NULL,
  'a0000000-0000-4000-8000-000000000004',1,'{"customerId":"a0000000-0000-4000-8000-000000000004","displayName":"Nordlicht Mobility GmbH","email":"fleet@example.test"}'),
-('tenant-demo','c0000000-0000-4000-8000-000000000005','demo-fixtures','b0000000-0000-4000-8000-000000000005','eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee','40000000000000000000000000000006','rejected',
+('tenant-demo','c0000000-0000-4000-8000-000000000005',:'demo_subject','b0000000-0000-4000-8000-000000000005','eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee','40000000000000000000000000000006','rejected',
  '{"offerId":"b0000000-0000-4000-8000-000000000005","status":"rejected"}',
  '{"quoteId":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","currency":"EUR","monthlyAmount":"758.05","durationMonths":48,"totalCost":"41386.40"}',
  '{"manufacturer":"Mercedes-Benz","model":"C-Class","variant":"C 220 d 147 kW","vehicleId":"40000000000000000000000000000006"}',
@@ -168,10 +168,10 @@ INSERT INTO payments(
  tenant_id,payment_id,order_id,created_by,provider,provider_payment_id,amount_minor,currency,status,
  amount_refunded_minor,failure_code,created_at,updated_at,billing_snapshot
 ) VALUES
-('tenant-demo','d0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-000000000001','demo-fixtures','demo','demo_pi_captured_001',3294624,'EUR','captured',0,NULL,CURRENT_TIMESTAMP - INTERVAL '24 days',CURRENT_TIMESTAMP - INTERVAL '23 days','{"customerName":"Lena Schneider","email":"lena.schneider@example.test","taxRateBasisPoints":1900}'),
-('tenant-demo','d0000000-0000-4000-8000-000000000002','c0000000-0000-4000-8000-000000000002','demo-fixtures','demo','demo_pi_pending_002',2828880,'EUR','requires_action',0,NULL,CURRENT_TIMESTAMP - INTERVAL '3 days',CURRENT_TIMESTAMP - INTERVAL '3 days','{"customerName":"Jonas Weber","email":"jonas.weber@example.test","taxRateBasisPoints":1900}'),
-('tenant-demo','d0000000-0000-4000-8000-000000000003','c0000000-0000-4000-8000-000000000003','demo-fixtures','demo','demo_pi_failed_003',2822448,'EUR','failed',0,'authentication_required',CURRENT_TIMESTAMP - INTERVAL '2 days',CURRENT_TIMESTAMP - INTERVAL '2 days','{"customerName":"Mia Fischer","email":"mia.fischer@example.test","taxRateBasisPoints":1900}'),
-('tenant-demo','d0000000-0000-4000-8000-000000000004','c0000000-0000-4000-8000-000000000004','demo-fixtures','demo','demo_pi_pending_004',3247536,'EUR','pending',0,NULL,CURRENT_TIMESTAMP - INTERVAL '1 day',CURRENT_TIMESTAMP - INTERVAL '1 day','{"customerName":"Nordlicht Mobility GmbH","email":"fleet@example.test","taxRateBasisPoints":1900}')
+('tenant-demo','d0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-000000000001',:'demo_subject','demo','demo_pi_captured_001',3294624,'EUR','captured',0,NULL,CURRENT_TIMESTAMP - INTERVAL '24 days',CURRENT_TIMESTAMP - INTERVAL '23 days','{"customerName":"Lena Schneider","email":"lena.schneider@example.test","taxRateBasisPoints":1900}'),
+('tenant-demo','d0000000-0000-4000-8000-000000000002','c0000000-0000-4000-8000-000000000002',:'demo_subject','demo','demo_pi_pending_002',2828880,'EUR','requires_action',0,NULL,CURRENT_TIMESTAMP - INTERVAL '3 days',CURRENT_TIMESTAMP - INTERVAL '3 days','{"customerName":"Jonas Weber","email":"jonas.weber@example.test","taxRateBasisPoints":1900}'),
+('tenant-demo','d0000000-0000-4000-8000-000000000003','c0000000-0000-4000-8000-000000000003',:'demo_subject','demo','demo_pi_failed_003',2822448,'EUR','failed',0,'authentication_required',CURRENT_TIMESTAMP - INTERVAL '2 days',CURRENT_TIMESTAMP - INTERVAL '2 days','{"customerName":"Mia Fischer","email":"mia.fischer@example.test","taxRateBasisPoints":1900}'),
+('tenant-demo','d0000000-0000-4000-8000-000000000004','c0000000-0000-4000-8000-000000000004',:'demo_subject','demo','demo_pi_pending_004',3247536,'EUR','pending',0,NULL,CURRENT_TIMESTAMP - INTERVAL '1 day',CURRENT_TIMESTAMP - INTERVAL '1 day','{"customerName":"Nordlicht Mobility GmbH","email":"fleet@example.test","taxRateBasisPoints":1900}')
 ON CONFLICT (tenant_id,payment_id) DO NOTHING;
 
 INSERT INTO billing_invoices(
@@ -193,15 +193,15 @@ INSERT INTO contract_records(
 ('tenant-demo','f0000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000001',
  'vehicle_lease',1,'signed',
  '{"customer":{"name":"Lena Schneider","email":"lena.schneider@example.test"},"vehicle":{"manufacturer":"BMW","model":"3 Series","variant":"320d 140 kW"},"commercial":{"currency":"EUR","monthlyAmount":"686.38","durationMonths":48},"demo":true}',
- repeat('a',64),'demo','demo-envelope-signed-001','demo-fixtures',CURRENT_TIMESTAMP - INTERVAL '22 days',CURRENT_TIMESTAMP - INTERVAL '20 days',CURRENT_TIMESTAMP - INTERVAL '21 days',CURRENT_TIMESTAMP - INTERVAL '20 days'),
+ repeat('a',64),'demo','demo-envelope-signed-001',:'demo_subject',CURRENT_TIMESTAMP - INTERVAL '22 days',CURRENT_TIMESTAMP - INTERVAL '20 days',CURRENT_TIMESTAMP - INTERVAL '21 days',CURRENT_TIMESTAMP - INTERVAL '20 days'),
 ('tenant-demo','f0000000-0000-4000-8000-000000000002','c0000000-0000-4000-8000-000000000002','a0000000-0000-4000-8000-000000000002',
  'vehicle_lease',1,'awaiting_signature',
  '{"customer":{"name":"Jonas Weber","email":"jonas.weber@example.test"},"vehicle":{"manufacturer":"Volkswagen","model":"ID.4","variant":"ID.4 Pro 210 kW"},"commercial":{"currency":"EUR","monthlyAmount":"589.35","durationMonths":48},"demo":true}',
- repeat('b',64),'demo','demo-envelope-pending-002','demo-fixtures',CURRENT_TIMESTAMP - INTERVAL '8 days',CURRENT_TIMESTAMP - INTERVAL '1 day',CURRENT_TIMESTAMP - INTERVAL '2 days',NULL),
+ repeat('b',64),'demo','demo-envelope-pending-002',:'demo_subject',CURRENT_TIMESTAMP - INTERVAL '8 days',CURRENT_TIMESTAMP - INTERVAL '1 day',CURRENT_TIMESTAMP - INTERVAL '2 days',NULL),
 ('tenant-demo','f0000000-0000-4000-8000-000000000003','c0000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000003',
  'vehicle_lease',1,'draft',
  '{"customer":{"name":"Mia Fischer","email":"mia.fischer@example.test"},"vehicle":{"manufacturer":"BMW","model":"3 Series","variant":"330e Plug-in Hybrid"},"commercial":{"currency":"EUR","monthlyAmount":"588.01","durationMonths":48},"demo":true}',
- NULL,NULL,NULL,'demo-fixtures',CURRENT_TIMESTAMP - INTERVAL '3 days',CURRENT_TIMESTAMP - INTERVAL '3 days',NULL,NULL)
+ NULL,NULL,NULL,:'demo_subject',CURRENT_TIMESTAMP - INTERVAL '3 days',CURRENT_TIMESTAMP - INTERVAL '3 days',NULL,NULL)
 ON CONFLICT (tenant_id,contract_id) DO NOTHING;
 
 -- ---------------------------------------------------------------------------
@@ -211,11 +211,11 @@ INSERT INTO inventory_units(
  tenant_id,inventory_unit_id,vehicle_variant_id,vin,vin_normalized,dealer_id,location_code,country_code,
  status,condition,mileage_km,first_registration_date,acquired_at,created_by,updated_by
 ) VALUES
-('tenant-demo','10000000-0000-4000-8000-000000000001','40000000000000000000000000000004'::uuid,'WVWDEMA0000000001','WVWDEMA0000000001','20000000-0000-4000-8000-000000000001','BER-01','DE','delivered','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '60 days','demo-fixtures','demo-fixtures'),
-('tenant-demo','10000000-0000-4000-8000-000000000002','40000000000000000000000000000003'::uuid,'WVWDEMA0000000002','WVWDEMA0000000002','20000000-0000-4000-8000-000000000002','CGN-01','DE','blocked','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '30 days','demo-fixtures','demo-fixtures'),
-('tenant-demo','10000000-0000-4000-8000-000000000003','40000000000000000000000000000005'::uuid,'WBADEMA0000000003','WBADEMA0000000003','20000000-0000-4000-8000-000000000003','MUC-01','DE','available','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '20 days','demo-fixtures','demo-fixtures'),
-('tenant-demo','10000000-0000-4000-8000-000000000004','40000000000000000000000000000007'::uuid,'WAUDEMA0000000004','WAUDEMA0000000004','20000000-0000-4000-8000-000000000004','HAM-01','DE','available','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '12 days','demo-fixtures','demo-fixtures'),
-('tenant-demo','10000000-0000-4000-8000-000000000005','40000000000000000000000000000006'::uuid,'WDDDEMA0000000005','WDDDEMA0000000005','20000000-0000-4000-8000-000000000005','DUS-01','DE','maintenance','used',18000,'2024-02-01',CURRENT_TIMESTAMP - INTERVAL '90 days','demo-fixtures','demo-fixtures')
+('tenant-demo','10000000-0000-4000-8000-000000000001','40000000000000000000000000000004'::uuid,'WVWDEMA0000000001','WVWDEMA0000000001','20000000-0000-4000-8000-000000000001','BER-01','DE','delivered','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '60 days',:'demo_subject',:'demo_subject'),
+('tenant-demo','10000000-0000-4000-8000-000000000002','40000000000000000000000000000003'::uuid,'WVWDEMA0000000002','WVWDEMA0000000002','20000000-0000-4000-8000-000000000002','CGN-01','DE','blocked','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '30 days',:'demo_subject',:'demo_subject'),
+('tenant-demo','10000000-0000-4000-8000-000000000003','40000000000000000000000000000005'::uuid,'WBADEMA0000000003','WBADEMA0000000003','20000000-0000-4000-8000-000000000003','MUC-01','DE','available','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '20 days',:'demo_subject',:'demo_subject'),
+('tenant-demo','10000000-0000-4000-8000-000000000004','40000000000000000000000000000007'::uuid,'WAUDEMA0000000004','WAUDEMA0000000004','20000000-0000-4000-8000-000000000004','HAM-01','DE','available','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '12 days',:'demo_subject',:'demo_subject'),
+('tenant-demo','10000000-0000-4000-8000-000000000005','40000000000000000000000000000006'::uuid,'WDDDEMA0000000005','WDDDEMA0000000005','20000000-0000-4000-8000-000000000005','DUS-01','DE','maintenance','used',18000,'2024-02-01',CURRENT_TIMESTAMP - INTERVAL '90 days',:'demo_subject',:'demo_subject')
 ON CONFLICT (tenant_id,inventory_unit_id) DO NOTHING;
 
 INSERT INTO vehicle_reservations(
@@ -247,16 +247,16 @@ INSERT INTO crm_applications(
  tenant_id,application_id,customer_id,offer_id,vehicle_id,quote_id,status,applicant_message,
  assigned_advisor_id,eligibility_status,eligibility_result,submitted_at,reviewed_at,created_by,updated_by
 ) VALUES
-('tenant-demo','13000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000001','b0000000-0000-4000-8000-000000000001','40000000000000000000000000000004','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','converted','Bitte Lieferung vormittags einplanen.','advisor.berlin','eligible','{"score":"A","decision":"eligible","demo":true}',CURRENT_TIMESTAMP - INTERVAL '30 days',CURRENT_TIMESTAMP - INTERVAL '28 days','demo-fixtures','demo-fixtures'),
-('tenant-demo','13000000-0000-4000-8000-000000000002','a0000000-0000-4000-8000-000000000002','b0000000-0000-4000-8000-000000000002','40000000000000000000000000000003','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb','approved','Ich möchte das Fahrzeug zeitnah übernehmen.','advisor.koeln','eligible','{"score":"B","decision":"eligible","demo":true}',CURRENT_TIMESTAMP - INTERVAL '12 days',CURRENT_TIMESTAMP - INTERVAL '10 days','demo-fixtures','demo-fixtures'),
-('tenant-demo','13000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000003','b0000000-0000-4000-8000-000000000003','40000000000000000000000000000005','cccccccccccccccccccccccccccccccc','under_review','Bitte um Rückruf am Nachmittag.','advisor.muenchen','manual_review','{"score":"C","decision":"manual_review","demo":true}',CURRENT_TIMESTAMP - INTERVAL '7 days',NULL,'demo-fixtures','demo-fixtures'),
-('tenant-demo','13000000-0000-4000-8000-000000000004','a0000000-0000-4000-8000-000000000005','b0000000-0000-4000-8000-000000000005','40000000000000000000000000000006','eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee','declined','Bitte prüfen Sie die monatliche Rate.','advisor.duesseldorf','ineligible','{"score":"D","decision":"ineligible","demo":true}',CURRENT_TIMESTAMP - INTERVAL '20 days',CURRENT_TIMESTAMP - INTERVAL '18 days','demo-fixtures','demo-fixtures')
+('tenant-demo','13000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000001','b0000000-0000-4000-8000-000000000001','40000000000000000000000000000004','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','converted','Bitte Lieferung vormittags einplanen.','advisor.berlin','eligible','{"score":"A","decision":"eligible","demo":true}',CURRENT_TIMESTAMP - INTERVAL '30 days',CURRENT_TIMESTAMP - INTERVAL '28 days',:'demo_subject',:'demo_subject'),
+('tenant-demo','13000000-0000-4000-8000-000000000002','a0000000-0000-4000-8000-000000000002','b0000000-0000-4000-8000-000000000002','40000000000000000000000000000003','bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb','approved','Ich möchte das Fahrzeug zeitnah übernehmen.','advisor.koeln','eligible','{"score":"B","decision":"eligible","demo":true}',CURRENT_TIMESTAMP - INTERVAL '12 days',CURRENT_TIMESTAMP - INTERVAL '10 days',:'demo_subject',:'demo_subject'),
+('tenant-demo','13000000-0000-4000-8000-000000000003','a0000000-0000-4000-8000-000000000003','b0000000-0000-4000-8000-000000000003','40000000000000000000000000000005','cccccccccccccccccccccccccccccccc','under_review','Bitte um Rückruf am Nachmittag.','advisor.muenchen','manual_review','{"score":"C","decision":"manual_review","demo":true}',CURRENT_TIMESTAMP - INTERVAL '7 days',NULL,:'demo_subject',:'demo_subject'),
+('tenant-demo','13000000-0000-4000-8000-000000000004','a0000000-0000-4000-8000-000000000005','b0000000-0000-4000-8000-000000000005','40000000000000000000000000000006','eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee','declined','Bitte prüfen Sie die monatliche Rate.','advisor.duesseldorf','ineligible','{"score":"D","decision":"ineligible","demo":true}',CURRENT_TIMESTAMP - INTERVAL '20 days',CURRENT_TIMESTAMP - INTERVAL '18 days',:'demo_subject',:'demo_subject')
 ON CONFLICT (tenant_id,application_id) DO NOTHING;
 
 INSERT INTO crm_tasks(tenant_id,task_id,application_id,assigned_to,title,description,due_at,status,completed_at,created_by) VALUES
-('tenant-demo','14000000-0000-4000-8000-000000000001','13000000-0000-4000-8000-000000000002','advisor.koeln','Identität prüfen','Demo-Aufgabe zur Prüfung der Kundendaten.',CURRENT_TIMESTAMP + INTERVAL '1 day','open',NULL,'demo-fixtures'),
-('tenant-demo','14000000-0000-4000-8000-000000000002','13000000-0000-4000-8000-000000000003','advisor.muenchen','Rückruf vereinbaren','Kundenwunsch: Rückruf am Nachmittag.',CURRENT_TIMESTAMP + INTERVAL '4 hours','in_progress',NULL,'demo-fixtures'),
-('tenant-demo','14000000-0000-4000-8000-000000000003','13000000-0000-4000-8000-000000000001','advisor.berlin','Lieferung abstimmen','Lieferfenster wurde bereits bestätigt.',CURRENT_TIMESTAMP - INTERVAL '8 days','completed',CURRENT_TIMESTAMP - INTERVAL '9 days','demo-fixtures')
+('tenant-demo','14000000-0000-4000-8000-000000000001','13000000-0000-4000-8000-000000000002','advisor.koeln','Identität prüfen','Demo-Aufgabe zur Prüfung der Kundendaten.',CURRENT_TIMESTAMP + INTERVAL '1 day','open',NULL,:'demo_subject'),
+('tenant-demo','14000000-0000-4000-8000-000000000002','13000000-0000-4000-8000-000000000003','advisor.muenchen','Rückruf vereinbaren','Kundenwunsch: Rückruf am Nachmittag.',CURRENT_TIMESTAMP + INTERVAL '4 hours','in_progress',NULL,:'demo_subject'),
+('tenant-demo','14000000-0000-4000-8000-000000000003','13000000-0000-4000-8000-000000000001','advisor.berlin','Lieferung abstimmen','Lieferfenster wurde bereits bestätigt.',CURRENT_TIMESTAMP - INTERVAL '8 days','completed',CURRENT_TIMESTAMP - INTERVAL '9 days',:'demo_subject')
 ON CONFLICT (tenant_id,task_id) DO NOTHING;
 
 INSERT INTO crm_interactions(tenant_id,interaction_id,application_id,actor_id,channel,subject,body,occurred_at) VALUES
@@ -268,12 +268,12 @@ ON CONFLICT (tenant_id,interaction_id) DO NOTHING;
 
 -- Audit/history rows make detail pages useful without dispatching fake events.
 INSERT INTO customer_audit_events(tenant_id,event_id,customer_id,actor_id,event_type,payload,occurred_at) VALUES
-('tenant-demo','16000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000001','demo-fixtures','CustomerCreated','{"source":"demo_seed"}',CURRENT_TIMESTAMP - INTERVAL '30 days'),
-('tenant-demo','16000000-0000-4000-8000-000000000002','a0000000-0000-4000-8000-000000000002','demo-fixtures','CustomerCreated','{"source":"demo_seed"}',CURRENT_TIMESTAMP - INTERVAL '12 days')
+('tenant-demo','16000000-0000-4000-8000-000000000001','a0000000-0000-4000-8000-000000000001',:'demo_subject','CustomerCreated','{"source":"demo_seed"}',CURRENT_TIMESTAMP - INTERVAL '30 days'),
+('tenant-demo','16000000-0000-4000-8000-000000000002','a0000000-0000-4000-8000-000000000002',:'demo_subject','CustomerCreated','{"source":"demo_seed"}',CURRENT_TIMESTAMP - INTERVAL '12 days')
 ON CONFLICT (tenant_id,event_id) DO NOTHING;
 
 INSERT INTO order_history(tenant_id,order_id,from_status,to_status,actor,reason,occurred_at)
-SELECT v.tenant_id,v.order_id,v.from_status,v.to_status,'demo-fixtures',v.reason,v.occurred_at
+SELECT v.tenant_id,v.order_id,v.from_status,v.to_status,:'demo_subject',v.reason,v.occurred_at
 FROM (VALUES
  ('tenant-demo'::varchar,'c0000000-0000-4000-8000-000000000001'::uuid,NULL::varchar,'submitted'::varchar,'Demo order created',CURRENT_TIMESTAMP - INTERVAL '30 days'),
  ('tenant-demo'::varchar,'c0000000-0000-4000-8000-000000000001'::uuid,'submitted'::varchar,'accepted'::varchar,'Demo offer accepted',CURRENT_TIMESTAMP - INTERVAL '28 days'),
@@ -287,31 +287,31 @@ WHERE NOT EXISTS (
 );
 
 INSERT INTO contract_audit_events(tenant_id,event_id,contract_id,actor_id,event_type,payload,occurred_at) VALUES
-('tenant-demo','17000000-0000-4000-8000-000000000001','f0000000-0000-4000-8000-000000000001','demo-fixtures','ContractPrepared','{"demo":true}',CURRENT_TIMESTAMP - INTERVAL '21 days'),
-('tenant-demo','17000000-0000-4000-8000-000000000002','f0000000-0000-4000-8000-000000000001','demo-fixtures','ContractSigned','{"provider":"demo","demo":true}',CURRENT_TIMESTAMP - INTERVAL '20 days'),
-('tenant-demo','17000000-0000-4000-8000-000000000003','f0000000-0000-4000-8000-000000000002','demo-fixtures','SignatureRequested','{"provider":"demo","demo":true}',CURRENT_TIMESTAMP - INTERVAL '1 day')
+('tenant-demo','17000000-0000-4000-8000-000000000001','f0000000-0000-4000-8000-000000000001',:'demo_subject','ContractPrepared','{"demo":true}',CURRENT_TIMESTAMP - INTERVAL '21 days'),
+('tenant-demo','17000000-0000-4000-8000-000000000002','f0000000-0000-4000-8000-000000000001',:'demo_subject','ContractSigned','{"provider":"demo","demo":true}',CURRENT_TIMESTAMP - INTERVAL '20 days'),
+('tenant-demo','17000000-0000-4000-8000-000000000003','f0000000-0000-4000-8000-000000000002',:'demo_subject','SignatureRequested','{"provider":"demo","demo":true}',CURRENT_TIMESTAMP - INTERVAL '1 day')
 ON CONFLICT (tenant_id,event_id) DO NOTHING;
 
 INSERT INTO inventory_movements(
  tenant_id,movement_id,inventory_unit_id,from_status,to_status,from_location_code,to_location_code,reason,actor_id,occurred_at
 ) VALUES
-('tenant-demo','18000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','available','delivered','BER-01','BER-CUSTOMER','Demo delivery completed','demo-fixtures',CURRENT_TIMESTAMP - INTERVAL '5 days'),
-('tenant-demo','18000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','available','blocked','CGN-01','CGN-01','Reserved for demo order','demo-fixtures',CURRENT_TIMESTAMP - INTERVAL '1 day')
+('tenant-demo','18000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','available','delivered','BER-01','BER-CUSTOMER','Demo delivery completed',:'demo_subject',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','18000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','available','blocked','CGN-01','CGN-01','Reserved for demo order',:'demo_subject',CURRENT_TIMESTAMP - INTERVAL '1 day')
 ON CONFLICT (tenant_id,movement_id) DO NOTHING;
 
 INSERT INTO inventory_audit_events(tenant_id,event_id,inventory_unit_id,actor_id,event_type,payload,occurred_at) VALUES
-('tenant-demo','19000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','demo-fixtures','VehicleDelivered','{"orderId":"c0000000-0000-4000-8000-000000000001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
-('tenant-demo','19000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','demo-fixtures','VehicleReserved','{"orderId":"c0000000-0000-4000-8000-000000000002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
+('tenant-demo','19000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',:'demo_subject','VehicleDelivered','{"orderId":"c0000000-0000-4000-8000-000000000001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','19000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002',:'demo_subject','VehicleReserved','{"orderId":"c0000000-0000-4000-8000-000000000002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
 ON CONFLICT (tenant_id,event_id) DO NOTHING;
 
 INSERT INTO vehicle_reservation_audit_events(tenant_id,event_id,reservation_id,actor_id,event_type,payload,occurred_at) VALUES
-('tenant-demo','1a000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000001','demo-fixtures','ReservationFulfilled','{"orderId":"c0000000-0000-4000-8000-000000000001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
-('tenant-demo','1a000000-0000-4000-8000-000000000002','11000000-0000-4000-8000-000000000002','demo-fixtures','ReservationConfirmed','{"orderId":"c0000000-0000-4000-8000-000000000002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
+('tenant-demo','1a000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000001',:'demo_subject','ReservationFulfilled','{"orderId":"c0000000-0000-4000-8000-000000000001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','1a000000-0000-4000-8000-000000000002','11000000-0000-4000-8000-000000000002',:'demo_subject','ReservationConfirmed','{"orderId":"c0000000-0000-4000-8000-000000000002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
 ON CONFLICT (tenant_id,event_id) DO NOTHING;
 
 INSERT INTO fulfillment_audit_events(tenant_id,event_id,fulfillment_id,actor_id,event_type,payload,occurred_at) VALUES
-('tenant-demo','1b000000-0000-4000-8000-000000000001','12000000-0000-4000-8000-000000000001','demo-fixtures','DeliveryCompleted','{"trackingReference":"DEMO-TRACK-0001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
-('tenant-demo','1b000000-0000-4000-8000-000000000002','12000000-0000-4000-8000-000000000002','demo-fixtures','DeliveryScheduled','{"trackingReference":"DEMO-TRACK-0002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
+('tenant-demo','1b000000-0000-4000-8000-000000000001','12000000-0000-4000-8000-000000000001',:'demo_subject','DeliveryCompleted','{"trackingReference":"DEMO-TRACK-0001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','1b000000-0000-4000-8000-000000000002','12000000-0000-4000-8000-000000000002',:'demo_subject','DeliveryScheduled','{"trackingReference":"DEMO-TRACK-0002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
 ON CONFLICT (tenant_id,event_id) DO NOTHING;
 
 COMMIT;
