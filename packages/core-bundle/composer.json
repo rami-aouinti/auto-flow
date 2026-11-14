@@ -6,7 +6,7 @@
   "version": "2.0.0",
   "require": {
     "php": "^8.4",
-    "symfony/config": "7.4.*",
+    "symfony/config": "8.1.*",
     "symfony/dependency-injection": "7.4.*",
     "symfony/framework-bundle": "7.4.*",
     "symfony/http-client": "7.4.*",
