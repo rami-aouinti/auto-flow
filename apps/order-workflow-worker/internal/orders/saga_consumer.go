@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -173,6 +174,29 @@ func DecodeSagaEvent(body []byte) (Event, error) {
 	}
 	if event.EventID == "" || event.TenantID == "" || event.Aggregate.ID == "" {
 		return Event{}, errors.New("Saga event is missing eventId, tenantId or orderId")
+	}
+	if event.SchemaVersion != 1 {
+		return Event{}, fmt.Errorf("unsupported Saga event schema version %d", event.SchemaVersion)
+	}
+	expectedProducer := ""
+	switch {
+	case event.EventType == "OrderCreated" || event.EventType == "OrderSubmitted" ||
+		event.EventType == "OrderAccepted" || event.EventType == "OrderRejected" ||
+		event.EventType == "OrderCancelled" || event.EventType == "OrderPaymentCaptured" ||
+		event.EventType == "OrderPaymentFailed" || event.EventType == "OrderPaymentRefunded":
+		expectedProducer = "order-service"
+	case strings.HasPrefix(event.EventType, "reservation."):
+		expectedProducer = "vehicle-reservation-service"
+	case strings.HasPrefix(event.EventType, "contract."):
+		expectedProducer = "contract-service"
+	case strings.HasPrefix(event.EventType, "fulfillment."):
+		expectedProducer = "fulfillment-service"
+	}
+	if expectedProducer == "" || event.Producer != expectedProducer {
+		return Event{}, fmt.Errorf("unexpected producer %q for Saga event %q", event.Producer, event.EventType)
+	}
+	if len(event.TenantID) > 128 {
+		return Event{}, errors.New("Saga event tenantId exceeds the supported length")
 	}
 	return event, nil
 }
