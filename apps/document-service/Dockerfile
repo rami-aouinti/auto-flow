@@ -1,6 +1,6 @@
 FROM php:8.4-cli-bookworm
-RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev libmagic1 ca-certificates \
-    && docker-php-ext-install -j"$(nproc)" pdo_pgsql fileinfo opcache \
+RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev libmagic1 libonig-dev ca-certificates \
+    && docker-php-ext-install -j"$(nproc)" pdo_pgsql fileinfo mbstring opcache \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY public/ /app/public/
