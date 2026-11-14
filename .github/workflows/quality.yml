@@ -136,7 +136,7 @@ jobs:
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'document_service' AND table_name = 'documents' AND column_name = 'legal_hold') AS document_legal_hold_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT to_regclass('document_service.document_purge_events') IS NOT NULL AS document_purge_audit_ready"
           docker compose exec -T postgres psql -U autoflow -d autoflow -c "SELECT relrowsecurity AND relforcerowsecurity AS document_grant_rls_ready FROM pg_class WHERE oid = 'document_service.document_access_grants'::regclass"
-          DOCUMENT_TEST_DATABASE_URL=postgresql://autoflow_document:local-only-document-password@127.0.0.1:5432/autoflow php apps/document-service/bin/test-database.php
+          DOCUMENT_TEST_DATABASE_URL=postgresql://autoflow_document:local-only-document-password@127.0.0.1:5432/autoflow DOCUMENT_MAINTENANCE_TEST_DATABASE_URL=postgresql://autoflow_document_maintenance:local-only-document-maintenance-password@127.0.0.1:5432/autoflow php apps/document-service/bin/test-database.php
           docker compose --env-file .env.example up -d document-object-storage document-object-storage-init clamav document-service document-outbox-publisher document-retention-worker
           ready=0
           for attempt in $(seq 1 90); do
