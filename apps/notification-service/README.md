@@ -35,3 +35,10 @@ RabbitMQ delivery is at-least-once. The unique event ID and delivery table preve
 ## Production configuration
 
 Set a dedicated database role and URL, strong Keycloak service-account secret, and authenticated TLS SMTP DSN via secrets. Do not reuse local realm credentials or Mailpit in production.
+
+
+## Tenant-scoped Mercure event bridge
+
+The companion `mercure-event-bridge` container runs `bin/relay-to-mercure.php`. It consumes the durable service event exchanges, requires a valid tenant identifier from the event envelope or AMQP headers, and publishes a minimal event summary to the private topic `https://autoflow.local/tenants/{tenantId}/events`. It deliberately does not forward raw event payloads or personal data. Invalid envelopes are dead-lettered; transient hub failures are requeued.
+
+The publisher JWT is created inside the worker for one topic and a 60-second lifetime. Customer Service separately signs five-minute subscriber JWTs after validating the Keycloak principal and tenant, then sets the HttpOnly `mercureAuthorization` cookie. Neither signing key is exposed to the browser. Configure identical strong `MERCURE_PUBLISHER_JWT_KEY` and `MERCURE_SUBSCRIBER_JWT_KEY` values on the hub and their respective backend services. The local topic base is `https://autoflow.local/tenants`.
