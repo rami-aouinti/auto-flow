@@ -163,7 +163,7 @@ jobs:
         run: |
           composer install --working-dir=apps/vehicle-reservation-service --no-interaction --prefer-dist --no-progress
           cd apps/vehicle-reservation-service && vendor/bin/phpunit --configuration phpunit.xml.dist
-          find apps/vehicle-reservation-service/src -name '*.php' -print0 | xargs -0 -n1 php -l
+          find src -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: Run Vehicle Reservation expiry and RabbitMQ end-to-end test
         run: |
