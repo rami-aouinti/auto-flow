@@ -1,43 +1,43 @@
 # Offer Service — API Reference
 
-**Base URL:** http://localhost:8081  
-**Authentication:** Bearer JWT; offers:read, offers:quote
+**Direct local URL:** http://localhost:8081  
+**Authentication:** Verified Keycloak bearer token and tenant context. Reads require `offers:read`; create and lifecycle transitions require `offers:quote`. Operations are restricted to the authenticated offer creator in the current tenant.
 
-## Endpoints and arguments
+## HTTP endpoints
 
-| Method | Path | Arguments / body | Possible responses |
-|---|---|---|---|
-| POST | `/api/offers/{vehicleId}` |  body: vehiclePrice, downPayment, residualValue, currency, durationMonths, annualInterestRateBasisPoints | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| GET | `/api/offers` |  query: status, search, limit (1..100), offset | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/offers/{offerId}` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| GET | `/api/offers/{offerId}/history` | Path parameters are shown in braces; no body documented. | 200, 400, 401, 403, 404, 500 |
-| POST | `/api/offers/{offerId}/publish` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/offers/{offerId}/accept` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/offers/{offerId}/reject` | Path parameters are shown in braces; no body documented. | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
-| POST | `/api/offers/{vehicleId}/quotes` |  same lease-term body | 200/201, 400, 401, 403, 404, 409, 412, 422, 500, 503 |
+| Method | Path | Permission / access | Purpose | Arguments and request body | Documented / expected responses |
+|---|---|---|---|---|---|
+| POST | /api/offers/{vehicleId} | offers:quote | Create an offer; calls Pricing and stores an immutable pricing snapshot. | vehicleId (path). Body: vehiclePrice, downPayment, residualValue (decimal strings with 2 fractional digits), currency (3-letter code), durationMonths (integer), annualInterestRateBasisPoints (integer). | 201/200 (service response), 400, 401, 403, 404, 409, 422, 503 |
+| GET | /api/offers | offers:read | List offers created by the authenticated subject; returns items, total, limit, offset, newest first. | status? (draft\|published\|accepted\|rejected\|expired\|withdrawn), search? (max 100 chars), limit? (1..100, default 20), offset? (default 0). | 200, 400, 401, 403 |
+| GET | /api/offers/{offerId} | offers:read | Retrieve one offer owned by caller. | offerId (path). | 200, 401, 403, 404 |
+| GET | /api/offers/{offerId}/history | offers:read | Read append-only lifecycle audit events. | offerId (path). | 200, 401, 403, 404 |
+| POST | /api/offers/{offerId}/publish | offers:quote | Publish a draft before expiry. | offerId (path); no request body documented. | 200, 401, 403, 404, 409 |
+| POST | /api/offers/{offerId}/accept | offers:quote | Accept a published offer before expiry. | offerId (path); no request body documented. | 200, 401, 403, 404, 409 |
+| POST | /api/offers/{offerId}/reject | offers:quote | Reject a published offer before expiry. | offerId (path); no request body documented. | 200, 401, 403, 404, 409 |
+| POST | /api/offers/{vehicleId}/quotes | offers:quote | Legacy quote-only compatibility endpoint; does not create an Offer aggregate. | vehicleId (path); same lease terms as offer creation. | 200, 400, 401, 403, 422, 503 |
 
-## Common HTTP responses
+## Health and operations
 
-- **2xx:** request succeeded; GET returns a resource/collection, POST creates or transitions a resource, DELETE may return 204.
-- **400:** malformed JSON, invalid query parameters or malformed headers.
-- **401:** missing/invalid JWT (except explicitly public provider webhooks).
-- **403:** missing scope/role or tenant access.
-- **404:** resource does not exist or is outside the caller's tenant/ownership boundary.
-- **409:** invalid state transition, duplicate resource or idempotency-key conflict.
-- **412:** stale ETag/If-Match version for optimistic concurrency.
-- **422:** request is syntactically valid but violates domain validation.
-- **500 / 503:** unexpected server failure or unavailable dependency; no internal SQL/stack trace should be exposed.
+- GET /health — liveness; no JWT.
+- GET /health/ready — readiness; no JWT.
 
-## Testing
+## Common response semantics
 
-Use the central Swagger UI at http://localhost:8096. Authenticate with the raw Keycloak access token when required. For commands requiring idempotency, send a unique `Idempotency-Key`; for versioned transitions copy the current `ETag` into `If-Match`.
+- `400`: malformed JSON, query string, or required header (when applicable).
+- `401`: missing/invalid bearer token on protected routes.
+- `403`: authenticated caller lacks the endpoint permission or tenant access.
+- `404`: resource is unknown or intentionally hidden by tenant/ownership isolation.
+- `409`: business lifecycle conflict or idempotency key reused for a different command.
+- `412`: stale `If-Match` version for optimistic concurrency.
+- `422`: syntactically valid request that fails domain validation.
+- `503`: required upstream service/dependency unavailable.
 
-## Contract maintenance
+Only status codes explicitly described in the service README or API contract are asserted in the endpoint table. Other statuses in the common section are general meanings and may not be emitted by every endpoint.
 
-This reference documents the service-owned API surface currently described by the service README. If an argument or response schema is not explicitly described in the source documentation, it is not invented here; update this file and the OpenAPI catalog together when changing controllers.
+## Testing through Swagger UI
 
+Open [http://localhost:8096](http://localhost:8096). The gateway base URL is `http://localhost:8088`; service routes are forwarded without stripping their API path. Use the raw Keycloak access token in **Authorize** for protected services. For idempotent commands, provide a unique `Idempotency-Key`. For versioned commands, read the current response `ETag` and send it unchanged as `If-Match`.
 
-## Health and operational endpoints
+## Contract accuracy
 
-- `GET /health` — liveness; no JWT.
-- `GET /health/ready` — readiness where CoreBundle readiness is enabled; no JWT.
+Request fields are marked as DTO-defined where the service README does not publish the full DTO. The central OpenAPI contract provides strict schemas only for request bodies whose complete fields are confirmed by service documentation. Keep this file and `docs/api/openapi.json` synchronized when changing controllers, validators or response DTOs.
