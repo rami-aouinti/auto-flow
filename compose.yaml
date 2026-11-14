@@ -1035,7 +1035,122 @@ services:
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
       RABBITMQ_VHOST: /
     depends_on:
-      temporal:
+      # Health-only bounded-context scaffolds. No business APIs are implemented yet.
+  search-service:
+    build:
+      context: .
+      dockerfile: docker/php/skeleton-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/search-service
+    ports: ["127.0.0.1:8097:8080"]
+    environment:
+      APP_ENV: dev
+      HEALTH_DEPENDENCIES: elasticsearch:9200
+    depends_on:
+      elasticsearch: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  workflow-service:
+    build:
+      context: .
+      dockerfile: docker/php/skeleton-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/workflow-service
+    ports: ["127.0.0.1:8098:8080"]
+    environment:
+      APP_ENV: dev
+      HEALTH_DEPENDENCIES: temporal:7233
+    depends_on:
+      temporal: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  integration-service:
+    build:
+      context: .
+      dockerfile: docker/php/skeleton-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/integration-service
+    ports: ["127.0.0.1:8099:8080"]
+    environment:
+      APP_ENV: dev
+      HEALTH_DEPENDENCIES: rabbitmq:5672
+    depends_on:
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  document-service:
+    build:
+      context: .
+      dockerfile: docker/php/skeleton-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/document-service
+    ports: ["127.0.0.1:8100:8080"]
+    environment:
+      APP_ENV: dev
+    init: true
+    restart: unless-stopped
+
+  audit-service:
+    build:
+      context: .
+      dockerfile: docker/php/skeleton-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/audit-service
+    ports: ["127.0.0.1:8101:8080"]
+    environment:
+      APP_ENV: dev
+      HEALTH_DEPENDENCIES: rabbitmq:5672
+    depends_on:
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: docker/php/skeleton-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/analytics-service
+    ports: ["127.0.0.1:8102:8080"]
+    environment:
+      APP_ENV: dev
+      HEALTH_DEPENDENCIES: rabbitmq:5672
+    depends_on:
+      rabbitmq: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  media-service:
+    build:
+      context: .
+      dockerfile: docker/php/skeleton-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/media-service
+    ports: ["127.0.0.1:8103:8080"]
+    environment:
+      APP_ENV: dev
+    init: true
+    restart: unless-stopped
+
+  configuration-service:
+    build:
+      context: .
+      dockerfile: docker/php/skeleton-service.Dockerfile
+      args:
+        SERVICE_PATH: apps/configuration-service
+    ports: ["127.0.0.1:8104:8080"]
+    environment:
+      APP_ENV: dev
+      HEALTH_DEPENDENCIES: redis:6379
+    depends_on:
+      redis: {condition: service_healthy}
+    init: true
+    restart: unless-stopped
+
+  temporal:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
