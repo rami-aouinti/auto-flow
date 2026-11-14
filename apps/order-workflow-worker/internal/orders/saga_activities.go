@@ -2,7 +2,7 @@ package orders
 
 import (
 	"context"
-	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -23,7 +23,7 @@ func (a *Activities) RequestReservationHold(ctx context.Context, command Reserva
 	return publishReservationCommand(ctx, command, "reservation.hold.requested.v1", map[string]any{
 		"orderId": command.OrderID,
 		"vehicleVariantId": command.VehicleVariantID,
-		"expiresAt": time.Now().UTC().Add(30 * time.Minute).Format(time.RFC3339Nano),
+		"expiresAt": time.Now().UTC().Add(23 * time.Hour).Format(time.RFC3339Nano),
 	})
 }
 
@@ -57,10 +57,7 @@ func publishReservationCommand(ctx context.Context, command ReservationSagaComma
 		return err
 	}
 	confirmations := channel.NotifyPublish(make(chan amqp.Confirmation, 1))
-	eventID, err := newEventUUID()
-	if err != nil {
-		return err
-	}
+	eventID := newEventUUID(command.TenantID, command.OrderID, eventType)
 	now := time.Now().UTC()
 	envelope := map[string]any{
 		"eventId": eventID, "eventType": eventType, "schemaVersion": 1,
@@ -92,13 +89,11 @@ func publishReservationCommand(ctx context.Context, command ReservationSagaComma
 	}
 }
 
-func newEventUUID() (string, error) {
-	bytes := make([]byte, 16)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	bytes[6] = (bytes[6] & 0x0f) | 0x40
+func newEventUUID(tenantID, orderID, eventType string) string {
+	sum := sha256.Sum256([]byte(tenantID + ":" + orderID + ":" + eventType))
+	bytes := sum[:16]
+	bytes[6] = (bytes[6] & 0x0f) | 0x50
 	bytes[8] = (bytes[8] & 0x3f) | 0x80
 	encoded := hex.EncodeToString(bytes)
-	return encoded[:8] + "-" + encoded[8:12] + "-" + encoded[12:16] + "-" + encoded[16:20] + "-" + encoded[20:], nil
+	return encoded[:8] + "-" + encoded[8:12] + "-" + encoded[12:16] + "-" + encoded[16:20] + "-" + encoded[20:]
 }
