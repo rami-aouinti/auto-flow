@@ -88,6 +88,7 @@ func consumeSagaEventsOnce(ctx context.Context, temporal client.Client) error {
 	if err := channel.Qos(10, 0, false); err != nil { return err }
 	deliveries, err := channel.Consume(queue.Name, "order-fulfillment-saga-worker", false, false, false, false, nil)
 	if err != nil { return err }
+	log.Printf("Order Saga RabbitMQ consumer started; queue=%s", queue.Name)
 
 	for {
 		select {
