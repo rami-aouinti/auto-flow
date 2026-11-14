@@ -1,11 +1,11 @@
 <?php
 
 declare(strict_types=1);
+use App\Application\PaymentEventEnvelope;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
-use Symfony\Component\Uid\Uuid;
 
 require dirname(__DIR__).'/vendor/autoload.php';
 $url = getenv('BILLING_DATABASE_URL') ?: '';
