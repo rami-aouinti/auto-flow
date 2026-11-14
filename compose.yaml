@@ -78,6 +78,7 @@ services:
       inventory-service: {condition: service_healthy}
       crm-service: {condition: service_healthy}
       search-service: {condition: service_healthy}
+      document-service: {condition: service_healthy}
 
   # Local LLM runtime. Models are persisted in the ollama-data volume.
   ollama:
@@ -1134,14 +1135,38 @@ services:
 
   document-service:
     build:
-      context: .
-      dockerfile: docker/php/skeleton-service.Dockerfile
-      args:
-        SERVICE_PATH: apps/document-service
+      context: ./apps/document-service
+      dockerfile: Dockerfile
     ports: ["127.0.0.1:8100:8080"]
     environment:
-      APP_ENV: dev
+      APP_ENV: prod
+      DOCUMENT_DATABASE_URL: ${DOCUMENT_DATABASE_URL:-postgresql://autoflow_document:local-only-document-password@postgres:5432/autoflow}
+      DOCUMENT_STORAGE_PATH: /var/lib/autoflow/documents
+      AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
+      AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+    volumes:
+      - document-data:/var/lib/autoflow/documents
+    depends_on:
+      postgres: {condition: service_healthy}
+      postgres-bootstrap: {condition: service_completed_successfully}
+      clamav: {condition: service_started}
+      keycloak: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "php", "/app/bin/healthcheck.php"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     init: true
+    restart: unless-stopped
+
+  clamav:
+    image: clamav/clamav:1.4
+    expose: ["3310"]
+    volumes:
+      - clamav-data:/var/lib/clamav
     restart: unless-stopped
 
   audit-service:
@@ -1515,6 +1540,9 @@ services:
       - ./apps/fulfillment-service/migrations/210-fulfillment-schema.sql:/docker-entrypoint-initdb.d/180-fulfillment-schema.sql:ro
       - ./apps/vehicle-reservation-service/migrations/220-vehicle-reservation-schema.sql:/docker-entrypoint-initdb.d/190-vehicle-reservation-schema.sql:ro
       - ./apps/inventory-service/migrations/00-inventory-schema.sql:/docker-entrypoint-initdb.d/250-inventory-schema.sql:ro
+      - ./apps/document-service/migrations/00_create_document_database_role.sql:/docker-entrypoint-initdb.d/260-document-role.sql:ro
+      - ./apps/document-service/migrations/230-document-schema.sql:/docker-entrypoint-initdb.d/270-document-schema.sql:ro
+      - ./apps/document-service/fixtures/demo.sql:/docker-entrypoint-initdb.d/280-document-demo.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${POSTGRES_USER:-autoflow} -d ${POSTGRES_DB:-autoflow}"]
       interval: 5s
@@ -1556,6 +1584,9 @@ services:
         psql -v ON_ERROR_STOP=1 -f /migrations/246-inventory-stock-projection.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/260-inventory-reservation-fulfillment.sql
         psql -v ON_ERROR_STOP=1 -f /migrations/270-crm-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/260-document-role.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/270-document-schema.sql
+        psql -v ON_ERROR_STOP=1 -f /migrations/280-document-demo.sql
     environment:
       PGHOST: postgres
       PGPORT: "5432"
@@ -1591,6 +1622,9 @@ services:
       - ./apps/inventory-service/migrations/00-inventory-schema.sql:/migrations/250-inventory-schema.sql:ro
       - ./apps/inventory-service/migrations/01-reservation-fulfillment-inbox.sql:/migrations/260-inventory-reservation-fulfillment.sql:ro
       - ./apps/crm-service/migrations/270-crm-schema.sql:/migrations/270-crm-schema.sql:ro
+      - ./apps/document-service/migrations/00_create_document_database_role.sql:/migrations/260-document-role.sql:ro
+      - ./apps/document-service/migrations/230-document-schema.sql:/migrations/270-document-schema.sql:ro
+      - ./apps/document-service/fixtures/demo.sql:/migrations/280-document-demo.sql:ro
     depends_on:
       postgres:
         condition: service_healthy
