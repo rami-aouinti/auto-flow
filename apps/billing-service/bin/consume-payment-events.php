@@ -62,6 +62,16 @@ $process = static function (AMQPMessage $m) use ($db, $rate, $tax, $number): voi
                 'SELECT payload_hash FROM billing_event_inbox WHERE tenant_id=:t AND event_id=:e',
                 ['t' => $tenant, 'e' => $eid],
             );
+            if (is_string($existingHash) && hash_equals(str_repeat('0', 64), trim($existingHash))) {
+                // Rows created before payload fingerprints were introduced are upgraded
+                // on their first redelivery; subsequent replays are checked strictly.
+                $db->executeStatement(
+                    "UPDATE billing_event_inbox SET payload_hash=:hash WHERE tenant_id=:t AND event_id=:e AND payload_hash=repeat('0',64)",
+                    ['hash' => $payloadHash, 't' => $tenant, 'e' => $eid],
+                );
+
+                return;
+            }
             if (!is_string($existingHash) || !hash_equals(trim($existingHash), $payloadHash)) {
                 throw new UnexpectedValueException('A payment eventId was reused with a different payload.');
             }
