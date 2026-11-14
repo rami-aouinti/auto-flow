@@ -21,7 +21,7 @@ Nuxt owns the route lifecycle and provides separate layouts for the customer-fac
 
 ## Realtime notifications and event monitoring
 
-The global notification menu subscribes to a configured Mercure hub using `VITE_MERCURE_HUB_URL` and comma-separated `VITE_MERCURE_TOPICS`. The hub must be reachable from the browser and authorize the current session (normally via secure same-site cookies or a reverse-proxy-issued subscriber cookie). Use tenant-scoped topics only; never put a Mercure publisher JWT in a `VITE_` variable. The repository currently provides the browser subscriber and live notification UI; a hub and backend outbox-to-Mercure publisher must be deployed/configured separately before live domain notifications can be delivered. Without a hub, the event monitor continues to refresh service snapshots every 30 seconds.
+The global notification menu subscribes to a configured Mercure hub using `VITE_MERCURE_HUB_URL` and comma-separated `VITE_MERCURE_TOPICS`. The hub must be reachable from the browser and authorize the current session (normally via secure same-site cookies or a reverse-proxy-issued subscriber cookie). Use tenant-scoped topics only; never put a Mercure publisher JWT in a `VITE_` variable. The Mercure hub is already included in `compose.yaml` and exposed at `http://localhost:3001/.well-known/mercure`; Compose passes that URL to the frontend. The current service outbox publishers publish to RabbitMQ exchanges, not directly to Mercure, so a tenant-aware RabbitMQ-to-Mercure publisher bridge is still required before domain events will arrive live. The UI reports connection state and does not fabricate events. Without a hub, the event monitor continues to refresh service snapshots every 30 seconds.
 
 ## End-to-end tests
 
