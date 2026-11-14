@@ -24,8 +24,10 @@ The central OpenAPI 3.0 catalog contains the HTTP endpoints for all API-bearing 
 ## Start
 
 ```bash
-docker compose --env-file .env.example up -d --build api-docs
+docker compose --env-file .env.example up -d --build api-docs api-gateway
 ```
+
+Swagger UI itself starts independently, but **Try it out** requires the API Gateway and the target microservice to be running. Start the relevant backend service(s) as well. The AI endpoint is intentionally local-only and currently has no JWT/tenant authorization; do not expose it outside the development machine.
 
 ## Validate locally
 
