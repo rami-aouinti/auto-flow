@@ -25,7 +25,15 @@ jobs:
         run: |
           docker compose --env-file .env.example up -d temporal order-service order-workflow-worker
           for attempt in $(seq 1 90); do
+            worker_ready=0
+            consumer_ready=0
             if docker compose --env-file .env.example logs --no-color order-workflow-worker 2>&1 | grep -q "Order workflow worker started"; then
+              worker_ready=1
+            fi
+            if docker compose --env-file .env.example logs --no-color order-workflow-worker 2>&1 | grep -q "Order Saga RabbitMQ consumer started"; then
+              consumer_ready=1
+            fi
+            if [ "$worker_ready" -eq 1 ] && [ "$consumer_ready" -eq 1 ]; then
               exit 0
             fi
             sleep 2
