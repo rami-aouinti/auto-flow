@@ -8,6 +8,7 @@ export default defineNuxtPlugin(async () => {
       token: 'autoflow-playwright-token',
       tokenParsed: { preferred_username: 'playwright' },
       logout: async () => undefined,
+      hasRealmRole: () => false,
     } as unknown as Keycloak;
   } else {
     keycloak = new Keycloak({
