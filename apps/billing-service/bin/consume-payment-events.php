@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 use App\Application\PaymentEventEnvelope;
+use App\Application\InvoiceLegalSnapshot;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
@@ -27,6 +28,13 @@ foreach (['PaymentCaptured','PaymentRefunded','PaymentPartiallyRefunded'] as $t)
     $ch->queue_bind($q, $ex, $t);
 }$ch->basic_qos(0, 10, false);
 $rate = max(0, min(10000, (int)(getenv('BILLING_TAX_RATE_BPS') ?: 1900)));
+$issuerAddress = json_decode(getenv('BILLING_ISSUER_ADDRESS_JSON') ?: '{}', true);
+$issuer = [
+    'legalName' => getenv('BILLING_ISSUER_LEGAL_NAME') ?: '',
+    'taxNumber' => getenv('BILLING_ISSUER_TAX_NUMBER') ?: '',
+    'vatId' => getenv('BILLING_ISSUER_VAT_ID') ?: '',
+    'address' => is_array($issuerAddress) ? $issuerAddress : [],
+];
 $tax = static function (int $gross, int $bps): array {
     $v = (int)round($gross * $bps / (10000 + $bps), 0, PHP_ROUND_HALF_UP);
     return ['net' => $gross - $v,'tax' => $v];
@@ -38,7 +46,7 @@ $number = static function (Connection $db, string $table, string $tenant, int $y
     $n = (int)$db->fetchOne("SELECT last_number FROM {$table} WHERE tenant_id=:t AND fiscal_year=:y", ['t' => $tenant,'y' => $year]);
     return sprintf('%s-%d-%06d', $prefix, $year, $n);
 };
-$process = static function (AMQPMessage $m) use ($db, $rate, $tax, $number): void {
+$process = static function (AMQPMessage $m) use ($db, $rate, $tax, $number, $issuer): void {
     $event = PaymentEventEnvelope::fromMessage(
         $m->getBody(),
         (string) ($m->get('message_id') ?? ''),
@@ -51,7 +59,7 @@ $process = static function (AMQPMessage $m) use ($db, $rate, $tax, $number): voi
     $pid = $event->paymentId;
     $oid = $event->orderId;
     $payloadHash = $event->payloadHash;
-    $db->transactional(static function (Connection $db) use ($eid, $type, $tenant, $d, $pid, $oid, $payloadHash, $rate, $tax, $number): void {
+    $db->transactional(static function (Connection $db) use ($eid, $type, $tenant, $d, $pid, $oid, $payloadHash, $rate, $tax, $number, $issuer): void {
         $db->executeQuery("SELECT set_config('app.tenant_id',:t,true)", ['t' => $tenant]);
         $insert = $db->fetchOne(
             'INSERT INTO billing_event_inbox(tenant_id,event_id,event_type,payload_hash) VALUES(:t,:e,:y,:hash) ON CONFLICT DO NOTHING RETURNING event_id',
@@ -89,15 +97,32 @@ $process = static function (AMQPMessage $m) use ($db, $rate, $tax, $number): voi
             $year = (int)gmdate('Y');
             $id = Uuid::v7()->toRfc4122();
             $docNo = $number($db, 'billing_invoice_sequences', $tenant, $year, 'AF');
-            $snap = ['orderId' => $oid,'paymentId' => $pid,'currency' => $currency,'grossMinor' => $gross,'netMinor' => $a['net'],'taxMinor' => $a['tax'],'taxRateBasisPoints' => $rate,'sourceEventId' => $eid,'issuer' => 'AutoFlow'];
-            $db->insert('billing_invoices', ['tenant_id' => $tenant,'invoice_id' => $id,'invoice_number' => $docNo,'payment_id' => $pid,'order_id' => $oid,'currency' => $currency,'gross_minor' => $gross,'net_minor' => $a['net'],'tax_minor' => $a['tax'],'tax_rate_basis_points' => $rate,'status' => 'issued','billing_snapshot' => json_encode($snap, JSON_THROW_ON_ERROR),'source_event_id' => $eid,'paid_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM)]);
+            $customerSnapshot = is_array($d['billingSnapshot'] ?? null) && !array_is_list($d['billingSnapshot'])
+                ? $d['billingSnapshot']
+                : [];
+            $legalSnapshot = InvoiceLegalSnapshot::build($customerSnapshot, $issuer);
+            $snap = [
+                'orderId' => $oid, 'paymentId' => $pid, 'currency' => $currency,
+                'grossMinor' => $gross, 'netMinor' => $a['net'], 'taxMinor' => $a['tax'],
+                'taxRateBasisPoints' => $rate, 'sourceEventId' => $eid,
+                ...$legalSnapshot,
+            ];
+            $db->insert('billing_invoices', [
+                'tenant_id' => $tenant, 'invoice_id' => $id, 'invoice_number' => $docNo,
+                'payment_id' => $pid, 'order_id' => $oid, 'currency' => $currency,
+                'gross_minor' => $gross, 'net_minor' => $a['net'], 'tax_minor' => $a['tax'],
+                'tax_rate_basis_points' => $rate, 'status' => $legalSnapshot['documentStatus'],
+                'billing_snapshot' => json_encode($snap, JSON_THROW_ON_ERROR),
+                'source_event_id' => $eid,
+                'paid_at' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+            ]);
             return;
         }
         if (in_array($type, ['PaymentRefunded','PaymentPartiallyRefunded'], true)) {
             $refund = filter_var($d['refundAmountMinor'] ?? null, FILTER_VALIDATE_INT);
             if (!is_int($refund) || $refund < 1) {
                 throw new UnexpectedValueException('Refund event requires refundAmountMinor.');
-            }$invoice = $db->fetchAssociative('SELECT invoice_id,currency,tax_rate_basis_points FROM billing_invoices WHERE tenant_id=:t AND payment_id=:p FOR UPDATE', ['t' => $tenant,'p' => $pid]);
+            }$invoice = $db->fetchAssociative('SELECT invoice_id,currency,tax_rate_basis_points,billing_snapshot FROM billing_invoices WHERE tenant_id=:t AND payment_id=:p FOR UPDATE', ['t' => $tenant,'p' => $pid]);
             if ($invoice === false) {
                 throw new RuntimeException('Source invoice missing; retry event.');
             }$currency = $d['currency'] ?? $invoice['currency'];
@@ -108,7 +133,7 @@ $process = static function (AMQPMessage $m) use ($db, $rate, $tax, $number): voi
             $year = (int)gmdate('Y');
             $id = Uuid::v7()->toRfc4122();
             $docNo = $number($db, 'billing_credit_note_sequences', $tenant, $year, 'AC');
-            $db->insert('billing_credit_notes', ['tenant_id' => $tenant,'credit_note_id' => $id,'credit_note_number' => $docNo,'invoice_id' => $invoice['invoice_id'],'payment_id' => $pid,'order_id' => $oid,'currency' => $currency,'gross_minor' => $refund,'net_minor' => $a['net'],'tax_minor' => $a['tax'],'tax_rate_basis_points' => $bps,'reason' => $type === 'PaymentRefunded' ? 'Payment refunded' : 'Partial payment refund','source_event_id' => $eid]);
+            $db->insert('billing_credit_notes', ['tenant_id' => $tenant,'credit_note_id' => $id,'credit_note_number' => $docNo,'invoice_id' => $invoice['invoice_id'],'payment_id' => $pid,'order_id' => $oid,'currency' => $currency,'gross_minor' => $refund,'net_minor' => $a['net'],'tax_minor' => $a['tax'],'tax_rate_basis_points' => $bps,'reason' => $type === 'PaymentRefunded' ? 'Payment refunded' : 'Partial payment refund','source_event_id' => $eid,'billing_snapshot' => $invoice['billing_snapshot']]);
         }
     });
 };
