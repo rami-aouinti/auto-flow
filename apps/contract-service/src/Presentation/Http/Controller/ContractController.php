@@ -12,6 +12,7 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use DomainException;
 use Symfony\Component\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -432,7 +433,7 @@ final readonly class ContractController
         try {
             $principal = $this->principal($request, 'contracts:write');
             $tenant = $this->tenant($principal);
-            $document = $this->documents->generate($tenant, $principal->subject, $contractId);
+            $document = $this->documents->generate($tenant, $principal->subject, $contractId, preg_replace('/^Bearer\s+/i', '', (string) $request->headers->get('Authorization')) ?? '');
             if ($document === null) {
                 return $this->problem(404, 'Contract not found.');
             }
@@ -450,24 +451,28 @@ final readonly class ContractController
     }
 
     #[Route('/{contractId}/document', requirements: ['contractId' => '[0-9a-fA-F-]{36}'], methods: ['GET'])]
-    public function downloadDocument(Request $request, string $contractId): BinaryFileResponse|JsonResponse
+    public function downloadDocument(Request $request, string $contractId): Response|JsonResponse
     {
         try {
             $principal = $this->principal($request, 'contracts:read');
             $tenant = $this->tenant($principal);
-            $document = $this->documents->findLatest($tenant, $contractId);
-            if ($document === null) {
+            $download = $this->documents->downloadLatest(
+                $tenant,
+                $contractId,
+                preg_replace('/^Bearer\s+/i', '', (string) $request->headers->get('Authorization')) ?? '',
+            );
+            if ($download === null) {
                 return $this->problem(404, 'Contract document not found.');
             }
+            $document = $download['document'];
 
-            $response = new BinaryFileResponse($document['path']);
-            $response->setContentDisposition('attachment', 'contract-' . $contractId . '.pdf');
-            $response->headers->set('Content-Type', 'application/pdf');
-            $response->headers->set('Cache-Control', 'private, no-store');
-            $response->headers->set('X-Content-SHA256', $document['checksum']);
-            $response->headers->set('X-Content-Type-Options', 'nosniff');
-
-            return $response;
+            return new Response($download['content'], 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="contract-' . $contractId . '.pdf"',
+                'Cache-Control' => 'private, no-store',
+                'X-Content-SHA256' => $document['checksum'],
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
         } catch (AccessDeniedHttpException $exception) {
             return $this->problem(403, $exception->getMessage());
         } catch (Throwable) {
