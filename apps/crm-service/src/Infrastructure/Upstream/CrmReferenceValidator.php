@@ -113,7 +113,7 @@ final readonly class CrmReferenceValidator
                 throw new \RuntimeException('An upstream service returned an invalid response.');
             }
             return $payload;
-        } catch (AccessDeniedHttpException|\DomainException|\RuntimeException $exception) {
+        } catch (\DomainException|\RuntimeException $exception) {
             throw $exception;
         } catch (Throwable) {
             throw new \RuntimeException('An upstream service could not be reached to validate CRM references.');
