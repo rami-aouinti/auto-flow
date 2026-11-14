@@ -19,7 +19,7 @@ final readonly class GetOrderPaymentContextHandler
         return $this->db->transactional(function (Connection $db) use ($tenantId, $orderId): ?array {
             $db->executeQuery("SELECT set_config('app.tenant_id', :tenant, true)", ['tenant' => $tenantId]);
             $row = $db->fetchAssociative(
-                'SELECT order_id, tenant_id, status, quote_snapshot, customer_snapshot FROM orders WHERE tenant_id = :tenant AND order_id = :id',
+                'SELECT order_id, tenant_id, status, quote_snapshot, customer_snapshot, customer_version FROM orders WHERE tenant_id = :tenant AND order_id = :id',
                 ['tenant' => $tenantId, 'id' => $orderId],
             );
             if (!is_array($row)) {
