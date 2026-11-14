@@ -54,7 +54,7 @@ Event types are normalized for supported aliases (for example `OfferCreated` to 
 
 ## Event ingestion worker
 
-`analytics-event-consumer` binds durable queues to the configured AutoFlow domain exchanges, canonicalizes event names, redacts sensitive payload keys and inserts events idempotently by tenant + event ID. Invalid messages are dead-lettered. Transient database failures are requeued; the current consumer does not yet expose an operator replay API or bounded retry counter.
+`analytics-event-consumer` binds durable queues to the configured AutoFlow domain exchanges, canonicalizes event names, redacts sensitive payload keys and inserts events idempotently by tenant + event ID. Invalid messages are dead-lettered immediately. Transient projection failures are sent to a durable retry queue with a five-second delay and at most three retries; exhausted messages are dead-lettered. An operator replay API is not yet exposed.
 
 ## Local run and smoke checks
 
