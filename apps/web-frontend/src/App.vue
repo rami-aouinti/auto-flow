@@ -135,7 +135,7 @@ function formatDate(value?: string) {
 function statusLabel(status: string) {
   return ({
     draft: t('app.draft'), published: t('app.published'), accepted: t('app.accepted'),
-    rejected: t('app.rejected'), expired: t('app.expired'), withdrawn: t('app.rejected'),
+    rejected: t('app.rejected'), expired: t('app.expired'), withdrawn: t('app.withdrawn'),
   } as Record<string, string>)[status] || label(status);
 }
 function pricingPayload() {
