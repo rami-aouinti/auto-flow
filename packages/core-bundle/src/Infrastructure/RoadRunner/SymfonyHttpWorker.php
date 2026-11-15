@@ -32,7 +32,17 @@ final readonly class SymfonyHttpWorker
         $requestFactory = new HttpFoundationFactory();
         $responseFactory = new PsrHttpFactory($factory, $factory, $factory, $factory);
 
-        $kernel->boot();
+        try {
+            $kernel->boot();
+        } catch (Throwable $exception) {
+            error_log(sprintf(
+                'RoadRunner Symfony kernel boot failed (%s): %s',
+                $exception::class,
+                $exception->getMessage(),
+            ));
+
+            throw $exception;
+        }
 
         try {
             while (true) {
