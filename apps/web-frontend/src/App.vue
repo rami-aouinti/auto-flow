@@ -383,9 +383,9 @@ onMounted(async () => {
   const requestedFuel = typeof route.query.fuelType === 'string' ? route.query.fuelType : '';
   const requestedBodyStyle = typeof route.query.bodyStyle === 'string' ? route.query.bodyStyle : '';
   const requestedTransmission = typeof route.query.transmission === 'string' ? route.query.transmission : '';
-  if (fuelOptions.some((item) => item.value === requestedFuel)) filters.fuelType = requestedFuel;
-  if (bodyOptions.some((item) => item.value === requestedBodyStyle)) filters.bodyStyle = requestedBodyStyle;
-  if (transmissionOptions.some((item) => item.value === requestedTransmission)) filters.transmission = requestedTransmission;
+  if (fuelOptions.value.some((item) => item.value === requestedFuel)) filters.fuelType = requestedFuel;
+  if (bodyOptions.value.some((item) => item.value === requestedBodyStyle)) filters.bodyStyle = requestedBodyStyle;
+  if (transmissionOptions.value.some((item) => item.value === requestedTransmission)) filters.transmission = requestedTransmission;
   try {
     const response = await catalog.manufacturers();
     manufacturers.value = response.data.items ?? [];
