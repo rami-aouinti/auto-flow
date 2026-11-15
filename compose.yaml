@@ -199,6 +199,7 @@ services:
       APP_ENV: prod
       APP_DEBUG: "0"
       APP_SECRET: local-only-vehicle-reservation-service-secret
+      DEFAULT_URI: http://localhost:8092
       RESERVATION_DATABASE_URL: ${RESERVATION_DATABASE_URL:-postgresql://autoflow_reservation:local-only-reservation-password@postgres:5432/autoflow}
       AUTOFLOW_JWT_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
