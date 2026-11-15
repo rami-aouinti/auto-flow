@@ -67,12 +67,12 @@ const sortOptions = computed(() => [
   { title: t('app.nameAZ'), value: 'name' },
   { title: t('app.powerHigh'), value: 'power-desc' },
   { title: t('app.powerLow'), value: 'power-asc' },
-];
+]);
 
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
 const sortedVehicles = computed(() => {
-  const copy = [...vehicles.value]);
-  if (sortBy.value === 'name') return copy.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const copy = [...vehicles.value];
+  if (sortBy.value === 'name') return copy.sort((a, b) => a.name.localeCompare(b.name, locale.value === 'fr' ? 'fr' : locale.value === 'en' ? 'en' : 'de'));
   if (sortBy.value === 'power-desc') return copy.sort((a, b) => Number(b.powerKw || 0) - Number(a.powerKw || 0));
   if (sortBy.value === 'power-asc') return copy.sort((a, b) => Number(a.powerKw || 0) - Number(b.powerKw || 0));
   return copy;
