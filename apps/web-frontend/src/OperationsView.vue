@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router';
 import { customers, orders, payments, pricing, errorMessage } from './api';
 import PageHeader from '../app/components/shared/PageHeader.vue';
+import { useAutoFlowLocale } from '../app/composables/useAutoFlowLocale';
 
 type CustomerOption = { customer_id: string; customer_type: string; first_name?: string | null; last_name?: string | null; legal_name?: string | null; email?: string | null; status: string }; 
 type Order = {
@@ -24,6 +25,7 @@ type Payment = {
   currency: string; provider?: string; clientSecret?: string | null; createdAt?: string;
 };
 
+const { t, locale } = useAutoFlowLocale();
 const route = useRoute();
 const router = useRouter();
 const tab = ref<'orders' | 'payments' | 'quotes'>('orders');
@@ -267,10 +269,14 @@ async function paymentAction(action: 'capture'|'cancel'|'refund') {
   finally { paymentBusy.value = false; }
 }
 function moneyMinor(amount: number, currency: string) {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: currency || 'EUR' }).format((amount || 0) / 100);
+  return new Intl.NumberFormat(locale.value === 'fr' ? 'fr-FR' : locale.value === 'en' ? 'en-GB' : 'de-DE', { style: 'currency', currency: currency || 'EUR' }).format((amount || 0) / 100);
 }
-function label(value?: string) { return (value || '–').replaceAll('_', ' '); }
-function date(value?: string) { return value ? new Date(value).toLocaleString('de-DE') : '–'; }
+function label(value?: string) {
+  if (!value) return '–';
+  const statusKeys: Record<string, string> = { draft: 'app.draft', accepted: 'app.accepted', rejected: 'ops.rejected', submitted: 'ops.submitted', under_review: 'ops.underReview', completed: 'ops.completed', cancelled: 'ops.cancelled' };
+  return statusKeys[value] ? t(statusKeys[value]!) : value.replaceAll('_', ' ');
+}
+function date(value?: string) { return value ? new Date(value).toLocaleString(locale.value === 'fr' ? 'fr-FR' : locale.value === 'en' ? 'en-GB' : 'de-DE') : '–'; }
 onMounted(() => {
   const params = new URLSearchParams(window.location.search);
   const requestedTab = params.get('tab');
@@ -292,38 +298,38 @@ onMounted(() => {
 
 <template>
   <section class="ops">
-    <PageHeader eyebrow="AUTOFLOW · OPERATIONS" title="Aufträge & Payments" description="Steuere den Auftragslebenszyklus, verwalte Zahlungsvorgänge und prüfe gespeicherte Pricing Quotes." />
+    <PageHeader eyebrow="AUTOFLOW · OPERATIONS"  :title="t('ops.title')" :description="t('ops.description')" />
     <v-tabs v-model="tab" color="primary" class="operations-tabs mb-4" align-tabs="start">
-      <v-tab value="orders" prepend-icon="mdi-clipboard-list-outline">Aufträge</v-tab>
-      <v-tab value="payments" prepend-icon="mdi-credit-card-outline">Payments</v-tab>
-      <v-tab value="quotes" prepend-icon="mdi-calculator-variant-outline">Pricing Quotes</v-tab>
+      <v-tab value="orders" prepend-icon="mdi-clipboard-list-outline">{{ t('ops.orders') }}</v-tab>
+      <v-tab value="payments" prepend-icon="mdi-credit-card-outline">{{ t('ops.payments') }}</v-tab>
+      <v-tab value="quotes" prepend-icon="mdi-calculator-variant-outline">{{ t('ops.quotes') }}</v-tab>
     </v-tabs>
 
     <template v-if="tab==='orders'">
       <div class="ops-columns">
         <section class="ops-panel">
-          <div class="ops-panel-head"><div><p class="eyebrow">ORDER MANAGEMENT</p><h2>Neuen Auftrag anlegen</h2></div><span class="ops-count">{{orderTotal}} Aufträge</span></div>
-          <p class="ops-help">Es werden nur Referenz-IDs gesendet. Order Service validiert Kunde, Offer, Quote und Fahrzeug serverseitig und erstellt die unveränderlichen Snapshots selbst.</p>
+          <div class="ops-panel-head"><div><p class="eyebrow">ORDER MANAGEMENT</p><h2>{{ t('ops.newOrder') }}</h2></div><span class="ops-count">{{orderTotal}} {{ t('ops.orderCount') }}</span></div>
+          <p class="ops-help">{{ t('ops.createHelp') }}</p>
           <form class="ops-form" @submit.prevent="createOrder">
-            <label>Offer ID<input v-model.trim="createForm.offerId" required placeholder="offer-…"/></label>
-            <label>Quote ID<input v-model.trim="createForm.quoteId" required placeholder="quote-…"/></label>
-            <label>Vehicle Variant ID<input v-model.trim="createForm.vehicleId" required placeholder="vehicle variant UUID"/></label>
-            <label class="ops-customer-field">Kunde
-              <v-autocomplete v-model="createForm.customerId" :items="customerOptions" item-value="customer_id" :item-title="customerTitle"  :loading="customerLoading" :disabled="customerLoading" :rules="[value => !!value || 'Bitte einen Kunden auswählen']" placeholder="Aktiven Kunden suchen und auswählen" variant="outlined" density="comfortable" hide-details="auto" clearable />
+            <label>{{ t('ops.offerId') }}<input v-model.trim="createForm.offerId" required placeholder="offer-…"/></label>
+            <label>{{ t('ops.quoteId') }}<input v-model.trim="createForm.quoteId" required placeholder="quote-…"/></label>
+            <label>{{ t('ops.vehicleVariant') }}<input v-model.trim="createForm.vehicleId" required placeholder="vehicle variant UUID"/></label>
+            <label class="ops-customer-field">{{ t('ops.customer') }}
+              <v-autocomplete v-model="createForm.customerId" :items="customerOptions" item-value="customer_id" :item-title="customerTitle"  :loading="customerLoading" :disabled="customerLoading" :rules="[value => !!value || t('ops.selectCustomer')]"  :placeholder="t('ops.searchCustomer')" variant="outlined" density="comfortable" hide-details="auto" clearable />
             </label>
-            <p v-if="customerLoadError" class="ops-error">{{customerLoadError}} <a href="/admin/customers">Kundenverwaltung öffnen</a></p>
-            <button class="ops-primary" :disabled="createBusy">{{createBusy?'Auftrag wird angelegt …':'Draft Order erstellen ↗'}}</button>
+            <p v-if="customerLoadError" class="ops-error">{{customerLoadError}} <a href="/admin/customers">{{ t('ops.openCustomers') }}</a></p>
+            <button class="ops-primary" :disabled="createBusy">{{createBusy ? t('ops.creatingOrder') : t('ops.createDraft') + ' ↗'}}</button>
           </form>
           <p v-if="createError" class="ops-error">{{createError}}</p>
         </section>
         <section class="ops-panel">
-          <div class="ops-panel-head"><div><p class="eyebrow">TENANT ORDERS</p><h2>Auftragsübersicht</h2></div><button class="ops-ghost" @click="loadOrders">↻ Aktualisieren</button></div>
+          <div class="ops-panel-head"><div><p class="eyebrow">TENANT ORDERS</p><h2>{{ t('ops.orderOverview') }}</h2></div><button class="ops-ghost" @click="loadOrders">↻ {{ t('ops.refresh') }}</button></div>
           <p v-if="orderError" class="ops-error">{{orderError}}</p>
-          <p v-else-if="orderLoading" class="ops-empty">Aufträge werden geladen …</p>
-          <p v-else-if="!orderRows.length" class="ops-empty">Noch keine Aufträge vorhanden.</p>
+          <p v-else-if="orderLoading" class="ops-empty">{{ t('ops.ordersLoading') }}</p>
+          <p v-else-if="!orderRows.length" class="ops-empty">{{ t('ops.noOrders') }}</p>
           <div v-else class="ops-list">
             <button v-for="order in orderRows" :key="order.orderId" class="ops-row" :class="{chosen:selectedOrder?.orderId===order.orderId}" @click="selectOrder(order)">
-              <span><b>{{order.orderId}}</b><small>{{order.vehicleId || 'Fahrzeug nicht angegeben'}} · {{date(order.createdAt)}}</small></span><span class="ops-status">{{label(order.status)}}</span>
+              <span><b>{{order.orderId}}</b><small>{{order.vehicleId || '{{ t('ops.vehicleMissing') }}'}} · {{date(order.createdAt)}}</small></span><span class="ops-status">{{label(order.status)}}</span>
             </button>
           </div>
           <div class="ops-pagination" v-if="orderTotal>orderLimit">
@@ -335,66 +341,66 @@ onMounted(() => {
       </div>
 
       <section v-if="selectedOrder" class="ops-panel ops-detail">
-        <div class="ops-panel-head"><div><p class="eyebrow">ORDER DETAILS</p><h2>{{selectedOrder.orderId}}</h2><span class="ops-status">{{label(selectedOrder.status)}}</span></div><div class="d-flex ga-2"><button class="ops-ghost" @click="router.push(`/operations/order/${selectedOrder.orderId}`)">Vollständiges Dossier ↗</button><button class="ops-ghost" @click="selectedOrder=null">Schließen</button></div></div>
+        <div class="ops-panel-head"><div><p class="eyebrow">ORDER DETAILS</p><h2>{{selectedOrder.orderId}}</h2><span class="ops-status">{{label(selectedOrder.status)}}</span></div><div class="d-flex ga-2"><button class="ops-ghost" @click="router.push(`/operations/order/${selectedOrder.orderId}`)">{{ t('ops.fullDossier') }} ↗</button><button class="ops-ghost" @click="selectedOrder=null">{{ t('ops.close') }}</button></div></div>
         <div class="ops-facts"><div><small>Offer</small><b>{{selectedOrder.offerId || '–'}}</b></div><div><small>Quote</small><b>{{selectedOrder.quoteId || '–'}}</b></div><div><small>Vehicle</small><b>{{selectedOrder.vehicleId || '–'}}</b></div><div><small>Erstellt</small><b>{{date(selectedOrder.createdAt)}}</b></div></div>
         <div class="ops-actions">
-          <button v-if="selectedOrder.status==='draft'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'submit')">Einreichen</button>
-          <button v-if="selectedOrder.status==='submitted'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'review')">In Prüfung</button>
-          <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'accept')">Annehmen</button>
-          <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy || !rejectReason.trim()" @click="transitionOrder(selectedOrder,'reject')">Ablehnen</button>
-          <button v-if="!['completed','cancelled','rejected'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'cancel')">Stornieren</button>
-          <button v-if="selectedOrder.status==='accepted'" :disabled="paymentBusy" @click="createPayment(selectedOrder)">Payment Intent erstellen</button>
-          <button v-if="selectedOrder.status==='accepted'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'contract-pending')">Vertrag vorbereiten</button>
-          <button v-if="selectedOrder.status==='contract_pending'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'complete')">Abschließen</button>
+          <button v-if="selectedOrder.status==='draft'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'submit')">{{ t('ops.submit') }}</button>
+          <button v-if="selectedOrder.status==='submitted'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'review')">{{ t('ops.review') }}</button>
+          <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'accept')">{{ t('ops.accept') }}</button>
+          <button v-if="['submitted','under_review'].includes(selectedOrder.status)" :disabled="!!actionBusy || !rejectReason.trim()" @click="transitionOrder(selectedOrder,'reject')">{{ t('ops.reject') }}</button>
+          <button v-if="!['completed','cancelled','rejected'].includes(selectedOrder.status)" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'cancel')">{{ t('ops.cancel') }}</button>
+          <button v-if="selectedOrder.status==='accepted'" :disabled="paymentBusy" @click="createPayment(selectedOrder)">{{ t('ops.createPayment') }}</button>
+          <button v-if="selectedOrder.status==='accepted'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'contract-pending')">{{ t('ops.prepareContract') }}</button>
+          <button v-if="selectedOrder.status==='contract_pending'" :disabled="!!actionBusy" @click="transitionOrder(selectedOrder,'complete')">{{ t('ops.complete') }}</button>
         </div>
-        <p v-if="['submitted','under_review'].includes(selectedOrder.status)" class="ops-inline"><input v-model="rejectReason" maxlength="500" placeholder="Ablehnungsgrund (für Ablehnen)"/></p>
+        <p v-if="['submitted','under_review'].includes(selectedOrder.status)" class="ops-inline"><input v-model="rejectReason" maxlength="500"  :placeholder="t('ops.rejectPlaceholder')"/></p>
         <p v-if="actionError" class="ops-error">{{actionError}}</p><p v-if="paymentError" class="ops-error">{{paymentError}}</p>
-        <div class="ops-history"><h3>Audit-Verlauf</h3><p v-if="historyLoading" class="ops-empty">Verlauf wird geladen …</p><p v-else-if="historyError" class="ops-error">{{historyError}}</p><p v-else-if="!orderHistory.length" class="ops-empty">Noch keine Ereignisse vorhanden.</p><div v-for="(event,index) in orderHistory" :key="event.eventId || index" class="ops-history-row"><b>{{label(event.eventType || event.toStatus || event.to_status || event.status)}}</b><small>{{date(event.occurredAt || event.occurred_at || event.createdAt)}} · {{event.actorType || event.actor || 'Audit'}}</small></div></div>
+        <div class="ops-history"><h3>{{ t('ops.audit') }}</h3><p v-if="historyLoading" class="ops-empty">Verlauf wird geladen …</p><p v-else-if="historyError" class="ops-error">{{historyError}}</p><p v-else-if="!orderHistory.length" class="ops-empty">{{ t('ops.noEvents') }}</p><div v-for="(event,index) in orderHistory" :key="event.eventId || index" class="ops-history-row"><b>{{label(event.eventType || event.toStatus || event.to_status || event.status)}}</b><small>{{date(event.occurredAt || event.occurred_at || event.createdAt)}} · {{event.actorType || event.actor || 'Audit'}}</small></div></div>
       </section>
     </template>
 
     <template v-else-if="tab==='payments'">
       <section class="ops-panel">
-        <div class="ops-panel-head"><div><p class="eyebrow">TENANT PAYMENT HISTORY</p><h2>Zahlungshistorie <small>({{paymentTotal}})</small></h2></div><button class="ops-ghost" :disabled="paymentHistoryLoading" @click="loadPayments">↻ Aktualisieren</button></div>
+        <div class="ops-panel-head"><div><p class="eyebrow">TENANT PAYMENT HISTORY</p><h2>{{ t('ops.paymentHistory') }} <small>({{paymentTotal}})</small></h2></div><button class="ops-ghost" :disabled="paymentHistoryLoading" @click="loadPayments">↻ Aktualisieren</button></div>
         <p v-if="paymentHistoryError" class="ops-error">{{paymentHistoryError}}</p>
         <p v-else-if="paymentHistoryLoading" class="ops-empty">Zahlungen werden geladen …</p>
-        <p v-else-if="!paymentRows.length" class="ops-empty">Für diesen Mandanten wurden noch keine Zahlungen gefunden.</p>
-        <div v-else class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Payment ID</th><th>Order ID</th><th>Betrag</th><th>Status</th><th>Erstellt</th><th></th></tr></thead><tbody><tr v-for="item in paymentRows" :key="item.paymentId"><td>{{item.paymentId}}</td><td>{{item.orderId}}</td><td>{{moneyMinor(item.amountMinor,item.currency)}}</td><td>{{label(item.status)}}</td><td>{{date(item.createdAt)}}</td><td><button class="ops-ghost" @click="paymentIdInput=item.paymentId;loadPayment()">Öffnen</button></td></tr></tbody></table></div>
+        <p v-else-if="!paymentRows.length" class="ops-empty">{{ t('ops.noPayments') }}</p>
+        <div v-else class="ops-table-wrap"><table class="ops-table"><thead><tr><th>{{ t('ops.paymentId') }}</th><th>{{ t('ops.orderId') }}</th><th>{{ t('ops.amount') }}</th><th>{{ t('ops.status') }}</th><th>{{ t('ops.created') }}</th><th></th></tr></thead><tbody><tr v-for="item in paymentRows" :key="item.paymentId"><td>{{item.paymentId}}</td><td>{{item.orderId}}</td><td>{{moneyMinor(item.amountMinor,item.currency)}}</td><td>{{label(item.status)}}</td><td>{{date(item.createdAt)}}</td><td><button class="ops-ghost" @click="paymentIdInput=item.paymentId;loadPayment()">{{ t('ops.open') }}</button></td></tr></tbody></table></div>
         <div class="ops-pagination" v-if="paymentTotal>paymentLimit"><button :disabled="paymentOffset===0" @click="paymentOffset=Math.max(0,paymentOffset-paymentLimit);loadPayments()">←</button>{{Math.floor(paymentOffset/paymentLimit)+1}} / {{paymentPages}}<button :disabled="paymentOffset+paymentLimit>=paymentTotal" @click="paymentOffset+=paymentLimit;loadPayments()">→</button></div>
       </section>
       <section class="ops-panel">
-        <div class="ops-panel-head"><div><p class="eyebrow">PAYMENT SERVICE</p><h2>Payment Intent abrufen</h2></div></div>
-        <p class="ops-help">Der Payment Service bestimmt den Betrag ausschließlich aus dem akzeptierten Order Snapshot. Die Karteingabe und Bestätigung benötigen zusätzlich Stripe.js und einen Publishable Key.</p>
-        <form class="ops-inline" @submit.prevent="loadPayment"><input v-model.trim="paymentIdInput" required placeholder="Payment UUID"/><button class="ops-primary" :disabled="paymentBusy">Abrufen</button></form>
+        <div class="ops-panel-head"><div><p class="eyebrow">PAYMENT SERVICE</p><h2>{{ t('ops.retrieveIntent') }}</h2></div></div>
+        <p class="ops-help">{{ t('ops.paymentHelp') }}</p>
+        <form class="ops-inline" @submit.prevent="loadPayment"><input v-model.trim="paymentIdInput" required  :placeholder="t('ops.paymentUuid')"/><button class="ops-primary" :disabled="paymentBusy">{{ t('ops.retrieve') }}</button></form>
         <p v-if="paymentError" class="ops-error">{{paymentError}}</p>
       </section>
       <section v-if="paymentRecord" class="ops-panel ops-detail">
         <div class="ops-panel-head"><div><p class="eyebrow">PAYMENT DETAILS</p><h2>{{paymentRecord.paymentId}}</h2></div><span class="ops-status">{{label(paymentRecord.status)}}</span></div>
-        <div class="ops-facts"><div><small>Auftrag</small><b>{{paymentRecord.orderId}}</b></div><div><small>Betrag</small><b>{{moneyMinor(paymentRecord.amountMinor,paymentRecord.currency)}}</b></div><div><small>Provider</small><b>{{paymentRecord.provider || 'Stripe'}}</b></div><div><small>Status</small><b>{{label(paymentRecord.status)}}</b></div></div>
+        <div class="ops-facts"><div><small>{{ t('ops.orderId') }}</small><b>{{paymentRecord.orderId}}</b></div><div><small>{{ t('ops.amount') }}</small><b>{{moneyMinor(paymentRecord.amountMinor,paymentRecord.currency)}}</b></div><div><small>{{ t('ops.provider') }}</small><b>{{paymentRecord.provider || 'Stripe'}}</b></div><div><small>{{ t('ops.status') }}</small><b>{{label(paymentRecord.status)}}</b></div></div>
         <div v-if="paymentRecord.clientSecret && ['pending','requires_action'].includes(paymentRecord.status)" class="ops-checkout">
-          <p class="eyebrow">SECURE STRIPE CHECKOUT</p><h3>Zahlungsmethode</h3>
+          <p class="eyebrow">{{ t('ops.secureCheckout') }}</p><h3>{{ t('ops.paymentMethod') }}</h3>
           <div ref="checkoutMount" class="stripe-payment-element"></div>
           <p v-if="checkoutError" class="ops-error">{{checkoutError}}</p>
-          <button class="ops-primary" :disabled="checkoutBusy || !stripePublicKey" @click="confirmCardPayment">{{checkoutBusy ? 'Zahlung wird bestätigt …' : 'Zahlung sicher bestätigen'}}</button>
-          <p class="ops-help">Kartendaten werden direkt von Stripe Elements verarbeitet. AutoFlow speichert keine Kartennummern oder CVC-Daten.</p>
+          <button class="ops-primary" :disabled="checkoutBusy || !stripePublicKey" @click="confirmCardPayment">{{checkoutBusy ? t('ops.confirming') : t('ops.confirmSecure')}}</button>
+          <p class="ops-help">{{ t('ops.stripeHelp') }}</p>
         </div>
         <div class="ops-actions">
-          <button v-if="paymentRecord.status==='authorized'" :disabled="paymentBusy" @click="paymentAction('capture')">Einziehen (Capture)</button>
-          <button v-if="['pending','requires_action','authorized'].includes(paymentRecord.status)" :disabled="paymentBusy" @click="paymentAction('cancel')">Payment stornieren</button>
+          <button v-if="paymentRecord.status==='authorized'" :disabled="paymentBusy" @click="paymentAction('capture')">{{ t('ops.capture') }}</button>
+          <button v-if="['pending','requires_action','authorized'].includes(paymentRecord.status)" :disabled="paymentBusy" @click="paymentAction('cancel')">{{ t('ops.cancelPayment') }}</button>
         </div>
-        <div v-if="['captured','partially_refunded'].includes(paymentRecord.status)" class="ops-inline"><input v-model="refundAmount" type="number" min="1" step="1" placeholder="Refund amount (minor units)"/><button :disabled="paymentBusy || Number(refundAmount)<=0" @click="paymentAction('refund')">Refund ausführen</button></div>
-        <p class="ops-help">Capture, Cancel und Refund werden vom Payment Service gegen den aktuellen Provider- und Payment-Status validiert. Alle Mutationen verwenden Idempotency Keys.</p>
+        <div v-if="['captured','partially_refunded'].includes(paymentRecord.status)" class="ops-inline"><input v-model="refundAmount" type="number" min="1" step="1"  :placeholder="t('ops.refundAmount')"/><button :disabled="paymentBusy || Number(refundAmount)<=0" @click="paymentAction('refund')">{{ t('ops.refund') }}</button></div>
+        <p class="ops-help">{{ t('ops.mutationHelp') }}</p>
       </section>
     </template>
 
     <template v-else>
       <section class="ops-panel">
-        <div class="ops-panel-head"><div><p class="eyebrow">PRICING SERVICE</p><h2>Gespeicherte Quotes</h2></div><button class="ops-ghost" @click="loadQuotes">↻ Aktualisieren</button></div>
+        <div class="ops-panel-head"><div><p class="eyebrow">PRICING SERVICE</p><h2>{{ t('ops.savedQuotes') }}</h2></div><button class="ops-ghost" @click="loadQuotes">↻ Aktualisieren</button></div>
         <p v-if="quoteError" class="ops-error">{{quoteError}}</p>
-        <p v-else-if="quoteLoading" class="ops-empty">Quotes werden geladen …</p>
-        <p v-else-if="!quoteRows.length" class="ops-empty">Keine Quotes gefunden oder keine Berechtigung.</p>
-        <div v-else class="ops-table-wrap"><table class="ops-table"><thead><tr><th>Quote ID</th><th>Vehicle</th><th>Rate</th><th>Duration</th><th>Valid until</th><th></th></tr></thead><tbody><tr v-for="quote in quoteRows" :key="quote.quoteId"><td>{{quote.quoteId}}</td><td>{{quote.vehicleId}}</td><td>{{quote.monthlyAmount}} {{quote.currency}}</td><td>{{quote.durationMonths}} Monate</td><td>{{date(quote.expiresAt)}}</td><td><button class="ops-danger" @click="deleteQuote(quote.quoteId)">Löschen</button></td></tr></tbody></table></div>
-        <div class="ops-pagination"><button :disabled="quoteOffset===0" @click="quoteOffset=Math.max(0,quoteOffset-quoteLimit);loadQuotes()">←</button><span>Offset {{quoteOffset}}</span><button :disabled="quoteRows.length<quoteLimit" @click="quoteOffset+=quoteLimit;loadQuotes()">→</button></div>
+        <p v-else-if="quoteLoading" class="ops-empty">{{ t('ops.quotesLoading') }}</p>
+        <p v-else-if="!quoteRows.length" class="ops-empty">{{ t('ops.noQuotes') }}</p>
+        <div v-else class="ops-table-wrap"><table class="ops-table"><thead><tr><th>{{ t('ops.quoteId') }}</th><th>{{ t('ops.vehicle') }}</th><th>{{ t('ops.rate') }}</th><th>{{ t('ops.duration') }}</th><th>{{ t('ops.validUntil') }}</th><th></th></tr></thead><tbody><tr v-for="quote in quoteRows" :key="quote.quoteId"><td>{{quote.quoteId}}</td><td>{{quote.vehicleId}}</td><td>{{quote.monthlyAmount}} {{quote.currency}}</td><td>{{quote.durationMonths}} Monate</td><td>{{date(quote.expiresAt)}}</td><td><button class="ops-danger" @click="deleteQuote(quote.quoteId)">{{ t('ops.delete') }}</button></td></tr></tbody></table></div>
+        <div class="ops-pagination"><button :disabled="quoteOffset===0" @click="quoteOffset=Math.max(0,quoteOffset-quoteLimit);loadQuotes()">←</button><span>{{ t('ops.offset') }} {{quoteOffset}}</span><button :disabled="quoteRows.length<quoteLimit" @click="quoteOffset+=quoteLimit;loadQuotes()">→</button></div>
       </section>
     </template>
   </section>

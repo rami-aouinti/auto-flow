@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { catalog, customers, offers, orders, errorMessage } from './api';
+import { useAutoFlowLocale } from '../app/composables/useAutoFlowLocale';
 import MarketplaceHero from '../app/components/marketplace/MarketplaceHero.vue';
 import VehicleCard from '../app/components/marketplace/VehicleCard.vue';
 import MarketplaceHighlights from '../app/components/marketplace/MarketplaceHighlights.vue';
@@ -10,6 +11,7 @@ type Vehicle = Record<string, any> & { variantId: string; name: string };
 type Offer = Record<string, any> & { offerId: string; status: string };
 
 const route = useRoute();
+const { t, locale } = useAutoFlowLocale();
 const vehicles = ref<Vehicle[]>([]);
 const manufacturers = ref<Array<{ manufacturerId: string; name: string; code?: string }>>([]);
 const total = ref(0);
@@ -34,43 +36,43 @@ const filters = reactive({
   minSeats: '',
 });
 
-const fuelOptions = [
-  { title: 'Alle Antriebe', value: '' },
-  { title: 'Benzin', value: 'petrol' },
-  { title: 'Diesel', value: 'diesel' },
-  { title: 'Elektro', value: 'electric' },
-  { title: 'Hybrid', value: 'hybrid' },
-  { title: 'Plug-in-Hybrid', value: 'plug_in_hybrid' },
-  { title: 'Wasserstoff', value: 'hydrogen' },
-];
-const bodyOptions = [
-  { title: 'Alle Karosserieformen', value: '' },
-  { title: 'SUV / Geländewagen', value: 'suv' },
-  { title: 'Limousine', value: 'sedan' },
-  { title: 'Kompakt / Schrägheck', value: 'hatchback' },
-  { title: 'Kombi', value: 'estate' },
-  { title: 'Coupé', value: 'coupe' },
-  { title: 'Cabrio', value: 'convertible' },
-  { title: 'Van', value: 'van' },
-  { title: 'Pickup', value: 'pickup' },
-];
-const transmissionOptions = [
-  { title: 'Alle Getriebe', value: '' },
-  { title: 'Automatik', value: 'automatic' },
-  { title: 'Manuell', value: 'manual' },
-  { title: 'Einstufig', value: 'single_speed' },
-];
-const sortOptions = [
-  { title: 'Relevanz', value: 'relevance' },
-  { title: 'Name A–Z', value: 'name' },
-  { title: 'Leistung: hoch zuerst', value: 'power-desc' },
-  { title: 'Leistung: niedrig zuerst', value: 'power-asc' },
-];
+const fuelOptions = computed(() => [
+  { title: t('app.allDrivetrains'), value: '' },
+  { title: t('app.petrol'), value: 'petrol' },
+  { title: t('app.diesel'), value: 'diesel' },
+  { title: t('app.electric'), value: 'electric' },
+  { title: t('app.hybrid'), value: 'hybrid' },
+  { title: t('app.pluginHybrid'), value: 'plug_in_hybrid' },
+  { title: t('app.hydrogen'), value: 'hydrogen' },
+]);
+const bodyOptions = computed(() => [
+  { title: t('app.allBodyStyles'), value: '' },
+  { title: t('app.suv'), value: 'suv' },
+  { title: t('app.sedan'), value: 'sedan' },
+  { title: t('app.hatchback'), value: 'hatchback' },
+  { title: t('app.estate'), value: 'estate' },
+  { title: t('app.coupe'), value: 'coupe' },
+  { title: t('app.convertible'), value: 'convertible' },
+  { title: t('app.van'), value: 'van' },
+  { title: t('app.pickup'), value: 'pickup' },
+]);
+const transmissionOptions = computed(() => [
+  { title: t('app.allTransmissions'), value: '' },
+  { title: t('app.automatic'), value: 'automatic' },
+  { title: t('app.manual'), value: 'manual' },
+  { title: t('app.singleSpeed'), value: 'single_speed' },
+]);
+const sortOptions = computed(() => [
+  { title: t('app.relevance'), value: 'relevance' },
+  { title: t('app.nameAZ'), value: 'name' },
+  { title: t('app.powerHigh'), value: 'power-desc' },
+  { title: t('app.powerLow'), value: 'power-asc' },
+]);
 
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
 const sortedVehicles = computed(() => {
   const copy = [...vehicles.value];
-  if (sortBy.value === 'name') return copy.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  if (sortBy.value === 'name') return copy.sort((a, b) => a.name.localeCompare(b.name, locale.value === 'fr' ? 'fr' : locale.value === 'en' ? 'en' : 'de'));
   if (sortBy.value === 'power-desc') return copy.sort((a, b) => Number(b.powerKw || 0) - Number(a.powerKw || 0));
   if (sortBy.value === 'power-asc') return copy.sort((a, b) => Number(a.powerKw || 0) - Number(b.powerKw || 0));
   return copy;
@@ -125,15 +127,15 @@ function label(value?: string) {
 }
 function money(value: string | number | undefined, currency = 'EUR') {
   if (value === undefined || value === null || value === '') return '–';
-  return Number(value).toLocaleString('de-DE', { style: 'currency', currency });
+  return Number(value).toLocaleString(locale.value === 'fr' ? 'fr-FR' : locale.value === 'en' ? 'en-GB' : 'de-DE', { style: 'currency', currency });
 }
 function formatDate(value?: string) {
-  return value ? new Date(value).toLocaleString('de-DE') : '–';
+  return value ? new Date(value).toLocaleString(locale.value === 'fr' ? 'fr-FR' : locale.value === 'en' ? 'en-GB' : 'de-DE') : '–';
 }
 function statusLabel(status: string) {
   return ({
-    draft: 'Entwurf', published: 'Veröffentlicht', accepted: 'Angenommen',
-    rejected: 'Abgelehnt', expired: 'Abgelaufen', withdrawn: 'Zurückgezogen',
+    draft: t('app.draft'), published: t('app.published'), accepted: t('app.accepted'),
+    rejected: t('app.rejected'), expired: t('app.expired'), withdrawn: t('app.withdrawn'),
   } as Record<string, string>)[status] || label(status);
 }
 function pricingPayload() {
@@ -211,7 +213,7 @@ function backToResults() {
 }
 async function calculateQuote() {
   if (!selected.value || Number(pricingForm.vehiclePrice) <= 0 || Number(pricingForm.downPayment) < 0 || Number(pricingForm.residualValue) < 0) {
-    quoteError.value = 'Bitte gib einen gültigen Fahrzeugpreis sowie Anzahlung und Restwert an.';
+    quoteError.value = t('app.validPrice');
     return;
   }
   quoteBusy.value = true;
@@ -227,7 +229,7 @@ async function calculateQuote() {
 async function createOffer() {
   if (!selected.value) return;
   if (Number(pricingForm.vehiclePrice) <= 0) {
-    offerActionError.value = 'Bitte zuerst einen gültigen Fahrzeugpreis eingeben.';
+    offerActionError.value = t('app.enterPrice');
     return;
   }
   offerActionBusy.value = true;
@@ -265,7 +267,7 @@ async function createOrderFromOffer() {
   if (!createdOffer.value || createdOffer.value.status !== 'accepted' || !selected.value || !selectedCustomerId.value) return;
   const quoteId = String(createdOffer.value.quoteId ?? createdOffer.value.quote_id ?? createdOffer.value.pricing?.quoteId ?? quote.value?.quoteId ?? '');
   if (!quoteId) {
-    orderError.value = 'The accepted offer does not contain a quote reference. Open the offer details and verify the pricing snapshot.';
+    orderError.value = t('app.quoteMissing');
     return;
   }
   orderBusy.value = true;
@@ -381,9 +383,9 @@ onMounted(async () => {
   const requestedFuel = typeof route.query.fuelType === 'string' ? route.query.fuelType : '';
   const requestedBodyStyle = typeof route.query.bodyStyle === 'string' ? route.query.bodyStyle : '';
   const requestedTransmission = typeof route.query.transmission === 'string' ? route.query.transmission : '';
-  if (fuelOptions.some((item) => item.value === requestedFuel)) filters.fuelType = requestedFuel;
-  if (bodyOptions.some((item) => item.value === requestedBodyStyle)) filters.bodyStyle = requestedBodyStyle;
-  if (transmissionOptions.some((item) => item.value === requestedTransmission)) filters.transmission = requestedTransmission;
+  if (fuelOptions.value.some((item) => item.value === requestedFuel)) filters.fuelType = requestedFuel;
+  if (bodyOptions.value.some((item) => item.value === requestedBodyStyle)) filters.bodyStyle = requestedBodyStyle;
+  if (transmissionOptions.value.some((item) => item.value === requestedTransmission)) filters.transmission = requestedTransmission;
   try {
     const response = await catalog.manufacturers();
     manufacturers.value = response.data.items ?? [];
@@ -414,33 +416,33 @@ onMounted(async () => {
       <template v-if="showOffers">
         <div class="section-heading offer-heading">
           <div>
-            <div class="section-kicker">DEIN AUTOFLOW KONTO</div>
-            <h1>Meine <span>Angebote.</span></h1>
-            <p>Behalte deine kalkulierten und erstellten Angebote im Blick.</p>
+            <div class="section-kicker">{{ t('app.myOffers').toUpperCase() }}</div>
+            <h1>{{ t('app.myOffers') }}.</h1>
+            <p>{{ t('app.offerIntro') }}</p>
           </div>
-          <v-btn color="primary" variant="tonal" prepend-icon="mdi-arrow-left" @click="openCatalogue">Fahrzeuge entdecken</v-btn>
+          <v-btn color="primary" variant="tonal" prepend-icon="mdi-arrow-left" @click="openCatalogue">{{ t('app.discoverVehicles') }}</v-btn>
         </div>
         <v-card class="filter-bar offer-filters" rounded="xl" elevation="0">
-          <v-text-field v-model="offerSearch" prepend-inner-icon="mdi-magnify" placeholder="Angebots-ID oder Fahrzeug suchen" hide-details density="comfortable" variant="outlined" @keyup.enter="offerOffset = 0; loadOffers()" />
-          <v-select v-model="offerStatus" :items="[{title:'Alle Status',value:''},{title:'Entwurf',value:'draft'},{title:'Veröffentlicht',value:'published'},{title:'Angenommen',value:'accepted'},{title:'Abgelehnt',value:'rejected'},{title:'Abgelaufen',value:'expired'}]" item-title="title" item-value="value" hide-details density="comfortable" variant="outlined" @update:model-value="offerOffset = 0; loadOffers()" />
-          <v-btn color="primary" prepend-icon="mdi-magnify" @click="offerOffset = 0; loadOffers()">Suchen</v-btn>
+          <v-text-field v-model="offerSearch" prepend-inner-icon="mdi-magnify"  :placeholder="t('app.searchOffer')" hide-details density="comfortable" variant="outlined" @keyup.enter="offerOffset = 0; loadOffers()" />
+          <v-select v-model="offerStatus" :items="[{title:t('app.allStatuses'),value:''},{title:t('app.draft'),value:'draft'},{title:t('app.published'),value:'published'},{title:t('app.accepted'),value:'accepted'},{title:t('app.rejected'),value:'rejected'},{title:t('app.expired'),value:'expired'}]" item-title="title" item-value="value" hide-details density="comfortable" variant="outlined" @update:model-value="offerOffset = 0; loadOffers()" />
+          <v-btn color="primary" prepend-icon="mdi-magnify" @click="offerOffset = 0; loadOffers()">{{ t('common.search') }}</v-btn>
         </v-card>
         <v-alert v-if="offerError" type="error" variant="tonal" class="my-4" closable>{{ offerError }}</v-alert>
-        <div v-if="offerLoading" class="state-panel"><v-progress-circular indeterminate color="primary" /><span>Angebote werden geladen …</span></div>
-        <div v-else-if="!offerRows.length" class="state-panel"><v-icon icon="mdi-file-document-outline" size="42" /><strong>Noch keine Angebote vorhanden</strong><span>Entdecke ein Fahrzeug und berechne deine erste Rate.</span><v-btn color="primary" @click="openCatalogue">Fahrzeuge entdecken</v-btn></div>
+        <div v-if="offerLoading" class="state-panel"><v-progress-circular indeterminate color="primary" /><span>{{ t('app.offersLoading') }}</span></div>
+        <div v-else-if="!offerRows.length" class="state-panel"><v-icon icon="mdi-file-document-outline" size="42" /><strong>{{ t('app.noOffers') }}</strong><span>{{ t('app.noOffersHelp') }}</span><v-btn color="primary" @click="openCatalogue">Fahrzeuge entdecken</v-btn></div>
         <div v-else class="offer-grid">
           <v-card v-for="offer in offerRows" :key="offer.offerId" class="offer-market-card" rounded="xl" elevation="0" border>
             <div class="offer-card-head"><span class="offer-ref">AUTOFLOW · {{ offer.offerId.slice(0, 8) }}</span><v-chip size="small" :color="offer.status === 'accepted' ? 'success' : offer.status === 'rejected' ? 'error' : 'primary'" variant="tonal">{{ statusLabel(offer.status) }}</v-chip></div>
             <h2>{{ offer.vehicleId }}</h2>
-            <div class="offer-price"><strong>{{ money(offer.pricing?.monthlyAmount, offer.pricing?.currency) }}</strong><span>pro Monat</span></div>
-            <div class="offer-facts"><div><span>Laufzeit</span><b>{{ offer.pricing?.durationMonths || '–' }} Monate</b></div><div><span>Erstellt am</span><b>{{ formatDate(offer.createdAt) }}</b></div><div><span>Gültig bis</span><b>{{ formatDate(offer.expiresAt) }}</b></div></div>
+            <div class="offer-price"><strong>{{ money(offer.pricing?.monthlyAmount, offer.pricing?.currency) }}</strong><span>{{ t('app.perMonth') }}</span></div>
+            <div class="offer-facts"><div><span>{{ t('app.term') }}</span><b>{{ offer.pricing?.durationMonths || '–' }} {{ t('app.months') }}</b></div><div><span>{{ t('app.createdAt') }}</span><b>{{ formatDate(offer.createdAt) }}</b></div><div><span>{{ t('app.validUntil') }}</span><b>{{ formatDate(offer.expiresAt) }}</b></div></div>
             <div class="offer-actions">
-              <v-btn v-if="offer.status === 'draft'" size="small" color="primary" @click="updateOffer(offer.offerId, 'publish')" :disabled="offerActionBusy">Veröffentlichen</v-btn>
-              <v-btn v-if="offer.status === 'published'" size="small" color="success" variant="tonal" @click="updateOffer(offer.offerId, 'accept')" :disabled="offerActionBusy">Annehmen</v-btn>
-              <v-btn v-if="offer.status === 'published'" size="small" color="error" variant="text" @click="updateOffer(offer.offerId, 'reject')" :disabled="offerActionBusy">Ablehnen</v-btn>
+              <v-btn v-if="offer.status === 'draft'" size="small" color="primary" @click="updateOffer(offer.offerId, 'publish')" :disabled="offerActionBusy">{{ t('app.publish') }}</v-btn>
+              <v-btn v-if="offer.status === 'published'" size="small" color="success" variant="tonal" @click="updateOffer(offer.offerId, 'accept')" :disabled="offerActionBusy">{{ t('app.accept') }}</v-btn>
+              <v-btn v-if="offer.status === 'published'" size="small" color="error" variant="text" @click="updateOffer(offer.offerId, 'reject')" :disabled="offerActionBusy">{{ t('app.reject') }}</v-btn>
               <v-spacer />
               <v-btn icon="mdi-file-pdf-box" size="small" variant="text" aria-label="PDF herunterladen" @click="downloadOfferPdf(offer.offerId)" :disabled="offerActionBusy" />
-              <v-btn size="small" variant="text" append-icon="mdi-chevron-down" @click="toggleOfferHistory(offer.offerId)">{{ expandedOfferId === offer.offerId ? 'Schließen' : 'Verlauf' }}</v-btn>
+              <v-btn size="small" variant="text" append-icon="mdi-chevron-down" @click="toggleOfferHistory(offer.offerId)">{{ expandedOfferId === offer.offerId ? t('app.close') : t('app.history') }}</v-btn>
             </div>
             <div v-if="expandedOfferId === offer.offerId" class="offer-history">
               <div v-if="offerHistoryLoading === offer.offerId" class="text-caption">Verlauf wird geladen …</div>
@@ -454,16 +456,16 @@ onMounted(async () => {
           </v-card>
         </div>
         <div v-if="offerTotal > 8" class="market-pagination">
-          <v-btn variant="outlined" :disabled="offerOffset === 0" @click="offerOffset = Math.max(0, offerOffset - 8); loadOffers()">Zurück</v-btn>
+          <v-btn variant="outlined" :disabled="offerOffset === 0" @click="offerOffset = Math.max(0, offerOffset - 8); loadOffers()">{{ t('app.previous') }}</v-btn>
           <span>{{ Math.floor(offerOffset / 8) + 1 }} / {{ Math.ceil(offerTotal / 8) }}</span>
-          <v-btn variant="outlined" :disabled="offerOffset + 8 >= offerTotal" @click="offerOffset += 8; loadOffers()">Weiter</v-btn>
+          <v-btn variant="outlined" :disabled="offerOffset + 8 >= offerTotal" @click="offerOffset += 8; loadOffers()">{{ t('app.next') }}</v-btn>
         </div>
       </template>
 
       <template v-else-if="selected">
         <div class="detail-back">
-          <v-btn variant="text" prepend-icon="mdi-arrow-left" color="primary" @click="backToResults">Zurück zur Fahrzeugsuche</v-btn>
-          <v-chip color="success" variant="tonal" prepend-icon="mdi-check-decagram-outline">Katalogdaten</v-chip>
+          <v-btn variant="text" prepend-icon="mdi-arrow-left" color="primary" @click="backToResults">{{ t('app.backSearch') }}</v-btn>
+          <v-chip color="success" variant="tonal" prepend-icon="mdi-check-decagram-outline">{{ t('app.catalogData') }}</v-chip>
         </div>
         <section class="vehicle-detail-hero">
           <div class="detail-visual"><v-icon icon="mdi-car-sports" /></div>
@@ -476,59 +478,59 @@ onMounted(async () => {
         </section>
         <div class="detail-layout">
           <section class="detail-spec-panel">
-            <div class="section-kicker">DAS FAHRZEUG IM ÜBERBLICK</div>
-            <h2>Technische Daten</h2>
+            <div class="section-kicker">{{ t('app.vehicleOverview') }}</div>
+            <h2>{{ t('app.specifications') }}</h2>
             <div class="spec-grid">
-              <div><span>Hersteller</span><strong>{{ selected.manufacturer?.name || '–' }}</strong></div>
-              <div><span>Modell</span><strong>{{ selected.model?.name || '–' }}</strong></div>
-              <div><span>Generation</span><strong>{{ selected.generation?.name || '–' }}</strong></div>
-              <div><span>Leistung</span><strong>{{ selected.powerKw ? selected.powerKw + ' kW' : '–' }}</strong></div>
-              <div><span>Kraftstoff</span><strong>{{ label(selected.fuelType) }}</strong></div>
-              <div><span>Antrieb</span><strong>{{ label(selected.powertrain) }}</strong></div>
-              <div><span>Getriebe</span><strong>{{ label(selected.transmission) }}</strong></div>
-              <div><span>Sitzplätze</span><strong>{{ selected.seats ?? '–' }}</strong></div>
-              <div><span>Türen</span><strong>{{ selected.doors ?? '–' }}</strong></div>
-              <div><span>Gewicht</span><strong>{{ selected.curbWeightKg ? selected.curbWeightKg + ' kg' : '–' }}</strong></div>
-              <div><span>CO₂-Emission</span><strong>{{ selected.co2EmissionGPerKm !== null && selected.co2EmissionGPerKm !== undefined ? selected.co2EmissionGPerKm + ' g/km' : '–' }}</strong></div>
-              <div><span>Hubraum</span><strong>{{ selected.displacementCc ? selected.displacementCc + ' cm³' : '–' }}</strong></div>
+              <div><span>{{ t('app.make') }}</span><strong>{{ selected.manufacturer?.name || '–' }}</strong></div>
+              <div><span>{{ t('app.model') }}</span><strong>{{ selected.model?.name || '–' }}</strong></div>
+              <div><span>{{ t('app.generation') }}</span><strong>{{ selected.generation?.name || '–' }}</strong></div>
+              <div><span>{{ t('app.power') }}</span><strong>{{ selected.powerKw ? selected.powerKw + ' kW' : '–' }}</strong></div>
+              <div><span>{{ t('app.fuel') }}</span><strong>{{ label(selected.fuelType) }}</strong></div>
+              <div><span>{{ t('app.powertrain') }}</span><strong>{{ label(selected.powertrain) }}</strong></div>
+              <div><span>{{ t('app.transmission') }}</span><strong>{{ label(selected.transmission) }}</strong></div>
+              <div><span>{{ t('app.seats') }}</span><strong>{{ selected.seats ?? '–' }}</strong></div>
+              <div><span>{{ t('app.doors') }}</span><strong>{{ selected.doors ?? '–' }}</strong></div>
+              <div><span>{{ t('app.weight') }}</span><strong>{{ selected.curbWeightKg ? selected.curbWeightKg + ' kg' : '–' }}</strong></div>
+              <div><span>{{ t('app.co2') }}</span><strong>{{ selected.co2EmissionGPerKm !== null && selected.co2EmissionGPerKm !== undefined ? selected.co2EmissionGPerKm + ' g/km' : '–' }}</strong></div>
+              <div><span>{{ t('app.displacement') }}</span><strong>{{ selected.displacementCc ? selected.displacementCc + ' cm³' : '–' }}</strong></div>
             </div>
             <v-alert class="catalog-disclaimer mt-6" type="info" variant="tonal" density="comfortable" icon="mdi-information-outline">
-              Technische Katalogdaten. Preis, Verfügbarkeit und Liefertermin werden nicht durch den Fahrzeugkatalog verwaltet.
+              {{ t('app.catalogDisclaimer') }}
             </v-alert>
           </section>
           <aside class="calculator-panel">
-            <div class="calculator-heading"><v-avatar color="primary" variant="tonal"><v-icon icon="mdi-calculator-variant-outline" /></v-avatar><div><div class="section-kicker">DEINE KALKULATION</div><h2>Rate berechnen</h2></div></div>
-            <p class="calculator-copy">Gib deine Kalkulationsdaten ein. Der Pricing Service berechnet daraus ein individuelles Angebot.</p>
+            <div class="calculator-heading"><v-avatar color="primary" variant="tonal"><v-icon icon="mdi-calculator-variant-outline" /></v-avatar><div><div class="section-kicker">{{ t('app.yourCalculation') }}</div><h2>{{ t('app.calculatePayment') }}</h2></div></div>
+            <p class="calculator-copy">{{ t('app.calculatorHelp') }}</p>
             <form class="calculator-form" @submit.prevent="calculateQuote">
-              <v-text-field v-model="pricingForm.vehiclePrice" label="Fahrzeugpreis (€)" type="number" min="0.01" step="0.01" prefix="€" variant="outlined" density="comfortable" required />
+              <v-text-field v-model="pricingForm.vehiclePrice"  :label="t('app.vehiclePrice')" type="number" min="0.01" step="0.01" prefix="€" variant="outlined" density="comfortable" required />
               <div class="calculator-two">
-                <v-text-field v-model="pricingForm.downPayment" label="Anzahlung (€)" type="number" min="0" step="0.01" prefix="€" variant="outlined" density="comfortable" />
-                <v-text-field v-model="pricingForm.residualValue" label="Restwert (€)" type="number" min="0" step="0.01" prefix="€" variant="outlined" density="comfortable" />
+                <v-text-field v-model="pricingForm.downPayment"  :label="t('app.downPayment')" type="number" min="0" step="0.01" prefix="€" variant="outlined" density="comfortable" />
+                <v-text-field v-model="pricingForm.residualValue"  :label="t('app.residualValue')" type="number" min="0" step="0.01" prefix="€" variant="outlined" density="comfortable" />
               </div>
               <div class="calculator-two">
-                <v-select v-model.number="pricingForm.durationMonths" label="Laufzeit" :items="[24,36,48,60]" suffix="Monate" variant="outlined" density="comfortable" />
-                <v-text-field :model-value="(pricingForm.annualInterestRateBasisPoints / 100).toFixed(2)" label="Zins p.a." type="number" min="0" step="0.01" suffix="%" variant="outlined" density="comfortable" @update:model-value="pricingForm.annualInterestRateBasisPoints = Math.round(Number($event) * 100)" />
+                <v-select v-model.number="pricingForm.durationMonths"  :label="t('app.termMonths')" :items="[24,36,48,60]" suffix="Monate" variant="outlined" density="comfortable" />
+                <v-text-field :model-value="(pricingForm.annualInterestRateBasisPoints / 100).toFixed(2)"  :label="t('app.interest')" type="number" min="0" step="0.01" suffix="%" variant="outlined" density="comfortable" @update:model-value="pricingForm.annualInterestRateBasisPoints = Math.round(Number($event) * 100)" />
               </div>
-              <v-btn type="submit" color="primary" size="large" block :loading="quoteBusy" prepend-icon="mdi-calculator">Monatsrate berechnen</v-btn>
-              <v-btn type="button" color="secondary" variant="outlined" size="large" block :loading="offerActionBusy" prepend-icon="mdi-file-document-plus-outline" @click="createOffer">Angebot erstellen</v-btn>
+              <v-btn type="submit" color="primary" size="large" block :loading="quoteBusy" prepend-icon="mdi-calculator">{{ t('app.calculate') }}</v-btn>
+              <v-btn type="button" color="secondary" variant="outlined" size="large" block :loading="offerActionBusy" prepend-icon="mdi-file-document-plus-outline" @click="createOffer">{{ t('app.createOffer') }}</v-btn>
             </form>
             <v-alert v-if="quoteError" type="error" variant="tonal" density="compact" class="mt-4">{{ quoteError }}</v-alert>
             <v-alert v-if="offerActionError" type="error" variant="tonal" density="compact" class="mt-4">{{ offerActionError }}</v-alert>
             <div v-if="quote" class="quote-result">
-              <span>DEINE BERECHNETE MONATSRATE</span>
+              <span>{{ t('app.calculatedPayment') }}</span>
               <strong>{{ money(quote.monthlyAmount, quote.currency) }}</strong>
-              <div><span>Gesamtkosten inkl. Anzahlung</span><b>{{ money(quote.totalCostIncludingDownPayment, quote.currency) }}</b></div>
+              <div><span>{{ t('app.totalCost') }}</span><b>{{ money(quote.totalCostIncludingDownPayment, quote.currency) }}</b></div>
             </div>
             <div v-if="createdOffer" class="created-offer-panel">
-              <v-chip color="success" variant="tonal" size="small">Angebot angelegt</v-chip>
+              <v-chip color="success" variant="tonal" size="small">{{ t('app.offerCreated') }}</v-chip>
               <strong>{{ createdOffer.offerId }}</strong>
               <span>Status: {{ statusLabel(createdOffer.status) }}</span>
               <div class="offer-actions">
                 <v-btn v-if="createdOffer.status === 'draft'" color="primary" size="small" @click="changeCreatedOffer('publish')" :disabled="offerActionBusy">Veröffentlichen</v-btn>
                 <v-btn v-if="createdOffer.status === 'published'" color="success" size="small" @click="changeCreatedOffer('accept')" :disabled="offerActionBusy">Annehmen</v-btn>
                 <v-btn v-if="createdOffer.status === 'published'" color="error" variant="text" size="small" @click="changeCreatedOffer('reject')" :disabled="offerActionBusy">Ablehnen</v-btn>
-                <v-btn v-if="createdOffer.status === 'accepted'" color="success" size="small" prepend-icon="mdi-clipboard-check-outline" @click="openOrderDialog">Auftrag anlegen</v-btn>
-                <v-btn color="secondary" variant="text" size="small" @click="openOffers">Alle Angebote ansehen</v-btn>
+                <v-btn v-if="createdOffer.status === 'accepted'" color="success" size="small" prepend-icon="mdi-clipboard-check-outline" @click="openOrderDialog">{{ t('app.createOrder') }}</v-btn>
+                <v-btn color="secondary" variant="text" size="small" @click="openOffers">{{ t('app.viewAllOffers') }}</v-btn>
               </div>
             </div>
           </aside>
@@ -538,8 +540,8 @@ onMounted(async () => {
       <template v-else>
         <section class="discovery-section" id="fahrzeuge">
           <div class="section-heading">
-            <div><div class="section-kicker">ENTDECKE DEINE MÖGLICHKEITEN</div><h2>Finde deinen <span>Favoriten.</span></h2><p>Filtere den Fahrzeugkatalog nach den Kriterien, die dir wichtig sind.</p></div>
-            <v-btn class="my-offers-button" variant="outlined" color="primary" prepend-icon="mdi-file-document-multiple-outline" @click="openOffers">Meine Angebote</v-btn>
+            <div><div class="section-kicker">{{ t('app.discover') }}</div><h2>{{ t('app.findFavourite') }}</h2><p>{{ t('app.filterIntro') }}</p></div>
+            <v-btn class="my-offers-button" variant="outlined" color="primary" prepend-icon="mdi-file-document-multiple-outline" @click="openOffers">{{ t('app.myOffers') }}</v-btn>
           </div>
           <div class="quick-categories">
             <v-chip :color="filters.bodyStyle === 'suv' ? 'primary' : 'default'" :variant="filters.bodyStyle === 'suv' ? 'flat' : 'outlined'" prepend-icon="mdi-car-estate" @click="quickFilter('bodyStyle','suv')">SUV</v-chip>
@@ -549,42 +551,42 @@ onMounted(async () => {
           </div>
           <div class="catalog-layout">
             <aside class="filter-sidebar">
-              <div class="filter-title"><div><v-icon icon="mdi-filter-variant" color="primary" /><strong>Fahrzeuge filtern</strong></div><v-btn v-if="hasFilters" size="x-small" variant="text" color="primary" @click="clearFilters">Zurücksetzen</v-btn></div>
-              <v-text-field v-model="filters.q" label="Marke, Modell oder Variante" prepend-inner-icon="mdi-magnify" variant="outlined" density="comfortable" hide-details @keyup.enter="loadVehicles(true)" />
-              <v-select v-model="filters.manufacturerId" label="Marke" :items="[{title:'Alle Marken',value:''}, ...manufacturers.map((item) => ({title:item.name,value:item.manufacturerId}))]" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
-              <v-select v-model="filters.fuelType" label="Kraftstoff" :items="fuelOptions" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
-              <v-select v-model="filters.bodyStyle" label="Karosserie" :items="bodyOptions" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
-              <v-select v-model="filters.transmission" label="Getriebe" :items="transmissionOptions" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
-              <div class="filter-subtitle">Leistung</div>
+              <div class="filter-title"><div><v-icon icon="mdi-filter-variant" color="primary" /><strong>{{ t('app.filterVehicles') }}</strong></div><v-btn v-if="hasFilters" size="x-small" variant="text" color="primary" @click="clearFilters">{{ t('app.reset') }}</v-btn></div>
+              <v-text-field v-model="filters.q"  :label="t('app.makeModelVariant')" prepend-inner-icon="mdi-magnify" variant="outlined" density="comfortable" hide-details @keyup.enter="loadVehicles(true)" />
+              <v-select v-model="filters.manufacturerId"  :label="t('app.makeLabel')" :items="[{title:t('app.any'),value:''}, ...manufacturers.map((item) => ({title:item.name,value:item.manufacturerId}))]" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
+              <v-select v-model="filters.fuelType"  :label="t('app.fuelLabel')" :items="fuelOptions" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
+              <v-select v-model="filters.bodyStyle"  :label="t('app.bodyStyle')" :items="bodyOptions" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
+              <v-select v-model="filters.transmission"  :label="t('app.transmissionLabel')" :items="transmissionOptions" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
+              <div class="filter-subtitle">{{ t('app.powerLabel') }}</div>
               <div class="filter-range">
-                <v-text-field v-model="filters.minPowerKw" label="Von kW" type="number" min="0" variant="outlined" density="comfortable" hide-details />
-                <v-text-field v-model="filters.maxPowerKw" label="Bis kW" type="number" min="0" variant="outlined" density="comfortable" hide-details />
+                <v-text-field v-model="filters.minPowerKw"  :label="t('app.fromKw')" type="number" min="0" variant="outlined" density="comfortable" hide-details />
+                <v-text-field v-model="filters.maxPowerKw"  :label="t('app.toKw')" type="number" min="0" variant="outlined" density="comfortable" hide-details />
               </div>
-              <v-select v-model="filters.minSeats" label="Mindestens Sitzplätze" :items="[{title:'Beliebig',value:''}, ...[2,4,5,6,7,8].map((value) => ({title:String(value),value:String(value)}))]" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
-              <v-btn color="primary" block size="large" prepend-icon="mdi-magnify" @click="loadVehicles(true)">Fahrzeuge anzeigen</v-btn>
-              <div v-if="hasFilters" class="active-filters"><span>Aktive Filter</span><v-chip size="small" color="primary" variant="tonal" @click="clearFilters">{{ activeFilters.length }} ausgewählt · Alle löschen</v-chip></div>
+              <v-select v-model="filters.minSeats"  :label="t('app.minSeats')" :items="[{title:t('app.any'),value:''}, ...[2,4,5,6,7,8].map((value) => ({title:String(value),value:String(value)}))]" item-title="title" item-value="value" variant="outlined" density="comfortable" hide-details />
+              <v-btn color="primary" block size="large" prepend-icon="mdi-magnify" @click="loadVehicles(true)">{{ t('app.showVehicles') }}</v-btn>
+              <div v-if="hasFilters" class="active-filters"><span>{{ t('app.activeFilters') }}</span><v-chip size="small" color="primary" variant="tonal" @click="clearFilters">{{ activeFilters.length }} {{ t('app.selectedDelete') }}</v-chip></div>
             </aside>
 
             <div class="results-column">
               <div class="results-toolbar">
-                <div><strong>{{ total.toLocaleString('de-DE') }}</strong> Fahrzeuge gefunden <span v-if="loading">· Aktualisiere …</span></div>
-                <v-select v-model="sortBy" :items="sortOptions" item-title="title" item-value="value" density="compact" variant="outlined" hide-details label="Sortieren" class="sort-select" />
+                <div><strong>{{ total.toLocaleString('de-DE') }}</strong> {{ t('app.vehiclesFound') }} <span v-if="loading">· {{ t('app.refreshing') }}</span></div>
+                <v-select v-model="sortBy" :items="sortOptions" item-title="title" item-value="value" density="compact" variant="outlined" hide-details  :label="t('app.sort')" class="sort-select" />
               </div>
               <div v-if="activeFilters.length" class="active-filter-list">
                 <v-chip v-for="filter in activeFilters" :key="filter" size="small" color="primary" variant="tonal">{{ filter }}</v-chip>
               </div>
-              <v-alert v-if="catalogError" type="error" variant="tonal" class="mb-4" closable>{{ catalogError }} <template #append><v-btn size="small" variant="text" @click="loadVehicles()">Erneut versuchen</v-btn></template></v-alert>
-              <div v-if="loading && !vehicles.length" class="state-panel"><v-progress-circular indeterminate color="primary" /><span>Wir suchen passende Fahrzeuge …</span></div>
-              <div v-else-if="!sortedVehicles.length" class="state-panel"><v-icon icon="mdi-car-search" size="46" /><strong>Keine passenden Fahrzeuge gefunden</strong><span>Ändere deine Filter oder starte eine neue Suche.</span><v-btn color="primary" variant="tonal" @click="clearFilters">Alle Filter zurücksetzen</v-btn></div>
+              <v-alert v-if="catalogError" type="error" variant="tonal" class="mb-4" closable>{{ catalogError }} <template #append><v-btn size="small" variant="text" @click="loadVehicles()">{{ t('app.tryAgain') }}</v-btn></template></v-alert>
+              <div v-if="loading && !vehicles.length" class="state-panel"><v-progress-circular indeterminate color="primary" /><span>{{ t('app.searching') }}</span></div>
+              <div v-else-if="!sortedVehicles.length" class="state-panel"><v-icon icon="mdi-car-search" size="46" /><strong>{{ t('app.noVehicles') }}</strong><span>{{ t('app.changeFilters') }}</span><v-btn color="primary" variant="tonal" @click="clearFilters">{{ t('app.clearFilters') }}</v-btn></div>
               <div v-else class="vehicle-grid">
                 <VehicleCard v-for="vehicle in sortedVehicles" :key="vehicle.variantId" :vehicle="vehicle" @select="openVehicle" />
               </div>
               <div v-if="total > pageSize" class="market-pagination">
                 <v-btn variant="outlined" prepend-icon="mdi-chevron-left" :disabled="offset === 0 || loading" @click="offset = Math.max(0, offset - pageSize); loadVehicles()">Zurück</v-btn>
-                <span>Seite {{ Math.floor(offset / pageSize) + 1 }} von {{ pageCount }}</span>
+                <span>{{ t('app.page') }} {{ Math.floor(offset / pageSize) + 1 }} / {{ pageCount }}</span>
                 <v-btn variant="outlined" append-icon="mdi-chevron-right" :disabled="offset + pageSize >= total || loading" @click="offset += pageSize; loadVehicles()">Weiter</v-btn>
               </div>
-              <div class="catalog-note"><v-icon icon="mdi-shield-check-outline" size="17" /> Fahrzeugdaten aus dem AutoFlow Vehicle Catalog. Preise und Verfügbarkeit werden separat ermittelt.</div>
+              <div class="catalog-note"><v-icon icon="mdi-shield-check-outline" size="17" /> {{ t('app.catalogSource') }}</div>
             </div>
           </div>
         </section>
@@ -592,14 +594,14 @@ onMounted(async () => {
     </v-container>
     <v-dialog v-model="orderDialog" max-width="560">
       <v-card rounded="xl">
-        <v-card-title>Accepted offer · create order</v-card-title>
+        <v-card-title>{{ t('app.createOrderTitle') }}</v-card-title>
         <v-card-text>
-          <p class="text-body-2 text-medium-emphasis mb-4">The order will be linked to the accepted offer, its pricing quote, the selected vehicle and one active customer.</p>
-          <v-select v-model="selectedCustomerId" :items="customerOptions" :item-title="customerLabel" item-value="customer_id" label="Select active customer" :loading="customerLoading" :disabled="customerLoading" />
-          <v-alert v-if="!customerLoading && !customerOptions.length && !orderError" type="info" variant="tonal">No active customer found. Create a customer first in <NuxtLink to="/admin/customers">Customer Management</NuxtLink>.</v-alert>
+          <p class="text-body-2 text-medium-emphasis mb-4">{{ t('app.createOrderHelp') }}</p>
+          <v-select v-model="selectedCustomerId" :items="customerOptions" :item-title="customerLabel" item-value="customer_id"  :label="t('app.selectCustomer')" :loading="customerLoading" :disabled="customerLoading" />
+          <v-alert v-if="!customerLoading && !customerOptions.length && !orderError" type="info" variant="tonal">{{ t('app.noCustomer') }} <NuxtLink to="/admin/customers">{{ t('app.customerManagement') }}</NuxtLink>.</v-alert>
           <v-alert v-if="orderError" type="error" variant="tonal" class="mt-3">{{ orderError }}</v-alert>
         </v-card-text>
-        <v-card-actions><v-spacer /><v-btn variant="text" :disabled="orderBusy" @click="orderDialog = false">Cancel</v-btn><v-btn color="primary" :loading="orderBusy" :disabled="!selectedCustomerId || customerLoading" @click="createOrderFromOffer">Create order</v-btn></v-card-actions>
+        <v-card-actions><v-spacer /><v-btn variant="text" :disabled="orderBusy" @click="orderDialog = false">{{ t('app.cancel') }}</v-btn><v-btn color="primary" :loading="orderBusy" :disabled="!selectedCustomerId || customerLoading" @click="createOrderFromOffer">{{ t('app.create') }}</v-btn></v-card-actions>
       </v-card>
     </v-dialog>
   </div>
