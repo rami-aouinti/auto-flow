@@ -9,7 +9,8 @@ const route = useRoute();
 const drawer = ref(false);
 const { mdAndUp } = useDisplay();
 const { isDark } = useAutoFlowTheme();
-const { t } = useAutoFlowLocale();
+const { t, locale } = useAutoFlowLocale();
+useHead({ htmlAttrs: { lang: locale } });
 const { $keycloak } = useNuxtApp() as unknown as { $keycloak: Keycloak };
 
 const sections = computed(() => [
