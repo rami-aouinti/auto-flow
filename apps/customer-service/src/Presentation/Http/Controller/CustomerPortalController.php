@@ -555,7 +555,7 @@ final readonly class CustomerPortalController
         try {
             $principal = $request->attributes->get(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
             if (!$principal instanceof AuthenticatedPrincipal || !$principal->hasScope('customers:portal')) {
-                throw new AccessDeniedHttpException('Customer self-service permission is required.');
+                throw new AccessDeniedHttpException('Customer self-service permission (customers:portal) is required.');
             }
             if (!$principal->tenantId) {
                 throw new AccessDeniedHttpException('Tenant context is missing.');
