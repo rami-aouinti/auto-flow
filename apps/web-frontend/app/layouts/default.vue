@@ -12,7 +12,7 @@ const { isDark } = useAutoFlowTheme();
 const { t } = useAutoFlowLocale();
 const { $keycloak } = useNuxtApp() as unknown as { $keycloak: Keycloak };
 
-const sections = [
+const sections = computed(() => [
   {
     title: t('nav.overview'),
     items: [
@@ -41,7 +41,7 @@ const sections = [
       { title: t('nav.customer360'), subtitle: t('nav.customer360Help'), icon: 'mdi-account-box-multiple-outline', to: '/admin/customer-360' },
     ],
   },
-];
+]);
 const pageTitle = computed(() => {
   if (route.path === '/portal') return t('page.myAccount');
   if (route.path === '/admin') return t('page.dashboard');
@@ -62,7 +62,7 @@ const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'Au
 const environmentLabel = import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'LOCAL';
 const canUseCustomerPortal = computed(() => $keycloak.hasRealmRole('customers:portal'));
 const canViewOperations = computed(() => $keycloak.hasRealmRole('customers:read'));
-const visibleSections = computed(() => canViewOperations.value ? sections : []);
+const visibleSections = computed(() => canViewOperations.value ? sections.value : []);
 
 function isActive(to: string) {
   if (to === '/admin') return route.path === to;
