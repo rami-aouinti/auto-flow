@@ -8,7 +8,8 @@ import { useAutoFlowLocale } from '../composables/useAutoFlowLocale';
 const route = useRoute();
 const { $keycloak } = useNuxtApp() as unknown as { $keycloak: Keycloak };
 const { isDark } = useAutoFlowTheme();
-const { t } = useAutoFlowLocale();
+const { t, locale } = useAutoFlowLocale();
+useHead({ htmlAttrs: { lang: locale } });
 const drawer = ref(false);
 const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'Mein Konto');
 
