@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type Keycloak from 'keycloak-js';
+import ThemeToggle from '../components/shared/ThemeToggle.vue';
+import { useAutoFlowTheme } from '../composables/useAutoFlowTheme';
 
 const route = useRoute();
 const drawer = ref(false);
 const { mdAndUp } = useDisplay();
+const { isDark } = useAutoFlowTheme();
 const { $keycloak } = useNuxtApp() as unknown as { $keycloak: Keycloak };
 
 const sections = [
@@ -72,7 +75,7 @@ function logout() {
 </script>
 
 <template>
-  <v-app theme="workspace">
+  <v-app :theme="isDark ? 'dark' : 'workspace'">
     <v-navigation-drawer
       :model-value="mdAndUp || drawer"
       :permanent="mdAndUp"
@@ -124,6 +127,7 @@ function logout() {
         <span class="topbar-heading">{{ pageTitle }}</span>
       </v-toolbar-title>
       <RealtimeNotifications v-if="canViewOperations" />
+      <ThemeToggle />
       <v-spacer />
       <div class="environment-indicator d-none d-sm-flex"><v-icon size="small" icon="mdi-monitor-dashboard" /> API-Status im Kontrollzentrum</div>
       <v-divider vertical inset class="mx-4 d-none d-sm-flex" />

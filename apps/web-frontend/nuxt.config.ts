@@ -42,6 +42,10 @@ export default defineNuxtConfig({
               primary: '#c8f169',
               secondary: '#82939b',
               error: '#ef8d91',
+              'on-background': '#eaf0f2',
+              'on-surface': '#eaf0f2',
+              'surface-variant': '#243540',
+              outline: '#3a4c56',
             },
           },
           workspace: {
