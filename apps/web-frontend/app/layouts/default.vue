@@ -143,7 +143,7 @@ function logout() {
           </v-btn>
         </template>
         <v-list density="comfortable" min-width="210">
-          <v-list-item prepend-icon="mdi-account-outline" :title="username" sub :title="t('nav.account')" />
+          <v-list-item prepend-icon="mdi-account-outline" :title="t('nav.account')" :subtitle="username" />
           <v-divider class="my-1" />
           <v-list-item v-if="canUseCustomerPortal" prepend-icon="mdi-account-circle-outline"  :title="t('nav.portal')" to="/portal" />
           <v-list-item prepend-icon="mdi-storefront-outline"  :title="t('nav.marketplace')" to="/" />
