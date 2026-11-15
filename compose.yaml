@@ -2072,7 +2072,7 @@ services:
   web-frontend:
     image: node:22-alpine
     working_dir: /app
-    command: ["sh", "-lc", "npm install --no-audit --no-fund && npm run dev"]
+    command: ["sh", "-lc", "npm install --no-audit --no-fund && npm run preview"]
     ports: ["3000:3000"]
     volumes:
       - ./apps/web-frontend:/app
