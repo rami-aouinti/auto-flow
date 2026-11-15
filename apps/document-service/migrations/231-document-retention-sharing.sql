@@ -14,7 +14,7 @@ ALTER TABLE document_access_grants
     ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ;
 ALTER TABLE document_access_grants
     DROP CONSTRAINT IF EXISTS document_access_grants_document_id_fkey;
-DO $
+DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'document_access_grants_tenant_document_fk') THEN
         ALTER TABLE document_access_grants
