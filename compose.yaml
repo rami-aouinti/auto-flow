@@ -156,7 +156,7 @@ services:
       APP_ENV: prod
       APP_DEBUG: "0"
       APP_SECRET: local-only-fulfillment-service-secret
-      FULFILLMENT_DATABASE_URL: \${FULFILLMENT_DATABASE_URL:-postgresql://autoflow_fulfillment:local-only-fulfillment-password@postgres:5432/autoflow}
+      FULFILLMENT_DATABASE_URL: ${FULFILLMENT_DATABASE_URL:-postgresql://autoflow_fulfillment:local-only-fulfillment-password@postgres:5432/autoflow}
       AUTOFLOW_JWT_ISSUER: \${KEYCLOAK_ISSUER:-http://localhost:8080/realms/autoflow}
       AUTOFLOW_JWT_JWKS_URI: \${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-fulfillment-service
@@ -333,11 +333,11 @@ services:
     command: ["php", "bin/consume-events.php"]
     environment:
       APP_ENV: prod
-      FULFILLMENT_DATABASE_URL: \${FULFILLMENT_DATABASE_URL:-postgresql://autoflow_fulfillment:local-only-fulfillment-password@postgres:5432/autoflow}
+      FULFILLMENT_DATABASE_URL: ${FULFILLMENT_DATABASE_URL:-postgresql://autoflow_fulfillment:local-only-fulfillment-password@postgres:5432/autoflow}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USER: \${RABBITMQ_USER:-autoflow}
-      RABBITMQ_PASSWORD: \${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
       RABBITMQ_VHOST: /
     depends_on:
       postgres: {condition: service_healthy}
@@ -357,11 +357,11 @@ services:
     command: ["php", "bin/publish-outbox.php"]
     environment:
       APP_ENV: prod
-      FULFILLMENT_PUBLISHER_DATABASE_URL: \${FULFILLMENT_PUBLISHER_DATABASE_URL:-postgresql://autoflow_fulfillment_publisher:local-only-fulfillment-publisher-password@postgres:5432/autoflow}
+      FULFILLMENT_PUBLISHER_DATABASE_URL: ${FULFILLMENT_PUBLISHER_DATABASE_URL:-postgresql://autoflow_fulfillment_publisher:local-only-fulfillment-publisher-password@postgres:5432/autoflow}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USER: \${RABBITMQ_USER:-autoflow}
-      RABBITMQ_PASSWORD: \${RABBITMQ_PASSWORD:-autoflow}
+      RABBITMQ_USER: ${RABBITMQ_USER:-autoflow}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-autoflow}
       RABBITMQ_VHOST: /
     depends_on:
       postgres: {condition: service_healthy}
