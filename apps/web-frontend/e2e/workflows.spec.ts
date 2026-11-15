@@ -148,10 +148,10 @@ test('customer self-service portal reads and updates only the linked profile', a
   await expect(page.getByText(/Demo Street 3/)).toBeVisible();
 
   await page.getByRole('button', { name: 'Adresse entfernen portal-address-new' }).click();
-  await page.getByRole('button', { name: 'Entfernen' }).click();
+  await page.getByRole('button', { name: 'Entfernen', exact: true }).click();
   await expect(page.getByText(/Demo Street 3/)).toHaveCount(0);
 
-  await page.getByRole('switch').first().click();
+  await page.getByRole('checkbox', { name: 'Marketing per E-Mail' }).click();
   await expect(page.getByText('Deine Einwilligung wurde aktualisiert.')).toBeVisible();
 });
 
@@ -172,7 +172,7 @@ test('company customer portal keeps legal identity read-only and saves contact d
   await page.goto('/portal');
   await expect(page.getByText('Unternehmen & Kontakt')).toBeVisible();
   await expect(page.getByLabel('Unternehmen')).toHaveValue('Demo Mobility GmbH');
-  await page.getByLabel('E-Mail').fill('new-office@example.test');
+  await page.getByRole('textbox', { name: 'E-Mail' }).fill('new-office@example.test');
   await page.getByRole('button', { name: 'Änderungen speichern' }).click();
   await expect(page.getByText('Deine Profildaten wurden gespeichert.')).toBeVisible();
   expect(savedPayload).toBeDefined();
@@ -204,8 +204,8 @@ test('customer portal persists marketing consent choices', async ({ page }) => {
   });
 
   await page.goto('/portal');
-  const emailSwitch = page.getByRole('switch', { name: 'Marketing per E-Mail' });
-  const smsSwitch = page.getByRole('switch', { name: 'Marketing per SMS' });
+  const emailSwitch = page.getByRole('checkbox', { name: 'Marketing per E-Mail' });
+  const smsSwitch = page.getByRole('checkbox', { name: 'Marketing per SMS' });
   await expect(emailSwitch).not.toBeChecked();
   await emailSwitch.click();
   await expect(emailSwitch).toBeChecked();
