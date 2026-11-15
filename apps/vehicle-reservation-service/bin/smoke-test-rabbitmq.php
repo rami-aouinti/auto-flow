@@ -9,6 +9,22 @@ use PhpAmqpLib\Wire\AMQPTable;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
+$generateUuid = static function (): string {
+    $bytes = random_bytes(16);
+    $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+    $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+    $hex = bin2hex($bytes);
+
+    return sprintf(
+        '%s-%s-%s-%s-%s',
+        substr($hex, 0, 8),
+        substr($hex, 8, 4),
+        substr($hex, 12, 4),
+        substr($hex, 16, 4),
+        substr($hex, 20, 12),
+    );
+};
+
 $databaseUrl = getenv('RESERVATION_DATABASE_URL') ?: '';
 if ($databaseUrl === '') {
     throw new RuntimeException('RESERVATION_DATABASE_URL is required.');
@@ -53,9 +69,9 @@ $channel->exchange_declare($exchange, 'topic', false, true, false);
 $channel->queue_bind($queue, $exchange, $routingKey);
 
 $tenant = 'reservation-smoke-' . bin2hex(random_bytes(6));
-$reservationId = (string) SymfonyComponentUidUuid::v7();
-$unitId = (string) SymfonyComponentUidUuid::v7();
-$variantId = (string) SymfonyComponentUidUuid::v7();
+$reservationId = (string) $generateUuid();
+$unitId = (string) $generateUuid();
+$variantId = (string) $generateUuid();
 $vin = 'AF' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 15));
 $db->executeQuery(
     "SELECT set_config('app.tenant_id', :tenant, false)",
@@ -66,7 +82,7 @@ $db->executeQuery(
 // then wait until the Reservation consumer projects it before reserving it.
 $inventoryExchange = 'autoflow.inventory.events';
 $channel->exchange_declare($inventoryExchange, 'topic', false, true, false);
-$inventoryEventId = (string) SymfonyComponentUidUuid::v7();
+$inventoryEventId = (string) $generateUuid();
 $inventoryEvent = [
     'eventId' => $inventoryEventId,
     'eventType' => 'inventory.unit.created.v1',
@@ -129,7 +145,7 @@ $db->insert('vehicle_reservations', [
     'reservation_id' => $reservationId,
     'vehicle_unit_id' => $unitId,
     'vehicle_variant_id' => $variantId,
-    'order_id' => (string) SymfonyComponentUidUuid::v7(),
+    'order_id' => (string) $generateUuid(),
     'status' => 'held',
     'expires_at' => (new DateTimeImmutable('-1 minute', new DateTimeZone('UTC')))->format(DATE_ATOM),
 ]);
