@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type Keycloak from 'keycloak-js';
+import ThemeToggle from '../components/shared/ThemeToggle.vue';
+import { useAutoFlowTheme } from '../composables/useAutoFlowTheme';
 
 const route = useRoute();
 const drawer = ref(false);
