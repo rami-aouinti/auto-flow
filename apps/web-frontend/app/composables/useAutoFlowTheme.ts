@@ -1,11 +1,19 @@
 export type AutoFlowColorMode = 'light' | 'dark';
 
 export function useAutoFlowTheme() {
-  const colorMode = useCookie<AutoFlowColorMode>('autoflow-color-mode', {
+  const colorModeCookie = useCookie<AutoFlowColorMode>('autoflow-color-mode', {
     default: () => 'light',
     path: '/',
     sameSite: 'lax',
   });
+  const colorMode = useState<AutoFlowColorMode>(
+    'autoflow-color-mode',
+    () => colorModeCookie.value,
+  );
+
+  watch(colorMode, (mode) => {
+    colorModeCookie.value = mode;
+  }, { flush: 'sync' });
 
   const isDark = computed(() => colorMode.value === 'dark');
 
