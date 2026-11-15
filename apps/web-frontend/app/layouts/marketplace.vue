@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import type Keycloak from 'keycloak-js';
 import ThemeToggle from '../components/shared/ThemeToggle.vue';
+import LanguageSwitcher from '../components/shared/LanguageSwitcher.vue';
 import { useAutoFlowTheme } from '../composables/useAutoFlowTheme';
+import { useAutoFlowLocale } from '../composables/useAutoFlowLocale';
 
 const route = useRoute();
 const { $keycloak } = useNuxtApp() as unknown as { $keycloak: Keycloak };
 const { isDark } = useAutoFlowTheme();
+const { t } = useAutoFlowLocale();
 const drawer = ref(false);
 const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'Mein Konto');
 
 const navigation = [
-  { label: 'Fahrzeuge', to: '/#fahrzeuge', icon: 'mdi-car-search' },
-  { label: 'Elektroautos', to: '/?fuelType=electric', icon: 'mdi-lightning-bolt' },
-  { label: 'Angebote', to: '/#angebote', icon: 'mdi-tag-outline' },
+  { label: t('market.vehicles'), to: '/#fahrzeuge', icon: 'mdi-car-search' },
+  { label: t('market.electric'), to: '/?fuelType=electric', icon: 'mdi-lightning-bolt' },
+  { label: t('market.offers'), to: '/#angebote', icon: 'mdi-tag-outline' },
 ];
 
 function logout() {
@@ -24,8 +27,8 @@ function logout() {
   <v-app :theme="isDark ? 'dark' : 'marketplace'">
     <div class="market-topline">
       <v-container class="market-topline-inner" fluid>
-        <span><v-icon icon="mdi-shield-check-outline" size="14" /> Fahrzeugdaten und Angebotsprozesse – transparent an einem Ort</span>
-        <NuxtLink to="/operations/orders">Zum persönlichen Bereich <v-icon icon="mdi-arrow-up-right" size="13" /></NuxtLink>
+        <span><v-icon icon="mdi-shield-check-outline" size="14" /> {{ t('market.topline') }}</span>
+        <NuxtLink to="/operations/orders">{{ t('market.myArea') }} <v-icon icon="mdi-arrow-up-right" size="13" /></NuxtLink>
       </v-container>
     </div>
 
@@ -42,7 +45,7 @@ function logout() {
           </NuxtLink>
           <v-menu open-on-hover>
             <template #activator="{ props }">
-              <button v-bind="props" class="nav-dropdown">Mehr entdecken <v-icon icon="mdi-chevron-down" size="15" /></button>
+              <button v-bind="props" class="nav-dropdown">{{ t('market.more') }} <v-icon icon="mdi-chevron-down" size="15" /></button>
             </template>
             <v-list rounded="lg" min-width="220" density="comfortable">
               <v-list-item to="/operations/orders" prepend-icon="mdi-clipboard-list-outline" title="Meine Angebote" />
@@ -52,7 +55,7 @@ function logout() {
         </nav>
 
         <v-spacer />
-        <v-btn class="header-search d-none d-sm-flex" to="/#fahrzeuge" variant="flat" color="primary" prepend-icon="mdi-magnify">Auto finden</v-btn>
+        <v-btn class="header-search d-none d-sm-flex" to="/#fahrzeuge" variant="flat" color="primary" prepend-icon="mdi-magnify">{{ t('market.findCar') }}</v-btn>
         <v-menu>
           <template #activator="{ props }">
             <v-btn v-bind="props" class="account-menu d-none d-sm-flex" variant="text" prepend-icon="mdi-account-circle-outline" append-icon="mdi-chevron-down">
@@ -66,6 +69,7 @@ function logout() {
             <v-list-item prepend-icon="mdi-logout" title="Abmelden" @click="logout" />
           </v-list>
         </v-menu>
+        <LanguageSwitcher />
         <ThemeToggle class="ml-1" />
         <v-btn class="d-md-none ml-1" icon="mdi-menu" variant="text" aria-label="Menü öffnen" @click="drawer = !drawer" />
       </v-container>
@@ -101,32 +105,32 @@ function logout() {
               <span class="market-brand-mark"><v-icon icon="mdi-car-electric" size="24" /></span>
               <span><strong>AutoFlow</strong><small>MOBILITY MADE SIMPLE</small></span>
             </NuxtLink>
-            <p>Fahrzeuge entdecken, vergleichen und Angebote transparent kalkulieren – mit einer digitalen Plattform für moderne Mobilität.</p>
+            <p>{{ t('market.footerText') }}</p>
           </div>
           <div class="footer-column">
             <strong>Fahrzeuge</strong>
-            <NuxtLink to="/#fahrzeuge">Alle Fahrzeuge</NuxtLink>
-            <NuxtLink to="/?fuelType=electric">Elektroautos</NuxtLink>
-            <NuxtLink to="/?bodyStyle=suv">SUV entdecken</NuxtLink>
+            <NuxtLink to="/#fahrzeuge">{{ t('market.allVehicles') }}</NuxtLink>
+            <NuxtLink to="/?fuelType=electric">{{ t('market.electric') }}</NuxtLink>
+            <NuxtLink to="/?bodyStyle=suv">{{ t('market.suv') }}</NuxtLink>
           </div>
           <div class="footer-column">
             <strong>Mein AutoFlow</strong>
             <NuxtLink to="/operations/orders">Meine Angebote</NuxtLink>
-            <NuxtLink to="/operations/orders">Bestellungen & Status</NuxtLink>
+            <NuxtLink to="/operations/orders">{{ t('market.orders') }}</NuxtLink>
             <NuxtLink to="/admin/catalog">Katalogverwaltung</NuxtLink>
           </div>
           <div class="footer-column">
             <strong>Service</strong>
-            <a href="mailto:service@autoflow.local">Kontakt & Support</a>
-            <NuxtLink to="/#so-funktionierts">So funktioniert AutoFlow</NuxtLink>
-            <NuxtLink to="/#faq">Häufige Fragen</NuxtLink>
+            <a href="mailto:service@autoflow.local">{{ t('market.contact') }}</a>
+            <NuxtLink to="/#so-funktionierts">{{ t('market.how') }}</NuxtLink>
+            <NuxtLink to="/#faq">{{ t('market.faq') }}</NuxtLink>
           </div>
         </div>
         <v-divider class="footer-divider" />
         <div class="footer-bottom">
           <span>© {{ new Date().getFullYear() }} AutoFlow Mobility Platform</span>
           <span>Eine moderne Plattform für deinen nächsten Fahrzeugschritt.</span>
-          <NuxtLink to="/admin/catalog">Systemverwaltung</NuxtLink>
+          <NuxtLink to="/admin/catalog">{{ t('market.system') }}</NuxtLink>
         </div>
       </v-container>
     </v-footer>
