@@ -61,27 +61,27 @@ services:
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--entryPoints.traefik.address=:8081", "--ping.entryPoint=traefik", "--ping"]
       interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
+      timeout: 10s
+      retries: 8
+      start_period: 20s
     depends_on:
-      offer-service: {condition: service_healthy}
-      pricing-service: {condition: service_healthy}
-      vehicle-catalog-service: {condition: service_healthy}
-      order-service: {condition: service_healthy}
-      document-service: {condition: service_healthy}
-      payment-service: {condition: service_healthy}
-      billing-service: {condition: service_healthy}
-      customer-service: {condition: service_healthy}
-      contract-service: {condition: service_healthy}
-      fulfillment-service: {condition: service_healthy}
-      vehicle-reservation-service: {condition: service_healthy}
-      inventory-service: {condition: service_healthy}
-      crm-service: {condition: service_healthy}
-      search-service: {condition: service_healthy}
-      audit-service: {condition: service_healthy}
-      analytics-service: {condition: service_healthy}
-      integration-service: {condition: service_healthy}
+      offer-service: {condition: service_started}
+      pricing-service: {condition: service_started}
+      vehicle-catalog-service: {condition: service_started}
+      order-service: {condition: service_started}
+      document-service: {condition: service_started}
+      payment-service: {condition: service_started}
+      billing-service: {condition: service_started}
+      customer-service: {condition: service_started}
+      contract-service: {condition: service_started}
+      fulfillment-service: {condition: service_started}
+      vehicle-reservation-service: {condition: service_started}
+      inventory-service: {condition: service_started}
+      crm-service: {condition: service_started}
+      search-service: {condition: service_started}
+      audit-service: {condition: service_started}
+      analytics-service: {condition: service_started}
+      integration-service: {condition: service_started}
 
   # Local LLM runtime. Models are persisted in the ollama-data volume.
   ollama:
@@ -1251,7 +1251,7 @@ services:
     healthcheck:
       test: ["CMD", "php", "/app/bin/healthcheck.php"]
       interval: 15s
-      timeout: 5s
+      timeout: 10s
       retries: 5
       start_period: 180s
     init: true
@@ -1911,10 +1911,10 @@ services:
     volumes: [rabbitmq-data:/var/lib/rabbitmq]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 30s
-      timeout: 60s
-      retries: 5
-      start_period: 60s
+      interval: 20s
+      timeout: 20s
+      retries: 8
+      start_period: 90s
 
   redis:
     image: redis:7-alpine
