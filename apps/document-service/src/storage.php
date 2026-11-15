@@ -18,7 +18,7 @@ function documentS3Config():array {
 function documentValidateObjectKey(string $key):void {
     if($key===''||str_starts_with($key,'/')||preg_match('~^[A-Za-z0-9._/-]{1,900}$~D',$key)!==1||in_array('..',explode('/',$key),true)||in_array('.',explode('/',$key),true))throw new RuntimeException('Stored S3 object key is invalid.');
 }
-function documentS3Request(string $method,string $objectKey='',?string $filePath=null):string {
+function documentS3Request(string $method,string $objectKey='',?string $filePath=null,int $timeoutSeconds=60):string {
     if($objectKey!=='')documentValidateObjectKey($objectKey);
     if(!function_exists('curl_init'))throw new DocumentStorageUnavailable('PHP cURL extension is required for S3 storage.');
     $c=documentS3Config();$host=$c['parts']['host'].(isset($c['parts']['port'])?':'.$c['parts']['port']:'');
@@ -55,7 +55,8 @@ function documentS3Request(string $method,string $objectKey='',?string $filePath
     $authorization='AWS4-HMAC-SHA256 Credential='.$c['access'].'/'.$scope.', SignedHeaders='.$signedHeaders.', Signature='.$signature;
     $headers=$wireHeaders;$headers[]='Authorization: '.$authorization;
     $ch=curl_init($url);
-    curl_setopt_array($ch,[CURLOPT_CUSTOMREQUEST=>$method,CURLOPT_HTTPHEADER=>$headers,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>5,CURLOPT_TIMEOUT=>60,CURLOPT_SSL_VERIFYPEER=>true,CURLOPT_SSL_VERIFYHOST=>2]);
+    $timeoutSeconds=max(1,min(60,$timeoutSeconds));
+    curl_setopt_array($ch,[CURLOPT_CUSTOMREQUEST=>$method,CURLOPT_HTTPHEADER=>$headers,CURLOPT_RETURNTRANSFER=>true,CURLOPT_CONNECTTIMEOUT=>min(2,$timeoutSeconds),CURLOPT_TIMEOUT=>$timeoutSeconds,CURLOPT_SSL_VERIFYPEER=>true,CURLOPT_SSL_VERIFYHOST=>2]);
     if($method==='PUT')curl_setopt($ch,CURLOPT_POSTFIELDS,$payload);
     if($method==='HEAD')curl_setopt($ch,CURLOPT_NOBODY,true);
     $body=curl_exec($ch);$status=(int)curl_getinfo($ch,CURLINFO_RESPONSE_CODE);$error=curl_error($ch);curl_close($ch);
@@ -94,7 +95,7 @@ function documentStorageDelete(string $key):void {
 }
 function documentStorageReady():bool {
     try{
-        if((getenv('DOCUMENT_STORAGE_DRIVER')?:'local')==='s3'){$key=base64_decode(getenv('DOCUMENT_S3_SSE_C_KEY_BASE64')?:'',true);if(!is_string($key)||strlen($key)!==32)return false;documentS3Request('HEAD');return true;}
+        if((getenv('DOCUMENT_STORAGE_DRIVER')?:'local')==='s3'){$key=base64_decode(getenv('DOCUMENT_S3_SSE_C_KEY_BASE64')?:'',true);if(!is_string($key)||strlen($key)!==32)return false;documentS3Request('HEAD','',null,2);return true;}
         $root=getenv('DOCUMENT_STORAGE_PATH')?:'/var/lib/autoflow/documents';return is_dir($root)?is_writable($root):((@mkdir($root,0700,true))&&is_writable($root));
     }catch(Throwable){return false;}
 }
