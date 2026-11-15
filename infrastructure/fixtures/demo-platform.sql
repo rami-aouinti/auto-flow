@@ -211,33 +211,82 @@ INSERT INTO inventory_units(
  tenant_id,inventory_unit_id,vehicle_variant_id,vin,vin_normalized,dealer_id,location_code,country_code,
  status,condition,mileage_km,first_registration_date,acquired_at,created_by,updated_by
 ) VALUES
-('tenant-demo','10000000-0000-4000-8000-000000000001','40000000000000000000000000000004'::uuid,'WVWDEMA0000000001','WVWDEMA0000000001','20000000-0000-4000-8000-000000000001','BER-01','DE','delivered','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '60 days',:'demo_subject',:'demo_subject'),
-('tenant-demo','10000000-0000-4000-8000-000000000002','40000000000000000000000000000003'::uuid,'WVWDEMA0000000002','WVWDEMA0000000002','20000000-0000-4000-8000-000000000002','CGN-01','DE','blocked','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '30 days',:'demo_subject',:'demo_subject'),
+('tenant-demo','10000000-0000-4000-8000-000000000001','40000000000000000000000000000004'::uuid,'WVWDEMA0000000001','WVWDEMA0000000001','20000000-0000-4000-8000-000000000001','BER-01','DE','available','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '60 days',:'demo_subject',:'demo_subject'),
+('tenant-demo','10000000-0000-4000-8000-000000000002','40000000000000000000000000000003'::uuid,'WVWDEMA0000000002','WVWDEMA0000000002','20000000-0000-4000-8000-000000000002','CGN-01','DE','available','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '30 days',:'demo_subject',:'demo_subject'),
 ('tenant-demo','10000000-0000-4000-8000-000000000003','40000000000000000000000000000005'::uuid,'WBADEMA0000000003','WBADEMA0000000003','20000000-0000-4000-8000-000000000003','MUC-01','DE','available','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '20 days',:'demo_subject',:'demo_subject'),
 ('tenant-demo','10000000-0000-4000-8000-000000000004','40000000000000000000000000000007'::uuid,'WAUDEMA0000000004','WAUDEMA0000000004','20000000-0000-4000-8000-000000000004','HAM-01','DE','available','new',0,NULL,CURRENT_TIMESTAMP - INTERVAL '12 days',:'demo_subject',:'demo_subject'),
 ('tenant-demo','10000000-0000-4000-8000-000000000005','40000000000000000000000000000006'::uuid,'WDDDEMA0000000005','WDDDEMA0000000005','20000000-0000-4000-8000-000000000005','DUS-01','DE','maintenance','used',18000,'2024-02-01',CURRENT_TIMESTAMP - INTERVAL '90 days',:'demo_subject',:'demo_subject')
 ON CONFLICT (tenant_id,inventory_unit_id) DO NOTHING;
 
+-- Project Inventory units into the Reservation stock allocation model.
+INSERT INTO vehicle_stock_units (
+ tenant_id,vehicle_unit_id,vehicle_variant_id,vin,status,inventory_status,inventory_version
+)
+SELECT
+ tenant_id,inventory_unit_id,vehicle_variant_id,vin,
+ CASE WHEN status='available' THEN 'available'
+      WHEN status='sold' THEN 'sold'
+      ELSE 'unavailable' END,
+ status,version
+FROM inventory_units
+WHERE tenant_id='tenant-demo'
+ON CONFLICT (tenant_id,vehicle_unit_id) DO UPDATE
+SET vin=EXCLUDED.vin,
+    inventory_status=EXCLUDED.inventory_status,
+    inventory_version=EXCLUDED.inventory_version,
+    status=CASE
+      WHEN vehicle_stock_units.status IN ('reserved','sold')
+        THEN vehicle_stock_units.status
+      WHEN EXCLUDED.inventory_status='available' THEN 'available'
+      WHEN EXCLUDED.inventory_status='sold' THEN 'sold'
+      ELSE 'unavailable'
+    END,
+    updated_at=clock_timestamp()
+WHERE vehicle_stock_units.inventory_version < EXCLUDED.inventory_version
+  AND vehicle_stock_units.vehicle_variant_id=EXCLUDED.vehicle_variant_id;
+
 INSERT INTO vehicle_reservations(
  tenant_id,reservation_id,vehicle_unit_id,vehicle_variant_id,order_id,status,expires_at,confirmed_at,fulfilled_at
 ) VALUES
-('tenant-demo','11000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','40000000000000000000000000000004'::uuid,'c0000000-0000-4000-8000-000000000001','fulfilled',CURRENT_TIMESTAMP - INTERVAL '20 days',CURRENT_TIMESTAMP - INTERVAL '21 days',CURRENT_TIMESTAMP - INTERVAL '5 days'),
-('tenant-demo','11000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','40000000000000000000000000000003'::uuid,'c0000000-0000-4000-8000-000000000002','confirmed',CURRENT_TIMESTAMP + INTERVAL '3 days',CURRENT_TIMESTAMP - INTERVAL '1 day',NULL),
+('tenant-demo','11000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','40000000000000000000000000000004'::uuid,'c0000000-0000-4000-8000-000000000001','held',CURRENT_TIMESTAMP - INTERVAL '20 days',CURRENT_TIMESTAMP - INTERVAL '21 days',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','11000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','40000000000000000000000000000003'::uuid,'c0000000-0000-4000-8000-000000000002','held',CURRENT_TIMESTAMP + INTERVAL '3 days',CURRENT_TIMESTAMP - INTERVAL '1 day',NULL),
 ('tenant-demo','11000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000003','40000000000000000000000000000005'::uuid,'c0000000-0000-4000-8000-000000000003','held',CURRENT_TIMESTAMP + INTERVAL '20 hours',NULL,NULL)
 ON CONFLICT (tenant_id,reservation_id) DO NOTHING;
 
+-- Apply lifecycle transitions after physical stock has been allocated.
+UPDATE vehicle_reservations
+SET status='fulfilled'
+WHERE tenant_id='tenant-demo'
+  AND reservation_id='11000000-0000-4000-8000-000000000001'
+  AND status='held';
+
+UPDATE vehicle_reservations
+SET status='confirmed'
+WHERE tenant_id='tenant-demo'
+  AND reservation_id='11000000-0000-4000-8000-000000000002'
+  AND status='held';
+
+-- The fulfilled physical unit is now sold in authoritative Inventory.
+UPDATE inventory_units
+SET status='sold', version=version+1, updated_at=CURRENT_TIMESTAMP
+WHERE tenant_id='tenant-demo'
+  AND inventory_unit_id='10000000-0000-4000-8000-000000000001'
+  AND status='available';
+
 INSERT INTO fulfillment_records(
  tenant_id,fulfillment_id,order_id,status,payment_captured_at,contract_signed_at,scheduled_for,carrier,
- tracking_reference,dispatched_at,delivered_at,recipient_name,version
+ tracking_reference,dispatched_at,delivered_at,reservation_confirmed_at,recipient_name,version
 ) VALUES
 ('tenant-demo','12000000-0000-4000-8000-000000000001','c0000000-0000-4000-8000-000000000001','delivered',
  CURRENT_TIMESTAMP - INTERVAL '22 days',CURRENT_TIMESTAMP - INTERVAL '20 days',CURRENT_TIMESTAMP - INTERVAL '6 days',
- 'Demo Logistics','DEMO-TRACK-0001',CURRENT_TIMESTAMP - INTERVAL '6 days',CURRENT_TIMESTAMP - INTERVAL '5 days','Lena Schneider',4),
+ 'Demo Logistics','DEMO-TRACK-0001',CURRENT_TIMESTAMP - INTERVAL '6 days',CURRENT_TIMESTAMP - INTERVAL '5 days',
+ CURRENT_TIMESTAMP - INTERVAL '21 days','Lena Schneider',4),
 ('tenant-demo','12000000-0000-4000-8000-000000000002','c0000000-0000-4000-8000-000000000002','scheduled',
  CURRENT_TIMESTAMP - INTERVAL '2 days',CURRENT_TIMESTAMP - INTERVAL '1 day',CURRENT_TIMESTAMP + INTERVAL '4 days',
- 'Demo Logistics','DEMO-TRACK-0002',NULL,NULL,'Jonas Weber',2),
+ 'Demo Logistics','DEMO-TRACK-0002',NULL,NULL,
+ CURRENT_TIMESTAMP - INTERVAL '1 day','Jonas Weber',2),
 ('tenant-demo','12000000-0000-4000-8000-000000000003','c0000000-0000-4000-8000-000000000003','awaiting_prerequisites',
- NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1)
+ NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,1)
 ON CONFLICT (tenant_id,fulfillment_id) DO NOTHING;
 
 -- ---------------------------------------------------------------------------
@@ -295,12 +344,11 @@ ON CONFLICT (tenant_id,event_id) DO NOTHING;
 INSERT INTO inventory_movements(
  tenant_id,movement_id,inventory_unit_id,from_status,to_status,from_location_code,to_location_code,reason,actor_id,occurred_at
 ) VALUES
-('tenant-demo','18000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','available','delivered','BER-01','BER-CUSTOMER','Demo delivery completed',:'demo_subject',CURRENT_TIMESTAMP - INTERVAL '5 days'),
-('tenant-demo','18000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','available','blocked','CGN-01','CGN-01','Reserved for demo order',:'demo_subject',CURRENT_TIMESTAMP - INTERVAL '1 day')
+('tenant-demo','18000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','available','sold','BER-01','BER-CUSTOMER','Demo vehicle sold and delivered',:'demo_subject',CURRENT_TIMESTAMP - INTERVAL '5 days')
 ON CONFLICT (tenant_id,movement_id) DO NOTHING;
 
 INSERT INTO inventory_audit_events(tenant_id,event_id,inventory_unit_id,actor_id,event_type,payload,occurred_at) VALUES
-('tenant-demo','19000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',:'demo_subject','VehicleDelivered','{"orderId":"c0000000-0000-4000-8000-000000000001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('tenant-demo','19000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001',:'demo_subject','VehicleSold','{"orderId":"c0000000-0000-4000-8000-000000000001"}',CURRENT_TIMESTAMP - INTERVAL '5 days'),
 ('tenant-demo','19000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002',:'demo_subject','VehicleReserved','{"orderId":"c0000000-0000-4000-8000-000000000002"}',CURRENT_TIMESTAMP - INTERVAL '1 day')
 ON CONFLICT (tenant_id,event_id) DO NOTHING;
 

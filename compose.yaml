@@ -161,9 +161,9 @@ services:
       AUTOFLOW_JWT_JWKS_URI: \${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-fulfillment-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -205,9 +205,9 @@ services:
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-vehicle-reservation-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -418,9 +418,9 @@ services:
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-billing-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -462,9 +462,9 @@ services:
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-inventory-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -558,9 +558,9 @@ services:
       MERCURE_COOKIE_SAMESITE: ${MERCURE_COOKIE_SAMESITE:-Lax}
       OTEL_SERVICE_NAME: autoflow-customer-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -604,9 +604,9 @@ services:
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-crm-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -681,9 +681,9 @@ services:
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-contract-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -733,8 +733,8 @@ services:
       RABBITMQ_VHOST: /
       OTEL_SERVICE_NAME: autoflow-billing-payment-event-consumer
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -794,9 +794,9 @@ services:
       PRICING_CLIENT_SECRET: ${PRICING_CLIENT_SECRET:-autoflow-local-offer-to-pricing-secret}
       OTEL_SERVICE_NAME: autoflow-offer-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       # Export often enough for local dashboards while keeping a bounded batch cadence.
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
@@ -849,9 +849,9 @@ services:
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-payment-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -893,8 +893,8 @@ services:
       RABBITMQ_VHOST: /
       OTEL_SERVICE_NAME: autoflow-payment-outbox-publisher
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -931,9 +931,9 @@ services:
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-order-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -979,8 +979,8 @@ services:
       RABBITMQ_VHOST: /
       OTEL_SERVICE_NAME: autoflow-order-payment-event-consumer
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
       OTEL_METRICS_EXPORTER: none
       OTEL_LOGS_EXPORTER: none
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
@@ -1012,9 +1012,9 @@ services:
       RABBITMQ_VHOST: /
       OTEL_SERVICE_NAME: autoflow-order-outbox-publisher
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
       OTEL_LOGS_EXPORTER: none
@@ -1490,9 +1490,9 @@ services:
       AUTOFLOW_JWT_JWKS_URI: ${KEYCLOAK_JWKS_URI:-http://keycloak:8080/realms/autoflow/protocol/openid-connect/certs}
       OTEL_SERVICE_NAME: autoflow-vehicle-catalog-service
       OTEL_RESOURCE_ATTRIBUTES: service.namespace=autoflow,deployment.environment=local
-      OTEL_PHP_AUTOLOAD_ENABLED: "true"
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
+      OTEL_PHP_AUTOLOAD_ENABLED: "false"
+      OTEL_TRACES_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
       # Export often enough for local dashboards while keeping a bounded batch cadence.
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
       OTEL_METRIC_EXPORT_TIMEOUT: "5000"
