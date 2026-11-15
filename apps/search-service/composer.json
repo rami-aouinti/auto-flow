@@ -14,6 +14,7 @@
     "roadrunner/http": "^4.0",
     "symfony/framework-bundle": "7.4.*",
     "symfony/http-client": "7.4.*",
+    "symfony/string": "7.4.*",
     "symfony/yaml": "7.4.*",
     "autoflow/core-bundle": "^2.0"
   },
