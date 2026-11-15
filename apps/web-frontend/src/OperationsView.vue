@@ -329,7 +329,7 @@ onMounted(() => {
           <p v-else-if="!orderRows.length" class="ops-empty">{{ t('ops.noOrders') }}</p>
           <div v-else class="ops-list">
             <button v-for="order in orderRows" :key="order.orderId" class="ops-row" :class="{chosen:selectedOrder?.orderId===order.orderId}" @click="selectOrder(order)">
-              <span><b>{{order.orderId}}</b><small>{{order.vehicleId || '{{ t('ops.vehicleMissing') }}'}} · {{date(order.createdAt)}}</small></span><span class="ops-status">{{label(order.status)}}</span>
+              <span><b>{{order.orderId}}</b><small>{{ order.vehicleId || t('ops.vehicleMissing') }} · {{date(order.createdAt)}}</small></span><span class="ops-status">{{label(order.status)}}</span>
             </button>
           </div>
           <div class="ops-pagination" v-if="orderTotal>orderLimit">
