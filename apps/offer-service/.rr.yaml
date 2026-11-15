@@ -10,8 +10,10 @@ http:
   max_request_size: 16
   middleware: ["gzip"]
   pool:
-    num_workers: 1
-    max_jobs: 1000
+    # Keep two HTTP workers so a slow request cannot starve readiness probes.
+    num_workers: 2
+    # Recycle workers periodically to bound long-running PHP process state.
+    max_jobs: 250
     allocate_timeout: 60s
     destroy_timeout: 60s
 
