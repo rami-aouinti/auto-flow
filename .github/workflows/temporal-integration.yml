@@ -52,16 +52,7 @@ jobs:
         working-directory: apps/order-workflow-worker
         run: |
           go mod tidy
-          go test ./internal/orders -run '^TestLiveRabbitMQTemporalSagaStartsAndPublishesReservationHold
-      - name: Collect integration diagnostics
-        if: failure()
-        run: |
-          docker compose --env-file .env.example ps -a
-          docker compose --env-file .env.example logs --no-color --tail=250 temporal order-workflow-worker rabbitmq
-      - name: Stop test infrastructure
-        if: always()
-        run: docker compose --env-file .env.example down -v
- -count=1 -v
+          go test ./internal/orders -run '^TestLiveRabbitMQTemporalSagaStartsAndPublishesReservationHold$' -count=1 -v
       - name: Collect integration diagnostics
         if: failure()
         run: |
