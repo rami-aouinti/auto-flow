@@ -102,7 +102,7 @@ function run():never {
         $scanner=@fsockopen(getenv('CLAMAV_HOST')?:'clamav',(int)(getenv('CLAMAV_PORT')?:3310),$errno,$error,0.5);
         if(is_resource($scanner)){
             stream_set_timeout($scanner,1);
-            $written=@fwrite($scanner,"zPING\\0");
+            $written=@fwrite($scanner,"zPING\0");
             $pong=$written===false?false:@fread($scanner,32);
             $meta=stream_get_meta_data($scanner);
             fclose($scanner);
