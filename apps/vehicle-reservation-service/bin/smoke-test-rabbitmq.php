@@ -52,10 +52,10 @@ $channel->queue_bind($queue, $exchange, $routingKey);
 
 $tenant = 'reservation-smoke-' . bin2hex(random_bytes(6));
 $reservationId = (string) \Symfony\Component\Uid\Uuid::v7();
-$statement = $db->prepare(
-    "SELECT set_config('app.tenant_id', :tenant, false)"
+$db->executeQuery(
+    "SELECT set_config('app.tenant_id', :tenant, false)",
+    ['tenant' => $tenant],
 );
-$statement->executeStatement(['tenant' => $tenant]);
 
 $db->insert('vehicle_reservations', [
     'tenant_id' => $tenant,
