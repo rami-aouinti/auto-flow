@@ -271,7 +271,11 @@ async function paymentAction(action: 'capture'|'cancel'|'refund') {
 function moneyMinor(amount: number, currency: string) {
   return new Intl.NumberFormat(locale.value === 'fr' ? 'fr-FR' : locale.value === 'en' ? 'en-GB' : 'de-DE', { style: 'currency', currency: currency || 'EUR' }).format((amount || 0) / 100);
 }
-function label(value?: string) { return (value || '–').replaceAll('_', ' '); }
+function label(value?: string) {
+  if (!value) return '–';
+  const statusKeys: Record<string, string> = { draft: 'app.draft', accepted: 'app.accepted', rejected: 'ops.rejected', submitted: 'ops.submitted', under_review: 'ops.underReview', completed: 'ops.completed', cancelled: 'ops.cancelled' };
+  return statusKeys[value] ? t(statusKeys[value]!) : value.replaceAll('_', ' ');
+}
 function date(value?: string) { return value ? new Date(value).toLocaleString(locale.value === 'fr' ? 'fr-FR' : locale.value === 'en' ? 'en-GB' : 'de-DE') : '–'; }
 onMounted(() => {
   const params = new URLSearchParams(window.location.search);
