@@ -1,59 +1,62 @@
 <script setup lang="ts">
 import type Keycloak from 'keycloak-js';
 import ThemeToggle from '../components/shared/ThemeToggle.vue';
+import LanguageSwitcher from '../components/shared/LanguageSwitcher.vue';
 import { useAutoFlowTheme } from '../composables/useAutoFlowTheme';
+import { useAutoFlowLocale } from '../composables/useAutoFlowLocale';
 
 const route = useRoute();
 const drawer = ref(false);
 const { mdAndUp } = useDisplay();
 const { isDark } = useAutoFlowTheme();
+const { t } = useAutoFlowLocale();
 const { $keycloak } = useNuxtApp() as unknown as { $keycloak: Keycloak };
 
 const sections = [
   {
-    title: 'ÜBERSICHT',
+    title: t('nav.overview'),
     items: [
-      { title: 'Kontrollzentrum', subtitle: 'Kennzahlen & Schnellzugriff', icon: 'mdi-view-dashboard-outline', to: '/admin' },
+      { title: t('nav.dashboard'), subtitle: t('nav.metrics'), icon: 'mdi-view-dashboard-outline', to: '/admin' },
     ],
   },
   {
-    title: 'GESCHÄFTSPROZESSE',
+    title: t('nav.processes'),
     items: [
-      { title: 'Aufträge', subtitle: 'Bestellungen & Status', icon: 'mdi-clipboard-text-outline', to: '/operations/orders' },
-      { title: 'Payments', subtitle: 'Zahlungsvorgänge', icon: 'mdi-credit-card-outline', to: '/operations/payments' },
-      { title: 'Pricing Quotes', subtitle: 'Kalkulationen', icon: 'mdi-calculator-variant-outline', to: '/operations/pricing' },
-      { title: 'CRM · Anträge', subtitle: 'Kundenanträge & Beratung', icon: 'mdi-account-tie-outline', to: '/crm/applications' },
-      { title: 'Service Operations', subtitle: 'Contracts, Billing, Stock & Fulfillment', icon: 'mdi-application-cog-outline', to: '/operations/services' },
-      { title: 'Business Workflows', subtitle: 'Contracts, stock & delivery actions', icon: 'mdi-workflow-outline', to: '/operations/workflow' },
-      { title: 'Events & Errors', subtitle: 'Business activity and service failures', icon: 'mdi-pulse', to: '/operations/events' },
-      { title: 'Platform Services', subtitle: 'Analytics, Audit, Config, Documents & Search', icon: 'mdi-apps', to: '/operations/platform' },
-      { title: 'AI Assistant', subtitle: 'Local Ollama assistant', icon: 'mdi-robot-outline', to: '/operations/assistant' },
+      { title: t('nav.orders'), subtitle: t('nav.orderStatus'), icon: 'mdi-clipboard-text-outline', to: '/operations/orders' },
+      { title: t('nav.payments'), subtitle: t('nav.paymentTransactions'), icon: 'mdi-credit-card-outline', to: '/operations/payments' },
+      { title: t('nav.pricing'), subtitle: t('nav.calculations'), icon: 'mdi-calculator-variant-outline', to: '/operations/pricing' },
+      { title: t('nav.crm'), subtitle: t('nav.crmHelp'), icon: 'mdi-account-tie-outline', to: '/crm/applications' },
+      { title: t('nav.serviceOps'), subtitle: t('nav.serviceHelp'), icon: 'mdi-application-cog-outline', to: '/operations/services' },
+      { title: t('nav.workflows'), subtitle: t('nav.workflowHelp'), icon: 'mdi-workflow-outline', to: '/operations/workflow' },
+      { title: t('nav.events'), subtitle: t('nav.eventHelp'), icon: 'mdi-pulse', to: '/operations/events' },
+      { title: t('nav.platform'), subtitle: t('nav.platformHelp'), icon: 'mdi-apps', to: '/operations/platform' },
+      { title: t('nav.assistant'), subtitle: t('nav.assistantHelp'), icon: 'mdi-robot-outline', to: '/operations/assistant' },
     ],
   },
   {
-    title: 'STAMMDATEN',
+    title: t('nav.masterData'),
     items: [
-      { title: 'Fahrzeugkatalog', subtitle: 'Marken, Modelle & Varianten', icon: 'mdi-car-cog', to: '/admin/catalog/manufacturers' },
-      { title: 'Kunden', subtitle: 'Profile, Adressen & Einwilligungen', icon: 'mdi-account-group-outline', to: '/admin/customers' },
-      { title: 'Customer 360', subtitle: 'Aufträge, Verträge & Serviceverlauf', icon: 'mdi-account-box-multiple-outline', to: '/admin/customer-360' },
+      { title: t('nav.catalog'), subtitle: t('nav.catalogHelp'), icon: 'mdi-car-cog', to: '/admin/catalog/manufacturers' },
+      { title: t('nav.customers'), subtitle: t('nav.customerHelp'), icon: 'mdi-account-group-outline', to: '/admin/customers' },
+      { title: t('nav.customer360'), subtitle: t('nav.customer360Help'), icon: 'mdi-account-box-multiple-outline', to: '/admin/customer-360' },
     ],
   },
 ];
 const pageTitle = computed(() => {
-  if (route.path === '/portal') return 'Mein Kundenkonto';
-  if (route.path === '/admin') return 'Kontrollzentrum';
-  if (route.path.startsWith('/admin/catalog')) return 'Fahrzeugkatalog';
-  if (route.path.startsWith('/admin/customers')) return 'Kunden';
-  if (route.path.startsWith('/crm')) return 'CRM · Anträge';
-  if (route.path.startsWith('/operations/order/')) return 'Auftragsdossier';
-  if (route.path.startsWith('/operations/workflow')) return 'Business Workflows';
-  if (route.path.startsWith('/operations/events')) return 'Events & Errors';
-  if (route.path.startsWith('/operations/platform')) return 'Platform Services';
-  if (route.path.startsWith('/operations/assistant')) return 'AI Assistant';
-  if (route.path.startsWith('/admin/customer-360')) return 'Customer 360';
-  if (route.path.startsWith('/operations/services')) return 'Service Operations';
-  if (route.path.startsWith('/operations/orders')) return route.query.tab === 'payments' ? 'Payments' : route.query.tab === 'quotes' ? 'Pricing Quotes' : 'Aufträge';
-  return 'Workspace';
+  if (route.path === '/portal') return t('page.myAccount');
+  if (route.path === '/admin') return t('page.dashboard');
+  if (route.path.startsWith('/admin/catalog')) return t('page.catalog');
+  if (route.path.startsWith('/admin/customers')) return t('page.customers');
+  if (route.path.startsWith('/crm')) return t('page.crm');
+  if (route.path.startsWith('/operations/order/')) return t('page.orderDossier');
+  if (route.path.startsWith('/operations/workflow')) return t('page.workflow');
+  if (route.path.startsWith('/operations/events')) return t('page.events');
+  if (route.path.startsWith('/operations/platform')) return t('page.platform');
+  if (route.path.startsWith('/operations/assistant')) return t('page.assistant');
+  if (route.path.startsWith('/admin/customer-360')) return t('page.customer360');
+  if (route.path.startsWith('/operations/services')) return t('page.serviceOps');
+  if (route.path.startsWith('/operations/orders')) return route.query.tab === 'payments' ? t('nav.payments') : route.query.tab === 'quotes' ? t('nav.pricing') : t('nav.orders');
+  return t('page.workspace');
 });
 const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'AutoFlow User');
 const environmentLabel = import.meta.env.MODE === 'production' ? 'PRODUCTION' : 'LOCAL';
@@ -91,7 +94,7 @@ function logout() {
         <div><div class="brand-name">AUTOFLOW</div><div class="brand-caption">MOBILITY OPERATIONS</div></div>
       </div>
 
-      <div class="workspace-label"><span>WORKSPACE</span><v-chip size="x-small" variant="tonal">{{ environmentLabel }}</v-chip></div>
+      <div class="workspace-label"><span>{{ t('nav.workspace') }}</span><v-chip size="x-small" variant="tonal">{{ environmentLabel }}</v-chip></div>
       <template v-for="section in visibleSections" :key="section.title">
         <div class="nav-section-label">{{ section.title }}</div>
         <v-list nav density="comfortable" bg-color="transparent" class="px-3 pt-1 pb-2">
@@ -114,22 +117,23 @@ function logout() {
 
       <template #append>
         <div class="drawer-footer">
-          <div class="d-flex align-center ga-2"><v-icon color="success" size="small" icon="mdi-shield-check-outline" /><span class="security-label">Authentifizierte Sitzung</span></div>
+          <div class="d-flex align-center ga-2"><v-icon color="success" size="small" icon="mdi-shield-check-outline" /><span class="security-label">{{ t('nav.authenticated') }}</span></div>
           <div class="drawer-version">AUTOFLOW PLATFORM · V2</div>
         </div>
       </template>
     </v-navigation-drawer>
 
     <v-app-bar color="surface" flat border="bottom" height="72">
-      <v-app-bar-nav-icon v-if="!mdAndUp" aria-label="Navigation öffnen" @click="drawer = !drawer" />
+      <v-app-bar-nav-icon v-if="!mdAndUp"  :aria-label="t('nav.openNavigation')" @click="drawer = !drawer" />
       <v-toolbar-title class="topbar-title">
         <span class="topbar-overline">AUTOFLOW / WORKSPACE</span>
         <span class="topbar-heading">{{ pageTitle }}</span>
       </v-toolbar-title>
       <RealtimeNotifications v-if="canViewOperations" />
+      <LanguageSwitcher />
       <ThemeToggle />
       <v-spacer />
-      <div class="environment-indicator d-none d-sm-flex"><v-icon size="small" icon="mdi-monitor-dashboard" /> API-Status im Kontrollzentrum</div>
+      <div class="environment-indicator d-none d-sm-flex"><v-icon size="small" icon="mdi-monitor-dashboard" /> {{ t('nav.apiStatus') }}</div>
       <v-divider vertical inset class="mx-4 d-none d-sm-flex" />
       <v-menu>
         <template #activator="{ props }">
@@ -138,11 +142,11 @@ function logout() {
           </v-btn>
         </template>
         <v-list density="comfortable" min-width="210">
-          <v-list-item prepend-icon="mdi-account-outline" :title="username" subtitle="Angemeldetes Konto" />
+          <v-list-item prepend-icon="mdi-account-outline" :title="username" sub :title="t('nav.account')" />
           <v-divider class="my-1" />
-          <v-list-item v-if="canUseCustomerPortal" prepend-icon="mdi-account-circle-outline" title="Mein Kundenkonto" to="/portal" />
-          <v-list-item prepend-icon="mdi-storefront-outline" title="Marketplace öffnen" to="/" />
-          <v-list-item prepend-icon="mdi-logout" title="Abmelden" @click="logout" />
+          <v-list-item v-if="canUseCustomerPortal" prepend-icon="mdi-account-circle-outline"  :title="t('nav.portal')" to="/portal" />
+          <v-list-item prepend-icon="mdi-storefront-outline"  :title="t('nav.marketplace')" to="/" />
+          <v-list-item prepend-icon="mdi-logout"  :title="t('nav.logout')" @click="logout" />
         </v-list>
       </v-menu>
     </v-app-bar>
@@ -153,7 +157,7 @@ function logout() {
 
     <v-footer app color="surface" class="workspace-footer">
       <span>AUTOFLOW MOBILITY PLATFORM</span><v-spacer />
-      <span>SECURE OPERATIONS · {{ new Date().getFullYear() }}</span>
+      <span>{{ t('nav.secure') }} · {{ new Date().getFullYear() }}</span>
     </v-footer>
   </v-app>
 </template>
