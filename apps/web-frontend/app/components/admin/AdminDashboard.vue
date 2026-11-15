@@ -64,7 +64,7 @@ onMounted(loadDashboard);
 <template>
   <div class="admin-dashboard">
     <PageHeader eyebrow="AUTOFLOW · ADMINISTRATION" :title="t('dashboard.title')" :description="t('dashboard.description')">
-      <template #actions><div class="d-flex align-center ga-2"><v-chip color="success" variant="tonal" prepend-icon="mdi-shield-check-outline">{{ t('dashboard.protected') }}</v-chip><v-btn icon="mdi-refresh" variant="tonal" :loading="loading" aria-label="{{ t('common.refresh') }}" @click="loadDashboard" /></div></template>
+      <template #actions><div class="d-flex align-center ga-2"><v-chip color="success" variant="tonal" prepend-icon="mdi-shield-check-outline">{{ t('dashboard.protected') }}</v-chip><v-btn icon="mdi-refresh" variant="tonal" :loading="loading"  :aria-label="t('common.refresh')" @click="loadDashboard" /></div></template>
     </PageHeader>
 
     <v-alert v-if="loadError" type="warning" variant="tonal" density="comfortable" class="mb-6">{{ loadError }}</v-alert>
