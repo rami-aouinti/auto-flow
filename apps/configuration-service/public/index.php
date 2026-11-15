@@ -195,8 +195,11 @@ if (str_starts_with($path, '/api/')) {
                 if ($expected !== null && (($expected === -1 && !$current) || ($expected >= 0 && $current && $expected !== (int)$current['version']) || ($expected >= 0 && !$current && $expected !== 0))) { $pdo->rollBack(); problem(412,'Precondition Failed','Feature flag version does not match If-Match/expectedVersion.'); }
                 $version=$current?(int)$current['version']+1:1;
                 $description=isset($input['description'])?substr((string)$input['description'],0,500):null;
-                if ($current) $pdo->prepare('UPDATE feature_flags SET enabled=?,rollout_percentage=?,tenant_allowlist=?::jsonb,description=?,version=?,updated_by=?,updated_at=NOW() WHERE tenant_id=? AND flag_key=?')->execute([$input['enabled'],$rollout,json_encode(array_values(array_unique($allow))),$description,$version,$actor,$tenant,$key]);
-                else $pdo->prepare('INSERT INTO feature_flags (id,tenant_id,flag_key,enabled,rollout_percentage,tenant_allowlist,description,version,created_by,updated_by) VALUES (?,?,?,?,?,?,?::jsonb,1,?,?)')->execute([uuid(),$tenant,$key,$input['enabled'],$rollout,json_encode(array_values(array_unique($allow))),$description,$actor,$actor]);
+                // PDO::execute() may serialize boolean false as an empty string for PostgreSQL.
+                // Use explicit PostgreSQL boolean literals so disabling a flag is persisted correctly.
+                $enabled=$input['enabled'] ? 'true' : 'false';
+                if ($current) $pdo->prepare('UPDATE feature_flags SET enabled=?,rollout_percentage=?,tenant_allowlist=?::jsonb,description=?,version=?,updated_by=?,updated_at=NOW() WHERE tenant_id=? AND flag_key=?')->execute([$enabled,$rollout,json_encode(array_values(array_unique($allow))),$description,$version,$actor,$tenant,$key]);
+                else $pdo->prepare('INSERT INTO feature_flags (id,tenant_id,flag_key,enabled,rollout_percentage,tenant_allowlist,description,version,created_by,updated_by) VALUES (?,?,?,?,?,?,?::jsonb,1,?,?)')->execute([uuid(),$tenant,$key,$enabled,$rollout,json_encode(array_values(array_unique($allow))),$description,$actor,$actor]);
                 recordEvent($pdo,$tenant,$actor,$current?'updated':'created','feature_flag',$key,$version,['enabled'=>$input['enabled'],'rolloutPercentage'=>$rollout],'FeatureFlagChanged');
                 $pdo->commit(); cacheDelete($tenant,'flag:'.$key); header('ETag: "'.$version.'"');
                 respond($current?200:201,['key'=>$key,'enabled'=>$input['enabled'],'rolloutPercentage'=>$rollout,'tenantAllowlist'=>array_values(array_unique($allow)),'version'=>$version]);
