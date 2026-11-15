@@ -38,7 +38,7 @@ final class PostgresConnection
         }
 
         $dsn = sprintf(
-            'pgsql:host=%s;port=%d;dbname=%s',
+            'pgsql:host=%s;port=%d;dbname=%s;connect_timeout=2',
             $host,
             is_int($parts['port'] ?? null) ? $parts['port'] : 5432,
             rawurldecode($database),
