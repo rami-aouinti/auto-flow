@@ -1,0 +1,158 @@
+groups:
+  - name: autoflow-infrastructure
+    interval: 30s
+    rules:
+      - alert: PrometheusScrapeTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Prometheus target is down"
+          description: "Target {{ $labels.job }} at {{ $labels.instance }} has been unavailable for more than 2 minutes."
+      - alert: PrometheusScrapeTargetMissing
+        expr: absent(up{job="rabbitmq"}) or absent(up{job="postgres"}) or absent(up{job="redis"}) or absent(up{job="elasticsearch"}) or absent(up{job="cadvisor"}) or absent(up{job="node-exporter"}) or absent(up{job="notification-service"}) or absent(up{job="alloy"})
+        for: 3m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "An expected infrastructure scrape target is missing"
+          description: "At least one required infrastructure exporter is missing from Prometheus."
+      - alert: HighHostCpuUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Host CPU usage is above 90%"
+          description: "CPU usage on {{ $labels.instance }} has exceeded 90% for 10 minutes."
+      - alert: HighContainerMemoryUsage
+        expr: (container_memory_working_set_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""}) > 0.90
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Container memory usage is above 90% of its memory limit"
+          description: "Container {{ $labels.name }} is using more than 90% of its memory limit."
+      - alert: PostgresConnectionsNearLimit
+        expr: sum by (instance) (pg_stat_activity_count) / clamp_min(max by (instance) (pg_settings_max_connections), 1) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          team: data
+        annotations:
+          summary: "PostgreSQL connections are above 80% of max_connections"
+          description: "PostgreSQL is approaching its configured connection limit."
+      - alert: RabbitMQQueueBacklog
+        expr: sum(rabbitmq_queue_messages_ready) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          team: messaging
+        annotations:
+          summary: "RabbitMQ has a large ready-message backlog"
+          description: "More than 1000 messages have remained ready in RabbitMQ queues for 5 minutes."
+      - alert: NotificationServiceDeadLettered
+        expr: autoflow_notification_deliveries_total{status="dead"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: messaging
+        annotations:
+          summary: "Notification delivery reached the dead-letter state"
+          description: "At least one offer email could not be delivered after the configured retry attempts."
+      - alert: NotificationServiceFailedDeliveries
+        expr: autoflow_notification_deliveries_total{status="failed"} > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: messaging
+        annotations:
+          summary: "Notification deliveries are failing"
+          description: "At least one notification delivery is waiting for another retry."
+
+      - alert: HttpServerHigh5xxRate
+        expr: |
+          (
+            sum by (service_name) (rate(http_server_requests_total{http_response_status_code=~"5.."}[5m]))
+            /
+            clamp_min(sum by (service_name) (rate(http_server_requests_total[5m])), 0.001)
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "HTTP 5xx rate is above 10%"
+          description: "Service {{ $labels.service_name }} has returned 5xx responses for more than 10% of requests during the last 5 minutes."
+
+      - alert: HttpServerHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, service_name) (rate(http_server_request_duration_seconds_bucket[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "HTTP p95 latency is above one second"
+          description: "Service {{ $labels.service_name }} has a p95 HTTP latency above one second for 10 minutes."
+
+  - name: autoflow-offer-management
+    interval: 30s
+    rules:
+      - alert: OfferIntegrationEventBufferBacklog
+        expr: rabbitmq_detailed_queue_messages_ready{vhost="/",queue="offer.events"} > 100
+        for: 10m
+        labels:
+          severity: warning
+          team: offers
+        annotations:
+          summary: "Offer integration event buffer is growing"
+          description: "The durable offer.events buffer has more than 100 ready messages for 10 minutes. The current Compose topology has no consumer for this catch-all queue; verify whether a downstream integration should be deployed or whether the backlog is expected."
+
+  - name: autoflow-order-management
+    interval: 30s
+    rules:
+      - alert: OrderWorkflowConsumerBacklog
+        expr: rabbitmq_detailed_queue_messages_ready{vhost="/",queue="autoflow.order.workflow"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: orders
+        annotations:
+          summary: "Order workflow events are backing up"
+          description: "The Temporal workflow consumer has more than 100 ready Order lifecycle events for 5 minutes."
+      - alert: OrderWorkflowDeadLettered
+        expr: rabbitmq_detailed_queue_messages_ready{vhost="/",queue="autoflow.order.workflow.dead"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: orders
+        annotations:
+          summary: "Malformed Order events reached the dead-letter queue"
+          description: "Inspect autoflow.order.workflow.dead and correct the event producer or schema before replay."
+      - alert: OrderWorkflowSlaBreached
+        expr: rabbitmq_detailed_queue_messages_ready{vhost="/",queue="autoflow.order.workflow.alerts"} > 0
+        for: 1m
+        labels:
+          severity: warning
+          team: orders
+        annotations:
+          summary: "An Order lifecycle SLA was breached"
+          description: "At least one review, contract-preparation or fulfilment SLA alert is awaiting acknowledgement."
+      - alert: OrderOutboxPublishFailures
+        expr: increase(order_outbox_publish_failures_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          team: orders
+        annotations:
+          summary: "Order Outbox publication is failing"
+          description: "The Order Outbox publisher recorded a failed RabbitMQ publish attempt in the last 5 minutes."
