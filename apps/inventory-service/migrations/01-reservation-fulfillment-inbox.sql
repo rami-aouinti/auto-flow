@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS public.inventory_reservation_inbox (
 );
 ALTER TABLE public.inventory_reservation_inbox OWNER TO autoflow_inventory_reservation_owner;
 GRANT SELECT, INSERT ON public.inventory_reservation_inbox TO autoflow_inventory_reservation_owner;
+-- The Inventory application can inspect its tenant-scoped inbox for diagnostics and idempotency checks.
+GRANT SELECT ON public.inventory_reservation_inbox TO autoflow_inventory;
 ALTER TABLE public.inventory_reservation_inbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inventory_reservation_inbox FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS inventory_reservation_inbox_tenant_isolation ON public.inventory_reservation_inbox;
