@@ -23,7 +23,7 @@ function pdo(): PDO {
     static $db; if($db instanceof PDO)return $db;
     $u=parse_url(getenv('DOCUMENT_DATABASE_URL')?:'');
     if(!is_array($u)||empty($u['host'])||empty($u['path']))throw new RuntimeException('Document database URL missing');
-    $db=new PDO('pgsql:host='.$u['host'].';port='.($u['port']??5432).';dbname='.ltrim($u['path'],'/'),rawurldecode($u['user']??''),rawurldecode($u['pass']??''),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false]);
+    $db=new PDO('pgsql:host='.$u['host'].';port='.($u['port']??5432).';dbname='.ltrim($u['path'],'/').';connect_timeout=2',rawurldecode($u['user']??''),rawurldecode($u['pass']??''),[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false]);
     $db->exec('SET search_path TO document_service,public');return $db;
 }
 function dec(string $v): string { $r=base64_decode(strtr($v,'-_','+/').str_repeat('=',(4-strlen($v)%4)%4),true);return $r===false?'':$r; }
@@ -99,9 +99,20 @@ function run():never {
         $checks=['postgres'=>'unavailable','storage'=>'unavailable','clamav'=>'unavailable'];
         try{pdo()->query('SELECT 1');$checks['postgres']='ok';}catch(Throwable){}
         $checks['storage']=documentStorageReady()?'ok':'unavailable';
-        $scanner=@fsockopen(getenv('CLAMAV_HOST')?:'clamav',(int)(getenv('CLAMAV_PORT')?:3310),$errno,$error,1.0);
-        if(is_resource($scanner)){fwrite($scanner,"zPING\0");$pong=fread($scanner,32);fclose($scanner);if(is_string($pong)&&str_contains($pong,'PONG'))$checks['clamav']='ok';}
-        $ready=!in_array('unavailable',$checks,true);respond(['service'=>'document-service','status'=>$ready?'ok':'not_ready','checks'=>$checks],$ready?200:503);
+        $scanner=@fsockopen(getenv('CLAMAV_HOST')?:'clamav',(int)(getenv('CLAMAV_PORT')?:3310),$errno,$error,0.5);
+        if(is_resource($scanner)){
+            stream_set_timeout($scanner,1);
+            $written=@fwrite($scanner,"zPING\\0");
+            $pong=$written===false?false:@fread($scanner,32);
+            $meta=stream_get_meta_data($scanner);
+            fclose($scanner);
+            if(!$meta['timed_out']&&is_string($pong)&&str_contains($pong,'PONG'))$checks['clamav']='ok';
+        }
+        // ClamAV is mandatory for uploads (which fail closed if it is unavailable),
+        // but it must not block read/list endpoints while its signature database loads.
+        $ready=$checks['postgres']==='ok'&&$checks['storage']==='ok';
+        $status=$ready?($checks['clamav']==='ok'?'ok':'degraded'):'not_ready';
+        respond(['service'=>'document-service','status'=>$status,'checks'=>$checks],$ready?200:503);
     }
     if($path==='/api/doc.json'){$spec=@file_get_contents(__DIR__.'/../docs/openapi.json');if(!is_string($spec))fail(503,'OpenAPI unavailable','Document API specification is missing.');header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');echo $spec;exit;}
     if($path==='/api/doc'){header('Location: /api/doc.json',true,302);exit;}
