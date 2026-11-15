@@ -348,9 +348,9 @@ body { color: var(--af-ink); }
 
 /* --------------------------------------------------------------------------
    AutoFlow dark mode
-   Activated by Vuetify's .v-theme--dark class. Keep the light theme untouched.
+   Activated by Vuetify's .v-application.v-theme--dark class. Keep the light theme untouched.
    -------------------------------------------------------------------------- */
-.v-theme--dark {
+.v-application.v-theme--dark {
   color-scheme: dark;
   --af-ink: #eaf0f2;
   --af-muted: #9aabb3;
@@ -358,258 +358,258 @@ body { color: var(--af-ink); }
   --af-canvas: #101820;
   --af-surface: #17232d;
 }
-.v-theme--dark .v-application,
-.v-theme--dark .v-main,
-.v-theme--dark .workspace-content {
+.v-application.v-theme--dark,
+.v-application.v-theme--dark .v-main,
+.v-application.v-theme--dark .workspace-content {
   color: #eaf0f2 !important;
   background: #101820 !important;
 }
-.v-theme--dark .workspace-content h1,
-.v-theme--dark .workspace-content h2,
-.v-theme--dark .workspace-content h3,
-.v-theme--dark .workspace-content .v-card-title,
-.v-theme--dark .topbar-heading,
-.v-theme--dark .admin-dashboard .v-list-item .v-list-item-title {
+.v-application.v-theme--dark .workspace-content h1,
+.v-application.v-theme--dark .workspace-content h2,
+.v-application.v-theme--dark .workspace-content h3,
+.v-application.v-theme--dark .workspace-content .v-card-title,
+.v-application.v-theme--dark .topbar-heading,
+.v-application.v-theme--dark .admin-dashboard .v-list-item .v-list-item-title {
   color: #eaf0f2 !important;
 }
-.v-theme--dark .workspace-content .v-card,
-.v-theme--dark .workspace-panel,
-.v-theme--dark .customer-workspace > .v-card,
-.v-theme--dark .crm-workspace > .v-card,
-.v-theme--dark .ops .ops-panel,
-.v-theme--dark .workflow-workspace .v-card,
-.v-theme--dark .platform-workspace .v-card,
-.v-theme--dark .workspace-content .v-table,
-.v-theme--dark .workspace-content .v-data-table,
-.v-theme--dark .workspace-content .v-list,
-.v-theme--dark .workspace-content .v-expansion-panels,
-.v-theme--dark .workspace-content .v-expansion-panel {
+.v-application.v-theme--dark .workspace-content .v-card,
+.v-application.v-theme--dark .workspace-panel,
+.v-application.v-theme--dark .customer-workspace > .v-card,
+.v-application.v-theme--dark .crm-workspace > .v-card,
+.v-application.v-theme--dark .ops .ops-panel,
+.v-application.v-theme--dark .workflow-workspace .v-card,
+.v-application.v-theme--dark .platform-workspace .v-card,
+.v-application.v-theme--dark .workspace-content .v-table,
+.v-application.v-theme--dark .workspace-content .v-data-table,
+.v-application.v-theme--dark .workspace-content .v-list,
+.v-application.v-theme--dark .workspace-content .v-expansion-panels,
+.v-application.v-theme--dark .workspace-content .v-expansion-panel {
   color: #eaf0f2 !important;
   background: #17232d !important;
   border-color: #2b3b46 !important;
 }
-.v-theme--dark .workspace-content .v-card-subtitle,
-.v-theme--dark .workspace-content .text-medium-emphasis,
-.v-theme--dark .workspace-content .v-list-item-subtitle,
-.v-theme--dark .workspace-content .v-label,
-.v-theme--dark .workspace-content .v-field__input,
-.v-theme--dark .workspace-content .v-select__selection-text,
-.v-theme--dark .workspace-content .v-data-table__td,
-.v-theme--dark .workspace-content .v-table tbody td,
-.v-theme--dark .environment-indicator {
+.v-application.v-theme--dark .workspace-content .v-card-subtitle,
+.v-application.v-theme--dark .workspace-content .text-medium-emphasis,
+.v-application.v-theme--dark .workspace-content .v-list-item-subtitle,
+.v-application.v-theme--dark .workspace-content .v-label,
+.v-application.v-theme--dark .workspace-content .v-field__input,
+.v-application.v-theme--dark .workspace-content .v-select__selection-text,
+.v-application.v-theme--dark .workspace-content .v-data-table__td,
+.v-application.v-theme--dark .workspace-content .v-table tbody td,
+.v-application.v-theme--dark .environment-indicator {
   color: #a7b6bd !important;
 }
-.v-theme--dark .workspace-content .v-table thead th,
-.v-theme--dark .workspace-content .v-data-table thead th,
-.v-theme--dark .customer-workspace .v-table thead th,
-.v-theme--dark .crm-workspace .v-table thead th,
-.v-theme--dark .workflow-workspace .v-table thead th,
-.v-theme--dark .platform-workspace .v-table thead th,
-.v-theme--dark .ops .ops-table th {
+.v-application.v-theme--dark .workspace-content .v-table thead th,
+.v-application.v-theme--dark .workspace-content .v-data-table thead th,
+.v-application.v-theme--dark .customer-workspace .v-table thead th,
+.v-application.v-theme--dark .crm-workspace .v-table thead th,
+.v-application.v-theme--dark .workflow-workspace .v-table thead th,
+.v-application.v-theme--dark .platform-workspace .v-table thead th,
+.v-application.v-theme--dark .ops .ops-table th {
   color: #a7b6bd !important;
   background: #202f39 !important;
   border-color: #2b3b46 !important;
 }
-.v-theme--dark .workspace-content .v-table tbody td,
-.v-theme--dark .customer-workspace .v-table tbody td,
-.v-theme--dark .crm-workspace .v-table tbody td,
-.v-theme--dark .workflow-workspace .v-table tbody td,
-.v-theme--dark .platform-workspace .v-table tbody td,
-.v-theme--dark .workspace-content .v-divider,
-.v-theme--dark .workspace-footer {
+.v-application.v-theme--dark .workspace-content .v-table tbody td,
+.v-application.v-theme--dark .customer-workspace .v-table tbody td,
+.v-application.v-theme--dark .crm-workspace .v-table tbody td,
+.v-application.v-theme--dark .workflow-workspace .v-table tbody td,
+.v-application.v-theme--dark .platform-workspace .v-table tbody td,
+.v-application.v-theme--dark .workspace-content .v-divider,
+.v-application.v-theme--dark .workspace-footer {
   border-color: #2b3b46 !important;
 }
-.v-theme--dark .workspace-content .v-field,
-.v-theme--dark .workspace-content .v-field__input,
-.v-theme--dark .workspace-content .v-select,
-.v-theme--dark .workspace-content .v-textarea,
-.v-theme--dark .workspace-content .v-field__overlay {
+.v-application.v-theme--dark .workspace-content .v-field,
+.v-application.v-theme--dark .workspace-content .v-field__input,
+.v-application.v-theme--dark .workspace-content .v-select,
+.v-application.v-theme--dark .workspace-content .v-textarea,
+.v-application.v-theme--dark .workspace-content .v-field__overlay {
   color: #eaf0f2 !important;
 }
-.v-theme--dark .workspace-content .v-field__outline {
+.v-application.v-theme--dark .workspace-content .v-field__outline {
   --v-field-border-opacity: .42;
 }
-.v-theme--dark .workspace-content .v-btn--variant-tonal,
-.v-theme--dark .workflow-workspace .v-tabs,
-.v-theme--dark .platform-workspace .v-tabs,
-.v-theme--dark .workflow-workspace .v-tab--selected,
-.v-theme--dark .platform-workspace .v-tab--selected {
+.v-application.v-theme--dark .workspace-content .v-btn--variant-tonal,
+.v-application.v-theme--dark .workflow-workspace .v-tabs,
+.v-application.v-theme--dark .platform-workspace .v-tabs,
+.v-application.v-theme--dark .workflow-workspace .v-tab--selected,
+.v-application.v-theme--dark .platform-workspace .v-tab--selected {
   color: #eaf0f2 !important;
   background: #243540 !important;
 }
-.v-theme--dark .ops .ops-row,
-.v-theme--dark .ops .ops-facts div,
-.v-theme--dark .ops .ops-checkout,
-.v-theme--dark .ops .ops-table-wrap,
-.v-theme--dark .ops .ops-table,
-.v-theme--dark .ops .ops-empty,
-.v-theme--dark .ops .ops-ghost,
-.v-theme--dark .ops .ops-pagination button,
-.v-theme--dark .ops .ops-actions button,
-.v-theme--dark .ops .ops-inline button,
-.v-theme--dark .ops .stripe-payment-element {
+.v-application.v-theme--dark .ops .ops-row,
+.v-application.v-theme--dark .ops .ops-facts div,
+.v-application.v-theme--dark .ops .ops-checkout,
+.v-application.v-theme--dark .ops .ops-table-wrap,
+.v-application.v-theme--dark .ops .ops-table,
+.v-application.v-theme--dark .ops .ops-empty,
+.v-application.v-theme--dark .ops .ops-ghost,
+.v-application.v-theme--dark .ops .ops-pagination button,
+.v-application.v-theme--dark .ops .ops-actions button,
+.v-application.v-theme--dark .ops .ops-inline button,
+.v-application.v-theme--dark .ops .stripe-payment-element {
   color: #dce6ea !important;
   background: #202f39 !important;
   border-color: #344955 !important;
 }
-.v-theme--dark .ops .ops-panel h2,
-.v-theme--dark .ops .ops-panel h3,
-.v-theme--dark .ops .ops-row b,
-.v-theme--dark .ops .ops-facts b,
-.v-theme--dark .customer-workspace .customer-link,
-.v-theme--dark .admin-dashboard .principle-row strong,
-.v-theme--dark .workflow-workspace .v-card-title,
-.v-theme--dark .platform-workspace .v-card-title {
+.v-application.v-theme--dark .ops .ops-panel h2,
+.v-application.v-theme--dark .ops .ops-panel h3,
+.v-application.v-theme--dark .ops .ops-row b,
+.v-application.v-theme--dark .ops .ops-facts b,
+.v-application.v-theme--dark .customer-workspace .customer-link,
+.v-application.v-theme--dark .admin-dashboard .principle-row strong,
+.v-application.v-theme--dark .workflow-workspace .v-card-title,
+.v-application.v-theme--dark .platform-workspace .v-card-title {
   color: #eaf0f2 !important;
 }
-.v-theme--dark .ops .ops-help,
-.v-theme--dark .ops .ops-row small,
-.v-theme--dark .ops .ops-facts small,
-.v-theme--dark .admin-dashboard .principle-row span,
-.v-theme--dark .admin-dashboard .v-list-item .v-list-item-subtitle {
+.v-application.v-theme--dark .ops .ops-help,
+.v-application.v-theme--dark .ops .ops-row small,
+.v-application.v-theme--dark .ops .ops-facts small,
+.v-application.v-theme--dark .admin-dashboard .principle-row span,
+.v-application.v-theme--dark .admin-dashboard .v-list-item .v-list-item-subtitle {
   color: #9aabb3 !important;
 }
-.v-theme--dark .ops .ops-row:hover,
-.v-theme--dark .customer-workspace .v-table tbody tr:hover,
-.v-theme--dark .crm-workspace .v-table tbody tr:hover,
-.v-theme--dark .workflow-workspace .v-table tbody tr:hover,
-.v-theme--dark .platform-workspace .v-table tbody tr:hover,
-.v-theme--dark .admin-dashboard .v-list-item:hover {
+.v-application.v-theme--dark .ops .ops-row:hover,
+.v-application.v-theme--dark .customer-workspace .v-table tbody tr:hover,
+.v-application.v-theme--dark .crm-workspace .v-table tbody tr:hover,
+.v-application.v-theme--dark .workflow-workspace .v-table tbody tr:hover,
+.v-application.v-theme--dark .platform-workspace .v-table tbody tr:hover,
+.v-application.v-theme--dark .admin-dashboard .v-list-item:hover {
   background: #263944 !important;
 }
-.v-theme--dark .workspace-content .v-menu .v-list,
-.v-theme--dark .v-overlay__content > .v-list,
-.v-theme--dark .v-dialog > .v-overlay__content > .v-card {
+.v-application.v-theme--dark .workspace-content .v-menu .v-list,
+.v-application.v-theme--dark .v-overlay__content > .v-list,
+.v-application.v-theme--dark .v-dialog > .v-overlay__content > .v-card {
   color: #eaf0f2 !important;
   background: #17232d !important;
   border-color: #344955 !important;
 }
-.v-theme--dark .workspace-footer {
+.v-application.v-theme--dark .workspace-footer {
   color: #9aabb3 !important;
   background: #17232d !important;
 }
-.v-theme--dark .market-main,
-.v-theme--dark .marketplace-page {
+.v-application.v-theme--dark .market-main,
+.v-application.v-theme--dark .marketplace-page {
   color: #eaf0f2 !important;
   background: #101820 !important;
 }
-.v-theme--dark .market-header {
+.v-application.v-theme--dark .market-header {
   background: rgba(23,35,45,.97) !important;
   border-color: #2b3b46 !important;
 }
-.v-theme--dark .market-brand,
-.v-theme--dark .market-nav a,
-.v-theme--dark .nav-dropdown,
-.v-theme--dark .section-heading h1,
-.v-theme--dark .section-heading h2,
-.v-theme--dark .filter-title strong,
-.v-theme--dark .results-toolbar strong,
-.v-theme--dark .detail-spec-panel h2,
-.v-theme--dark .calculator-panel h2,
-.v-theme--dark .state-panel strong,
-.v-theme--dark .offer-market-card h2 {
+.v-application.v-theme--dark .market-brand,
+.v-application.v-theme--dark .market-nav a,
+.v-application.v-theme--dark .nav-dropdown,
+.v-application.v-theme--dark .section-heading h1,
+.v-application.v-theme--dark .section-heading h2,
+.v-application.v-theme--dark .filter-title strong,
+.v-application.v-theme--dark .results-toolbar strong,
+.v-application.v-theme--dark .detail-spec-panel h2,
+.v-application.v-theme--dark .calculator-panel h2,
+.v-application.v-theme--dark .state-panel strong,
+.v-application.v-theme--dark .offer-market-card h2 {
   color: #eaf0f2 !important;
 }
-.v-theme--dark .market-brand small,
-.v-theme--dark .section-heading p,
-.v-theme--dark .results-toolbar,
-.v-theme--dark .results-toolbar > div > span,
-.v-theme--dark .spec-grid span,
-.v-theme--dark .spec-grid strong,
-.v-theme--dark .calculator-copy,
-.v-theme--dark .offer-price span,
-.v-theme--dark .offer-facts span,
-.v-theme--dark .offer-facts b,
-.v-theme--dark .catalog-note,
-.v-theme--dark .market-pagination {
+.v-application.v-theme--dark .market-brand small,
+.v-application.v-theme--dark .section-heading p,
+.v-application.v-theme--dark .results-toolbar,
+.v-application.v-theme--dark .results-toolbar > div > span,
+.v-application.v-theme--dark .spec-grid span,
+.v-application.v-theme--dark .spec-grid strong,
+.v-application.v-theme--dark .calculator-copy,
+.v-application.v-theme--dark .offer-price span,
+.v-application.v-theme--dark .offer-facts span,
+.v-application.v-theme--dark .offer-facts b,
+.v-application.v-theme--dark .catalog-note,
+.v-application.v-theme--dark .market-pagination {
   color: #9aabb3 !important;
 }
-.v-theme--dark .market-nav a:hover,
-.v-theme--dark .market-nav a.active,
-.v-theme--dark .nav-dropdown:hover {
+.v-application.v-theme--dark .market-nav a:hover,
+.v-application.v-theme--dark .market-nav a.active,
+.v-application.v-theme--dark .nav-dropdown:hover {
   color: #c8f169 !important;
 }
-.v-theme--dark .filter-sidebar,
-.v-theme--dark .detail-spec-panel,
-.v-theme--dark .calculator-panel,
-.v-theme--dark .offer-market-card,
-.v-theme--dark .state-panel,
-.v-theme--dark .market-footer,
-.v-theme--dark .market-mobile-drawer,
-.v-theme--dark .quick-categories .v-chip {
+.v-application.v-theme--dark .filter-sidebar,
+.v-application.v-theme--dark .detail-spec-panel,
+.v-application.v-theme--dark .calculator-panel,
+.v-application.v-theme--dark .offer-market-card,
+.v-application.v-theme--dark .state-panel,
+.v-application.v-theme--dark .market-footer,
+.v-application.v-theme--dark .market-mobile-drawer,
+.v-application.v-theme--dark .quick-categories .v-chip {
   color: #eaf0f2 !important;
   background: #17232d !important;
   border-color: #2b3b46 !important;
 }
-.v-theme--dark .market-footer {
+.v-application.v-theme--dark .market-footer {
   border-color: #2b3b46 !important;
 }
-.v-theme--dark .market-footer .footer-column strong,
-.v-theme--dark .market-footer .footer-column a,
-.v-theme--dark .market-footer .footer-about p,
-.v-theme--dark .market-footer .footer-bottom,
-.v-theme--dark .market-footer .footer-bottom a {
+.v-application.v-theme--dark .market-footer .footer-column strong,
+.v-application.v-theme--dark .market-footer .footer-column a,
+.v-application.v-theme--dark .market-footer .footer-about p,
+.v-application.v-theme--dark .market-footer .footer-bottom,
+.v-application.v-theme--dark .market-footer .footer-bottom a {
   color: #9aabb3 !important;
 }
-.v-theme--dark .market-footer .footer-column strong {
+.v-application.v-theme--dark .market-footer .footer-column strong {
   color: #eaf0f2 !important;
 }
-.v-theme--dark .market-footer .footer-divider,
-.v-theme--dark .active-filters,
-.v-theme--dark .offer-price,
-.v-theme--dark .offer-market-card .offer-actions,
-.v-theme--dark .offer-history {
+.v-application.v-theme--dark .market-footer .footer-divider,
+.v-application.v-theme--dark .active-filters,
+.v-application.v-theme--dark .offer-price,
+.v-application.v-theme--dark .offer-market-card .offer-actions,
+.v-application.v-theme--dark .offer-history {
   border-color: #2b3b46 !important;
 }
-.v-theme--dark .filter-sidebar .v-field,
-.v-theme--dark .sort-select .v-field,
-.v-theme--dark .offer-filters .v-field,
-.v-theme--dark .calculator-form .v-field {
+.v-application.v-theme--dark .filter-sidebar .v-field,
+.v-application.v-theme--dark .sort-select .v-field,
+.v-application.v-theme--dark .offer-filters .v-field,
+.v-application.v-theme--dark .calculator-form .v-field {
   background: #202f39 !important;
 }
-.v-theme--dark .filter-sidebar .v-field__input,
-.v-theme--dark .sort-select .v-field__input,
-.v-theme--dark .offer-filters .v-field__input,
-.v-theme--dark .calculator-form .v-field__input,
-.v-theme--dark .filter-sidebar .v-label,
-.v-theme--dark .sort-select .v-label,
-.v-theme--dark .offer-filters .v-label,
-.v-theme--dark .calculator-form .v-label {
+.v-application.v-theme--dark .filter-sidebar .v-field__input,
+.v-application.v-theme--dark .sort-select .v-field__input,
+.v-application.v-theme--dark .offer-filters .v-field__input,
+.v-application.v-theme--dark .calculator-form .v-field__input,
+.v-application.v-theme--dark .filter-sidebar .v-label,
+.v-application.v-theme--dark .sort-select .v-label,
+.v-application.v-theme--dark .offer-filters .v-label,
+.v-application.v-theme--dark .calculator-form .v-label {
   color: #dce6ea !important;
 }
-.v-theme--dark .quote-result,
-.v-theme--dark .created-offer-panel {
+.v-application.v-theme--dark .quote-result,
+.v-application.v-theme--dark .created-offer-panel {
   color: #dce6ea !important;
   background: #20382f !important;
   border-color: #365c49 !important;
 }
-.v-theme--dark .quote-result > span,
-.v-theme--dark .quote-result > strong,
-.v-theme--dark .quote-result b,
-.v-theme--dark .created-offer-panel > strong {
+.v-application.v-theme--dark .quote-result > span,
+.v-application.v-theme--dark .quote-result > strong,
+.v-application.v-theme--dark .quote-result b,
+.v-application.v-theme--dark .created-offer-panel > strong {
   color: #c8f169 !important;
 }
-.v-theme--dark .quote-result > div {
+.v-application.v-theme--dark .quote-result > div {
   color: #b4c9bb !important;
   border-color: #365c49 !important;
 }
-.v-theme--dark .offer-ref,
-.v-theme--dark .offer-history .text-caption,
-.v-theme--dark .history-row strong,
-.v-theme--dark .history-row span {
+.v-application.v-theme--dark .offer-ref,
+.v-application.v-theme--dark .offer-history .text-caption,
+.v-application.v-theme--dark .history-row strong,
+.v-application.v-theme--dark .history-row span {
   color: #a7b6bd !important;
 }
-.v-theme--dark .market-topline {
+.v-application.v-theme--dark .market-topline {
   background: #0b1720 !important;
 }
-.v-theme--dark .vehicle-detail-hero {
+.v-application.v-theme--dark .vehicle-detail-hero {
   border: 1px solid #344955;
 }
-.v-theme--dark .detail-back .v-chip {
+.v-application.v-theme--dark .detail-back .v-chip {
   color: #c8f169 !important;
 }
-.v-theme--dark .v-overlay__content > .v-list,
-.v-theme--dark .v-dialog > .v-overlay__content > .v-card {
+.v-application.v-theme--dark .v-overlay__content > .v-list,
+.v-application.v-theme--dark .v-dialog > .v-overlay__content > .v-card {
   color: #eaf0f2 !important;
   background: #17232d !important;
   border-color: #344955 !important;
