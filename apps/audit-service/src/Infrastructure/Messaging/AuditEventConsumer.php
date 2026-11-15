@@ -31,7 +31,7 @@ final readonly class AuditEventConsumer
         $this->channel->basic_consume('audit.events','',false,false,false,false,function(AMQPMessage $message):void{
             $attempt=0;$headers=[];
             try{
-                $table=$message->get('application_headers');
+                $table=$this->property($message, 'application_headers');
                 if($table instanceof AMQPTable){$headers=$table->getNativeData();$attempt=(int)($headers['x-autoflow-audit-attempt']??0);}
                 $body=json_decode($message->getBody(),true,512,JSON_THROW_ON_ERROR);
                 if(!is_array($body)||array_is_list($body))throw new \InvalidArgumentException('Integration event body must be a JSON object.');
@@ -47,7 +47,7 @@ final readonly class AuditEventConsumer
                 if($next>=$this->maxAttempts)$this->publishDeadLetter($message,$e->getMessage(),$next);
                 else{
                     $headers['x-autoflow-audit-attempt']=$next;
-                    $retry=new AMQPMessage($message->getBody(),['content_type'=>'application/json','delivery_mode'=>AMQPMessage::DELIVERY_MODE_PERSISTENT,'message_id'=>$message->get('message_id')?:null,'type'=>$message->get('type')?:null,'application_headers'=>new AMQPTable($headers)]);
+                    $retry=new AMQPMessage($message->getBody(),['content_type'=>'application/json','delivery_mode'=>AMQPMessage::DELIVERY_MODE_PERSISTENT,'message_id'=>$this->property($message, 'message_id'),'type'=>$this->property($message, 'type'),'application_headers'=>new AMQPTable($headers)]);
                     $this->channel->basic_publish($retry,'autoflow.audit.retry',(string)$message->get('type'));
                     $this->channel->wait_for_pending_acks_returns(5.0);
                 }
@@ -59,11 +59,15 @@ final readonly class AuditEventConsumer
         while($this->channel->is_consuming()){try{$this->channel->wait(null,false,5);}catch(AMQPTimeoutException){}}
         throw new \RuntimeException('Audit RabbitMQ consumer stopped unexpectedly.');
     }
+    private function property(AMQPMessage $message, string $name): mixed
+    {
+        return $message->get_properties()[$name] ?? null;
+    }
     private function publishDeadLetter(AMQPMessage $original,string $reason,int $attempt):void
     {
-        $headers=[];$table=$original->get('application_headers');if($table instanceof AMQPTable)$headers=$table->getNativeData();
+        $headers=[];$table=$this->property($original, 'application_headers');if($table instanceof AMQPTable)$headers=$table->getNativeData();
         $headers['x-autoflow-audit-error']=mb_substr($reason,0,500);$headers['x-autoflow-audit-attempt']=$attempt;
-        $message=new AMQPMessage($original->getBody(),['content_type'=>'application/json','delivery_mode'=>AMQPMessage::DELIVERY_MODE_PERSISTENT,'message_id'=>$original->get('message_id')?:null,'type'=>$original->get('type')?:null,'application_headers'=>new AMQPTable($headers)]);
+        $message=new AMQPMessage($original->getBody(),['content_type'=>'application/json','delivery_mode'=>AMQPMessage::DELIVERY_MODE_PERSISTENT,'message_id'=>$this->property($original, 'message_id'),'type'=>$this->property($original, 'type'),'application_headers'=>new AMQPTable($headers)]);
         $this->channel->basic_publish($message,'autoflow.audit.dlx','audit.failed');
         $this->channel->wait_for_pending_acks_returns(5.0);
     }
