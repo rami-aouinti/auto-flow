@@ -36,7 +36,7 @@ const filters = reactive({
   minSeats: '',
 });
 
-const fuelOptions = [
+const fuelOptions = computed(() => [
   { title: t('app.allDrivetrains'), value: '' },
   { title: t('app.petrol'), value: 'petrol' },
   { title: t('app.diesel'), value: 'diesel' },
@@ -44,8 +44,8 @@ const fuelOptions = [
   { title: t('app.hybrid'), value: 'hybrid' },
   { title: t('app.pluginHybrid'), value: 'plug_in_hybrid' },
   { title: t('app.hydrogen'), value: 'hydrogen' },
-];
-const bodyOptions = [
+]);
+const bodyOptions = computed(() => [
   { title: t('app.allBodyStyles'), value: '' },
   { title: t('app.suv'), value: 'suv' },
   { title: t('app.sedan'), value: 'sedan' },
@@ -55,14 +55,14 @@ const bodyOptions = [
   { title: t('app.convertible'), value: 'convertible' },
   { title: t('app.van'), value: 'van' },
   { title: t('app.pickup'), value: 'pickup' },
-];
-const transmissionOptions = [
+]);
+const transmissionOptions = computed(() => [
   { title: t('app.allTransmissions'), value: '' },
   { title: t('app.automatic'), value: 'automatic' },
   { title: t('app.manual'), value: 'manual' },
   { title: t('app.singleSpeed'), value: 'single_speed' },
-];
-const sortOptions = [
+]);
+const sortOptions = computed(() => [
   { title: t('app.relevance'), value: 'relevance' },
   { title: t('app.nameAZ'), value: 'name' },
   { title: t('app.powerHigh'), value: 'power-desc' },
@@ -71,7 +71,7 @@ const sortOptions = [
 
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / pageSize)));
 const sortedVehicles = computed(() => {
-  const copy = [...vehicles.value];
+  const copy = [...vehicles.value]);
   if (sortBy.value === 'name') return copy.sort((a, b) => a.name.localeCompare(b.name, 'de'));
   if (sortBy.value === 'power-desc') return copy.sort((a, b) => Number(b.powerKw || 0) - Number(a.powerKw || 0));
   if (sortBy.value === 'power-asc') return copy.sort((a, b) => Number(a.powerKw || 0) - Number(b.powerKw || 0));
