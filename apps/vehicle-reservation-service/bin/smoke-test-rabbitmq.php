@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Doctrine\DBAL\DriverManager;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
+use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Wire\AMQPTable;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -51,18 +53,83 @@ $channel->exchange_declare($exchange, 'topic', false, true, false);
 $channel->queue_bind($queue, $exchange, $routingKey);
 
 $tenant = 'reservation-smoke-' . bin2hex(random_bytes(6));
-$reservationId = (string) \Symfony\Component\Uid\Uuid::v7();
+$reservationId = (string) SymfonyComponentUidUuid::v7();
+$unitId = (string) SymfonyComponentUidUuid::v7();
+$variantId = (string) SymfonyComponentUidUuid::v7();
+$vin = 'AF' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 15));
 $db->executeQuery(
     "SELECT set_config('app.tenant_id', :tenant, false)",
     ['tenant' => $tenant],
 );
 
+// Inventory owns physical stock. Create it through the real event contract,
+// then wait until the Reservation consumer projects it before reserving it.
+$inventoryExchange = 'autoflow.inventory.events';
+$channel->exchange_declare($inventoryExchange, 'topic', false, true, false);
+$inventoryEventId = (string) SymfonyComponentUidUuid::v7();
+$inventoryEvent = [
+    'eventId' => $inventoryEventId,
+    'eventType' => 'inventory.unit.created.v1',
+    'schemaVersion' => 1,
+    'producer' => 'inventory-service',
+    'aggregate' => ['type' => 'InventoryUnit', 'id' => $unitId],
+    'tenantId' => $tenant,
+    'occurredAt' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DATE_ATOM),
+    'data' => [
+        'inventoryUnitId' => $unitId,
+        'fromStatus' => null,
+        'toStatus' => 'available',
+        'fromLocationCode' => null,
+        'toLocationCode' => null,
+        'vin' => $vin,
+        'vehicleVariantId' => $variantId,
+        'version' => 1,
+    ],
+];
+$channel->confirm_select();
+$channel->basic_publish(new AMQPMessage(json_encode($inventoryEvent, JSON_THROW_ON_ERROR), [
+    'content_type' => 'application/json',
+    'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
+    'message_id' => $inventoryEventId,
+    'type' => 'inventory.unit.created.v1',
+    'application_headers' => new AMQPTable([
+        'tenantId' => $tenant,
+        'producer' => 'inventory-service',
+        'schemaVersion' => 1,
+    ]),
+]), $inventoryExchange, 'inventory.unit.created.v1', true);
+$channel->wait_for_pending_acks_returns(5);
+
+$projectionDeadline = microtime(true) + 20;
+do {
+    $stock = $db->fetchAssociative(
+        'SELECT status, inventory_status, inventory_version FROM vehicle_stock_units WHERE tenant_id=:tenant AND vehicle_unit_id=:unit',
+        ['tenant' => $tenant, 'unit' => $unitId],
+    );
+    if ($stock !== false
+        && $stock['status'] === 'available'
+        && $stock['inventory_status'] === 'available'
+        && (int) $stock['inventory_version'] === 1
+    ) {
+        break;
+    }
+    usleep(250000);
+} while (microtime(true) < $projectionDeadline);
+
+if ($stock === false
+    || $stock['status'] !== 'available'
+    || $stock['inventory_status'] !== 'available'
+    || (int) $stock['inventory_version'] !== 1
+) {
+    throw new RuntimeException('Inventory unit-created event was not projected as available stock.');
+}
+
 $db->insert('vehicle_reservations', [
     'tenant_id' => $tenant,
     'reservation_id' => $reservationId,
-    'vehicle_unit_id' => (string) \Symfony\Component\Uid\Uuid::v7(),
-    'vehicle_variant_id' => (string) \Symfony\Component\Uid\Uuid::v7(),
-    'order_id' => (string) \Symfony\Component\Uid\Uuid::v7(),
+    'vehicle_unit_id' => $unitId,
+    'vehicle_variant_id' => $variantId,
+    'order_id' => (string) SymfonyComponentUidUuid::v7(),
     'status' => 'held',
     'expires_at' => (new DateTimeImmutable('-1 minute', new DateTimeZone('UTC')))->format(DATE_ATOM),
 ]);
