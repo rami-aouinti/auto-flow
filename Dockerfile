@@ -1,9 +1,9 @@
-FROM php:8.5-cli-bookworm
+FROM php:8.4-cli-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git unzip zip libicu-dev libpq-dev libzip-dev \
-    && docker-php-ext-install -j"$(nproc)" \
+    && docker-php-ext-install -j2 \
         intl opcache pcntl pdo_pgsql sockets zip \
     && pecl channel-update pecl.php.net \
     && pecl install xdebug \
