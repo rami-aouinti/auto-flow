@@ -1,0 +1,91 @@
+logging {
+  level = "info"
+}
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  labels     = { job = "docker" }
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+otelcol.receiver.otlp "autoflow" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.transform.autoflow.input]
+  }
+}
+
+otelcol.processor.transform "autoflow" {
+  error_mode = "ignore"
+
+  metric_statements {
+    context = "datapoint"
+
+    statements = [
+      `set(attributes["service_name"], resource.attributes["service.name"])`,
+      `set(attributes["deployment_environment"], resource.attributes["deployment.environment"])`,
+    ]
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.autoflow.input]
+  }
+}
+
+otelcol.processor.batch "autoflow" {
+  output {
+    metrics = [otelcol.processor.deltatocumulative.autoflow.input]
+  }
+}
+
+// Prometheus requires cumulative sums and histograms. The PHP OTLP SDK can
+// export delta temporality, which the Prometheus exporter intentionally drops.
+otelcol.processor.deltatocumulative "autoflow" {
+  output {
+    metrics = [otelcol.exporter.prometheus.autoflow.input]
+  }
+}
+
+otelcol.exporter.prometheus "autoflow" {
+  forward_to = [prometheus.remote_write.autoflow.receiver]
+}
+
+prometheus.remote_write "autoflow" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
