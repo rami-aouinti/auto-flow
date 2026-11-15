@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAutoFlowTheme } from '../../composables/useAutoFlowTheme';
 const { isDark, toggle } = useAutoFlowTheme();
 </script>
 
