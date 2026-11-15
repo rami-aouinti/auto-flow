@@ -64,26 +64,6 @@ services:
       timeout: 10s
       retries: 8
       start_period: 20s
-    depends_on:
-      offer-service: {condition: service_started}
-      pricing-service: {condition: service_started}
-      vehicle-catalog-service: {condition: service_started}
-      order-service: {condition: service_started}
-      document-service: {condition: service_started}
-      payment-service: {condition: service_started}
-      billing-service: {condition: service_started}
-      customer-service: {condition: service_started}
-      contract-service: {condition: service_started}
-      fulfillment-service: {condition: service_started}
-      vehicle-reservation-service: {condition: service_started}
-      inventory-service: {condition: service_started}
-      crm-service: {condition: service_started}
-      search-service: {condition: service_started}
-      audit-service: {condition: service_started}
-      analytics-service: {condition: service_started}
-      integration-service: {condition: service_started}
-
-  # Local LLM runtime. Models are persisted in the ollama-data volume.
   ollama:
     image: ollama/ollama:latest
     environment:
