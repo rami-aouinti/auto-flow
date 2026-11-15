@@ -94,7 +94,7 @@ try {
                 'message_id' => $eventId,
                 'type' => $eventType,
                 'timestamp' => time(),
-                'application_headers' => new \\PhpAmqpLib\\Wire\\AMQPTable([
+                'application_headers' => new \PhpAmqpLib\Wire\AMQPTable([
                     'tenantId' => $tenantId,
                     'producer' => 'fulfillment-service',
                 ]),
