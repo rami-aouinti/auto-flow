@@ -12,11 +12,11 @@ const { t } = useAutoFlowLocale();
 const drawer = ref(false);
 const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'Mein Konto');
 
-const navigation = [
+const navigation = computed(() => [
   { label: t('market.vehicles'), to: '/#fahrzeuge', icon: 'mdi-car-search' },
   { label: t('market.electric'), to: '/?fuelType=electric', icon: 'mdi-lightning-bolt' },
   { label: t('market.offers'), to: '/#angebote', icon: 'mdi-tag-outline' },
-];
+]);
 
 function logout() {
   void $keycloak.logout({ redirectUri: window.location.origin });
@@ -40,7 +40,7 @@ function logout() {
         </NuxtLink>
 
         <nav class="market-nav d-none d-md-flex" aria-label="Hauptnavigation">
-          <NuxtLink v-for="item in navigation" :key="item.label" :to="item.to" :class="{ active: item.label === 'Fahrzeuge' && route.path === '/' }">
+          <NuxtLink v-for="item in navigation" :key="item.label" :to="item.to" :class="{ active: item.label === t('market.vehicles') && route.path === '/' }">
             {{ item.label }}
           </NuxtLink>
           <v-menu open-on-hover>
@@ -48,8 +48,8 @@ function logout() {
               <button v-bind="props" class="nav-dropdown">{{ t('market.more') }} <v-icon icon="mdi-chevron-down" size="15" /></button>
             </template>
             <v-list rounded="lg" min-width="220" density="comfortable">
-              <v-list-item to="/operations/orders" prepend-icon="mdi-clipboard-list-outline" title="Meine Angebote" />
-              <v-list-item to="/admin/catalog" prepend-icon="mdi-database-cog-outline" title="Katalogverwaltung" />
+              <v-list-item to="/operations/orders" prepend-icon="mdi-clipboard-list-outline"  :title="t('market.myOffers')" />
+              <v-list-item to="/admin/catalog" prepend-icon="mdi-database-cog-outline"  :title="t('nav.catalog')" />
             </v-list>
           </v-menu>
         </nav>
@@ -64,14 +64,14 @@ function logout() {
           </template>
           <v-list density="comfortable" min-width="220">
             <v-list-item to="/operations/orders" prepend-icon="mdi-clipboard-list-outline" title="Meine Angebote" />
-            <v-list-item to="/admin/catalog" prepend-icon="mdi-database-cog-outline" title="Administration" />
+            <v-list-item to="/admin/catalog" prepend-icon="mdi-database-cog-outline"  :title="t('market.admin')" />
             <v-divider class="my-1" />
-            <v-list-item prepend-icon="mdi-logout" title="Abmelden" @click="logout" />
+            <v-list-item prepend-icon="mdi-logout"  :title="t('nav.logout')" @click="logout" />
           </v-list>
         </v-menu>
         <LanguageSwitcher />
         <ThemeToggle class="ml-1" />
-        <v-btn class="d-md-none ml-1" icon="mdi-menu" variant="text" aria-label="Menü öffnen" @click="drawer = !drawer" />
+        <v-btn class="d-md-none ml-1" icon="mdi-menu" variant="text"  :aria-label="t('nav.openNavigation')" @click="drawer = !drawer" />
       </v-container>
     </v-app-bar>
 
@@ -81,7 +81,7 @@ function logout() {
           <span class="market-brand-mark"><v-icon icon="mdi-car-electric" /></span>
           <span><strong>AutoFlow</strong><small>MOBILITY MADE SIMPLE</small></span>
         </NuxtLink>
-        <v-btn icon="mdi-close" variant="text" aria-label="Menü schließen" @click="drawer = false" />
+        <v-btn icon="mdi-close" variant="text"  :aria-label="t('nav.closeNavigation')" @click="drawer = false" />
       </div>
       <v-divider />
       <v-list nav class="pa-3">
@@ -89,7 +89,7 @@ function logout() {
         <v-divider class="my-3" />
         <v-list-item to="/operations/orders" prepend-icon="mdi-clipboard-list-outline" title="Meine Angebote" rounded="lg" @click="drawer = false" />
         <v-list-item to="/admin/catalog" prepend-icon="mdi-database-cog-outline" title="Katalogverwaltung" rounded="lg" @click="drawer = false" />
-        <v-list-item prepend-icon="mdi-logout" title="Abmelden" rounded="lg" @click="logout" />
+        <v-list-item prepend-icon="mdi-logout"  :title="t('nav.logout')" rounded="lg" @click="logout" />
       </v-list>
     </v-navigation-drawer>
 
@@ -108,19 +108,19 @@ function logout() {
             <p>{{ t('market.footerText') }}</p>
           </div>
           <div class="footer-column">
-            <strong>Fahrzeuge</strong>
+            <strong>{{ t('market.vehicles') }}</strong>
             <NuxtLink to="/#fahrzeuge">{{ t('market.allVehicles') }}</NuxtLink>
             <NuxtLink to="/?fuelType=electric">{{ t('market.electric') }}</NuxtLink>
             <NuxtLink to="/?bodyStyle=suv">{{ t('market.suv') }}</NuxtLink>
           </div>
           <div class="footer-column">
-            <strong>Mein AutoFlow</strong>
+            <strong>AutoFlow</strong>
             <NuxtLink to="/operations/orders">Meine Angebote</NuxtLink>
             <NuxtLink to="/operations/orders">{{ t('market.orders') }}</NuxtLink>
             <NuxtLink to="/admin/catalog">Katalogverwaltung</NuxtLink>
           </div>
           <div class="footer-column">
-            <strong>Service</strong>
+            <strong>{{ t('market.contact') }}</strong>
             <a href="mailto:service@autoflow.local">{{ t('market.contact') }}</a>
             <NuxtLink to="/#so-funktionierts">{{ t('market.how') }}</NuxtLink>
             <NuxtLink to="/#faq">{{ t('market.faq') }}</NuxtLink>
