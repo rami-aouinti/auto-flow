@@ -3,6 +3,7 @@ import type Keycloak from 'keycloak-js';
 
 const route = useRoute();
 const { $keycloak } = useNuxtApp() as unknown as { $keycloak: Keycloak };
+const { isDark } = useAutoFlowTheme();
 const drawer = ref(false);
 const username = computed(() => $keycloak.tokenParsed?.preferred_username || 'Mein Konto');
 
@@ -18,7 +19,7 @@ function logout() {
 </script>
 
 <template>
-  <v-app theme="marketplace">
+  <v-app :theme="isDark ? 'dark' : 'marketplace'">
     <div class="market-topline">
       <v-container class="market-topline-inner" fluid>
         <span><v-icon icon="mdi-shield-check-outline" size="14" /> Fahrzeugdaten und Angebotsprozesse – transparent an einem Ort</span>
@@ -63,6 +64,7 @@ function logout() {
             <v-list-item prepend-icon="mdi-logout" title="Abmelden" @click="logout" />
           </v-list>
         </v-menu>
+        <ThemeToggle class="ml-1" />
         <v-btn class="d-md-none ml-1" icon="mdi-menu" variant="text" aria-label="Menü öffnen" @click="drawer = !drawer" />
       </v-container>
     </v-app-bar>
