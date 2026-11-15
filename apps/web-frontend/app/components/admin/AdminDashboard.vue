@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { billing, catalog, contracts, crm, customers, fulfillments, inventory, orders, payments, pricing, reservations } from '../../../src/api';
 import PageHeader from '../shared/PageHeader.vue';
 import MetricCard from '../shared/MetricCard.vue';
@@ -58,6 +58,11 @@ async function loadDashboard() {
   loading.value = false;
 }
 
+watch(locale, () => {
+  const labelKeys = ['dashboard.metricVariants','nav.customers','dashboard.metricCrm','nav.orders','nav.payments','nav.pricing','dashboard.metricContracts','dashboard.metricInvoices','dashboard.metricFulfilments','dashboard.metricInventory','dashboard.metricReservations'];
+  const captionKeys = ['dashboard.metricVehicleData','dashboard.metricCustomerAdmin','nav.crmHelp','dashboard.metricOrders','dashboard.metricPayments','nav.calculations','dashboard.metricContractLife','dashboard.metricBilling','dashboard.metricDelivery','dashboard.metricPhysicalVehicles','dashboard.metricVehicleReservations'];
+  metrics.value.forEach((metric, index) => { metric.label = t(labelKeys[index] ?? ''); metric.caption = t(captionKeys[index] ?? ''); });
+});
 onMounted(loadDashboard);
 </script>
 
